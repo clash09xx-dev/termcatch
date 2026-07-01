@@ -5,105 +5,56 @@
 @layer base {
   :root {
     --font-inter: "Inter", system-ui, sans-serif;
-    --font-cabinet: "Cabinet Grotesk", "Inter", system-ui, sans-serif;
-  }
-
-  * {
-    @apply border-surface-200;
   }
 
   html {
     @apply scroll-smooth;
-    font-feature-settings: "cv11", "ss01";
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
   }
 
   body {
-    @apply bg-white text-surface-900 dark:bg-surface-950 dark:text-white;
+    @apply bg-white text-gray-900;
     font-family: var(--font-inter);
   }
 
-  h1, h2, h3, h4, h5, h6 {
-    font-family: var(--font-cabinet), var(--font-inter);
-    @apply tracking-tight;
-  }
+  /* Scrollbar */
+  ::-webkit-scrollbar { width: 6px; height: 6px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: #e4e4e7; border-radius: 9999px; }
+  ::-webkit-scrollbar-thumb:hover { background: #d4d4d8; }
 
-  /* Scrollbar styling */
-  ::-webkit-scrollbar {
-    width: 6px;
-    height: 6px;
-  }
-  ::-webkit-scrollbar-track {
-    background: transparent;
-  }
-  ::-webkit-scrollbar-thumb {
-    background: #e4e4e7;
-    border-radius: 9999px;
-  }
-  ::-webkit-scrollbar-thumb:hover {
-    background: #d4d4d8;
-  }
-  .dark ::-webkit-scrollbar-thumb {
-    background: #3f3f46;
-  }
-  .dark ::-webkit-scrollbar-thumb:hover {
-    background: #52525b;
-  }
-
-  /* Focus ring */
+  /* Focus ring — gray, not violet */
   *:focus-visible {
-    @apply outline-none ring-2 ring-brand-500 ring-offset-2;
+    @apply outline-none ring-2 ring-gray-400 ring-offset-2;
   }
 }
 
 @layer components {
-  /* Container */
   .container-page {
     @apply max-w-7xl mx-auto px-4 sm:px-6 lg:px-8;
   }
 
-  /* Cards */
+  /* Card used by dashboard pages */
   .card {
-    @apply bg-white dark:bg-surface-900 rounded-2xl border border-surface-100 dark:border-surface-800 shadow-soft;
+    @apply bg-white rounded-2xl border border-gray-100 shadow-soft;
   }
   .card-hover {
     @apply card hover:shadow-soft-md hover:-translate-y-0.5 transition-all duration-200;
   }
 
-  /* Gradient text */
-  .text-gradient {
-    @apply bg-clip-text text-transparent bg-gradient-to-r from-brand-600 to-brand-400;
-  }
-
-  /* Shimmer skeleton */
   .skeleton {
-    @apply bg-surface-100 dark:bg-surface-800 rounded-lg animate-pulse;
-  }
-
-  /* Glass effect */
-  .glass {
-    @apply backdrop-blur-xl bg-white/80 dark:bg-surface-900/80 border border-white/20;
+    @apply bg-gray-100 rounded-lg animate-pulse;
   }
 }
 
 @layer utilities {
-  /* Hide scrollbar but keep functionality */
-  .no-scrollbar::-webkit-scrollbar {
-    display: none;
-  }
-  .no-scrollbar {
-    -ms-overflow-style: none;
-    scrollbar-width: none;
-  }
+  .no-scrollbar::-webkit-scrollbar { display: none; }
+  .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+  .text-balance { text-wrap: balance; }
+}
 
-  /* Text balance */
-  .text-balance {
-    text-wrap: balance;
-  }
-
-  /* Clip path utilities */
-  .clip-hero {
-    clip-path: ellipse(100% 80% at 50% 0%);
-  }
+@keyframes cursor-blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0; }
 }

@@ -8,60 +8,49 @@ import { cn } from "@/lib/utils";
 
 const initialState: AuthState = {};
 
+const inputCls =
+  "w-full px-3.5 py-2.5 border border-gray-200 rounded-xl text-sm text-gray-900 bg-white placeholder:text-gray-400 focus:outline-none focus:border-gray-400 transition-colors";
+
 export default function RegisterPage() {
   const [state, formAction, isPending] = useActionState(registerAction, initialState);
   const [role, setRole] = useState<"CUSTOMER" | "BUSINESS_OWNER">("CUSTOMER");
 
   return (
-    <div className="animate-fade-up">
-      <div className="mb-8">
-        <h1 className="text-2xl font-semibold text-surface-900 dark:text-white tracking-tight">
-          Utwórz konto
-        </h1>
-        <p className="mt-1.5 text-sm text-surface-500 dark:text-surface-400">
+    <div>
+      <div className="mb-7">
+        <h1 className="text-xl font-semibold text-gray-900 tracking-tight">Utwórz konto</h1>
+        <p className="mt-1 text-sm text-gray-500">
           Masz już konto?{" "}
-          <Link
-            href="/login"
-            className="text-brand-600 hover:text-brand-700 font-medium transition-colors"
-          >
+          <Link href="/login" className="text-gray-900 font-medium underline underline-offset-2 hover:no-underline transition-all">
             Zaloguj się
           </Link>
         </p>
       </div>
 
-      {/* Role selector */}
-      <div className="grid grid-cols-2 gap-2 mb-6 p-1 bg-surface-100 dark:bg-surface-800 rounded-xl">
-        <button
-          type="button"
-          onClick={() => setRole("CUSTOMER")}
-          className={cn(
-            "py-2 px-3 rounded-lg text-sm font-medium transition-all",
-            role === "CUSTOMER"
-              ? "bg-white dark:bg-surface-700 text-surface-900 dark:text-white shadow-soft-sm"
-              : "text-surface-500 hover:text-surface-700 dark:hover:text-surface-300"
-          )}
-        >
-          Klient
-        </button>
-        <button
-          type="button"
-          onClick={() => setRole("BUSINESS_OWNER")}
-          className={cn(
-            "py-2 px-3 rounded-lg text-sm font-medium transition-all",
-            role === "BUSINESS_OWNER"
-              ? "bg-white dark:bg-surface-700 text-surface-900 dark:text-white shadow-soft-sm"
-              : "text-surface-500 hover:text-surface-700 dark:hover:text-surface-300"
-          )}
-        >
-          Właściciel salonu
-        </button>
+      {/* Role toggle */}
+      <div className="flex gap-1.5 mb-6 p-1 bg-gray-100 rounded-xl">
+        {(["CUSTOMER", "BUSINESS_OWNER"] as const).map((r) => (
+          <button
+            key={r}
+            type="button"
+            onClick={() => setRole(r)}
+            className={cn(
+              "flex-1 py-2 px-3 rounded-lg text-sm font-medium transition-all",
+              role === r
+                ? "bg-white text-gray-900 shadow-sm"
+                : "text-gray-500 hover:text-gray-700"
+            )}
+          >
+            {r === "CUSTOMER" ? "Klient" : "Właściciel salonu"}
+          </button>
+        ))}
       </div>
 
       {/* Google OAuth */}
       <form action={signInWithGoogleAction}>
         <button
           type="submit"
-          className="w-full flex items-center justify-center gap-3 px-4 py-2.5 border border-surface-200 dark:border-surface-700 rounded-xl text-sm font-medium text-surface-700 dark:text-surface-200 hover:bg-surface-50 dark:hover:bg-surface-800 transition-colors"
+          className="w-full flex items-center justify-center gap-3 px-4 py-2.5 border border-gray-200 rounded-xl text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 transition-colors"
         >
           <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
             <path d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844c-.209 1.125-.843 2.078-1.796 2.717v2.258h2.908c1.702-1.567 2.684-3.875 2.684-6.615z" fill="#4285F4"/>
@@ -73,21 +62,19 @@ export default function RegisterPage() {
         </button>
       </form>
 
-      {/* Divider */}
-      <div className="flex items-center gap-3 my-6">
-        <div className="flex-1 h-px bg-surface-200 dark:bg-surface-700" />
-        <span className="text-xs text-surface-400">lub</span>
-        <div className="flex-1 h-px bg-surface-200 dark:bg-surface-700" />
+      <div className="flex items-center gap-3 my-5">
+        <div className="flex-1 h-px bg-gray-200" />
+        <span className="text-xs text-gray-400">lub</span>
+        <div className="flex-1 h-px bg-gray-200" />
       </div>
 
       {state.error && (
-        <div className="mb-4 p-3 bg-danger-50 border border-danger-200 rounded-xl text-sm text-danger-600 animate-fade-in">
+        <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-xl text-sm text-red-600">
           {state.error}
         </div>
       )}
-
       {state.success && (
-        <div className="mb-4 p-3 bg-success-50 border border-success-200 rounded-xl text-sm text-success-600 animate-fade-in">
+        <div className="mb-4 p-3 bg-green-50 border border-green-200 rounded-xl text-sm text-green-600">
           {state.success}
         </div>
       )}
@@ -97,105 +84,66 @@ export default function RegisterPage() {
 
         <div className="grid grid-cols-2 gap-3">
           <div>
-            <label htmlFor="firstName" className="block text-sm font-medium text-surface-700 dark:text-surface-200 mb-1.5">
-              Imię
-            </label>
+            <label htmlFor="firstName" className="block text-sm font-medium text-gray-700 mb-1.5">Imię</label>
             <input
-              id="firstName"
-              name="firstName"
-              type="text"
-              autoComplete="given-name"
-              required
-              placeholder="Jan"
-              className="w-full px-3.5 py-2.5 border border-surface-200 dark:border-surface-700 rounded-xl text-sm text-surface-900 dark:text-white bg-white dark:bg-surface-900 placeholder:text-surface-400 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent transition-shadow"
+              id="firstName" name="firstName" type="text"
+              autoComplete="given-name" required placeholder="Jan"
+              className={inputCls}
             />
             {state.fieldErrors?.firstName && (
-              <p className="mt-1 text-xs text-danger-500">{state.fieldErrors.firstName[0]}</p>
+              <p className="mt-1 text-xs text-red-500">{state.fieldErrors.firstName[0]}</p>
             )}
           </div>
           <div>
-            <label htmlFor="lastName" className="block text-sm font-medium text-surface-700 dark:text-surface-200 mb-1.5">
-              Nazwisko
-            </label>
+            <label htmlFor="lastName" className="block text-sm font-medium text-gray-700 mb-1.5">Nazwisko</label>
             <input
-              id="lastName"
-              name="lastName"
-              type="text"
-              autoComplete="family-name"
-              required
-              placeholder="Kowalski"
-              className="w-full px-3.5 py-2.5 border border-surface-200 dark:border-surface-700 rounded-xl text-sm text-surface-900 dark:text-white bg-white dark:bg-surface-900 placeholder:text-surface-400 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent transition-shadow"
+              id="lastName" name="lastName" type="text"
+              autoComplete="family-name" required placeholder="Kowalski"
+              className={inputCls}
             />
           </div>
         </div>
 
         <div>
-          <label htmlFor="email" className="block text-sm font-medium text-surface-700 dark:text-surface-200 mb-1.5">
-            Adres e-mail
-          </label>
+          <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1.5">Adres e-mail</label>
           <input
-            id="email"
-            name="email"
-            type="email"
-            autoComplete="email"
-            required
-            placeholder="twoj@email.pl"
-            className="w-full px-3.5 py-2.5 border border-surface-200 dark:border-surface-700 rounded-xl text-sm text-surface-900 dark:text-white bg-white dark:bg-surface-900 placeholder:text-surface-400 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent transition-shadow"
+            id="email" name="email" type="email"
+            autoComplete="email" required placeholder="twoj@email.pl"
+            className={inputCls}
           />
           {state.fieldErrors?.email && (
-            <p className="mt-1 text-xs text-danger-500">{state.fieldErrors.email[0]}</p>
+            <p className="mt-1 text-xs text-red-500">{state.fieldErrors.email[0]}</p>
           )}
         </div>
 
         <div>
-          <label htmlFor="password" className="block text-sm font-medium text-surface-700 dark:text-surface-200 mb-1.5">
-            Hasło
-          </label>
+          <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1.5">Hasło</label>
           <input
-            id="password"
-            name="password"
-            type="password"
-            autoComplete="new-password"
-            required
-            placeholder="min. 8 znaków"
-            className="w-full px-3.5 py-2.5 border border-surface-200 dark:border-surface-700 rounded-xl text-sm text-surface-900 dark:text-white bg-white dark:bg-surface-900 placeholder:text-surface-400 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent transition-shadow"
+            id="password" name="password" type="password"
+            autoComplete="new-password" required placeholder="min. 8 znaków"
+            className={inputCls}
           />
           {state.fieldErrors?.password && (
-            <p className="mt-1 text-xs text-danger-500">{state.fieldErrors.password[0]}</p>
+            <p className="mt-1 text-xs text-red-500">{state.fieldErrors.password[0]}</p>
           )}
         </div>
 
         <button
           type="submit"
           disabled={isPending}
-          className="w-full py-2.5 px-4 bg-brand-600 hover:bg-brand-700 disabled:opacity-60 disabled:cursor-not-allowed text-white font-medium text-sm rounded-xl transition-all shadow-brand hover:shadow-brand-lg active:scale-[0.99]"
+          className="w-full py-2.5 px-4 bg-gray-900 hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed text-white font-medium text-sm rounded-xl transition-colors flex items-center justify-center gap-2"
         >
           {isPending ? (
-            <span className="flex items-center justify-center gap-2">
+            <>
               <svg className="animate-spin w-4 h-4" viewBox="0 0 24 24" fill="none">
                 <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
                 <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
               </svg>
               Tworzenie konta...
-            </span>
-          ) : role === "BUSINESS_OWNER" ? (
-            "Zarejestruj salon"
-          ) : (
-            "Utwórz konto"
-          )}
+            </>
+          ) : role === "BUSINESS_OWNER" ? "Zarejestruj salon" : "Utwórz konto"}
         </button>
       </form>
-
-      <p className="mt-6 text-center text-xs text-surface-400">
-        Rejestrując się, akceptujesz{" "}
-        <Link href="/terms" className="underline hover:text-surface-600 transition-colors">
-          Regulamin
-        </Link>{" "}
-        i{" "}
-        <Link href="/privacy" className="underline hover:text-surface-600 transition-colors">
-          Politykę Prywatności
-        </Link>
-      </p>
     </div>
   );
 }

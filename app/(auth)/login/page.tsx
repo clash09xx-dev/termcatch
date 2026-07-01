@@ -1,28 +1,26 @@
 "use client";
 
-import { useActionState, useEffect } from "react";
+import { useActionState } from "react";
 import Link from "next/link";
 import { loginAction, signInWithGoogleAction } from "@/actions/auth";
 import type { AuthState } from "@/actions/auth";
 
 const initialState: AuthState = {};
 
+const inputCls =
+  "w-full px-3.5 py-2.5 border border-gray-200 rounded-xl text-sm text-gray-900 bg-white placeholder:text-gray-400 focus:outline-none focus:border-gray-400 transition-colors";
+
 export default function LoginPage() {
   const [state, formAction, isPending] = useActionState(loginAction, initialState);
 
   return (
-    <div className="animate-fade-up">
-      <div className="mb-8">
-        <h1 className="text-2xl font-semibold text-surface-900 dark:text-white tracking-tight">
-          Witaj z powrotem
-        </h1>
-        <p className="mt-1.5 text-sm text-surface-500 dark:text-surface-400">
+    <div>
+      <div className="mb-7">
+        <h1 className="text-xl font-semibold text-gray-900 tracking-tight">Zaloguj się</h1>
+        <p className="mt-1 text-sm text-gray-500">
           Nie masz konta?{" "}
-          <Link
-            href="/register"
-            className="text-brand-600 hover:text-brand-700 font-medium transition-colors"
-          >
-            Zarejestruj się za darmo
+          <Link href="/register" className="text-gray-900 font-medium underline underline-offset-2 hover:no-underline transition-all">
+            Zarejestruj się
           </Link>
         </p>
       </div>
@@ -31,7 +29,7 @@ export default function LoginPage() {
       <form action={signInWithGoogleAction}>
         <button
           type="submit"
-          className="w-full flex items-center justify-center gap-3 px-4 py-2.5 border border-surface-200 dark:border-surface-700 rounded-xl text-sm font-medium text-surface-700 dark:text-surface-200 hover:bg-surface-50 dark:hover:bg-surface-800 transition-colors"
+          className="w-full flex items-center justify-center gap-3 px-4 py-2.5 border border-gray-200 rounded-xl text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 transition-colors"
         >
           <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
             <path d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844c-.209 1.125-.843 2.078-1.796 2.717v2.258h2.908c1.702-1.567 2.684-3.875 2.684-6.615z" fill="#4285F4"/>
@@ -43,108 +41,73 @@ export default function LoginPage() {
         </button>
       </form>
 
-      {/* Divider */}
-      <div className="flex items-center gap-3 my-6">
-        <div className="flex-1 h-px bg-surface-200 dark:bg-surface-700" />
-        <span className="text-xs text-surface-400">lub</span>
-        <div className="flex-1 h-px bg-surface-200 dark:bg-surface-700" />
+      <div className="flex items-center gap-3 my-5">
+        <div className="flex-1 h-px bg-gray-200" />
+        <span className="text-xs text-gray-400">lub</span>
+        <div className="flex-1 h-px bg-gray-200" />
       </div>
 
-      {/* Error */}
       {state.error && (
-        <div className="mb-4 p-3 bg-danger-50 border border-danger-200 rounded-xl text-sm text-danger-600 animate-fade-in">
+        <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-xl text-sm text-red-600">
           {state.error}
         </div>
       )}
-
-      {/* Success */}
       {state.success && (
-        <div className="mb-4 p-3 bg-success-50 border border-success-200 rounded-xl text-sm text-success-600 animate-fade-in">
+        <div className="mb-4 p-3 bg-green-50 border border-green-200 rounded-xl text-sm text-green-600">
           {state.success}
         </div>
       )}
 
-      {/* Form */}
       <form action={formAction} className="space-y-4">
         <div>
-          <label
-            htmlFor="email"
-            className="block text-sm font-medium text-surface-700 dark:text-surface-200 mb-1.5"
-          >
+          <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1.5">
             Adres e-mail
           </label>
           <input
-            id="email"
-            name="email"
-            type="email"
-            autoComplete="email"
-            required
-            placeholder="twoj@email.pl"
-            className="w-full px-3.5 py-2.5 border border-surface-200 dark:border-surface-700 rounded-xl text-sm text-surface-900 dark:text-white bg-white dark:bg-surface-900 placeholder:text-surface-400 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent transition-shadow"
+            id="email" name="email" type="email"
+            autoComplete="email" required placeholder="twoj@email.pl"
+            className={inputCls}
           />
           {state.fieldErrors?.email && (
-            <p className="mt-1 text-xs text-danger-500">{state.fieldErrors.email[0]}</p>
+            <p className="mt-1 text-xs text-red-500">{state.fieldErrors.email[0]}</p>
           )}
         </div>
 
         <div>
           <div className="flex items-center justify-between mb-1.5">
-            <label
-              htmlFor="password"
-              className="block text-sm font-medium text-surface-700 dark:text-surface-200"
-            >
+            <label htmlFor="password" className="block text-sm font-medium text-gray-700">
               Hasło
             </label>
-            <Link
-              href="/reset-password"
-              className="text-xs text-brand-600 hover:text-brand-700 transition-colors"
-            >
+            <Link href="/reset-password" className="text-xs text-gray-500 hover:text-gray-800 transition-colors">
               Zapomniałeś hasła?
             </Link>
           </div>
           <input
-            id="password"
-            name="password"
-            type="password"
-            autoComplete="current-password"
-            required
-            placeholder="••••••••"
-            className="w-full px-3.5 py-2.5 border border-surface-200 dark:border-surface-700 rounded-xl text-sm text-surface-900 dark:text-white bg-white dark:bg-surface-900 placeholder:text-surface-400 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent transition-shadow"
+            id="password" name="password" type="password"
+            autoComplete="current-password" required placeholder="••••••••"
+            className={inputCls}
           />
           {state.fieldErrors?.password && (
-            <p className="mt-1 text-xs text-danger-500">{state.fieldErrors.password[0]}</p>
+            <p className="mt-1 text-xs text-red-500">{state.fieldErrors.password[0]}</p>
           )}
         </div>
 
         <button
           type="submit"
           disabled={isPending}
-          className="w-full py-2.5 px-4 bg-brand-600 hover:bg-brand-700 disabled:opacity-60 disabled:cursor-not-allowed text-white font-medium text-sm rounded-xl transition-all shadow-brand hover:shadow-brand-lg active:scale-[0.99]"
+          className="w-full py-2.5 px-4 bg-gray-900 hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed text-white font-medium text-sm rounded-xl transition-colors flex items-center justify-center gap-2"
         >
           {isPending ? (
-            <span className="flex items-center justify-center gap-2">
+            <>
               <svg className="animate-spin w-4 h-4" viewBox="0 0 24 24" fill="none">
                 <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
                 <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
               </svg>
               Logowanie...
-            </span>
-          ) : (
-            "Zaloguj się"
-          )}
+            </>
+          ) : "Zaloguj się"}
         </button>
       </form>
-
-      <p className="mt-8 text-center text-xs text-surface-400">
-        Logując się, akceptujesz{" "}
-        <Link href="/terms" className="underline hover:text-surface-600 transition-colors">
-          Regulamin
-        </Link>{" "}
-        i{" "}
-        <Link href="/privacy" className="underline hover:text-surface-600 transition-colors">
-          Politykę Prywatności
-        </Link>
-      </p>
     </div>
   );
 }

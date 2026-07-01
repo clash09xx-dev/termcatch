@@ -9,11 +9,11 @@ import { LandingFooter } from "@/components/layout/landing-footer";
 // ─── Typewriter ───────────────────────────────────────────────────────────────
 
 const PHRASES = [
-  "Podkreśl swoje piękno",
-  "Znajdź idealny salon",
-  "Zarezerwuj masaż dziś",
-  "Odkryj najlepszego barbera",
-  "Zadbaj o siebie teraz",
+  "Złap termin w 30 sekund",
+  "Zero telefonów, zero czekania",
+  "Twój kalendarz — zawsze pełny",
+  "Klienci bookują sami, całą dobę",
+  "Jeden link. Wszystkie rezerwacje.",
 ];
 
 function useTypewriter(phrases: string[]) {
@@ -576,13 +576,6 @@ export default function HomePage() {
       </section>
 
       <LandingFooter />
-
-      <style>{`
-        @keyframes cursor-blink {
-          0%, 100% { opacity: 1; }
-          50% { opacity: 0; }
-        }
-      `}</style>
     </div>
   );
 }
