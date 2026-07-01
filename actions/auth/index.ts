@@ -45,45 +45,51 @@ export async function registerAction(
   }
 
   const { firstName, lastName, email, password, role } = parsed.data;
-  const supabase = await createClient();
 
-  let signUpData: Awaited<ReturnType<typeof supabase.auth.signUp>>["data"] | null = null;
+  // ── Step 1: Supabase Auth ──────────────────────────────────────
+  let supabaseUserId: string | null = null;
+  let hasSession = false;
 
   try {
+    const supabase = await createClient();
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
       options: {
-        emailRedirectTo: `${process.env.NEXT_PUBLIC_APP_URL ?? ""}/auth/callback`,
+        emailRedirectTo: `${process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000"}/auth/callback`,
         data: { firstName, lastName, role },
       },
     });
 
     if (error) {
-      if (error.message.toLowerCase().includes("already registered") || error.message.toLowerCase().includes("user already exists")) {
+      const msg = error.message.toLowerCase();
+      if (msg.includes("already registered") || msg.includes("user already exists") || msg.includes("already been registered")) {
         return { error: "Ten adres e-mail jest już zarejestrowany. Zaloguj się lub użyj innego adresu." };
       }
-      if (error.message.toLowerCase().includes("invalid email")) {
-        return { error: "Nieprawidłowy adres e-mail." };
+      if (msg.includes("password")) {
+        return { error: "Hasło nie spełnia wymagań bezpieczeństwa (min. 8 znaków)." };
       }
-      if (error.message.toLowerCase().includes("password")) {
-        return { error: "Hasło nie spełnia wymagań. Użyj min. 8 znaków." };
+      if (msg.includes("rate limit") || msg.includes("too many")) {
+        return { error: "Zbyt wiele prób. Poczekaj chwilę i spróbuj ponownie." };
       }
-      return { error: `Błąd rejestracji: ${error.message}` };
+      // Show the actual error for easier debugging
+      return { error: `Błąd: ${error.message}` };
     }
 
-    signUpData = data;
+    supabaseUserId = data.user?.id ?? null;
+    hasSession = !!data.session;
   } catch (err) {
-    console.error("Supabase signUp error:", err);
-    return { error: "Nie można połączyć z serwerem. Sprawdź konfigurację środowiska." };
+    console.error("[register] Supabase error:", err);
+    return { error: "Nie można połączyć z serwerem autoryzacji. Sprawdź połączenie internetowe." };
   }
 
-  if (signUpData?.user) {
+  // ── Step 2: Sync to DB (non-blocking) ─────────────────────────
+  if (supabaseUserId) {
     try {
       await prisma.user.upsert({
-        where: { supabaseId: signUpData.user.id },
+        where: { supabaseId: supabaseUserId },
         create: {
-          supabaseId: signUpData.user.id,
+          supabaseId: supabaseUserId,
           email,
           firstName,
           lastName,
@@ -92,23 +98,19 @@ export async function registerAction(
         update: {},
       });
     } catch (err) {
-      console.error("DB upsert error after signUp:", err);
-      // Don't block the user — they were created in Supabase, DB sync can happen later
+      // Non-fatal — user exists in Supabase Auth, DB sync will happen on next login
+      console.error("[register] DB sync error:", err);
     }
 
-    // If Supabase auto-confirmed (email confirmation disabled in project settings),
-    // redirect immediately to the appropriate next step.
-    if (signUpData.session) {
+    // ── Step 3: Redirect if auto-confirmed ────────────────────────
+    if (hasSession) {
       revalidatePath("/", "layout");
-      redirect(
-        role === "BUSINESS_OWNER" ? "/business/onboarding" : "/customer/dashboard"
-      );
+      redirect(role === "BUSINESS_OWNER" ? "/business/onboarding" : "/customer/dashboard");
     }
   }
 
   return {
-    success:
-      "Konto zostało utworzone! Sprawdź skrzynkę e-mail, potwierdź rejestrację, a następnie się zaloguj.",
+    success: "Konto utworzone! Sprawdź skrzynkę e-mail, potwierdź rejestrację, a następnie się zaloguj.",
   };
 }
 
