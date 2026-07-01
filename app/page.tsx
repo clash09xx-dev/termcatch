@@ -1,7 +1,8 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useRef, useCallback } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { motion, useInView } from "framer-motion";
 import { LandingNav } from "@/components/layout/landing-nav";
 import { LandingFooter } from "@/components/layout/landing-footer";
@@ -175,6 +176,79 @@ const fade = {
 
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
+// ─── Hero Search ─────────────────────────────────────────────────────────────
+
+function HeroSearch() {
+  const router = useRouter();
+  const [q, setQ] = useState("");
+  const [city, setCity] = useState("");
+
+  const handleSubmit = useCallback(
+    (e: React.FormEvent) => {
+      e.preventDefault();
+      const params = new URLSearchParams();
+      if (q.trim()) params.set("q", q.trim());
+      if (city.trim()) params.set("city", city.trim());
+      router.push(`/search${params.toString() ? "?" + params.toString() : ""}`);
+    },
+    [q, city, router]
+  );
+
+  return (
+    <form
+      onSubmit={handleSubmit}
+      className="flex flex-col sm:flex-row gap-2 w-full max-w-xl"
+    >
+      {/* Service input */}
+      <div className="relative flex-1">
+        <svg
+          className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none"
+          viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"
+        >
+          <circle cx="11" cy="11" r="8" /><path d="m21 21-4.35-4.35" />
+        </svg>
+        <input
+          type="text"
+          value={q}
+          onChange={(e) => setQ(e.target.value)}
+          placeholder="Fryzjer, masaż, manicure…"
+          className="w-full pl-10 pr-4 py-3.5 bg-white border border-gray-200 rounded-xl text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:border-gray-400 transition-colors shadow-sm"
+        />
+      </div>
+
+      {/* City input */}
+      <div className="relative sm:w-40">
+        <svg
+          className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none"
+          viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"
+        >
+          <path d="M20 10c0 6-8 12-8 12S4 16 4 10a8 8 0 0 1 16 0Z" /><circle cx="12" cy="10" r="3" />
+        </svg>
+        <input
+          type="text"
+          value={city}
+          onChange={(e) => setCity(e.target.value)}
+          placeholder="Miasto"
+          className="w-full pl-10 pr-4 py-3.5 bg-white border border-gray-200 rounded-xl text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:border-gray-400 transition-colors shadow-sm"
+        />
+      </div>
+
+      {/* Submit */}
+      <button
+        type="submit"
+        className="px-6 py-3.5 bg-gray-900 hover:bg-gray-800 text-white text-sm font-semibold rounded-xl transition-colors flex items-center justify-center gap-2 shadow-sm flex-shrink-0"
+      >
+        <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+          <circle cx="11" cy="11" r="8" /><path d="m21 21-4.35-4.35" />
+        </svg>
+        Szukaj
+      </button>
+    </form>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+
 const CATEGORIES = [
   { label: "Fryzjer", slug: "hair_salon" },
   { label: "Barber", slug: "barbershop" },
@@ -255,25 +329,20 @@ export default function HomePage() {
               ))}
             </motion.div>
 
-            {/* CTAs */}
+            {/* Search bar */}
             <motion.div
               initial={{ opacity: 0, y: 14 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6, delay: 0.4 }}
-              className="flex flex-col sm:flex-row gap-3 mt-9"
+              className="mt-9"
             >
-              <Link
-                href="/search"
-                className="inline-flex items-center justify-center px-7 py-3.5 bg-gray-900 hover:bg-gray-800 text-white text-sm font-semibold rounded-xl transition-colors"
-              >
-                Znajdź specjalistę
-              </Link>
-              <Link
-                href="/register?role=business"
-                className="inline-flex items-center justify-center px-7 py-3.5 bg-white hover:bg-gray-50 text-gray-700 text-sm font-medium rounded-xl border border-gray-200 transition-colors"
-              >
-                Dodaj salon za darmo →
-              </Link>
+              <HeroSearch />
+              <p className="mt-3 text-xs text-gray-400">
+                Lub{" "}
+                <Link href="/register?role=business" className="underline underline-offset-2 hover:text-gray-600 transition-colors">
+                  dodaj salon za darmo →
+                </Link>
+              </p>
             </motion.div>
 
             {/* Trust line */}
