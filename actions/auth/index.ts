@@ -47,39 +47,58 @@ export async function registerAction(
   const { firstName, lastName, email, password, role } = parsed.data;
   const supabase = await createClient();
 
-  const { data, error } = await supabase.auth.signUp({
-    email,
-    password,
-    options: {
-      emailRedirectTo: `${process.env.NEXT_PUBLIC_APP_URL}/auth/callback`,
-      data: { firstName, lastName, role },
-    },
-  });
+  let signUpData: Awaited<ReturnType<typeof supabase.auth.signUp>>["data"] | null = null;
 
-  if (error) {
-    if (error.message.includes("already registered")) {
-      return { error: "Ten adres e-mail jest już zarejestrowany." };
-    }
-    return { error: "Wystąpił błąd. Spróbuj ponownie." };
-  }
-
-  if (data.user) {
-    // Create user in our DB
-    await prisma.user.upsert({
-      where: { supabaseId: data.user.id },
-      create: {
-        supabaseId: data.user.id,
-        email,
-        firstName,
-        lastName,
-        role: role as "CUSTOMER" | "BUSINESS_OWNER",
+  try {
+    const { data, error } = await supabase.auth.signUp({
+      email,
+      password,
+      options: {
+        emailRedirectTo: `${process.env.NEXT_PUBLIC_APP_URL ?? ""}/auth/callback`,
+        data: { firstName, lastName, role },
       },
-      update: {},
     });
 
-    // If Supabase auto-confirmed the session (email confirmation disabled),
+    if (error) {
+      if (error.message.toLowerCase().includes("already registered") || error.message.toLowerCase().includes("user already exists")) {
+        return { error: "Ten adres e-mail jest już zarejestrowany. Zaloguj się lub użyj innego adresu." };
+      }
+      if (error.message.toLowerCase().includes("invalid email")) {
+        return { error: "Nieprawidłowy adres e-mail." };
+      }
+      if (error.message.toLowerCase().includes("password")) {
+        return { error: "Hasło nie spełnia wymagań. Użyj min. 8 znaków." };
+      }
+      return { error: `Błąd rejestracji: ${error.message}` };
+    }
+
+    signUpData = data;
+  } catch (err) {
+    console.error("Supabase signUp error:", err);
+    return { error: "Nie można połączyć z serwerem. Sprawdź konfigurację środowiska." };
+  }
+
+  if (signUpData?.user) {
+    try {
+      await prisma.user.upsert({
+        where: { supabaseId: signUpData.user.id },
+        create: {
+          supabaseId: signUpData.user.id,
+          email,
+          firstName,
+          lastName,
+          role: role as "CUSTOMER" | "BUSINESS_OWNER",
+        },
+        update: {},
+      });
+    } catch (err) {
+      console.error("DB upsert error after signUp:", err);
+      // Don't block the user — they were created in Supabase, DB sync can happen later
+    }
+
+    // If Supabase auto-confirmed (email confirmation disabled in project settings),
     // redirect immediately to the appropriate next step.
-    if (data.session) {
+    if (signUpData.session) {
       revalidatePath("/", "layout");
       redirect(
         role === "BUSINESS_OWNER" ? "/business/onboarding" : "/customer/dashboard"
@@ -89,7 +108,7 @@ export async function registerAction(
 
   return {
     success:
-      "Konto zostało utworzone! Sprawdź e-mail, aby potwierdzić rejestrację, a następnie się zaloguj.",
+      "Konto zostało utworzone! Sprawdź skrzynkę e-mail, potwierdź rejestrację, a następnie się zaloguj.",
   };
 }
 
