@@ -95,10 +95,9 @@ export default function RootLayout({
               toastOptions={{
                 duration: 4000,
                 classNames: {
-                  toast:
-                    "font-sans text-sm bg-white dark:bg-surface-900 border border-surface-200 dark:border-surface-700 shadow-soft-md rounded-xl",
-                  success: "border-success-200",
-                  error: "border-danger-200",
+                  toast: "font-sans text-sm bg-white border border-gray-200 shadow-lg rounded-xl",
+                  success: "border-green-200",
+                  error: "border-red-200",
                 },
               }}
             />
