@@ -140,7 +140,7 @@ export function StaffClient({ employees: initialEmployees, availableServices }: 
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-xl font-semibold text-gray-900">Pracownicy</h1>
-          <p className="text-sm text-surface-700 mt-0.5">
+          <p className="text-sm text-gray-700 mt-0.5">
             Zarządzaj zespołem swojego salonu
           </p>
         </div>
@@ -155,12 +155,12 @@ export function StaffClient({ employees: initialEmployees, availableServices }: 
 
       {/* Empty state */}
       {employees.length === 0 ? (
-        <div className="bg-white border border-surface-100 rounded-2xl flex flex-col items-center justify-center py-20 text-center px-6">
-          <div className="w-12 h-12 rounded-full bg-surface-100 flex items-center justify-center mb-4">
-            <UsersIcon className="w-6 h-6 text-surface-700" />
+        <div className="bg-white border border-gray-100 rounded-2xl flex flex-col items-center justify-center py-20 text-center px-6">
+          <div className="w-12 h-12 rounded-full bg-gray-100 flex items-center justify-center mb-4">
+            <UsersIcon className="w-6 h-6 text-gray-700" />
           </div>
           <p className="text-sm font-medium text-gray-900">Brak pracowników</p>
-          <p className="text-sm text-surface-700 mt-1 max-w-sm">
+          <p className="text-sm text-gray-700 mt-1 max-w-sm">
             Dodaj pracowników aby przypisywać ich do wizyt.
           </p>
           <button
@@ -175,7 +175,7 @@ export function StaffClient({ employees: initialEmployees, availableServices }: 
           {employees.map((emp) => (
             <div
               key={emp.id}
-              className="bg-white border border-surface-100 rounded-2xl p-5 hover:shadow-soft transition-shadow"
+              className="bg-white border border-gray-100 rounded-2xl p-5 hover:shadow-soft transition-shadow"
             >
               <div className="flex items-start gap-4">
                 {/* Avatar */}
@@ -205,17 +205,17 @@ export function StaffClient({ employees: initialEmployees, availableServices }: 
                       className={`text-2xs px-2 py-0.5 rounded-full font-medium flex-shrink-0 ${
                         emp.isActive
                           ? "bg-success-50 text-success-600"
-                          : "bg-surface-100 text-surface-700"
+                          : "bg-gray-100 text-gray-700"
                       }`}
                     >
                       {emp.isActive ? "Aktywny" : "Nieaktywny"}
                     </span>
                   </div>
                   {emp.email && (
-                    <p className="text-xs text-surface-700 mt-0.5 truncate">{emp.email}</p>
+                    <p className="text-xs text-gray-700 mt-0.5 truncate">{emp.email}</p>
                   )}
                   {emp.phone && (
-                    <p className="text-xs text-surface-700">{emp.phone}</p>
+                    <p className="text-xs text-gray-700">{emp.phone}</p>
                   )}
                 </div>
               </div>
@@ -223,18 +223,18 @@ export function StaffClient({ employees: initialEmployees, availableServices }: 
               {/* Services */}
               {emp.services.length > 0 && (
                 <div className="mt-4">
-                  <p className="text-xs font-medium text-surface-700 mb-2">Usługi:</p>
+                  <p className="text-xs font-medium text-gray-700 mb-2">Usługi:</p>
                   <div className="flex flex-wrap gap-1.5">
                     {emp.services.slice(0, 3).map((es) => (
                       <span
                         key={es.serviceId}
-                        className="text-2xs px-2 py-0.5 bg-brand-50 text-brand-700 rounded-full"
+                        className="text-2xs px-2 py-0.5 bg-gray-50 text-gray-800 rounded-full"
                       >
                         {es.service.name}
                       </span>
                     ))}
                     {emp.services.length > 3 && (
-                      <span className="text-2xs px-2 py-0.5 bg-surface-100 text-surface-700 rounded-full">
+                      <span className="text-2xs px-2 py-0.5 bg-gray-100 text-gray-700 rounded-full">
                         +{emp.services.length - 3}
                       </span>
                     )}
@@ -243,24 +243,24 @@ export function StaffClient({ employees: initialEmployees, availableServices }: 
               )}
 
               {/* Actions */}
-              <div className="flex items-center gap-2 mt-4 pt-4 border-t border-surface-100">
+              <div className="flex items-center gap-2 mt-4 pt-4 border-t border-gray-100">
                 <button
                   onClick={() => handleToggleActive(emp)}
                   disabled={isPending}
-                  className="flex-1 text-xs py-1.5 border border-surface-200 hover:bg-surface-50 text-gray-900 rounded-lg transition-colors font-medium"
+                  className="flex-1 text-xs py-1.5 border border-gray-200 hover:bg-gray-50 text-gray-900 rounded-lg transition-colors font-medium"
                 >
                   {emp.isActive ? "Dezaktywuj" : "Aktywuj"}
                 </button>
                 <button
                   onClick={() => openEdit(emp)}
-                  className="p-2 rounded-lg hover:bg-surface-100 text-surface-700 transition-colors"
+                  className="p-2 rounded-lg hover:bg-gray-100 text-gray-700 transition-colors"
                 >
                   <EditIcon className="w-4 h-4" />
                 </button>
                 <button
                   onClick={() => handleDelete(emp.id)}
                   disabled={deletingId === emp.id}
-                  className="p-2 rounded-lg hover:bg-danger-50 text-surface-700 hover:text-danger-600 transition-colors"
+                  className="p-2 rounded-lg hover:bg-danger-50 text-gray-700 hover:text-danger-600 transition-colors"
                 >
                   <TrashIcon className="w-4 h-4" />
                 </button>
@@ -278,13 +278,13 @@ export function StaffClient({ employees: initialEmployees, availableServices }: 
             onClick={closeModal}
           />
           <div className="relative bg-white rounded-2xl shadow-soft-xl w-full max-w-lg max-h-[90vh] overflow-y-auto animate-scale-in">
-            <div className="flex items-center justify-between px-6 py-4 border-b border-surface-100">
+            <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
               <h2 className="text-base font-semibold text-gray-900">
                 {editingId ? "Edytuj pracownika" : "Nowy pracownik"}
               </h2>
               <button
                 onClick={closeModal}
-                className="p-2 rounded-lg hover:bg-surface-100 text-surface-700 transition-colors"
+                className="p-2 rounded-lg hover:bg-gray-100 text-gray-700 transition-colors"
               >
                 <XIcon className="w-4 h-4" />
               </button>
@@ -302,7 +302,7 @@ export function StaffClient({ employees: initialEmployees, availableServices }: 
                     required
                     value={form.firstName}
                     onChange={(e) => setForm((p) => ({ ...p, firstName: e.target.value }))}
-                    className="w-full border border-surface-200 rounded-xl px-3.5 py-2.5 text-sm focus:outline-none focus:border-gray-400"
+                    className="w-full border border-gray-200 rounded-xl px-3.5 py-2.5 text-sm focus:outline-none focus:border-gray-400"
                   />
                 </div>
                 <div>
@@ -314,7 +314,7 @@ export function StaffClient({ employees: initialEmployees, availableServices }: 
                     required
                     value={form.lastName}
                     onChange={(e) => setForm((p) => ({ ...p, lastName: e.target.value }))}
-                    className="w-full border border-surface-200 rounded-xl px-3.5 py-2.5 text-sm focus:outline-none focus:border-gray-400"
+                    className="w-full border border-gray-200 rounded-xl px-3.5 py-2.5 text-sm focus:outline-none focus:border-gray-400"
                   />
                 </div>
               </div>
@@ -329,7 +329,7 @@ export function StaffClient({ employees: initialEmployees, availableServices }: 
                     type="email"
                     value={form.email}
                     onChange={(e) => setForm((p) => ({ ...p, email: e.target.value }))}
-                    className="w-full border border-surface-200 rounded-xl px-3.5 py-2.5 text-sm focus:outline-none focus:border-gray-400"
+                    className="w-full border border-gray-200 rounded-xl px-3.5 py-2.5 text-sm focus:outline-none focus:border-gray-400"
                   />
                 </div>
                 <div>
@@ -340,7 +340,7 @@ export function StaffClient({ employees: initialEmployees, availableServices }: 
                     type="tel"
                     value={form.phone}
                     onChange={(e) => setForm((p) => ({ ...p, phone: e.target.value }))}
-                    className="w-full border border-surface-200 rounded-xl px-3.5 py-2.5 text-sm focus:outline-none focus:border-gray-400"
+                    className="w-full border border-gray-200 rounded-xl px-3.5 py-2.5 text-sm focus:outline-none focus:border-gray-400"
                   />
                 </div>
               </div>
@@ -355,7 +355,7 @@ export function StaffClient({ employees: initialEmployees, availableServices }: 
                   value={form.bio}
                   onChange={(e) => setForm((p) => ({ ...p, bio: e.target.value }))}
                   placeholder="Kilka słów o pracowniku..."
-                  className="w-full border border-surface-200 rounded-xl px-3.5 py-2.5 text-sm focus:outline-none focus:border-gray-400 resize-none"
+                  className="w-full border border-gray-200 rounded-xl px-3.5 py-2.5 text-sm focus:outline-none focus:border-gray-400 resize-none"
                 />
               </div>
 
@@ -390,16 +390,16 @@ export function StaffClient({ employees: initialEmployees, availableServices }: 
                     {availableServices.map((service) => (
                       <label
                         key={service.id}
-                        className="flex items-center gap-2.5 p-2.5 rounded-xl hover:bg-surface-50 cursor-pointer"
+                        className="flex items-center gap-2.5 p-2.5 rounded-xl hover:bg-gray-50 cursor-pointer"
                       >
                         <input
                           type="checkbox"
                           checked={form.serviceIds.includes(service.id)}
                           onChange={() => toggleService(service.id)}
-                          className="w-4 h-4 accent-brand-600"
+                          className="w-4 h-4 accent-gray-900"
                         />
                         <span className="text-sm text-gray-900">{service.name}</span>
-                        <span className="text-xs text-surface-700 ml-auto">
+                        <span className="text-xs text-gray-700 ml-auto">
                           {service.duration} min
                         </span>
                       </label>
@@ -409,13 +409,13 @@ export function StaffClient({ employees: initialEmployees, availableServices }: 
               )}
 
               {/* Active toggle */}
-              <div className="flex items-center justify-between p-3.5 bg-surface-50 rounded-xl">
+              <div className="flex items-center justify-between p-3.5 bg-gray-50 rounded-xl">
                 <span className="text-sm font-medium text-gray-900">Pracownik aktywny</span>
                 <button
                   type="button"
                   onClick={() => setForm((p) => ({ ...p, isActive: !p.isActive }))}
                   className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                    form.isActive ? "bg-brand-600" : "bg-surface-300"
+                    form.isActive ? "bg-gray-900" : "bg-gray-300"
                   }`}
                 >
                   <span
@@ -431,7 +431,7 @@ export function StaffClient({ employees: initialEmployees, availableServices }: 
                 <button
                   type="button"
                   onClick={closeModal}
-                  className="flex-1 border border-surface-200 text-gray-900 hover:bg-surface-50 rounded-xl px-4 py-2.5 text-sm font-semibold transition-colors"
+                  className="flex-1 border border-gray-200 text-gray-900 hover:bg-gray-50 rounded-xl px-4 py-2.5 text-sm font-semibold transition-colors"
                 >
                   Anuluj
                 </button>

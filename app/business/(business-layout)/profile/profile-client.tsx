@@ -65,7 +65,7 @@ export function ProfileClient({ business }: Props) {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-xl font-semibold text-gray-900">Profil salonu</h1>
-          <p className="text-sm text-surface-700 mt-0.5">
+          <p className="text-sm text-gray-700 mt-0.5">
             Informacje widoczne dla klientów
           </p>
         </div>
@@ -91,16 +91,16 @@ export function ProfileClient({ business }: Props) {
       </div>
 
       {/* Tabs */}
-      <div className="bg-white border border-surface-100 rounded-2xl overflow-hidden">
-        <div className="flex border-b border-surface-100">
+      <div className="bg-white border border-gray-100 rounded-2xl overflow-hidden">
+        <div className="flex border-b border-gray-100">
           {TABS.map((tab) => (
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
               className={`flex-1 py-3.5 text-sm font-medium transition-colors ${
                 activeTab === tab.id
-                  ? "text-brand-600 border-b-2 border-brand-600"
-                  : "text-surface-700 hover:text-gray-900"
+                  ? "text-gray-900 border-b-2 border-gray-900"
+                  : "text-gray-700 hover:text-gray-900"
               }`}
             >
               {tab.label}
@@ -120,7 +120,7 @@ export function ProfileClient({ business }: Props) {
                   type="text"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
-                  className="w-full border border-surface-200 rounded-xl px-3.5 py-2.5 text-sm focus:outline-none focus:border-gray-400"
+                  className="w-full border border-gray-200 rounded-xl px-3.5 py-2.5 text-sm focus:outline-none focus:border-gray-400"
                 />
               </div>
               <div>
@@ -133,9 +133,9 @@ export function ProfileClient({ business }: Props) {
                   value={shortDescription}
                   onChange={(e) => setShortDescription(e.target.value)}
                   placeholder="Jedno zdanie opisujące Twój salon..."
-                  className="w-full border border-surface-200 rounded-xl px-3.5 py-2.5 text-sm focus:outline-none focus:border-gray-400"
+                  className="w-full border border-gray-200 rounded-xl px-3.5 py-2.5 text-sm focus:outline-none focus:border-gray-400"
                 />
-                <p className="text-xs text-surface-700 mt-1 text-right">{shortDescription.length}/160</p>
+                <p className="text-xs text-gray-700 mt-1 text-right">{shortDescription.length}/160</p>
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-900 mb-1.5">
@@ -146,7 +146,7 @@ export function ProfileClient({ business }: Props) {
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
                   placeholder="Opisz swój salon, ofertę i wyróżniki..."
-                  className="w-full border border-surface-200 rounded-xl px-3.5 py-2.5 text-sm focus:outline-none focus:border-gray-400 resize-none"
+                  className="w-full border border-gray-200 rounded-xl px-3.5 py-2.5 text-sm focus:outline-none focus:border-gray-400 resize-none"
                 />
               </div>
               <div>
@@ -157,9 +157,9 @@ export function ProfileClient({ business }: Props) {
                   type="text"
                   value={business.category}
                   disabled
-                  className="w-full border border-surface-100 rounded-xl px-3.5 py-2.5 text-sm bg-surface-50 text-surface-700 cursor-not-allowed"
+                  className="w-full border border-gray-100 rounded-xl px-3.5 py-2.5 text-sm bg-gray-50 text-gray-700 cursor-not-allowed"
                 />
-                <p className="text-xs text-surface-700 mt-1">
+                <p className="text-xs text-gray-700 mt-1">
                   Kategoria nie może być zmieniona po rejestracji. Skontaktuj się z pomocą techniczną.
                 </p>
               </div>
@@ -172,7 +172,7 @@ export function ProfileClient({ business }: Props) {
                   value={subcategory}
                   onChange={(e) => setSubcategory(e.target.value)}
                   placeholder="np. Kosmetologia, Makijaż permanentny..."
-                  className="w-full border border-surface-200 rounded-xl px-3.5 py-2.5 text-sm focus:outline-none focus:border-gray-400"
+                  className="w-full border border-gray-200 rounded-xl px-3.5 py-2.5 text-sm focus:outline-none focus:border-gray-400"
                 />
               </div>
             </>
@@ -191,7 +191,7 @@ export function ProfileClient({ business }: Props) {
                     value={phone}
                     onChange={(e) => setPhone(e.target.value)}
                     placeholder="+48 000 000 000"
-                    className="w-full border border-surface-200 rounded-xl px-3.5 py-2.5 text-sm focus:outline-none focus:border-gray-400"
+                    className="w-full border border-gray-200 rounded-xl px-3.5 py-2.5 text-sm focus:outline-none focus:border-gray-400"
                   />
                 </div>
                 <div>
@@ -203,7 +203,7 @@ export function ProfileClient({ business }: Props) {
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     placeholder="salon@example.com"
-                    className="w-full border border-surface-200 rounded-xl px-3.5 py-2.5 text-sm focus:outline-none focus:border-gray-400"
+                    className="w-full border border-gray-200 rounded-xl px-3.5 py-2.5 text-sm focus:outline-none focus:border-gray-400"
                   />
                 </div>
               </div>
@@ -216,7 +216,7 @@ export function ProfileClient({ business }: Props) {
                   value={website}
                   onChange={(e) => setWebsite(e.target.value)}
                   placeholder="https://www.twojastrona.pl"
-                  className="w-full border border-surface-200 rounded-xl px-3.5 py-2.5 text-sm focus:outline-none focus:border-gray-400"
+                  className="w-full border border-gray-200 rounded-xl px-3.5 py-2.5 text-sm focus:outline-none focus:border-gray-400"
                 />
               </div>
               <div>
@@ -228,7 +228,7 @@ export function ProfileClient({ business }: Props) {
                   value={address}
                   onChange={(e) => setAddress(e.target.value)}
                   placeholder="ul. Kwiatowa 5/3"
-                  className="w-full border border-surface-200 rounded-xl px-3.5 py-2.5 text-sm focus:outline-none focus:border-gray-400"
+                  className="w-full border border-gray-200 rounded-xl px-3.5 py-2.5 text-sm focus:outline-none focus:border-gray-400"
                 />
               </div>
               <div className="grid grid-cols-2 gap-4">
@@ -240,7 +240,7 @@ export function ProfileClient({ business }: Props) {
                     type="text"
                     value={city}
                     onChange={(e) => setCity(e.target.value)}
-                    className="w-full border border-surface-200 rounded-xl px-3.5 py-2.5 text-sm focus:outline-none focus:border-gray-400"
+                    className="w-full border border-gray-200 rounded-xl px-3.5 py-2.5 text-sm focus:outline-none focus:border-gray-400"
                   />
                 </div>
                 <div>
@@ -252,7 +252,7 @@ export function ProfileClient({ business }: Props) {
                     value={postalCode}
                     onChange={(e) => setPostalCode(e.target.value)}
                     placeholder="00-000"
-                    className="w-full border border-surface-200 rounded-xl px-3.5 py-2.5 text-sm focus:outline-none focus:border-gray-400"
+                    className="w-full border border-gray-200 rounded-xl px-3.5 py-2.5 text-sm focus:outline-none focus:border-gray-400"
                   />
                 </div>
               </div>
@@ -271,16 +271,16 @@ export function ProfileClient({ business }: Props) {
                   value={logoUrl}
                   onChange={(e) => setLogoUrl(e.target.value)}
                   placeholder="https://..."
-                  className="w-full border border-surface-200 rounded-xl px-3.5 py-2.5 text-sm focus:outline-none focus:border-gray-400"
+                  className="w-full border border-gray-200 rounded-xl px-3.5 py-2.5 text-sm focus:outline-none focus:border-gray-400"
                 />
                 {logoUrl && (
                   <div className="mt-3">
-                    <p className="text-xs text-surface-700 mb-2">Podgląd:</p>
+                    <p className="text-xs text-gray-700 mb-2">Podgląd:</p>
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
                       src={logoUrl}
                       alt="Logo podgląd"
-                      className="w-20 h-20 rounded-xl object-cover border border-surface-200"
+                      className="w-20 h-20 rounded-xl object-cover border border-gray-200"
                       onError={(e) => {
                         (e.currentTarget as HTMLImageElement).style.display = "none";
                       }}
@@ -297,16 +297,16 @@ export function ProfileClient({ business }: Props) {
                   value={coverImageUrl}
                   onChange={(e) => setCoverImageUrl(e.target.value)}
                   placeholder="https://..."
-                  className="w-full border border-surface-200 rounded-xl px-3.5 py-2.5 text-sm focus:outline-none focus:border-gray-400"
+                  className="w-full border border-gray-200 rounded-xl px-3.5 py-2.5 text-sm focus:outline-none focus:border-gray-400"
                 />
                 {coverImageUrl && (
                   <div className="mt-3">
-                    <p className="text-xs text-surface-700 mb-2">Podgląd:</p>
+                    <p className="text-xs text-gray-700 mb-2">Podgląd:</p>
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
                       src={coverImageUrl}
                       alt="Okładka podgląd"
-                      className="w-full h-40 rounded-xl object-cover border border-surface-200"
+                      className="w-full h-40 rounded-xl object-cover border border-gray-200"
                       onError={(e) => {
                         (e.currentTarget as HTMLImageElement).style.display = "none";
                       }}
@@ -325,7 +325,7 @@ export function ProfileClient({ business }: Props) {
                   Instagram
                 </label>
                 <div className="relative">
-                  <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-surface-700 text-sm">
+                  <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-700 text-sm">
                     instagram.com/
                   </span>
                   <input
@@ -333,7 +333,7 @@ export function ProfileClient({ business }: Props) {
                     value={instagramUrl}
                     onChange={(e) => setInstagramUrl(e.target.value)}
                     placeholder="twojsalon"
-                    className="w-full border border-surface-200 rounded-xl pl-[120px] pr-3.5 py-2.5 text-sm focus:outline-none focus:border-gray-400"
+                    className="w-full border border-gray-200 rounded-xl pl-[120px] pr-3.5 py-2.5 text-sm focus:outline-none focus:border-gray-400"
                   />
                 </div>
               </div>
@@ -342,7 +342,7 @@ export function ProfileClient({ business }: Props) {
                   Facebook
                 </label>
                 <div className="relative">
-                  <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-surface-700 text-sm">
+                  <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-700 text-sm">
                     facebook.com/
                   </span>
                   <input
@@ -350,12 +350,12 @@ export function ProfileClient({ business }: Props) {
                     value={facebookUrl}
                     onChange={(e) => setFacebookUrl(e.target.value)}
                     placeholder="twojsalon"
-                    className="w-full border border-surface-200 rounded-xl pl-[112px] pr-3.5 py-2.5 text-sm focus:outline-none focus:border-gray-400"
+                    className="w-full border border-gray-200 rounded-xl pl-[112px] pr-3.5 py-2.5 text-sm focus:outline-none focus:border-gray-400"
                   />
                 </div>
               </div>
-              <div className="p-4 bg-surface-50 rounded-xl">
-                <p className="text-xs text-surface-700">
+              <div className="p-4 bg-gray-50 rounded-xl">
+                <p className="text-xs text-gray-700">
                   Linki do social media są wyświetlane na Twojej stronie profilu, którą widzą klienci.
                 </p>
               </div>

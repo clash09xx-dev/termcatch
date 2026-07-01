@@ -67,7 +67,7 @@ export function SettingsClient({ settings: initialSettings }: Props) {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-xl font-semibold text-gray-900">Ustawienia</h1>
-          <p className="text-sm text-surface-700 mt-0.5">
+          <p className="text-sm text-gray-700 mt-0.5">
             Konfiguracja systemu rezerwacji
           </p>
         </div>
@@ -106,10 +106,10 @@ export function SettingsClient({ settings: initialSettings }: Props) {
                   activeSection === section.id
                     ? section.id === "strefa"
                       ? "bg-danger-50 text-danger-600"
-                      : "bg-surface-100 text-gray-900"
+                      : "bg-gray-100 text-gray-900"
                     : section.id === "strefa"
                     ? "text-danger-600 hover:bg-danger-50"
-                    : "text-surface-700 hover:text-gray-900 hover:bg-surface-50"
+                    : "text-gray-700 hover:text-gray-900 hover:bg-gray-50"
                 }`}
               >
                 {section.label}
@@ -122,7 +122,7 @@ export function SettingsClient({ settings: initialSettings }: Props) {
         <div className="flex-1">
           {/* Rezerwacje */}
           {activeSection === "rezerwacje" && (
-            <div className="bg-white border border-surface-100 rounded-2xl p-6 space-y-6">
+            <div className="bg-white border border-gray-100 rounded-2xl p-6 space-y-6">
               <div>
                 <h3 className="text-sm font-semibold text-gray-900 mb-4">Ustawienia rezerwacji</h3>
 
@@ -131,7 +131,7 @@ export function SettingsClient({ settings: initialSettings }: Props) {
                     <label className="block text-sm font-medium text-gray-900 mb-1.5">
                       Wyprzedzenie rezerwacji (dni)
                     </label>
-                    <p className="text-xs text-surface-700 mb-2">
+                    <p className="text-xs text-gray-700 mb-2">
                       Klienci mogą rezerwować z wyprzedzeniem maksymalnie tylu dni.
                     </p>
                     <input
@@ -140,7 +140,7 @@ export function SettingsClient({ settings: initialSettings }: Props) {
                       max="365"
                       value={settings.advanceBookingDays}
                       onChange={(e) => update("advanceBookingDays", parseInt(e.target.value, 10))}
-                      className="w-40 border border-surface-200 rounded-xl px-3.5 py-2.5 text-sm focus:outline-none focus:border-gray-400"
+                      className="w-40 border border-gray-200 rounded-xl px-3.5 py-2.5 text-sm focus:outline-none focus:border-gray-400"
                     />
                   </div>
 
@@ -148,7 +148,7 @@ export function SettingsClient({ settings: initialSettings }: Props) {
                     <label className="block text-sm font-medium text-gray-900 mb-1.5">
                       Minimalne wyprzedzenie (godziny)
                     </label>
-                    <p className="text-xs text-surface-700 mb-2">
+                    <p className="text-xs text-gray-700 mb-2">
                       Minimalny czas od teraz do zarezerwowanej wizyty.
                     </p>
                     <input
@@ -157,7 +157,7 @@ export function SettingsClient({ settings: initialSettings }: Props) {
                       max="72"
                       value={settings.minAdvanceHours}
                       onChange={(e) => update("minAdvanceHours", parseInt(e.target.value, 10))}
-                      className="w-40 border border-surface-200 rounded-xl px-3.5 py-2.5 text-sm focus:outline-none focus:border-gray-400"
+                      className="w-40 border border-gray-200 rounded-xl px-3.5 py-2.5 text-sm focus:outline-none focus:border-gray-400"
                     />
                   </div>
 
@@ -165,7 +165,7 @@ export function SettingsClient({ settings: initialSettings }: Props) {
                     <label className="block text-sm font-medium text-gray-900 mb-1.5">
                       Długość slotów czasowych
                     </label>
-                    <p className="text-xs text-surface-700 mb-2">
+                    <p className="text-xs text-gray-700 mb-2">
                       Co ile minut pokazywane są dostępne terminy.
                     </p>
                     <div className="flex gap-2">
@@ -177,7 +177,7 @@ export function SettingsClient({ settings: initialSettings }: Props) {
                           className={`px-4 py-2 text-sm rounded-xl border transition-colors font-medium ${
                             settings.timeSlotDuration === opt
                               ? "bg-gray-900 text-white border-gray-900"
-                              : "border-surface-200 text-gray-900 hover:bg-surface-50"
+                              : "border-gray-200 text-gray-900 hover:bg-gray-50"
                           }`}
                         >
                           {opt} min
@@ -192,14 +192,14 @@ export function SettingsClient({ settings: initialSettings }: Props) {
 
           {/* Anulowanie */}
           {activeSection === "anulowanie" && (
-            <div className="bg-white border border-surface-100 rounded-2xl p-6 space-y-5">
+            <div className="bg-white border border-gray-100 rounded-2xl p-6 space-y-5">
               <h3 className="text-sm font-semibold text-gray-900">Polityka anulowania</h3>
 
               <div>
                 <label className="block text-sm font-medium text-gray-900 mb-2">
                   Limit anulowania
                 </label>
-                <p className="text-xs text-surface-700 mb-3">
+                <p className="text-xs text-gray-700 mb-3">
                   Klient może anulować wizytę najpóźniej na tyle godzin przed jej rozpoczęciem.
                 </p>
                 <div className="flex gap-2 flex-wrap">
@@ -211,7 +211,7 @@ export function SettingsClient({ settings: initialSettings }: Props) {
                       className={`px-4 py-2 text-sm rounded-xl border transition-colors font-medium ${
                         settings.cancellationHours === opt.value
                           ? "bg-gray-900 text-white border-gray-900"
-                          : "border-surface-200 text-gray-900 hover:bg-surface-50"
+                          : "border-gray-200 text-gray-900 hover:bg-gray-50"
                       }`}
                     >
                       {opt.label}
@@ -237,7 +237,7 @@ export function SettingsClient({ settings: initialSettings }: Props) {
                       className={`px-4 py-2 text-sm rounded-xl border transition-colors font-medium ${
                         settings.cancellationFeeType === opt.value
                           ? "bg-gray-900 text-white border-gray-900"
-                          : "border-surface-200 text-gray-900 hover:bg-surface-50"
+                          : "border-gray-200 text-gray-900 hover:bg-gray-50"
                       }`}
                     >
                       {opt.label}
@@ -255,9 +255,9 @@ export function SettingsClient({ settings: initialSettings }: Props) {
                       onChange={(e) =>
                         update("cancellationFeeValue", parseFloat(e.target.value))
                       }
-                      className="w-32 border border-surface-200 rounded-xl px-3.5 py-2.5 text-sm focus:outline-none focus:border-gray-400"
+                      className="w-32 border border-gray-200 rounded-xl px-3.5 py-2.5 text-sm focus:outline-none focus:border-gray-400"
                     />
-                    <span className="text-sm text-surface-700">
+                    <span className="text-sm text-gray-700">
                       {settings.cancellationFeeType === "percentage" ? "%" : "PLN"}
                     </span>
                   </div>
@@ -268,9 +268,9 @@ export function SettingsClient({ settings: initialSettings }: Props) {
 
           {/* Powiadomienia */}
           {activeSection === "powiadomienia" && (
-            <div className="bg-white border border-surface-100 rounded-2xl p-6 space-y-4">
+            <div className="bg-white border border-gray-100 rounded-2xl p-6 space-y-4">
               <h3 className="text-sm font-semibold text-gray-900">Powiadomienia</h3>
-              <p className="text-sm text-surface-700">
+              <p className="text-sm text-gray-700">
                 Wybierz w jaki sposób chcesz otrzymywać powiadomienia o wizytach i klientach.
               </p>
 
@@ -288,17 +288,17 @@ export function SettingsClient({ settings: initialSettings }: Props) {
               ].map((item) => (
                 <div
                   key={item.key}
-                  className="flex items-start justify-between p-4 bg-surface-50 rounded-xl"
+                  className="flex items-start justify-between p-4 bg-gray-50 rounded-xl"
                 >
                   <div>
                     <p className="text-sm font-medium text-gray-900">{item.label}</p>
-                    <p className="text-xs text-surface-700 mt-0.5">{item.description}</p>
+                    <p className="text-xs text-gray-700 mt-0.5">{item.description}</p>
                   </div>
                   <button
                     type="button"
                     onClick={() => update(item.key, !settings[item.key] as Settings[typeof item.key])}
                     className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors flex-shrink-0 ml-4 mt-0.5 ${
-                      settings[item.key] ? "bg-brand-600" : "bg-surface-300"
+                      settings[item.key] ? "bg-gray-900" : "bg-gray-300"
                     }`}
                   >
                     <span
@@ -321,7 +321,7 @@ export function SettingsClient({ settings: initialSettings }: Props) {
                 </div>
                 <div>
                   <h3 className="text-sm font-semibold text-danger-600">Niebezpieczna strefa</h3>
-                  <p className="text-sm text-surface-700 mt-1">
+                  <p className="text-sm text-gray-700 mt-1">
                     Akcje w tej sekcji są nieodwracalne. Postępuj ostrożnie.
                   </p>
                 </div>
@@ -331,7 +331,7 @@ export function SettingsClient({ settings: initialSettings }: Props) {
                 <div className="flex items-start justify-between">
                   <div>
                     <p className="text-sm font-semibold text-gray-900">Usuń konto biznesowe</p>
-                    <p className="text-xs text-surface-700 mt-1">
+                    <p className="text-xs text-gray-700 mt-1">
                       Trwale usuwa Twój salon i wszystkie dane: usługi, pracowników, klientów, wizyty i opinie.
                       Ta akcja nie może zostać cofnięta.
                     </p>
@@ -363,14 +363,14 @@ export function SettingsClient({ settings: initialSettings }: Props) {
               </div>
               <h3 className="text-base font-semibold text-gray-900">Usuń konto biznesowe</h3>
             </div>
-            <p className="text-sm text-surface-700 mb-6">
+            <p className="text-sm text-gray-700 mb-6">
               Czy na pewno chcesz usunąć konto? Wszystkie dane zostaną trwale usunięte i nie będzie
               możliwości ich odzyskania. Skontaktuj się z pomocą techniczną aby potwierdzić tę operację.
             </p>
             <div className="flex gap-3">
               <button
                 onClick={() => setShowDeleteModal(false)}
-                className="flex-1 border border-surface-200 text-gray-900 hover:bg-surface-50 rounded-xl px-4 py-2.5 text-sm font-semibold transition-colors"
+                className="flex-1 border border-gray-200 text-gray-900 hover:bg-gray-50 rounded-xl px-4 py-2.5 text-sm font-semibold transition-colors"
               >
                 Anuluj
               </button>

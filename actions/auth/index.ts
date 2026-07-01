@@ -65,20 +65,31 @@ export async function registerAction(
 
   if (data.user) {
     // Create user in our DB
-    await prisma.user.create({
-      data: {
+    await prisma.user.upsert({
+      where: { supabaseId: data.user.id },
+      create: {
         supabaseId: data.user.id,
         email,
         firstName,
         lastName,
         role: role as "CUSTOMER" | "BUSINESS_OWNER",
       },
+      update: {},
     });
+
+    // If Supabase auto-confirmed the session (email confirmation disabled),
+    // redirect immediately to the appropriate next step.
+    if (data.session) {
+      revalidatePath("/", "layout");
+      redirect(
+        role === "BUSINESS_OWNER" ? "/business/onboarding" : "/customer/dashboard"
+      );
+    }
   }
 
   return {
     success:
-      "Konto zostało utworzone! Sprawdź e-mail, aby potwierdzić rejestrację.",
+      "Konto zostało utworzone! Sprawdź e-mail, aby potwierdzić rejestrację, a następnie się zaloguj.",
   };
 }
 
@@ -113,13 +124,34 @@ export async function loginAction(
     return { error: "Wystąpił błąd. Spróbuj ponownie." };
   }
 
-  // Update last login
-  const { data: { user } } = await supabase.auth.getUser();
+  // Fetch role and redirect accordingly
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
   if (user) {
-    await prisma.user.update({
-      where: { supabaseId: user.id },
-      data: { lastLoginAt: new Date() },
-    }).catch(() => {}); // Non-critical
+    const dbUser = await prisma.user
+      .findUnique({
+        where: { supabaseId: user.id },
+        select: {
+          role: true,
+          ownedBusinesses: { select: { id: true }, take: 1 },
+        },
+      })
+      .catch(() => null);
+
+    await prisma.user
+      .update({ where: { supabaseId: user.id }, data: { lastLoginAt: new Date() } })
+      .catch(() => {});
+
+    revalidatePath("/", "layout");
+
+    if (dbUser?.role === "BUSINESS_OWNER") {
+      const hasBusiness = (dbUser.ownedBusinesses?.length ?? 0) > 0;
+      redirect(hasBusiness ? "/business/dashboard" : "/business/onboarding");
+    } else if (dbUser?.role === "ADMIN" || dbUser?.role === "SUPERADMIN") {
+      redirect("/admin/dashboard");
+    }
   }
 
   revalidatePath("/", "layout");

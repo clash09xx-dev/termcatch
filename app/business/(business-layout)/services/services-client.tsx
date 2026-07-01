@@ -142,7 +142,7 @@ export function ServicesClient({ services: initialServices, businessId }: Props)
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-xl font-semibold text-gray-900">Usługi</h1>
-          <p className="text-sm text-surface-700 mt-0.5">
+          <p className="text-sm text-gray-700 mt-0.5">
             Zarządzaj ofertą swojego salonu
           </p>
         </div>
@@ -163,9 +163,9 @@ export function ServicesClient({ services: initialServices, businessId }: Props)
             { label: "Aktywne", value: services.filter((s) => s.isActive).length },
             { label: "Nieaktywne", value: services.filter((s) => !s.isActive).length },
           ].map((stat) => (
-            <div key={stat.label} className="bg-white border border-surface-100 rounded-2xl p-4">
+            <div key={stat.label} className="bg-white border border-gray-100 rounded-2xl p-4">
               <p className="text-2xl font-bold text-gray-900">{stat.value}</p>
-              <p className="text-sm text-surface-700 mt-0.5">{stat.label}</p>
+              <p className="text-sm text-gray-700 mt-0.5">{stat.label}</p>
             </div>
           ))}
         </div>
@@ -173,12 +173,12 @@ export function ServicesClient({ services: initialServices, businessId }: Props)
 
       {/* Services list */}
       {services.length === 0 ? (
-        <div className="bg-white border border-surface-100 rounded-2xl flex flex-col items-center justify-center py-20 text-center px-6">
-          <div className="w-12 h-12 rounded-full bg-surface-100 flex items-center justify-center mb-4">
-            <ServicesIcon className="w-6 h-6 text-surface-700" />
+        <div className="bg-white border border-gray-100 rounded-2xl flex flex-col items-center justify-center py-20 text-center px-6">
+          <div className="w-12 h-12 rounded-full bg-gray-100 flex items-center justify-center mb-4">
+            <ServicesIcon className="w-6 h-6 text-gray-700" />
           </div>
           <p className="text-sm font-medium text-gray-900">Brak usług</p>
-          <p className="text-sm text-surface-700 mt-1 max-w-sm">
+          <p className="text-sm text-gray-700 mt-1 max-w-sm">
             Dodaj pierwszą usługę aby klienci mogli rezerwować.
           </p>
           <button
@@ -189,22 +189,22 @@ export function ServicesClient({ services: initialServices, businessId }: Props)
           </button>
         </div>
       ) : (
-        <div className="bg-white border border-surface-100 rounded-2xl overflow-hidden">
-          <div className="px-6 py-4 border-b border-surface-100">
+        <div className="bg-white border border-gray-100 rounded-2xl overflow-hidden">
+          <div className="px-6 py-4 border-b border-gray-100">
             <h3 className="text-sm font-semibold text-gray-900">
               Lista usług ({services.length})
             </h3>
           </div>
-          <div className="divide-y divide-surface-100">
+          <div className="divide-y divide-gray-100">
             {services.map((service) => (
               <div
                 key={service.id}
-                className="flex items-center gap-4 px-6 py-4 hover:bg-surface-50 transition-colors"
+                className="flex items-center gap-4 px-6 py-4 hover:bg-gray-50 transition-colors"
               >
                 {/* Color indicator */}
                 <div
                   className={`w-1.5 h-10 rounded-full flex-shrink-0 ${
-                    service.isActive ? "bg-brand-600" : "bg-surface-300"
+                    service.isActive ? "bg-gray-900" : "bg-gray-300"
                   }`}
                 />
 
@@ -216,13 +216,13 @@ export function ServicesClient({ services: initialServices, businessId }: Props)
                       className={`inline-flex text-2xs px-2 py-0.5 rounded-full font-medium ${
                         service.isActive
                           ? "bg-success-50 text-success-600"
-                          : "bg-surface-100 text-surface-700"
+                          : "bg-gray-100 text-gray-700"
                       }`}
                     >
                       {service.isActive ? "Aktywna" : "Nieaktywna"}
                     </span>
                   </div>
-                  <p className="text-xs text-surface-700 mt-0.5">
+                  <p className="text-xs text-gray-700 mt-0.5">
                     {formatDuration(service.duration)}
                     {service.description && ` · ${service.description.slice(0, 60)}${service.description.length > 60 ? "..." : ""}`}
                   </p>
@@ -234,7 +234,7 @@ export function ServicesClient({ services: initialServices, businessId }: Props)
                     {formatCurrency(service.discountedPrice ?? service.price)}
                   </p>
                   {service.discountedPrice && (
-                    <p className="text-xs text-surface-700 line-through">
+                    <p className="text-xs text-gray-700 line-through">
                       {formatCurrency(service.price)}
                     </p>
                   )}
@@ -246,7 +246,7 @@ export function ServicesClient({ services: initialServices, businessId }: Props)
                     onClick={() => handleToggleActive(service)}
                     disabled={isPending}
                     title={service.isActive ? "Dezaktywuj" : "Aktywuj"}
-                    className="p-2 rounded-lg hover:bg-surface-100 text-surface-700 transition-colors"
+                    className="p-2 rounded-lg hover:bg-gray-100 text-gray-700 transition-colors"
                   >
                     {service.isActive ? (
                       <EyeOffIcon className="w-4 h-4" />
@@ -256,14 +256,14 @@ export function ServicesClient({ services: initialServices, businessId }: Props)
                   </button>
                   <button
                     onClick={() => openEdit(service)}
-                    className="p-2 rounded-lg hover:bg-surface-100 text-surface-700 transition-colors"
+                    className="p-2 rounded-lg hover:bg-gray-100 text-gray-700 transition-colors"
                   >
                     <EditIcon className="w-4 h-4" />
                   </button>
                   <button
                     onClick={() => handleDelete(service.id)}
                     disabled={deletingId === service.id}
-                    className="p-2 rounded-lg hover:bg-danger-50 text-surface-700 hover:text-danger-600 transition-colors"
+                    className="p-2 rounded-lg hover:bg-danger-50 text-gray-700 hover:text-danger-600 transition-colors"
                   >
                     <TrashIcon className="w-4 h-4" />
                   </button>
@@ -282,13 +282,13 @@ export function ServicesClient({ services: initialServices, businessId }: Props)
             onClick={closeModal}
           />
           <div className="relative bg-white rounded-2xl shadow-soft-xl w-full max-w-lg max-h-[90vh] overflow-y-auto animate-scale-in">
-            <div className="flex items-center justify-between px-6 py-4 border-b border-surface-100">
+            <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
               <h2 className="text-base font-semibold text-gray-900">
                 {editingId ? "Edytuj usługę" : "Nowa usługa"}
               </h2>
               <button
                 onClick={closeModal}
-                className="p-2 rounded-lg hover:bg-surface-100 text-surface-700 transition-colors"
+                className="p-2 rounded-lg hover:bg-gray-100 text-gray-700 transition-colors"
               >
                 <XIcon className="w-4 h-4" />
               </button>
@@ -306,7 +306,7 @@ export function ServicesClient({ services: initialServices, businessId }: Props)
                   value={form.name}
                   onChange={(e) => handleFormChange("name", e.target.value)}
                   placeholder="np. Strzyżenie damskie"
-                  className="w-full border border-surface-200 rounded-xl px-3.5 py-2.5 text-sm focus:outline-none focus:border-gray-400"
+                  className="w-full border border-gray-200 rounded-xl px-3.5 py-2.5 text-sm focus:outline-none focus:border-gray-400"
                 />
               </div>
 
@@ -320,7 +320,7 @@ export function ServicesClient({ services: initialServices, businessId }: Props)
                   value={form.description}
                   onChange={(e) => handleFormChange("description", e.target.value)}
                   placeholder="Krótki opis usługi..."
-                  className="w-full border border-surface-200 rounded-xl px-3.5 py-2.5 text-sm focus:outline-none focus:border-gray-400 resize-none"
+                  className="w-full border border-gray-200 rounded-xl px-3.5 py-2.5 text-sm focus:outline-none focus:border-gray-400 resize-none"
                 />
               </div>
 
@@ -337,7 +337,7 @@ export function ServicesClient({ services: initialServices, businessId }: Props)
                     step="5"
                     value={form.duration}
                     onChange={(e) => handleFormChange("duration", e.target.value)}
-                    className="w-full border border-surface-200 rounded-xl px-3.5 py-2.5 text-sm focus:outline-none focus:border-gray-400"
+                    className="w-full border border-gray-200 rounded-xl px-3.5 py-2.5 text-sm focus:outline-none focus:border-gray-400"
                   />
                 </div>
                 <div>
@@ -352,7 +352,7 @@ export function ServicesClient({ services: initialServices, businessId }: Props)
                     value={form.price}
                     onChange={(e) => handleFormChange("price", e.target.value)}
                     placeholder="0.00"
-                    className="w-full border border-surface-200 rounded-xl px-3.5 py-2.5 text-sm focus:outline-none focus:border-gray-400"
+                    className="w-full border border-gray-200 rounded-xl px-3.5 py-2.5 text-sm focus:outline-none focus:border-gray-400"
                   />
                 </div>
               </div>
@@ -369,18 +369,18 @@ export function ServicesClient({ services: initialServices, businessId }: Props)
                   value={form.discountedPrice}
                   onChange={(e) => handleFormChange("discountedPrice", e.target.value)}
                   placeholder="0.00"
-                  className="w-full border border-surface-200 rounded-xl px-3.5 py-2.5 text-sm focus:outline-none focus:border-gray-400"
+                  className="w-full border border-gray-200 rounded-xl px-3.5 py-2.5 text-sm focus:outline-none focus:border-gray-400"
                 />
               </div>
 
               {/* Deposit */}
-              <div className="flex items-start gap-3 p-3.5 bg-surface-50 rounded-xl">
+              <div className="flex items-start gap-3 p-3.5 bg-gray-50 rounded-xl">
                 <input
                   type="checkbox"
                   id="requiresDeposit"
                   checked={form.requiresDeposit}
                   onChange={(e) => handleFormChange("requiresDeposit", e.target.checked)}
-                  className="mt-0.5 w-4 h-4 accent-brand-600"
+                  className="mt-0.5 w-4 h-4 accent-gray-900"
                 />
                 <div className="flex-1">
                   <label htmlFor="requiresDeposit" className="text-sm font-medium text-gray-900">
@@ -394,20 +394,20 @@ export function ServicesClient({ services: initialServices, businessId }: Props)
                       value={form.depositAmount}
                       onChange={(e) => handleFormChange("depositAmount", e.target.value)}
                       placeholder="Kwota zaliczki (PLN)"
-                      className="mt-2 w-full border border-surface-200 rounded-xl px-3.5 py-2.5 text-sm focus:outline-none focus:border-gray-400"
+                      className="mt-2 w-full border border-gray-200 rounded-xl px-3.5 py-2.5 text-sm focus:outline-none focus:border-gray-400"
                     />
                   )}
                 </div>
               </div>
 
               {/* Active toggle */}
-              <div className="flex items-center justify-between p-3.5 bg-surface-50 rounded-xl">
+              <div className="flex items-center justify-between p-3.5 bg-gray-50 rounded-xl">
                 <span className="text-sm font-medium text-gray-900">Usługa aktywna</span>
                 <button
                   type="button"
                   onClick={() => handleFormChange("isActive", !form.isActive)}
                   className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                    form.isActive ? "bg-brand-600" : "bg-surface-300"
+                    form.isActive ? "bg-gray-900" : "bg-gray-300"
                   }`}
                 >
                   <span
@@ -423,7 +423,7 @@ export function ServicesClient({ services: initialServices, businessId }: Props)
                 <button
                   type="button"
                   onClick={closeModal}
-                  className="flex-1 border border-surface-200 text-gray-900 hover:bg-surface-50 rounded-xl px-4 py-2.5 text-sm font-semibold transition-colors"
+                  className="flex-1 border border-gray-200 text-gray-900 hover:bg-gray-50 rounded-xl px-4 py-2.5 text-sm font-semibold transition-colors"
                 >
                   Anuluj
                 </button>

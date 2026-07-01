@@ -67,7 +67,7 @@ export function HoursClient({ initialHours }: Props) {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-xl font-semibold text-gray-900">Godziny pracy</h1>
-          <p className="text-sm text-surface-700 mt-0.5">
+          <p className="text-sm text-gray-700 mt-0.5">
             Ustaw godziny otwarcia dla każdego dnia tygodnia
           </p>
         </div>
@@ -93,11 +93,11 @@ export function HoursClient({ initialHours }: Props) {
       </div>
 
       {/* Hours grid */}
-      <div className="bg-white border border-surface-100 rounded-2xl overflow-hidden">
-        <div className="px-6 py-4 border-b border-surface-100">
+      <div className="bg-white border border-gray-100 rounded-2xl overflow-hidden">
+        <div className="px-6 py-4 border-b border-gray-100">
           <h3 className="text-sm font-semibold text-gray-900">Godziny otwarcia</h3>
         </div>
-        <div className="divide-y divide-surface-100">
+        <div className="divide-y divide-gray-100">
           {hours.map((day) => (
             <div
               key={day.dayOfWeek}
@@ -108,7 +108,7 @@ export function HoursClient({ initialHours }: Props) {
                 type="button"
                 onClick={() => toggleDay(day.dayOfWeek)}
                 className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors flex-shrink-0 ${
-                  day.isOpen ? "bg-brand-600" : "bg-surface-300"
+                  day.isOpen ? "bg-gray-900" : "bg-gray-300"
                 }`}
               >
                 <span
@@ -129,28 +129,28 @@ export function HoursClient({ initialHours }: Props) {
                   <select
                     value={day.openTime}
                     onChange={(e) => updateTime(day.dayOfWeek, "openTime", e.target.value)}
-                    className="border border-surface-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-gray-400 bg-white"
+                    className="border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-gray-400 bg-white"
                   >
                     {TIME_OPTIONS.map((t) => (
                       <option key={t} value={t}>{t}</option>
                     ))}
                   </select>
-                  <span className="text-surface-700 text-sm">–</span>
+                  <span className="text-gray-700 text-sm">–</span>
                   <select
                     value={day.closeTime}
                     onChange={(e) => updateTime(day.dayOfWeek, "closeTime", e.target.value)}
-                    className="border border-surface-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-gray-400 bg-white"
+                    className="border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-gray-400 bg-white"
                   >
                     {TIME_OPTIONS.map((t) => (
                       <option key={t} value={t}>{t}</option>
                     ))}
                   </select>
-                  <span className="text-xs text-surface-700">
+                  <span className="text-xs text-gray-700">
                     {calculateHours(day.openTime, day.closeTime)} godz.
                   </span>
                 </div>
               ) : (
-                <span className="text-sm text-surface-700 italic">Zamknięte</span>
+                <span className="text-sm text-gray-700 italic">Zamknięte</span>
               )}
             </div>
           ))}
@@ -158,17 +158,17 @@ export function HoursClient({ initialHours }: Props) {
       </div>
 
       {/* Special days placeholder */}
-      <div className="bg-white border border-surface-100 rounded-2xl overflow-hidden">
-        <div className="px-6 py-4 border-b border-surface-100">
+      <div className="bg-white border border-gray-100 rounded-2xl overflow-hidden">
+        <div className="px-6 py-4 border-b border-gray-100">
           <h3 className="text-sm font-semibold text-gray-900">Dni specjalne</h3>
-          <p className="text-xs text-surface-700 mt-0.5">Urlopy, święta i inne wyjątki</p>
+          <p className="text-xs text-gray-700 mt-0.5">Urlopy, święta i inne wyjątki</p>
         </div>
         <div className="px-6 py-8 text-center">
-          <div className="w-10 h-10 rounded-full bg-surface-100 flex items-center justify-center mx-auto mb-3">
-            <CalendarIcon className="w-5 h-5 text-surface-700" />
+          <div className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center mx-auto mb-3">
+            <CalendarIcon className="w-5 h-5 text-gray-700" />
           </div>
           <p className="text-sm font-medium text-gray-900">Wkrótce</p>
-          <p className="text-xs text-surface-700 mt-1">
+          <p className="text-xs text-gray-700 mt-1">
             Możliwość ustawiania dni wolnych i godzin wyjątkowych pojawi się wkrótce.
           </p>
         </div>

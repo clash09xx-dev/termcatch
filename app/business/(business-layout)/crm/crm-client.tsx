@@ -11,12 +11,12 @@ type Props = {
 const STATUS_LABELS: Record<string, { label: string; className: string }> = {
   PENDING: { label: "Oczekuje", className: "bg-warning-50 text-warning-600" },
   CONFIRMED: { label: "Potwierdzona", className: "bg-success-50 text-success-600" },
-  COMPLETED: { label: "Zakończona", className: "bg-surface-100 text-surface-700" },
+  COMPLETED: { label: "Zakończona", className: "bg-gray-100 text-gray-700" },
   CANCELLED_CUSTOMER: { label: "Odwołana", className: "bg-danger-50 text-danger-600" },
   CANCELLED_BUSINESS: { label: "Odwołana", className: "bg-danger-50 text-danger-600" },
   NO_SHOW: { label: "No-show", className: "bg-danger-50 text-danger-600" },
-  IN_PROGRESS: { label: "W trakcie", className: "bg-brand-50 text-brand-600" },
-  RESCHEDULED: { label: "Przełożona", className: "bg-surface-100 text-surface-700" },
+  IN_PROGRESS: { label: "W trakcie", className: "bg-gray-50 text-gray-900" },
+  RESCHEDULED: { label: "Przełożona", className: "bg-gray-100 text-gray-700" },
 };
 
 export function CrmClient({ customers }: Props) {
@@ -40,7 +40,7 @@ export function CrmClient({ customers }: Props) {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-xl font-semibold text-gray-900">CRM — Klienci</h1>
-          <p className="text-sm text-surface-700 mt-0.5">
+          <p className="text-sm text-gray-700 mt-0.5">
             {customers.length} klientów w bazie
           </p>
         </div>
@@ -48,53 +48,53 @@ export function CrmClient({ customers }: Props) {
 
       {/* Search */}
       <div className="relative">
-        <SearchIcon className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-surface-700" />
+        <SearchIcon className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-700" />
         <input
           type="text"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           placeholder="Szukaj klientów po nazwie, e-mailu lub telefonie..."
-          className="w-full pl-10 border border-surface-200 rounded-xl px-3.5 py-2.5 text-sm focus:outline-none focus:border-gray-400"
+          className="w-full pl-10 border border-gray-200 rounded-xl px-3.5 py-2.5 text-sm focus:outline-none focus:border-gray-400"
         />
       </div>
 
       {customers.length === 0 ? (
-        <div className="bg-white border border-surface-100 rounded-2xl flex flex-col items-center justify-center py-20 text-center px-6">
-          <div className="w-12 h-12 rounded-full bg-surface-100 flex items-center justify-center mb-4">
-            <UsersIcon className="w-6 h-6 text-surface-700" />
+        <div className="bg-white border border-gray-100 rounded-2xl flex flex-col items-center justify-center py-20 text-center px-6">
+          <div className="w-12 h-12 rounded-full bg-gray-100 flex items-center justify-center mb-4">
+            <UsersIcon className="w-6 h-6 text-gray-700" />
           </div>
           <p className="text-sm font-medium text-gray-900">Brak klientów</p>
-          <p className="text-sm text-surface-700 mt-1 max-w-sm">
+          <p className="text-sm text-gray-700 mt-1 max-w-sm">
             Gdy klienci zarezerwują wizytę, pojawią się tutaj.
           </p>
         </div>
       ) : (
-        <div className="bg-white border border-surface-100 rounded-2xl overflow-hidden">
+        <div className="bg-white border border-gray-100 rounded-2xl overflow-hidden">
           {/* Table header */}
-          <div className="grid grid-cols-[2fr_2fr_1fr_1fr_1fr] gap-4 px-6 py-3 border-b border-surface-100 bg-surface-50">
-            <span className="text-xs font-semibold text-surface-700 uppercase tracking-wider">Klient</span>
-            <span className="text-xs font-semibold text-surface-700 uppercase tracking-wider">Kontakt</span>
-            <span className="text-xs font-semibold text-surface-700 uppercase tracking-wider text-right">Wizyty</span>
-            <span className="text-xs font-semibold text-surface-700 uppercase tracking-wider text-right">Wydano</span>
-            <span className="text-xs font-semibold text-surface-700 uppercase tracking-wider text-right">Ostatnia wizyta</span>
+          <div className="grid grid-cols-[2fr_2fr_1fr_1fr_1fr] gap-4 px-6 py-3 border-b border-gray-100 bg-gray-50">
+            <span className="text-xs font-semibold text-gray-700 uppercase tracking-wider">Klient</span>
+            <span className="text-xs font-semibold text-gray-700 uppercase tracking-wider">Kontakt</span>
+            <span className="text-xs font-semibold text-gray-700 uppercase tracking-wider text-right">Wizyty</span>
+            <span className="text-xs font-semibold text-gray-700 uppercase tracking-wider text-right">Wydano</span>
+            <span className="text-xs font-semibold text-gray-700 uppercase tracking-wider text-right">Ostatnia wizyta</span>
           </div>
 
           {/* Rows */}
           {filtered.length === 0 ? (
             <div className="px-6 py-10 text-center">
-              <p className="text-sm text-surface-700">Brak wyników dla &quot;{search}&quot;</p>
+              <p className="text-sm text-gray-700">Brak wyników dla &quot;{search}&quot;</p>
             </div>
           ) : (
-            <div className="divide-y divide-surface-100">
+            <div className="divide-y divide-gray-100">
               {filtered.map((customer) => (
                 <button
                   key={customer.id}
                   onClick={() => setSelectedCustomer(customer)}
-                  className="w-full grid grid-cols-[2fr_2fr_1fr_1fr_1fr] gap-4 px-6 py-4 hover:bg-surface-50 transition-colors text-left"
+                  className="w-full grid grid-cols-[2fr_2fr_1fr_1fr_1fr] gap-4 px-6 py-4 hover:bg-gray-50 transition-colors text-left"
                 >
                   {/* Name */}
                   <div className="flex items-center gap-3">
-                    <div className="w-9 h-9 rounded-full bg-brand-100 text-brand-600 flex items-center justify-center text-xs font-semibold flex-shrink-0">
+                    <div className="w-9 h-9 rounded-full bg-gray-100 text-gray-900 flex items-center justify-center text-xs font-semibold flex-shrink-0">
                       {getInitials(customer.firstName, customer.lastName)}
                     </div>
                     <div>
@@ -108,7 +108,7 @@ export function CrmClient({ customers }: Props) {
                   <div>
                     <p className="text-sm text-gray-900 truncate">{customer.email}</p>
                     {customer.phone && (
-                      <p className="text-xs text-surface-700 mt-0.5">{customer.phone}</p>
+                      <p className="text-xs text-gray-700 mt-0.5">{customer.phone}</p>
                     )}
                   </div>
 
@@ -151,42 +151,42 @@ export function CrmClient({ customers }: Props) {
           />
           <div className="w-full max-w-md bg-white shadow-soft-xl h-full overflow-y-auto animate-slide-in-right">
             {/* Header */}
-            <div className="flex items-start justify-between p-6 border-b border-surface-100">
+            <div className="flex items-start justify-between p-6 border-b border-gray-100">
               <div className="flex items-center gap-4">
-                <div className="w-12 h-12 rounded-full bg-brand-100 text-brand-600 flex items-center justify-center text-sm font-semibold">
+                <div className="w-12 h-12 rounded-full bg-gray-100 text-gray-900 flex items-center justify-center text-sm font-semibold">
                   {getInitials(selectedCustomer.firstName, selectedCustomer.lastName)}
                 </div>
                 <div>
                   <h3 className="text-base font-semibold text-gray-900">
                     {selectedCustomer.firstName} {selectedCustomer.lastName}
                   </h3>
-                  <p className="text-sm text-surface-700">{selectedCustomer.email}</p>
+                  <p className="text-sm text-gray-700">{selectedCustomer.email}</p>
                   {selectedCustomer.phone && (
-                    <p className="text-sm text-surface-700">{selectedCustomer.phone}</p>
+                    <p className="text-sm text-gray-700">{selectedCustomer.phone}</p>
                   )}
                 </div>
               </div>
               <button
                 onClick={() => setSelectedCustomer(null)}
-                className="p-2 rounded-lg hover:bg-surface-100 text-surface-700 transition-colors mt-1"
+                className="p-2 rounded-lg hover:bg-gray-100 text-gray-700 transition-colors mt-1"
               >
                 <XIcon className="w-4 h-4" />
               </button>
             </div>
 
             {/* Stats */}
-            <div className="grid grid-cols-2 gap-3 p-6 border-b border-surface-100">
-              <div className="bg-surface-50 rounded-xl p-3.5">
+            <div className="grid grid-cols-2 gap-3 p-6 border-b border-gray-100">
+              <div className="bg-gray-50 rounded-xl p-3.5">
                 <p className="text-xl font-bold text-gray-900">
                   {selectedCustomer.totalAppointments}
                 </p>
-                <p className="text-xs text-surface-700 mt-0.5">Wszystkich wizyt</p>
+                <p className="text-xs text-gray-700 mt-0.5">Wszystkich wizyt</p>
               </div>
-              <div className="bg-surface-50 rounded-xl p-3.5">
+              <div className="bg-gray-50 rounded-xl p-3.5">
                 <p className="text-xl font-bold text-gray-900">
                   {formatCurrency(selectedCustomer.totalSpent)}
                 </p>
-                <p className="text-xs text-surface-700 mt-0.5">Łączna wartość</p>
+                <p className="text-xs text-gray-700 mt-0.5">Łączna wartość</p>
               </div>
             </div>
 
@@ -194,24 +194,24 @@ export function CrmClient({ customers }: Props) {
             <div className="p-6">
               <h4 className="text-sm font-semibold text-gray-900 mb-4">Historia wizyt</h4>
               {selectedCustomer.appointments.length === 0 ? (
-                <p className="text-sm text-surface-700">Brak wizyt</p>
+                <p className="text-sm text-gray-700">Brak wizyt</p>
               ) : (
                 <div className="space-y-3">
                   {selectedCustomer.appointments.map((apt) => {
                     const statusInfo = STATUS_LABELS[apt.status] ?? {
                       label: apt.status,
-                      className: "bg-surface-100 text-surface-700",
+                      className: "bg-gray-100 text-gray-700",
                     };
                     return (
                       <div
                         key={apt.id}
-                        className="flex items-center justify-between p-3.5 bg-surface-50 rounded-xl"
+                        className="flex items-center justify-between p-3.5 bg-gray-50 rounded-xl"
                       >
                         <div>
                           <p className="text-sm font-medium text-gray-900">
                             {apt.service.name}
                           </p>
-                          <p className="text-xs text-surface-700 mt-0.5">
+                          <p className="text-xs text-gray-700 mt-0.5">
                             {new Date(apt.startTime).toLocaleDateString("pl-PL", {
                               weekday: "short",
                               day: "numeric",

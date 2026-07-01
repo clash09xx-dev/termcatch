@@ -163,11 +163,11 @@ export default async function AnalyticsPage({
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-xl font-semibold text-gray-900">Analityka</h1>
-          <p className="text-sm text-surface-700 mt-0.5">
+          <p className="text-sm text-gray-700 mt-0.5">
             Przegląd wyników Twojego salonu
           </p>
         </div>
-        <div className="flex items-center bg-surface-100 rounded-xl p-1 gap-1">
+        <div className="flex items-center bg-gray-100 rounded-xl p-1 gap-1">
           {validPeriods.map((p) => (
             <Link
               key={p}
@@ -175,7 +175,7 @@ export default async function AnalyticsPage({
               className={`px-3 py-1.5 text-sm font-medium rounded-lg transition-all ${
                 activePeriod === p
                   ? "bg-white text-gray-900 shadow-soft-sm"
-                  : "text-surface-700 hover:text-gray-900"
+                  : "text-gray-700 hover:text-gray-900"
               }`}
             >
               {PERIOD_LABELS[p]}
@@ -187,43 +187,43 @@ export default async function AnalyticsPage({
       {/* Stats cards */}
       <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
         {stats.map((stat) => (
-          <div key={stat.label} className="bg-white border border-surface-100 rounded-2xl p-4">
+          <div key={stat.label} className="bg-white border border-gray-100 rounded-2xl p-4">
             <p className="text-xl font-bold text-gray-900">{stat.value}</p>
             <p className="text-xs font-medium text-gray-900 mt-0.5">{stat.label}</p>
-            <p className="text-xs text-surface-700 mt-0.5">{stat.sub}</p>
+            <p className="text-xs text-gray-700 mt-0.5">{stat.sub}</p>
           </div>
         ))}
       </div>
 
       {total === 0 ? (
-        <div className="bg-white border border-surface-100 rounded-2xl flex flex-col items-center justify-center py-20 text-center px-6">
-          <div className="w-12 h-12 rounded-full bg-surface-100 flex items-center justify-center mb-4">
-            <ChartIcon className="w-6 h-6 text-surface-700" />
+        <div className="bg-white border border-gray-100 rounded-2xl flex flex-col items-center justify-center py-20 text-center px-6">
+          <div className="w-12 h-12 rounded-full bg-gray-100 flex items-center justify-center mb-4">
+            <ChartIcon className="w-6 h-6 text-gray-700" />
           </div>
           <p className="text-sm font-medium text-gray-900">Brak danych</p>
-          <p className="text-sm text-surface-700 mt-1 max-w-sm">
+          <p className="text-sm text-gray-700 mt-1 max-w-sm">
             Gdy klienci zarezerwują wizyty, pojawią się tutaj statystyki.
           </p>
         </div>
       ) : (
         <div className="grid lg:grid-cols-2 gap-6">
           {/* Top services */}
-          <div className="bg-white border border-surface-100 rounded-2xl overflow-hidden">
-            <div className="px-6 py-4 border-b border-surface-100">
+          <div className="bg-white border border-gray-100 rounded-2xl overflow-hidden">
+            <div className="px-6 py-4 border-b border-gray-100">
               <h3 className="text-sm font-semibold text-gray-900">Najpopularniejsze usługi</h3>
             </div>
             {topServices.length === 0 ? (
               <div className="px-6 py-8 text-center">
-                <p className="text-sm text-surface-700">Brak danych</p>
+                <p className="text-sm text-gray-700">Brak danych</p>
               </div>
             ) : (
-              <div className="divide-y divide-surface-100">
+              <div className="divide-y divide-gray-100">
                 {topServices.map((svc, i) => (
                   <div key={svc.name} className="flex items-center gap-4 px-6 py-3.5">
-                    <span className="text-sm font-bold text-surface-700 w-5">{i + 1}</span>
+                    <span className="text-sm font-bold text-gray-700 w-5">{i + 1}</span>
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-medium text-gray-900 truncate">{svc.name}</p>
-                      <p className="text-xs text-surface-700">{svc.count}x</p>
+                      <p className="text-xs text-gray-700">{svc.count}x</p>
                     </div>
                     <p className="text-sm font-semibold text-gray-900 flex-shrink-0">
                       {formatCurrency(svc.revenue)}
@@ -235,22 +235,22 @@ export default async function AnalyticsPage({
           </div>
 
           {/* Top clients */}
-          <div className="bg-white border border-surface-100 rounded-2xl overflow-hidden">
-            <div className="px-6 py-4 border-b border-surface-100">
+          <div className="bg-white border border-gray-100 rounded-2xl overflow-hidden">
+            <div className="px-6 py-4 border-b border-gray-100">
               <h3 className="text-sm font-semibold text-gray-900">Najlepsi klienci</h3>
             </div>
             {topClients.length === 0 ? (
               <div className="px-6 py-8 text-center">
-                <p className="text-sm text-surface-700">Brak danych</p>
+                <p className="text-sm text-gray-700">Brak danych</p>
               </div>
             ) : (
-              <div className="divide-y divide-surface-100">
+              <div className="divide-y divide-gray-100">
                 {topClients.map((client, i) => (
                   <div key={client.name} className="flex items-center gap-4 px-6 py-3.5">
-                    <span className="text-sm font-bold text-surface-700 w-5">{i + 1}</span>
+                    <span className="text-sm font-bold text-gray-700 w-5">{i + 1}</span>
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-medium text-gray-900 truncate">{client.name}</p>
-                      <p className="text-xs text-surface-700">{client.count} wizyt</p>
+                      <p className="text-xs text-gray-700">{client.count} wizyt</p>
                     </div>
                     <p className="text-sm font-semibold text-gray-900 flex-shrink-0">
                       {formatCurrency(client.spent)}
@@ -262,17 +262,17 @@ export default async function AnalyticsPage({
           </div>
 
           {/* Busiest days */}
-          <div className="bg-white border border-surface-100 rounded-2xl overflow-hidden lg:col-span-2">
-            <div className="px-6 py-4 border-b border-surface-100">
+          <div className="bg-white border border-gray-100 rounded-2xl overflow-hidden lg:col-span-2">
+            <div className="px-6 py-4 border-b border-gray-100">
               <h3 className="text-sm font-semibold text-gray-900">Aktywność według dnia tygodnia</h3>
             </div>
             <div className="px-6 py-5">
               <div className="flex items-end gap-3 h-32">
                 {dayCount.map((count, i) => (
                   <div key={i} className="flex-1 flex flex-col items-center gap-1.5">
-                    <span className="text-xs text-surface-700">{count}</span>
-                    <div className="w-full rounded-t-lg bg-brand-600 transition-all" style={{ height: `${(count / maxDayCount) * 96}px`, minHeight: count > 0 ? 4 : 0 }} />
-                    <span className="text-xs font-medium text-surface-700">{DAY_LABELS[i]}</span>
+                    <span className="text-xs text-gray-700">{count}</span>
+                    <div className="w-full rounded-t-lg bg-gray-900 transition-all" style={{ height: `${(count / maxDayCount) * 96}px`, minHeight: count > 0 ? 4 : 0 }} />
+                    <span className="text-xs font-medium text-gray-700">{DAY_LABELS[i]}</span>
                   </div>
                 ))}
               </div>

@@ -22,12 +22,12 @@ const HOURS = Array.from({ length: 13 }, (_, i) => i + 8); // 8..20
 const STATUS_LABELS: Record<string, { label: string; className: string }> = {
   PENDING: { label: "Oczekuje", className: "bg-warning-50 text-warning-600" },
   CONFIRMED: { label: "Potwierdzona", className: "bg-success-50 text-success-600" },
-  IN_PROGRESS: { label: "W trakcie", className: "bg-brand-50 text-brand-600" },
-  COMPLETED: { label: "Zakończona", className: "bg-surface-100 text-surface-700" },
+  IN_PROGRESS: { label: "W trakcie", className: "bg-gray-50 text-gray-900" },
+  COMPLETED: { label: "Zakończona", className: "bg-gray-100 text-gray-700" },
   CANCELLED_CUSTOMER: { label: "Odwołana", className: "bg-danger-50 text-danger-600" },
   CANCELLED_BUSINESS: { label: "Odwołana", className: "bg-danger-50 text-danger-600" },
   NO_SHOW: { label: "No-show", className: "bg-danger-50 text-danger-600" },
-  RESCHEDULED: { label: "Przełożona", className: "bg-surface-100 text-surface-700" },
+  RESCHEDULED: { label: "Przełożona", className: "bg-gray-100 text-gray-700" },
 };
 
 function getWeekStart(date: Date): Date {
@@ -101,26 +101,26 @@ export function CalendarClient({ appointments, weekStart: weekStartIso }: Props)
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-xl font-semibold text-gray-900">Kalendarz</h1>
-          <p className="text-sm text-surface-700 mt-0.5">{formatWeekLabel(weekStart)}</p>
+          <p className="text-sm text-gray-700 mt-0.5">{formatWeekLabel(weekStart)}</p>
         </div>
         <div className="flex items-center gap-2">
           {!isCurrentWeek && (
             <button
               onClick={goToToday}
-              className="border border-surface-200 text-gray-900 hover:bg-surface-50 rounded-xl px-3 py-2 text-sm font-semibold transition-colors"
+              className="border border-gray-200 text-gray-900 hover:bg-gray-50 rounded-xl px-3 py-2 text-sm font-semibold transition-colors"
             >
               Dziś
             </button>
           )}
           <button
             onClick={() => navigateWeek(-1)}
-            className="p-2 border border-surface-200 hover:bg-surface-50 text-gray-900 rounded-xl transition-colors"
+            className="p-2 border border-gray-200 hover:bg-gray-50 text-gray-900 rounded-xl transition-colors"
           >
             <ChevronLeftIcon className="w-4 h-4" />
           </button>
           <button
             onClick={() => navigateWeek(1)}
-            className="p-2 border border-surface-200 hover:bg-surface-50 text-gray-900 rounded-xl transition-colors"
+            className="p-2 border border-gray-200 hover:bg-gray-50 text-gray-900 rounded-xl transition-colors"
           >
             <ChevronRightIcon className="w-4 h-4" />
           </button>
@@ -128,26 +128,26 @@ export function CalendarClient({ appointments, weekStart: weekStartIso }: Props)
       </div>
 
       {/* Calendar grid */}
-      <div className="bg-white border border-surface-100 rounded-2xl overflow-hidden">
+      <div className="bg-white border border-gray-100 rounded-2xl overflow-hidden">
         {/* Day headers */}
-        <div className="grid border-b border-surface-100" style={{ gridTemplateColumns: "56px repeat(7, 1fr)" }}>
-          <div className="border-r border-surface-100" />
+        <div className="grid border-b border-gray-100" style={{ gridTemplateColumns: "56px repeat(7, 1fr)" }}>
+          <div className="border-r border-gray-100" />
           {days.map((day, i) => {
             const isToday = day.toDateString() === new Date().toDateString();
             return (
               <div
                 key={i}
-                className={`py-3 text-center border-r border-surface-100 last:border-r-0 ${
-                  i >= 5 ? "bg-surface-50" : ""
+                className={`py-3 text-center border-r border-gray-100 last:border-r-0 ${
+                  i >= 5 ? "bg-gray-50" : ""
                 }`}
               >
-                <p className={`text-xs font-medium ${isToday ? "text-brand-600" : "text-surface-700"}`}>
+                <p className={`text-xs font-medium ${isToday ? "text-gray-900" : "text-gray-700"}`}>
                   {DAYS_PL[i]}
                 </p>
                 <p
                   className={`text-sm font-bold mt-0.5 ${
                     isToday
-                      ? "w-7 h-7 bg-brand-600 text-white rounded-full flex items-center justify-center mx-auto"
+                      ? "w-7 h-7 bg-gray-900 text-white rounded-full flex items-center justify-center mx-auto"
                       : "text-gray-900"
                   }`}
                 >
@@ -166,22 +166,22 @@ export function CalendarClient({ appointments, weekStart: weekStartIso }: Props)
               {HOURS.map((hour) => (
                 <div
                   key={hour}
-                  className="h-14 border-b border-surface-100 border-r border-surface-100 flex items-start justify-end pr-2 pt-1"
+                  className="h-14 border-b border-gray-100 border-r border-gray-100 flex items-start justify-end pr-2 pt-1"
                 >
-                  <span className="text-2xs text-surface-700 font-mono">{hour}:00</span>
+                  <span className="text-2xs text-gray-700 font-mono">{hour}:00</span>
                 </div>
               ))}
             </div>
 
             {/* Day columns */}
             {days.map((day, dayIdx) => (
-              <div key={dayIdx} className={`border-r border-surface-100 last:border-r-0 relative ${dayIdx >= 5 ? "bg-surface-50/50" : ""}`}>
+              <div key={dayIdx} className={`border-r border-gray-100 last:border-r-0 relative ${dayIdx >= 5 ? "bg-gray-50/50" : ""}`}>
                 {HOURS.map((hour) => {
                   const slotApts = getAppointmentsForDayHour(day, hour);
                   return (
                     <div
                       key={hour}
-                      className="h-14 border-b border-surface-100 relative cursor-pointer hover:bg-brand-50/20 transition-colors"
+                      className="h-14 border-b border-gray-100 relative cursor-pointer hover:bg-gray-50/20 transition-colors"
                       onClick={() => {
                         if (slotApts.length === 0) {
                           alert(`Nowa wizyta: ${DAYS_FULL_PL[dayIdx]} ${day.getDate()}, ${hour}:00`);
@@ -241,11 +241,11 @@ export function CalendarClient({ appointments, weekStart: weekStartIso }: Props)
                   <h3 className="text-base font-semibold text-gray-900">
                     {selectedAppointment.customer.firstName} {selectedAppointment.customer.lastName}
                   </h3>
-                  <p className="text-sm text-surface-700 mt-0.5">{selectedAppointment.service.name}</p>
+                  <p className="text-sm text-gray-700 mt-0.5">{selectedAppointment.service.name}</p>
                 </div>
                 <button
                   onClick={() => setSelectedAppointment(null)}
-                  className="p-1.5 rounded-lg hover:bg-surface-100 text-surface-700 transition-colors"
+                  className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-700 transition-colors"
                 >
                   <XIcon className="w-4 h-4" />
                 </button>
@@ -261,9 +261,9 @@ export function CalendarClient({ appointments, weekStart: weekStartIso }: Props)
                   <DetailRow label="Telefon" value={selectedAppointment.customer.phone} />
                 )}
                 <div className="flex items-center justify-between">
-                  <span className="text-sm text-surface-700">Status</span>
+                  <span className="text-sm text-gray-700">Status</span>
                   <span className={`text-xs px-2.5 py-1 rounded-full font-medium ${
-                    STATUS_LABELS[selectedAppointment.status]?.className ?? "bg-surface-100 text-surface-700"
+                    STATUS_LABELS[selectedAppointment.status]?.className ?? "bg-gray-100 text-gray-700"
                   }`}>
                     {STATUS_LABELS[selectedAppointment.status]?.label ?? selectedAppointment.status}
                   </span>
@@ -283,7 +283,7 @@ export function CalendarClient({ appointments, weekStart: weekStartIso }: Props)
 function DetailRow({ label, value }: { label: string; value: string }) {
   return (
     <div className="flex items-center justify-between">
-      <span className="text-sm text-surface-700">{label}</span>
+      <span className="text-sm text-gray-700">{label}</span>
       <span className="text-sm font-medium text-gray-900 text-right max-w-[60%]">{value}</span>
     </div>
   );
