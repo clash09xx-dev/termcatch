@@ -377,7 +377,7 @@ export function SettingsClient({ settings: initialSettings }: Props) {
               <button
                 onClick={() => {
                   setShowDeleteModal(false);
-                  alert("Aby usunąć konto, skontaktuj się z pomocą techniczną: support@termcatch.pl");
+                  alert("Aby usunąć konto, skontaktuj się z pomocą techniczną: hello@termcatch.com");
                 }}
                 className="flex-1 bg-danger-600 hover:bg-danger-700 text-white rounded-xl px-4 py-2.5 text-sm font-semibold transition-colors"
               >

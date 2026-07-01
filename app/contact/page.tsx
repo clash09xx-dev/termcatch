@@ -33,13 +33,13 @@ export default function ContactPage() {
                   },
                   {
                     label: "Wsparcie techniczne",
-                    value: "support@termcatch.com",
-                    href: "mailto:support@termcatch.com",
+                    value: "hello@termcatch.com",
+                    href: "mailto:hello@termcatch.com",
                   },
                   {
                     label: "Sprzedaż i Enterprise",
-                    value: "sales@termcatch.com",
-                    href: "mailto:sales@termcatch.com",
+                    value: "hello@termcatch.com",
+                    href: "mailto:hello@termcatch.com",
                   },
                 ].map((c) => (
                   <div key={c.label}>

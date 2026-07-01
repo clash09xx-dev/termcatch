@@ -7,7 +7,7 @@ export const metadata: Metadata = { title: "Polityka prywatności" };
 const sections = [
   {
     title: "1. Administrator danych",
-    body: `Administratorem danych osobowych jest Termcatch Sp. z o.o. z siedzibą w Krakowie. Kontakt: privacy@termcatch.com`,
+    body: `Administratorem danych osobowych jest Termcatch Sp. z o.o. z siedzibą w Krakowie. Kontakt: hello@termcatch.com`,
   },
   {
     title: "2. Jakie dane zbieramy",
@@ -27,7 +27,7 @@ const sections = [
   },
   {
     title: "6. Prawa użytkownika",
-    body: `Masz prawo do: dostępu do danych, poprawienia danych, usunięcia danych ("prawo do bycia zapomnianym"), przenoszenia danych, ograniczenia przetwarzania, wniesienia sprzeciwu. Aby skorzystać z tych praw, napisz na: privacy@termcatch.com`,
+    body: `Masz prawo do: dostępu do danych, poprawienia danych, usunięcia danych ("prawo do bycia zapomnianym"), przenoszenia danych, ograniczenia przetwarzania, wniesienia sprzeciwu. Aby skorzystać z tych praw, napisz na: hello@termcatch.com`,
   },
   {
     title: "7. Cookies",
