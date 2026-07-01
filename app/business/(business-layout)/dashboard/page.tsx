@@ -1,3 +1,5 @@
+export const dynamic = "force-dynamic";
+
 import { getServerUser } from "@/lib/supabase/server";
 import { prisma } from "@/lib/prisma";
 import { formatCurrency } from "@/lib/utils";
