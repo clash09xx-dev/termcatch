@@ -1,8 +1,8 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  output: "standalone",
   experimental: {
-    // Enable React 19 concurrent features
     ppr: false,
   },
   images: {

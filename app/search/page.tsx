@@ -214,7 +214,11 @@ async function SearchResults({ searchParams }: { searchParams: SearchParams }) {
     ? (searchParams.category as ServiceCategory)
     : undefined;
 
-  const businesses = await prisma.business.findMany({
+  let businesses: Awaited<ReturnType<typeof prisma.business.findMany>> = [];
+  let totalCount = 0;
+
+  try {
+    businesses = await prisma.business.findMany({
     where: {
       status: BusinessStatus.ACTIVE,
       ...(categoryFilter ? { category: categoryFilter } : {}),
@@ -240,22 +244,25 @@ async function SearchResults({ searchParams }: { searchParams: SearchParams }) {
     take: PAGE_SIZE,
   });
 
-  const totalCount = await prisma.business.count({
-    where: {
-      status: BusinessStatus.ACTIVE,
-      ...(categoryFilter ? { category: categoryFilter } : {}),
-      ...(searchParams.city ? { city: { contains: searchParams.city, mode: "insensitive" } } : {}),
-      ...(searchParams.q
-        ? {
-            OR: [
-              { name: { contains: searchParams.q, mode: "insensitive" } },
-              { description: { contains: searchParams.q, mode: "insensitive" } },
-              { shortDescription: { contains: searchParams.q, mode: "insensitive" } },
-            ],
-          }
-        : {}),
-    },
-  });
+    totalCount = await prisma.business.count({
+      where: {
+        status: BusinessStatus.ACTIVE,
+        ...(categoryFilter ? { category: categoryFilter } : {}),
+        ...(searchParams.city ? { city: { contains: searchParams.city, mode: "insensitive" } } : {}),
+        ...(searchParams.q
+          ? {
+              OR: [
+                { name: { contains: searchParams.q, mode: "insensitive" } },
+                { description: { contains: searchParams.q, mode: "insensitive" } },
+                { shortDescription: { contains: searchParams.q, mode: "insensitive" } },
+              ],
+            }
+          : {}),
+      },
+    });
+  } catch {
+    // DB not available — show empty state instead of crashing
+  }
 
   const totalPages = Math.ceil(totalCount / PAGE_SIZE);
 
