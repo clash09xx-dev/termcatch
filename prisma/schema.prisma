@@ -1,0 +1,1182 @@
+// ============================================================
+// Appointly — Full Prisma Schema
+// PostgreSQL + Supabase
+// Designed for millions of users, generic booking engine
+// ============================================================
+
+generator client {
+  provider        = "prisma-client-js"
+  previewFeatures = ["fullTextSearch", "fullTextIndex"]
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+// ============================================================
+// ENUMS
+// ============================================================
+
+enum UserRole {
+  CUSTOMER
+  BUSINESS_OWNER
+  EMPLOYEE
+  ADMIN
+  SUPERADMIN
+}
+
+enum Gender {
+  MALE
+  FEMALE
+  OTHER
+  PREFER_NOT_TO_SAY
+}
+
+enum BusinessStatus {
+  PENDING_VERIFICATION
+  ACTIVE
+  SUSPENDED
+  BANNED
+  CLOSED
+}
+
+enum AppointmentStatus {
+  PENDING           // Awaiting confirmation
+  CONFIRMED         // Confirmed by business
+  IN_PROGRESS       // Currently happening
+  COMPLETED         // Done
+  CANCELLED_CUSTOMER
+  CANCELLED_BUSINESS
+  NO_SHOW           // Customer didn't show up
+  RESCHEDULED
+}
+
+enum PaymentStatus {
+  PENDING
+  AUTHORIZED        // Funds held (deposit)
+  PAID
+  PARTIALLY_REFUNDED
+  REFUNDED
+  FAILED
+  CANCELLED
+}
+
+enum PaymentMethod {
+  STRIPE_CARD
+  STRIPE_APPLE_PAY
+  STRIPE_GOOGLE_PAY
+  CASH
+  GIFT_CARD
+  COUPON
+  MEMBERSHIP
+}
+
+enum NotificationType {
+  APPOINTMENT_BOOKED
+  APPOINTMENT_CONFIRMED
+  APPOINTMENT_CANCELLED
+  APPOINTMENT_REMINDER
+  APPOINTMENT_COMPLETED
+  REVIEW_REQUEST
+  REVIEW_RECEIVED
+  PAYMENT_RECEIVED
+  PAYMENT_REFUNDED
+  WAITLIST_AVAILABLE
+  MARKETING
+  SYSTEM
+}
+
+enum NotificationChannel {
+  EMAIL
+  SMS
+  WHATSAPP
+  PUSH
+  IN_APP
+}
+
+enum SubscriptionPlan {
+  FREE
+  STARTER
+  PROFESSIONAL
+  ENTERPRISE
+}
+
+enum SubscriptionStatus {
+  ACTIVE
+  PAST_DUE
+  CANCELLED
+  TRIALING
+  PAUSED
+}
+
+enum ReviewStatus {
+  PENDING
+  PUBLISHED
+  HIDDEN
+  FLAGGED
+}
+
+enum CouponType {
+  PERCENTAGE
+  FIXED_AMOUNT
+  FREE_SERVICE
+}
+
+enum DayOfWeek {
+  MONDAY
+  TUESDAY
+  WEDNESDAY
+  THURSDAY
+  FRIDAY
+  SATURDAY
+  SUNDAY
+}
+
+enum ServiceCategory {
+  // Beauty & Wellness
+  HAIR_SALON
+  BARBER
+  NAIL_SALON
+  MASSAGE
+  SPA
+  BEAUTY_CLINIC
+  TATTOO
+  PIERCING
+  EYEBROWS_LASHES
+  MAKEUP
+  TANNING
+
+  // Health & Fitness
+  PHYSIOTHERAPY
+  PERSONAL_TRAINER
+  YOGA
+  PILATES
+  NUTRITIONIST
+  PSYCHOLOGIST
+  PSYCHIATRIST
+  DIETICIAN
+
+  // Medical
+  GENERAL_PHYSICIAN
+  DENTIST
+  DERMATOLOGIST
+  GYNECOLOGIST
+  OPHTHALMOLOGIST
+  ORTHOPEDIST
+  PEDIATRICIAN
+  CARDIOLOGIST
+  NEUROLOGIST
+  UROLOGIST
+  ENT
+  ENDOCRINOLOGIST
+  ALLERGOLOGIST
+  RHEUMATOLOGIST
+  RADIOLOGIST
+  VETERINARIAN
+  DENTAL_HYGIENIST
+
+  // Automotive
+  CAR_WASH
+  CAR_DETAILING
+  MECHANIC
+  TIRE_SERVICE
+  CAR_INSPECTION
+  PARKING
+
+  // Sports & Recreation
+  TENNIS_COURT
+  FOOTBALL_PITCH
+  BASKETBALL_COURT
+  SWIMMING_POOL
+  GYM
+  GOLF
+  SQUASH
+  BADMINTON
+  CLIMBING_WALL
+
+  // Education
+  TUTOR
+  LANGUAGE_SCHOOL
+  DRIVING_SCHOOL
+  MUSIC_SCHOOL
+  ART_CLASSES
+
+  // Home Services
+  CLEANING
+  PLUMBER
+  ELECTRICIAN
+  HANDYMAN
+
+  // Other
+  PHOTOGRAPHY
+  PET_GROOMING
+  OTHER
+}
+
+enum GiftCardStatus {
+  ACTIVE
+  REDEEMED
+  EXPIRED
+  CANCELLED
+}
+
+enum MembershipStatus {
+  ACTIVE
+  PAUSED
+  CANCELLED
+  EXPIRED
+}
+
+enum WaitlistStatus {
+  WAITING
+  NOTIFIED
+  BOOKED
+  EXPIRED
+  CANCELLED
+}
+
+// ============================================================
+// USER & AUTH
+// ============================================================
+
+model User {
+  id              String    @id @default(cuid())
+  supabaseId      String    @unique @map("supabase_id")
+  email           String    @unique
+  phone           String?   @unique
+  firstName       String    @map("first_name")
+  lastName        String    @map("last_name")
+  avatarUrl       String?   @map("avatar_url")
+  role            UserRole  @default(CUSTOMER)
+  gender          Gender?
+  dateOfBirth     DateTime? @map("date_of_birth")
+  locale          String    @default("pl")
+  timezone        String    @default("Europe/Warsaw")
+  isVerified      Boolean   @default(false) @map("is_verified")
+  isActive        Boolean   @default(true) @map("is_active")
+  lastLoginAt     DateTime? @map("last_login_at")
+  createdAt       DateTime  @default(now()) @map("created_at")
+  updatedAt       DateTime  @updatedAt @map("updated_at")
+
+  // Notification preferences
+  emailNotifications   Boolean @default(true) @map("email_notifications")
+  smsNotifications     Boolean @default(false) @map("sms_notifications")
+  whatsappNotifications Boolean @default(false) @map("whatsapp_notifications")
+  pushNotifications    Boolean @default(true) @map("push_notifications")
+  marketingEmails      Boolean @default(true) @map("marketing_emails")
+
+  // Relations
+  ownedBusinesses   Business[]          @relation("BusinessOwner")
+  employeeProfiles  Employee[]
+  appointments      Appointment[]       @relation("CustomerAppointments")
+  reviews           Review[]            @relation("CustomerReviews")
+  notifications     Notification[]
+  favourites        FavouriteBusiness[]
+  giftCardsReceived GiftCard[]          @relation("GiftCardRecipient")
+  giftCardsSent     GiftCard[]          @relation("GiftCardSender")
+  memberships       Membership[]
+  pushTokens        PushToken[]
+  crmEntries        CrmContact[]        @relation("CrmContactUser")
+  medicalProfile    MedicalProfile?
+  aiConversations   AiConversation[]
+
+  @@index([email])
+  @@index([supabaseId])
+  @@index([role])
+  @@map("users")
+}
+
+model PushToken {
+  id        String   @id @default(cuid())
+  userId    String   @map("user_id")
+  token     String   @unique
+  platform  String   // "ios" | "android" | "web"
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("push_tokens")
+}
+
+// ============================================================
+// BUSINESS
+// ============================================================
+
+model Business {
+  id               String         @id @default(cuid())
+  ownerId          String         @map("owner_id")
+  slug             String         @unique
+  name             String
+  description      String?        @db.Text
+  shortDescription String?        @map("short_description")
+  category         ServiceCategory
+  subcategory      String?
+  status           BusinessStatus @default(PENDING_VERIFICATION)
+
+  // Location
+  address      String
+  city         String
+  district     String?
+  postalCode   String  @map("postal_code")
+  country      String  @default("PL")
+  latitude     Float?
+  longitude    Float?
+
+  // Contact
+  phone        String?
+  email        String?
+  website      String?
+  instagramUrl String? @map("instagram_url")
+  facebookUrl  String? @map("facebook_url")
+
+  // Media
+  logoUrl       String?   @map("logo_url")
+  coverImageUrl String?   @map("cover_image_url")
+  images        String[]  @default([])
+
+  // Settings
+  currency          String  @default("PLN")
+  timeSlotDuration  Int     @default(15)  @map("time_slot_duration")  // minutes
+  bufferTimeBefore  Int     @default(0)   @map("buffer_time_before")   // minutes
+  bufferTimeAfter   Int     @default(0)   @map("buffer_time_after")    // minutes
+  advanceBookingDays Int    @default(90)  @map("advance_booking_days")
+  minAdvanceHours   Int     @default(1)   @map("min_advance_hours")
+
+  // Cancellation policy
+  cancellationHours    Int     @default(24)   @map("cancellation_hours")
+  cancellationFeeType  String? @map("cancellation_fee_type")  // "percentage" | "fixed"
+  cancellationFeeValue Float?  @map("cancellation_fee_value")
+
+  // Deposits
+  requiresDeposit  Boolean @default(false) @map("requires_deposit")
+  depositType      String? @map("deposit_type")  // "percentage" | "fixed"
+  depositValue     Float?  @map("deposit_value")
+
+  // Stats (denormalized for perf)
+  totalReviews    Int   @default(0) @map("total_reviews")
+  averageRating   Float @default(0) @map("average_rating")
+  totalBookings   Int   @default(0) @map("total_bookings")
+
+  // Stripe
+  stripeAccountId  String? @unique @map("stripe_account_id")
+  stripeOnboarded  Boolean @default(false) @map("stripe_onboarded")
+
+  // Subscription
+  subscriptionPlan   SubscriptionPlan   @default(FREE) @map("subscription_plan")
+  subscriptionStatus SubscriptionStatus @default(ACTIVE) @map("subscription_status")
+
+  // SEO
+  metaTitle       String? @map("meta_title")
+  metaDescription String? @map("meta_description")
+
+  // Verification
+  verifiedAt  DateTime? @map("verified_at")
+  verifiedBy  String?   @map("verified_by")
+
+  isActive    Boolean  @default(true) @map("is_active")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  owner               User                 @relation("BusinessOwner", fields: [ownerId], references: [id])
+  employees           Employee[]
+  services            Service[]
+  workingHours        WorkingHours[]
+  specialDays         SpecialDay[]
+  appointments        Appointment[]
+  reviews             Review[]
+  coupons             Coupon[]
+  giftCards           GiftCard[]           @relation("GiftCardBusiness")
+  memberships         Membership[]
+  subscriptions       BusinessSubscription[]
+  invoices            Invoice[]
+  crmContacts         CrmContact[]
+  notifications       Notification[]
+  waitlistEntries     WaitlistEntry[]
+  aiInsights          AiInsight[]
+  analyticsEvents     AnalyticsEvent[]
+  favouritedBy        FavouriteBusiness[]
+
+  @@index([city, category])
+  @@index([slug])
+  @@index([ownerId])
+  @@index([latitude, longitude])
+  @@index([averageRating])
+  @@index([status])
+  @@map("businesses")
+}
+
+// ============================================================
+// EMPLOYEES
+// ============================================================
+
+model Employee {
+  id           String   @id @default(cuid())
+  businessId   String   @map("business_id")
+  userId       String?  @map("user_id")  // null = not a platform user yet
+  firstName    String   @map("first_name")
+  lastName     String   @map("last_name")
+  email        String?
+  phone        String?
+  avatarUrl    String?  @map("avatar_url")
+  title        String?  // e.g. "Senior Stylist"
+  bio          String?  @db.Text
+  color        String   @default("#7c3aed")  // Calendar color
+  isActive     Boolean  @default(true) @map("is_active")
+  isAccepting  Boolean  @default(true) @map("is_accepting")  // Taking new bookings?
+  displayOrder Int      @default(0) @map("display_order")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  business       Business       @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  user           User?          @relation(fields: [userId], references: [id])
+  services       EmployeeService[]
+  workingHours   EmployeeWorkingHours[]
+  appointments   Appointment[]
+
+  @@index([businessId])
+  @@index([userId])
+  @@map("employees")
+}
+
+model EmployeeService {
+  employeeId String @map("employee_id")
+  serviceId  String @map("service_id")
+
+  employee Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  service  Service  @relation(fields: [serviceId], references: [id], onDelete: Cascade)
+
+  @@id([employeeId, serviceId])
+  @@map("employee_services")
+}
+
+// ============================================================
+// SERVICES
+// ============================================================
+
+model Service {
+  id              String   @id @default(cuid())
+  businessId      String   @map("business_id")
+  categoryId      String?  @map("category_id")
+  name            String
+  description     String?  @db.Text
+  duration        Int      // minutes
+  bufferBefore    Int      @default(0) @map("buffer_before")
+  bufferAfter     Int      @default(0) @map("buffer_after")
+  price           Float
+  discountedPrice Float?   @map("discounted_price")
+  currency        String   @default("PLN")
+  maxParticipants Int      @default(1) @map("max_participants")  // >1 = group service
+  requiresDeposit Boolean  @default(false) @map("requires_deposit")
+  depositAmount   Float?   @map("deposit_amount")
+  isActive        Boolean  @default(true) @map("is_active")
+  isOnline        Boolean  @default(false) @map("is_online")  // Can be done online
+  displayOrder    Int      @default(0) @map("display_order")
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  business       Business          @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  serviceCategory ServiceCategoryModel? @relation(fields: [categoryId], references: [id])
+  employees      EmployeeService[]
+  appointments   Appointment[]
+
+  @@index([businessId])
+  @@index([isActive])
+  @@map("services")
+}
+
+model ServiceCategoryModel {
+  id          String  @id @default(cuid())
+  businessId  String  @map("business_id")
+  name        String
+  displayOrder Int    @default(0) @map("display_order")
+
+  services Service[]
+
+  @@index([businessId])
+  @@map("service_categories")
+}
+
+// ============================================================
+// WORKING HOURS
+// ============================================================
+
+model WorkingHours {
+  id         String    @id @default(cuid())
+  businessId String    @map("business_id")
+  dayOfWeek  DayOfWeek @map("day_of_week")
+  isOpen     Boolean   @default(true) @map("is_open")
+  openTime   String    @map("open_time")   // "09:00"
+  closeTime  String    @map("close_time")  // "18:00"
+
+  // Break times
+  breaks WorkingHoursBreak[]
+
+  business Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+
+  @@unique([businessId, dayOfWeek])
+  @@index([businessId])
+  @@map("working_hours")
+}
+
+model WorkingHoursBreak {
+  id             String @id @default(cuid())
+  workingHoursId String @map("working_hours_id")
+  startTime      String @map("start_time")
+  endTime        String @map("end_time")
+
+  workingHours WorkingHours @relation(fields: [workingHoursId], references: [id], onDelete: Cascade)
+
+  @@index([workingHoursId])
+  @@map("working_hours_breaks")
+}
+
+model EmployeeWorkingHours {
+  id         String    @id @default(cuid())
+  employeeId String    @map("employee_id")
+  dayOfWeek  DayOfWeek @map("day_of_week")
+  isWorking  Boolean   @default(true) @map("is_working")
+  startTime  String    @map("start_time")
+  endTime    String    @map("end_time")
+
+  employee Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+
+  @@unique([employeeId, dayOfWeek])
+  @@map("employee_working_hours")
+}
+
+// Special days: holidays, vacation, custom hours
+model SpecialDay {
+  id          String   @id @default(cuid())
+  businessId  String   @map("business_id")
+  date        DateTime @db.Date
+  isClosed    Boolean  @default(false) @map("is_closed")
+  openTime    String?  @map("open_time")
+  closeTime   String?  @map("close_time")
+  name        String?  // e.g. "Christmas", "Renovation"
+
+  business Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+
+  @@unique([businessId, date])
+  @@index([businessId])
+  @@map("special_days")
+}
+
+// ============================================================
+// APPOINTMENTS — The core engine
+// ============================================================
+
+model Appointment {
+  id            String            @id @default(cuid())
+  businessId    String            @map("business_id")
+  customerId    String            @map("customer_id")
+  employeeId    String?           @map("employee_id")
+  serviceId     String            @map("service_id")
+  status        AppointmentStatus @default(PENDING)
+
+  // Timing
+  startTime     DateTime @map("start_time")
+  endTime       DateTime @map("end_time")
+  duration      Int      // minutes (snapshot at booking time)
+  timezone      String   @default("Europe/Warsaw")
+
+  // Pricing (snapshot at booking time)
+  price         Float
+  currency      String  @default("PLN")
+  depositAmount Float?  @map("deposit_amount")
+
+  // Payment
+  paymentStatus PaymentStatus @default(PENDING) @map("payment_status")
+  paymentMethod PaymentMethod? @map("payment_method")
+
+  // Notes
+  customerNotes  String? @db.Text @map("customer_notes")
+  businessNotes  String? @db.Text @map("business_notes")  // Private
+  internalNotes  String? @db.Text @map("internal_notes")  // Admin only
+
+  // Cancellation
+  cancelledAt     DateTime? @map("cancelled_at")
+  cancelledBy     String?   @map("cancelled_by")
+  cancellationReason String? @db.Text @map("cancellation_reason")
+
+  // Reminders
+  reminderSentAt  DateTime? @map("reminder_sent_at")
+  followUpSentAt  DateTime? @map("follow_up_sent_at")
+
+  // Recurring
+  recurringGroupId String? @map("recurring_group_id")
+
+  // Coupons/promotions applied
+  couponId        String? @map("coupon_id")
+  couponDiscount  Float?  @map("coupon_discount")
+  giftCardId      String? @map("gift_card_id")
+  giftCardAmount  Float?  @map("gift_card_amount")
+  membershipId    String? @map("membership_id")
+
+  // AI insights
+  noShowProbability Float? @map("no_show_probability")  // 0-1
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  business  Business  @relation(fields: [businessId], references: [id])
+  customer  User      @relation("CustomerAppointments", fields: [customerId], references: [id])
+  employee  Employee? @relation(fields: [employeeId], references: [id])
+  service   Service   @relation(fields: [serviceId], references: [id])
+  payment   Payment?
+  review    Review?
+  coupon    Coupon?   @relation(fields: [couponId], references: [id])
+  giftCard  GiftCard? @relation(fields: [giftCardId], references: [id])
+  membership Membership? @relation(fields: [membershipId], references: [id])
+  reminders AppointmentReminder[]
+
+  @@index([businessId, startTime])
+  @@index([customerId, startTime])
+  @@index([employeeId, startTime])
+  @@index([status])
+  @@index([startTime])
+  @@index([businessId, status])
+  @@map("appointments")
+}
+
+model AppointmentReminder {
+  id            String              @id @default(cuid())
+  appointmentId String              @map("appointment_id")
+  channel       NotificationChannel
+  scheduledAt   DateTime            @map("scheduled_at")
+  sentAt        DateTime?           @map("sent_at")
+  status        String              @default("pending")  // pending | sent | failed
+
+  appointment Appointment @relation(fields: [appointmentId], references: [id], onDelete: Cascade)
+
+  @@index([appointmentId])
+  @@index([scheduledAt, status])
+  @@map("appointment_reminders")
+}
+
+// ============================================================
+// PAYMENTS
+// ============================================================
+
+model Payment {
+  id              String        @id @default(cuid())
+  appointmentId   String        @unique @map("appointment_id")
+  businessId      String        @map("business_id")
+  customerId      String        @map("customer_id")
+
+  amount          Float
+  currency        String        @default("PLN")
+  depositAmount   Float?        @map("deposit_amount")
+  remainingAmount Float?        @map("remaining_amount")
+
+  status          PaymentStatus @default(PENDING)
+  method          PaymentMethod?
+
+  // Stripe
+  stripePaymentIntentId  String? @unique @map("stripe_payment_intent_id")
+  stripeChargeId         String? @unique @map("stripe_charge_id")
+  stripeRefundId         String? @unique @map("stripe_refund_id")
+  stripeTransferId       String? @unique @map("stripe_transfer_id")
+
+  // Platform fee
+  platformFee         Float? @map("platform_fee")
+  platformFeePercent  Float? @map("platform_fee_percent")
+  netAmount           Float? @map("net_amount")
+
+  refundedAmount  Float?    @map("refunded_amount")
+  refundedAt      DateTime? @map("refunded_at")
+  refundReason    String?   @map("refund_reason")
+
+  paidAt      DateTime? @map("paid_at")
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+
+  appointment Appointment @relation(fields: [appointmentId], references: [id])
+  invoice     Invoice?
+
+  @@index([businessId])
+  @@index([customerId])
+  @@index([status])
+  @@map("payments")
+}
+
+// ============================================================
+// REVIEWS
+// ============================================================
+
+model Review {
+  id            String       @id @default(cuid())
+  businessId    String       @map("business_id")
+  customerId    String       @map("customer_id")
+  appointmentId String       @unique @map("appointment_id")
+  employeeId    String?      @map("employee_id")
+
+  rating        Int          // 1-5
+  title         String?
+  comment       String?      @db.Text
+  status        ReviewStatus @default(PENDING)
+
+  // Business reply
+  replyText     String?   @db.Text @map("reply_text")
+  repliedAt     DateTime? @map("replied_at")
+  repliedBy     String?   @map("replied_by")
+
+  // AI suggestions
+  aiReplySuggestion String? @db.Text @map("ai_reply_suggestion")
+
+  // Moderation
+  flaggedReason String?   @map("flagged_reason")
+  flaggedAt     DateTime? @map("flagged_at")
+
+  isVerified    Boolean  @default(true) @map("is_verified")  // Only from real appointments
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  business    Business @relation(fields: [businessId], references: [id])
+  customer    User     @relation("CustomerReviews", fields: [customerId], references: [id])
+  appointment Appointment @relation(fields: [appointmentId], references: [id])
+
+  @@index([businessId, status])
+  @@index([customerId])
+  @@index([rating])
+  @@map("reviews")
+}
+
+// ============================================================
+// COUPONS
+// ============================================================
+
+model Coupon {
+  id             String     @id @default(cuid())
+  businessId     String     @map("business_id")
+  code           String
+  name           String
+  type           CouponType
+  value          Float      // Percentage or fixed amount
+  currency       String     @default("PLN")
+  minOrderValue  Float?     @map("min_order_value")
+  maxDiscount    Float?     @map("max_discount")
+
+  // Limits
+  maxUses        Int?     @map("max_uses")
+  usesCount      Int      @default(0) @map("uses_count")
+  maxUsesPerUser Int?     @map("max_uses_per_user")
+
+  // Validity
+  validFrom      DateTime @map("valid_from")
+  validUntil     DateTime @map("valid_until")
+  isActive       Boolean  @default(true) @map("is_active")
+
+  createdAt      DateTime @default(now()) @map("created_at")
+
+  business     Business      @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  appointments Appointment[]
+
+  @@unique([businessId, code])
+  @@index([businessId])
+  @@index([code])
+  @@map("coupons")
+}
+
+// ============================================================
+// GIFT CARDS
+// ============================================================
+
+model GiftCard {
+  id           String          @id @default(cuid())
+  businessId   String          @map("business_id")
+  senderId     String?         @map("sender_id")
+  recipientId  String?         @map("recipient_id")
+  code         String          @unique
+  amount       Float
+  balance      Float
+  currency     String          @default("PLN")
+  message      String?         @db.Text
+  status       GiftCardStatus  @default(ACTIVE)
+  expiresAt    DateTime?       @map("expires_at")
+  redeemedAt   DateTime?       @map("redeemed_at")
+  createdAt    DateTime        @default(now()) @map("created_at")
+
+  business   Business      @relation("GiftCardBusiness", fields: [businessId], references: [id])
+  sender     User?         @relation("GiftCardSender", fields: [senderId], references: [id])
+  recipient  User?         @relation("GiftCardRecipient", fields: [recipientId], references: [id])
+  appointments Appointment[]
+
+  @@index([businessId])
+  @@index([code])
+  @@map("gift_cards")
+}
+
+// ============================================================
+// MEMBERSHIPS
+// ============================================================
+
+model Membership {
+  id            String           @id @default(cuid())
+  businessId    String           @map("business_id")
+  userId        String           @map("user_id")
+  planId        String           @map("plan_id")
+  status        MembershipStatus @default(ACTIVE)
+
+  startDate     DateTime  @map("start_date")
+  endDate       DateTime? @map("end_date")
+  nextBillingAt DateTime? @map("next_billing_at")
+
+  // Usage
+  sessionsIncluded Int? @map("sessions_included")
+  sessionsUsed     Int  @default(0) @map("sessions_used")
+  sessionsLeft     Int? @map("sessions_left")
+
+  // Stripe
+  stripeSubscriptionId String? @unique @map("stripe_subscription_id")
+
+  cancelledAt  DateTime? @map("cancelled_at")
+  pausedAt     DateTime? @map("paused_at")
+  createdAt    DateTime  @default(now()) @map("created_at")
+  updatedAt    DateTime  @updatedAt @map("updated_at")
+
+  business     Business          @relation(fields: [businessId], references: [id])
+  user         User              @relation(fields: [userId], references: [id])
+  plan         MembershipPlan    @relation(fields: [planId], references: [id])
+  appointments Appointment[]
+
+  @@index([businessId])
+  @@index([userId])
+  @@map("memberships")
+}
+
+model MembershipPlan {
+  id             String   @id @default(cuid())
+  businessId     String   @map("business_id")
+  name           String
+  description    String?  @db.Text
+  price          Float
+  currency       String   @default("PLN")
+  billingPeriod  String   @default("monthly")  // "monthly" | "yearly"
+  sessionsPerPeriod Int?  @map("sessions_per_period")
+  discountPercent Float?  @map("discount_percent")
+  isActive       Boolean  @default(true) @map("is_active")
+  displayOrder   Int      @default(0) @map("display_order")
+  stripePriceId  String?  @map("stripe_price_id")
+  createdAt      DateTime @default(now()) @map("created_at")
+
+  memberships Membership[]
+
+  @@index([businessId])
+  @@map("membership_plans")
+}
+
+// ============================================================
+// INVOICES
+// ============================================================
+
+model Invoice {
+  id            String        @id @default(cuid())
+  businessId    String        @map("business_id")
+  paymentId     String        @unique @map("payment_id")
+  customerId    String        @map("customer_id")
+  invoiceNumber String        @unique @map("invoice_number")
+
+  amount        Float
+  taxAmount     Float         @default(0) @map("tax_amount")
+  taxRate       Float         @default(0) @map("tax_rate")
+  totalAmount   Float         @map("total_amount")
+  currency      String        @default("PLN")
+
+  // Customer billing info
+  billingName    String       @map("billing_name")
+  billingEmail   String       @map("billing_email")
+  billingAddress String?      @db.Text @map("billing_address")
+  billingNip     String?      @map("billing_nip")  // Polish tax ID
+
+  issuedAt      DateTime  @default(now()) @map("issued_at")
+  dueDate       DateTime? @map("due_date")
+  paidAt        DateTime? @map("paid_at")
+  pdfUrl        String?   @map("pdf_url")
+
+  business  Business @relation(fields: [businessId], references: [id])
+  payment   Payment  @relation(fields: [paymentId], references: [id])
+
+  @@index([businessId])
+  @@index([customerId])
+  @@map("invoices")
+}
+
+// ============================================================
+// BUSINESS SUBSCRIPTIONS (platform subscription)
+// ============================================================
+
+model BusinessSubscription {
+  id                   String             @id @default(cuid())
+  businessId           String             @map("business_id")
+  plan                 SubscriptionPlan
+  status               SubscriptionStatus @default(TRIALING)
+  stripeSubscriptionId String?            @unique @map("stripe_subscription_id")
+  stripePriceId        String?            @map("stripe_price_id")
+  currentPeriodStart   DateTime?          @map("current_period_start")
+  currentPeriodEnd     DateTime?          @map("current_period_end")
+  cancelAtPeriodEnd    Boolean            @default(false) @map("cancel_at_period_end")
+  trialEndsAt          DateTime?          @map("trial_ends_at")
+  cancelledAt          DateTime?          @map("cancelled_at")
+  createdAt            DateTime           @default(now()) @map("created_at")
+  updatedAt            DateTime           @updatedAt @map("updated_at")
+
+  business Business @relation(fields: [businessId], references: [id])
+
+  @@index([businessId])
+  @@map("business_subscriptions")
+}
+
+// ============================================================
+// NOTIFICATIONS
+// ============================================================
+
+model Notification {
+  id         String              @id @default(cuid())
+  userId     String?             @map("user_id")
+  businessId String?             @map("business_id")
+  type       NotificationType
+  channel    NotificationChannel
+  title      String
+  body       String              @db.Text
+  data       Json?               // Additional payload
+  isRead     Boolean             @default(false) @map("is_read")
+  sentAt     DateTime?           @map("sent_at")
+  readAt     DateTime?           @map("read_at")
+  failedAt   DateTime?           @map("failed_at")
+  failReason String?             @map("fail_reason")
+  createdAt  DateTime            @default(now()) @map("created_at")
+
+  user     User?     @relation(fields: [userId], references: [id])
+  business Business? @relation(fields: [businessId], references: [id])
+
+  @@index([userId, isRead])
+  @@index([businessId])
+  @@index([createdAt])
+  @@map("notifications")
+}
+
+// ============================================================
+// FAVOURITES
+// ============================================================
+
+model FavouriteBusiness {
+  userId     String   @map("user_id")
+  businessId String   @map("business_id")
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  business Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+
+  @@id([userId, businessId])
+  @@index([userId])
+  @@map("favourite_businesses")
+}
+
+// ============================================================
+// WAITLIST
+// ============================================================
+
+model WaitlistEntry {
+  id          String        @id @default(cuid())
+  businessId  String        @map("business_id")
+  serviceId   String        @map("service_id")
+  customerId  String        @map("customer_id")
+  employeeId  String?       @map("employee_id")
+  preferredDate DateTime?   @map("preferred_date")
+  status      WaitlistStatus @default(WAITING)
+  notifiedAt  DateTime?     @map("notified_at")
+  expiresAt   DateTime?     @map("expires_at")
+  createdAt   DateTime      @default(now()) @map("created_at")
+
+  business Business @relation(fields: [businessId], references: [id])
+
+  @@index([businessId, status])
+  @@index([customerId])
+  @@map("waitlist_entries")
+}
+
+// ============================================================
+// CRM
+// ============================================================
+
+model CrmContact {
+  id          String   @id @default(cuid())
+  businessId  String   @map("business_id")
+  userId      String?  @map("user_id")  // null if imported/offline customer
+
+  // Contact info (may duplicate User but independent for offline)
+  firstName   String   @map("first_name")
+  lastName    String   @map("last_name")
+  email       String?
+  phone       String?
+  avatarUrl   String?  @map("avatar_url")
+  dateOfBirth DateTime? @map("date_of_birth")
+  gender      Gender?
+  notes       String?  @db.Text
+
+  // Stats (aggregated)
+  totalAppointments   Int   @default(0) @map("total_appointments")
+  completedAppointments Int  @default(0) @map("completed_appointments")
+  cancelledAppointments Int  @default(0) @map("cancelled_appointments")
+  noShowCount         Int   @default(0) @map("no_show_count")
+  totalRevenue        Float @default(0) @map("total_revenue")
+  averageSpend        Float @default(0) @map("average_spend")
+  lastVisitAt         DateTime? @map("last_visit_at")
+  firstVisitAt        DateTime? @map("first_visit_at")
+
+  // Marketing
+  isBlacklisted Boolean @default(false) @map("is_blacklisted")
+  marketingConsent Boolean @default(false) @map("marketing_consent")
+
+  tags       CrmTag[]    @relation("CrmContactTags")
+  createdAt  DateTime    @default(now()) @map("created_at")
+  updatedAt  DateTime    @updatedAt @map("updated_at")
+
+  business Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  user     User?    @relation("CrmContactUser", fields: [userId], references: [id])
+
+  @@unique([businessId, userId])
+  @@index([businessId])
+  @@index([email])
+  @@map("crm_contacts")
+}
+
+model CrmTag {
+  id         String       @id @default(cuid())
+  businessId String       @map("business_id")
+  name       String
+  color      String       @default("#7c3aed")
+
+  contacts   CrmContact[] @relation("CrmContactTags")
+
+  @@unique([businessId, name])
+  @@index([businessId])
+  @@map("crm_tags")
+}
+
+// ============================================================
+// MEDICAL PROFILES (future module)
+// ============================================================
+
+model MedicalProfile {
+  id           String   @id @default(cuid())
+  userId       String   @unique @map("user_id")
+  bloodType    String?  @map("blood_type")
+  allergies    String[] @default([])
+  medications  String[] @default([])
+  conditions   String[] @default([])
+  notes        String?  @db.Text
+  emergencyContact String? @map("emergency_contact")
+  emergencyPhone   String? @map("emergency_phone")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("medical_profiles")
+}
+
+// ============================================================
+// AI
+// ============================================================
+
+model AiConversation {
+  id         String   @id @default(cuid())
+  userId     String?  @map("user_id")
+  businessId String?  @map("business_id")
+  type       String   // "customer_support" | "booking_assistant" | "marketing" | "analytics"
+  messages   Json     // Array of {role, content, timestamp}
+  metadata   Json?
+  tokens     Int      @default(0)
+  createdAt  DateTime @default(now()) @map("created_at")
+  updatedAt  DateTime @updatedAt @map("updated_at")
+
+  user User? @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+  @@index([businessId])
+  @@map("ai_conversations")
+}
+
+model AiInsight {
+  id          String   @id @default(cuid())
+  businessId  String   @map("business_id")
+  type        String   // "forecast" | "pricing" | "marketing" | "retention" | "no_show"
+  title       String
+  content     Json
+  confidence  Float?
+  validUntil  DateTime? @map("valid_until")
+  isRead      Boolean   @default(false) @map("is_read")
+  createdAt   DateTime  @default(now()) @map("created_at")
+
+  business Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+
+  @@index([businessId])
+  @@map("ai_insights")
+}
+
+// ============================================================
+// ANALYTICS
+// ============================================================
+
+model AnalyticsEvent {
+  id         String   @id @default(cuid())
+  businessId String?  @map("business_id")
+  userId     String?  @map("user_id")
+  event      String   // "page_view" | "search" | "booking_started" | "booking_completed" etc.
+  properties Json?
+  sessionId  String?  @map("session_id")
+  ipHash     String?  @map("ip_hash")  // Hashed for privacy
+  userAgent  String?  @map("user_agent")
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  business Business? @relation(fields: [businessId], references: [id])
+
+  @@index([businessId, event])
+  @@index([event, createdAt])
+  @@map("analytics_events")
+}
+
+// ============================================================
+// PARKING (future module — generic slot-based booking)
+// ============================================================
+
+model ParkingFacility {
+  id          String  @id @default(cuid())
+  businessId  String  @map("business_id")
+  name        String
+  totalSpots  Int     @map("total_spots")
+  address     String
+  latitude    Float?
+  longitude   Float?
+  pricePerHour Float   @map("price_per_hour")
+  currency    String  @default("PLN")
+  isActive    Boolean @default(true) @map("is_active")
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  spots ParkingSpot[]
+
+  @@index([businessId])
+  @@map("parking_facilities")
+}
+
+model ParkingSpot {
+  id          String  @id @default(cuid())
+  facilityId  String  @map("facility_id")
+  name        String  // "A1", "B12" etc.
+  type        String  @default("standard")  // "standard" | "disabled" | "electric"
+  isActive    Boolean @default(true) @map("is_active")
+
+  facility    ParkingFacility @relation(fields: [facilityId], references: [id], onDelete: Cascade)
+
+  @@index([facilityId])
+  @@map("parking_spots")
+}
+
