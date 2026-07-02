@@ -40,7 +40,7 @@ export async function createEmployee(data: EmployeeFormData) {
       email: data.email ?? null,
       phone: data.phone ?? null,
       bio: data.bio ?? null,
-      color: data.color ?? "#7c3aed",
+      color: data.color ?? "#111827",
       isActive: data.isActive ?? true,
     },
   });

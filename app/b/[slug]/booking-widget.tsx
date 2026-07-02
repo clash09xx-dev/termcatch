@@ -101,7 +101,7 @@ export default function BookingWidget({ slug, services }: BookingWidgetProps) {
           </Link>
 
           <p className="text-center text-xs text-gray-400">
-            Potwierdzenie otrzymasz SMS-em i e-mailem
+            Potwierdzenie otrzymasz e-mailem
           </p>
         </div>
       )}

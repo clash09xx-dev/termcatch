@@ -20,7 +20,7 @@ export function formatCurrency(
   }).format(amount);
 }
 
-/** Format date in Polish locale */
+/** Format date in Polish locale (always in Poland's timezone, regardless of server TZ) */
 export function formatDate(
   date: Date | string,
   options: Intl.DateTimeFormatOptions = {
@@ -29,14 +29,16 @@ export function formatDate(
     year: "numeric",
   }
 ): string {
-  return new Intl.DateTimeFormat("pl-PL", options).format(
-    typeof date === "string" ? new Date(date) : date
-  );
+  return new Intl.DateTimeFormat("pl-PL", {
+    timeZone: "Europe/Warsaw",
+    ...options,
+  }).format(typeof date === "string" ? new Date(date) : date);
 }
 
-/** Format time */
+/** Format time (always in Poland's timezone, regardless of server TZ) */
 export function formatTime(date: Date | string): string {
   return new Intl.DateTimeFormat("pl-PL", {
+    timeZone: "Europe/Warsaw",
     hour: "2-digit",
     minute: "2-digit",
   }).format(typeof date === "string" ? new Date(date) : date);
@@ -106,9 +108,9 @@ export function formatDuration(minutes: number): string {
 /** Generate a random color for employee calendars */
 export function generateColor(index: number): string {
   const colors = [
-    "#7c3aed", "#2563eb", "#16a34a", "#dc2626",
-    "#d97706", "#0891b2", "#7c3aed", "#db2777",
-    "#65a30d", "#9333ea",
+    "#111827", "#2563eb", "#16a34a", "#dc2626",
+    "#d97706", "#0891b2", "#374151", "#db2777",
+    "#65a30d", "#0d9488",
   ];
   return colors[index % colors.length];
 }

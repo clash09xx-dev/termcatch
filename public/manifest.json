@@ -1,0 +1,10 @@
+{
+  "name": "Termcatch",
+  "short_name": "Termcatch",
+  "description": "Rezerwacje online dla salonów i usług w Polsce",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#111827",
+  "icons": []
+}

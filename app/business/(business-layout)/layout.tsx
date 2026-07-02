@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { getServerUser } from "@/lib/supabase/server";
 import { BusinessSidebar } from "@/components/layout/business-sidebar";
 import { BusinessTopbar } from "@/components/layout/business-topbar";
+import { BusinessMobileNav } from "@/components/layout/business-mobile-nav";
 
 export default async function BusinessDashboardLayout({
   children,
@@ -19,10 +20,12 @@ export default async function BusinessDashboardLayout({
       {/* Main content */}
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
         <BusinessTopbar />
-        <main className="flex-1 overflow-y-auto p-6 lg:p-8">
+        <main className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8 pb-24 lg:pb-8">
           {children}
         </main>
       </div>
+
+      <BusinessMobileNav />
     </div>
   );
 }

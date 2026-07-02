@@ -1,7 +1,8 @@
 "use client";
 
-import { useActionState } from "react";
+import { Suspense, useActionState } from "react";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { loginAction, signInWithGoogleAction, signInWithAppleAction } from "@/actions/auth";
 import type { AuthState } from "@/actions/auth";
 
@@ -11,7 +12,17 @@ const inputCls =
   "w-full px-3.5 py-2.5 border border-gray-200 rounded-xl text-sm text-gray-900 bg-white placeholder:text-gray-400 focus:outline-none focus:border-gray-400 transition-colors";
 
 export default function LoginPage() {
+  return (
+    <Suspense fallback={null}>
+      <LoginForm />
+    </Suspense>
+  );
+}
+
+function LoginForm() {
   const [state, formAction, isPending] = useActionState(loginAction, initialState);
+  const searchParams = useSearchParams();
+  const redirectTo = searchParams.get("redirect") ?? "";
 
   return (
     <div>
@@ -73,6 +84,7 @@ export default function LoginPage() {
       )}
 
       <form action={formAction} className="space-y-4">
+        <input type="hidden" name="redirect" value={redirectTo} />
         <div>
           <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1.5">
             Adres e-mail

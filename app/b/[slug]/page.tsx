@@ -7,6 +7,10 @@ import { LandingNav } from "@/components/layout/landing-nav";
 import { formatCurrency, formatDate, formatDuration, getInitials, cn } from "@/lib/utils";
 import { BusinessStatus, ReviewStatus } from "@prisma/client";
 import BookingWidget from "./booking-widget";
+import ReviewForm from "./review-form";
+import FavouriteButton from "@/components/booking/favourite-button";
+import { isFavourite } from "@/lib/actions/favourites";
+import { getServerUser } from "@/lib/supabase/server";
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -100,10 +104,13 @@ const CATEGORY_LABELS: Record<string, string> = {
 
 export default async function BusinessProfilePage({
   params,
+  searchParams,
 }: {
   params: Promise<{ slug: string }>;
+  searchParams: Promise<{ review?: string }>;
 }) {
   const { slug } = await params;
+  const { review: reviewAppointmentId } = await searchParams;
 
   const business = await prisma.business.findUnique({
     where: { slug },
@@ -134,6 +141,35 @@ export default async function BusinessProfilePage({
 
   if (!business || business.status !== BusinessStatus.ACTIVE) {
     notFound();
+  }
+
+  const favourite = await isFavourite(business.id);
+
+  // Review modal — only for the customer's own COMPLETED, unreviewed appointment
+  let reviewAppointment: { id: string; serviceName: string } | null = null;
+  if (reviewAppointmentId) {
+    const authUser = await getServerUser();
+    if (authUser) {
+      const dbUser = await prisma.user.findUnique({
+        where: { supabaseId: authUser.id },
+        select: { id: true },
+      });
+      if (dbUser) {
+        const apt = await prisma.appointment.findFirst({
+          where: {
+            id: reviewAppointmentId,
+            customerId: dbUser.id,
+            businessId: business.id,
+            status: "COMPLETED",
+            review: null,
+          },
+          select: { id: true, service: { select: { name: true } } },
+        });
+        if (apt) {
+          reviewAppointment = { id: apt.id, serviceName: apt.service.name };
+        }
+      }
+    }
   }
 
   const categoryLabel = CATEGORY_LABELS[business.category] ?? business.category;
@@ -218,6 +254,14 @@ export default async function BusinessProfilePage({
                 </a>
               )}
             </div>
+          </div>
+
+          <div className="flex-shrink-0 pb-1">
+            <FavouriteButton
+              businessId={business.id}
+              initialIsFavourite={favourite}
+              redirectPath={`/b/${slug}`}
+            />
           </div>
         </div>
       </div>
@@ -312,7 +356,7 @@ export default async function BusinessProfilePage({
                     </h3>
                     <div className="space-y-1.5">
                       {sortedWorkingHours.map((wh) => {
-                        const today = new Date().toLocaleDateString("en-US", { weekday: "long" }).toUpperCase();
+                        const today = new Date().toLocaleDateString("en-US", { timeZone: "Europe/Warsaw", weekday: "long" }).toUpperCase();
                         const isToday = today === wh.dayOfWeek;
                         return (
                           <div
@@ -515,6 +559,41 @@ export default async function BusinessProfilePage({
           </div>
         </div>
       </div>
+
+      {/* Mobile sticky CTA */}
+      {business.services.length > 0 && (
+        <div className="lg:hidden fixed bottom-0 inset-x-0 z-40 bg-white/95 backdrop-blur border-t border-gray-100 px-4 py-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))]">
+          <div className="flex items-center gap-3 max-w-6xl mx-auto">
+            <div className="flex-1 min-w-0">
+              <p className="text-xs text-gray-500">Usługi od</p>
+              <p className="text-sm font-bold text-gray-900">
+                {formatCurrency(
+                  Math.min(
+                    ...business.services.map((s) => s.discountedPrice ?? s.price)
+                  )
+                )}
+              </p>
+            </div>
+            <Link
+              href={`/b/${slug}/book`}
+              className="px-6 py-3 bg-gray-900 hover:bg-gray-800 text-white rounded-xl text-sm font-semibold transition-colors"
+            >
+              Zarezerwuj wizytę
+            </Link>
+          </div>
+        </div>
+      )}
+      {/* Spacer so the sticky bar doesn't cover content on mobile */}
+      {business.services.length > 0 && <div className="h-20 lg:hidden" />}
+
+      {/* Review modal */}
+      {reviewAppointment && (
+        <ReviewForm
+          appointmentId={reviewAppointment.id}
+          businessName={business.name}
+          serviceName={reviewAppointment.serviceName}
+        />
+      )}
     </div>
   );
 }

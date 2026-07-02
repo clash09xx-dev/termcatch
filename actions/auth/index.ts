@@ -123,6 +123,13 @@ export async function loginAction(
     password: formData.get("password") as string,
   };
 
+  // Optional safe redirect target (must be an internal path)
+  const redirectParam = (formData.get("redirect") as string | null) ?? "";
+  const safeRedirect =
+    redirectParam.startsWith("/") && !redirectParam.startsWith("//")
+      ? redirectParam
+      : "";
+
   const parsed = LoginSchema.safeParse(raw);
   if (!parsed.success) {
     return {
@@ -167,6 +174,10 @@ export async function loginAction(
 
     revalidatePath("/", "layout");
 
+    if (safeRedirect) {
+      redirect(safeRedirect);
+    }
+
     if (dbUser?.role === "BUSINESS_OWNER") {
       const hasBusiness = (dbUser.ownedBusinesses?.length ?? 0) > 0;
       redirect(hasBusiness ? "/business/dashboard" : "/business/onboarding");
@@ -176,7 +187,7 @@ export async function loginAction(
   }
 
   revalidatePath("/", "layout");
-  redirect("/customer/dashboard");
+  redirect(safeRedirect || "/customer/dashboard");
 }
 
 export async function logoutAction(): Promise<void> {

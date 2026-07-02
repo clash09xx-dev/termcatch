@@ -228,28 +228,23 @@ export default function BookingWizard({
     setSubmitError("");
 
     try {
-      // Build start/end datetime
-      const startTime = new Date(`${selectedDate}T${selectedTime}:00`);
-      const endTime = new Date(startTime.getTime() + selectedService.duration * 60_000);
-
       const { createAppointment } = await import("@/lib/actions/appointments");
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      await (createAppointment as any)({
+      await createAppointment({
         businessId: business.id,
         serviceId: selectedServiceId,
         employeeId: selectedEmployeeId ?? undefined,
-        startTime: startTime.toISOString(),
-        endTime: endTime.toISOString(),
-        duration: selectedService.duration,
-        price: selectedService.discountedPrice ?? selectedService.price,
-        customerNotes: notes || undefined,
+        date: selectedDate,
+        time: selectedTime,
+        customerNote: notes || undefined,
       });
 
       setStep(5);
     } catch (err) {
       const error = err as { message?: string };
       if (error.message?.includes("login") || error.message?.includes("auth") || error.message?.includes("Unauthorized")) {
-        router.push(`/login?redirect=/b/${business.slug}/book?serviceId=${selectedServiceId}`);
+        router.push(
+          `/login?redirect=${encodeURIComponent(`/b/${business.slug}/book?serviceId=${selectedServiceId}`)}`
+        );
         return;
       }
       setSubmitError(error.message ?? "Wystąpił błąd. Spróbuj ponownie.");
@@ -654,9 +649,9 @@ export default function BookingWizard({
               </svg>
             </div>
 
-            <h2 className="text-xl font-bold text-gray-900 mb-1">Rezerwacja potwierdzona!</h2>
+            <h2 className="text-xl font-bold text-gray-900 mb-1">Rezerwacja wysłana!</h2>
             <p className="text-sm text-gray-500 mb-6">
-              Potwierdzenie zostało wysłane na Twój adres e-mail.
+              Salon potwierdzi Twoją wizytę — damy Ci znać e-mailem i w powiadomieniach.
             </p>
 
             {/* Summary */}

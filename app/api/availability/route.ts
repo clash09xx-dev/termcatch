@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { timeToMinutes, minutesToTime } from "@/lib/utils";
+import { warsawDateTimeToUtc, warsawDayStartUtc, warsawDayEndUtc } from "@/lib/timezone";
 import { AppointmentStatus, DayOfWeek } from "@prisma/client";
 
 const DAY_MAP: Record<number, string> = {
@@ -64,9 +65,9 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: "Service not found" }, { status: 404 });
   }
 
-  // Fetch existing appointments for that day (excluding cancelled)
-  const dayStart = new Date(date + "T00:00:00.000Z");
-  const dayEnd = new Date(date + "T23:59:59.999Z");
+  // Fetch existing appointments for that day (Warsaw-local day, excluding cancelled)
+  const dayStart = warsawDayStartUtc(date);
+  const dayEnd = warsawDayEndUtc(date);
 
   const existingAppointments = await prisma.appointment.findMany({
     where: {
@@ -89,6 +90,7 @@ export async function GET(request: NextRequest) {
   const slotDuration = service.duration;
 
   const slots: string[] = [];
+  const now = Date.now();
 
   for (
     let slotStart = openMinutes;
@@ -97,9 +99,12 @@ export async function GET(request: NextRequest) {
   ) {
     const slotEnd = slotStart + slotDuration;
 
-    // Check if slot overlaps with any existing appointment
-    const slotStartDate = new Date(`${date}T${minutesToTime(slotStart)}:00.000Z`);
-    const slotEndDate = new Date(`${date}T${minutesToTime(slotEnd)}:00.000Z`);
+    // Slot boundaries as UTC instants (times are Warsaw-local)
+    const slotStartDate = warsawDateTimeToUtc(date, minutesToTime(slotStart));
+    const slotEndDate = warsawDateTimeToUtc(date, minutesToTime(slotEnd));
+
+    // Skip slots in the past
+    if (slotStartDate.getTime() <= now) continue;
 
     const overlaps = existingAppointments.some((appt) => {
       const apptStart = new Date(appt.startTime).getTime();

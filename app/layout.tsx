@@ -41,20 +41,11 @@ export const metadata: Metadata = {
     title: "Termcatch — Rezerwacje online dla salonów i usług",
     description:
       "Zarezerwuj wizytę w najlepszych salonach i u specjalistów w Polsce.",
-    images: [
-      {
-        url: "/og-image.png",
-        width: 1200,
-        height: 630,
-        alt: "Termcatch",
-      },
-    ],
   },
   twitter: {
     card: "summary_large_image",
     title: "Termcatch",
     description: "Rezerwacje online dla salonów i usług w Polsce.",
-    images: ["/og-image.png"],
   },
   robots: {
     index: true,

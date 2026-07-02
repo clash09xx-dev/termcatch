@@ -17,7 +17,7 @@ const NAV_SECTIONS: { label: string | null; items: NavItem[] }[] = [
     label: null,
     items: [
       { href: "/business/dashboard", icon: HomeIcon, label: "Pulpit" },
-      { href: "/business/calendar", icon: CalendarIcon, label: "Kalendarz", badge: "12" },
+      { href: "/business/calendar", icon: CalendarIcon, label: "Kalendarz" },
     ],
   },
   {
@@ -62,7 +62,7 @@ export function BusinessSidebar() {
   return (
     <aside
       className={cn(
-        "flex flex-col h-screen border-r border-gray-200 bg-white transition-all duration-300 shrink-0",
+        "hidden lg:flex flex-col h-screen border-r border-gray-200 bg-white transition-all duration-300 shrink-0",
         isCollapsed ? "w-16" : "w-60"
       )}
     >

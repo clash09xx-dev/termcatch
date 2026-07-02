@@ -1,8 +1,14 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import type { Appointment, Service, Employee, User } from "@prisma/client";
+import {
+  confirmAppointment,
+  declineAppointment,
+  completeAppointment,
+  markNoShow,
+} from "@/lib/actions/appointments";
 
 type AppointmentWithRelations = Appointment & {
   service: Service;
@@ -16,7 +22,6 @@ type Props = {
 };
 
 const DAYS_PL = ["Pon", "Wt", "Śr", "Czw", "Pt", "Sob", "Nie"];
-const DAYS_FULL_PL = ["Poniedziałek", "Wtorek", "Środa", "Czwartek", "Piątek", "Sobota", "Niedziela"];
 const HOURS = Array.from({ length: 13 }, (_, i) => i + 8); // 8..20
 
 const STATUS_LABELS: Record<string, { label: string; className: string }> = {
@@ -53,6 +58,24 @@ export function CalendarClient({ appointments, weekStart: weekStartIso }: Props)
   const router = useRouter();
   const weekStart = new Date(weekStartIso);
   const [selectedAppointment, setSelectedAppointment] = useState<AppointmentWithRelations | null>(null);
+  const [actionError, setActionError] = useState("");
+  const [isPending, startTransition] = useTransition();
+
+  function runAction(action: (id: string) => Promise<void>) {
+    if (!selectedAppointment) return;
+    const id = selectedAppointment.id;
+    setActionError("");
+    startTransition(async () => {
+      try {
+        await action(id);
+        setSelectedAppointment(null);
+        router.refresh();
+      } catch (err) {
+        const e = err as { message?: string };
+        setActionError(e.message ?? "Wystąpił błąd. Spróbuj ponownie.");
+      }
+    });
+  }
 
   // Build 7 day dates
   const days = Array.from({ length: 7 }, (_, i) => {
@@ -128,7 +151,8 @@ export function CalendarClient({ appointments, weekStart: weekStartIso }: Props)
       </div>
 
       {/* Calendar grid */}
-      <div className="bg-white border border-gray-100 rounded-2xl overflow-hidden">
+      <div className="bg-white border border-gray-100 rounded-2xl overflow-hidden overflow-x-auto">
+        <div className="min-w-[720px]">
         {/* Day headers */}
         <div className="grid border-b border-gray-100" style={{ gridTemplateColumns: "56px repeat(7, 1fr)" }}>
           <div className="border-r border-gray-100" />
@@ -181,12 +205,7 @@ export function CalendarClient({ appointments, weekStart: weekStartIso }: Props)
                   return (
                     <div
                       key={hour}
-                      className="h-14 border-b border-gray-100 relative cursor-pointer hover:bg-gray-50/20 transition-colors"
-                      onClick={() => {
-                        if (slotApts.length === 0) {
-                          alert(`Nowa wizyta: ${DAYS_FULL_PL[dayIdx]} ${day.getDate()}, ${hour}:00`);
-                        }
-                      }}
+                      className="h-14 border-b border-gray-100 relative"
                     >
                       {slotApts.map((apt) => (
                         <button
@@ -199,7 +218,7 @@ export function CalendarClient({ appointments, weekStart: weekStartIso }: Props)
                           style={{
                             top: getTopOffset(apt),
                             height: getHeight(apt),
-                            backgroundColor: apt.employee?.color ?? "#7c3aed",
+                            backgroundColor: apt.employee?.color ?? "#374151",
                           }}
                         >
                           <div className="px-1.5 py-1 h-full overflow-hidden">
@@ -221,6 +240,7 @@ export function CalendarClient({ appointments, weekStart: weekStartIso }: Props)
             ))}
           </div>
         </div>
+        </div>
       </div>
 
       {/* Appointment detail popover */}
@@ -233,7 +253,7 @@ export function CalendarClient({ appointments, weekStart: weekStartIso }: Props)
           <div className="relative bg-white rounded-2xl shadow-soft-xl w-full max-w-sm animate-scale-in">
             <div
               className="h-1.5 rounded-t-2xl"
-              style={{ backgroundColor: selectedAppointment.employee?.color ?? "#7c3aed" }}
+              style={{ backgroundColor: selectedAppointment.employee?.color ?? "#374151" }}
             />
             <div className="p-5">
               <div className="flex items-start justify-between mb-4">
@@ -272,6 +292,58 @@ export function CalendarClient({ appointments, weekStart: weekStartIso }: Props)
                   <DetailRow label="Notatki" value={selectedAppointment.customerNotes} />
                 )}
               </div>
+
+              {actionError && (
+                <div className="mt-4 px-3 py-2.5 bg-red-50 border border-red-100 rounded-xl">
+                  <p className="text-xs text-red-600">{actionError}</p>
+                </div>
+              )}
+
+              {/* Actions */}
+              {(selectedAppointment.status === "PENDING" ||
+                selectedAppointment.status === "CONFIRMED" ||
+                selectedAppointment.status === "IN_PROGRESS") && (
+                <div className="mt-5 pt-4 border-t border-gray-100 flex flex-wrap gap-2">
+                  {selectedAppointment.status === "PENDING" && (
+                    <button
+                      onClick={() => runAction(confirmAppointment)}
+                      disabled={isPending}
+                      className="flex-1 px-4 py-2.5 bg-gray-900 hover:bg-gray-800 disabled:opacity-60 text-white rounded-xl text-xs font-semibold transition-colors"
+                    >
+                      Potwierdź
+                    </button>
+                  )}
+                  {(selectedAppointment.status === "CONFIRMED" ||
+                    selectedAppointment.status === "IN_PROGRESS") && (
+                    <button
+                      onClick={() => runAction(completeAppointment)}
+                      disabled={isPending}
+                      className="flex-1 px-4 py-2.5 bg-gray-900 hover:bg-gray-800 disabled:opacity-60 text-white rounded-xl text-xs font-semibold transition-colors"
+                    >
+                      Zakończ
+                    </button>
+                  )}
+                  {(selectedAppointment.status === "PENDING" ||
+                    selectedAppointment.status === "CONFIRMED") && (
+                    <>
+                      <button
+                        onClick={() => runAction(markNoShow)}
+                        disabled={isPending}
+                        className="px-4 py-2.5 border border-gray-200 hover:bg-gray-50 disabled:opacity-60 text-gray-700 rounded-xl text-xs font-medium transition-colors"
+                      >
+                        No-show
+                      </button>
+                      <button
+                        onClick={() => runAction(declineAppointment)}
+                        disabled={isPending}
+                        className="px-4 py-2.5 border border-gray-200 hover:border-red-200 hover:text-red-600 disabled:opacity-60 text-gray-600 rounded-xl text-xs font-medium transition-colors"
+                      >
+                        Odwołaj
+                      </button>
+                    </>
+                  )}
+                </div>
+              )}
             </div>
           </div>
         </div>

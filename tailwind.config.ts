@@ -10,19 +10,19 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
-        // Brand palette — violet-based premium feel
+        // Brand palette — neutral graphite (zero fioletu)
         brand: {
-          50: "#f5f3ff",
-          100: "#ede9fe",
-          200: "#ddd6fe",
-          300: "#c4b5fd",
-          400: "#a78bfa",
-          500: "#8b5cf6",
-          600: "#7c3aed",
-          700: "#6d28d9",
-          800: "#5b21b6",
-          900: "#4c1d95",
-          950: "#2e1065",
+          50: "#f9fafb",
+          100: "#f3f4f6",
+          200: "#e5e7eb",
+          300: "#d1d5db",
+          400: "#9ca3af",
+          500: "#6b7280",
+          600: "#111827",
+          700: "#1f2937",
+          800: "#111827",
+          900: "#0b0f19",
+          950: "#030712",
         },
         // Neutral
         surface: {
@@ -69,17 +69,17 @@ const config: Config = {
         "soft-md": "0 10px 15px -3px rgb(0 0 0 / 0.06), 0 4px 6px -4px rgb(0 0 0 / 0.04)",
         "soft-lg": "0 20px 25px -5px rgb(0 0 0 / 0.06), 0 8px 10px -6px rgb(0 0 0 / 0.04)",
         "soft-xl": "0 25px 50px -12px rgb(0 0 0 / 0.12)",
-        "brand-sm": "0 1px 3px 0 rgb(124 58 237 / 0.15), 0 1px 2px -1px rgb(124 58 237 / 0.10)",
-        brand: "0 4px 14px 0 rgb(124 58 237 / 0.25)",
-        "brand-lg": "0 10px 40px 0 rgb(124 58 237 / 0.3)",
-        "inner-brand": "inset 0 2px 4px 0 rgb(124 58 237 / 0.1)",
+        "brand-sm": "0 1px 3px 0 rgb(17 24 39 / 0.15), 0 1px 2px -1px rgb(17 24 39 / 0.10)",
+        brand: "0 4px 14px 0 rgb(17 24 39 / 0.20)",
+        "brand-lg": "0 10px 40px 0 rgb(17 24 39 / 0.25)",
+        "inner-brand": "inset 0 2px 4px 0 rgb(17 24 39 / 0.1)",
       },
       backgroundImage: {
-        "gradient-brand": "linear-gradient(135deg, #7c3aed 0%, #6d28d9 50%, #5b21b6 100%)",
-        "gradient-brand-subtle": "linear-gradient(135deg, #f5f3ff 0%, #ede9fe 100%)",
-        "gradient-hero": "radial-gradient(ellipse 80% 80% at 50% -20%, rgba(124, 58, 237, 0.15) 0%, transparent 100%)",
-        "gradient-dark-hero": "radial-gradient(ellipse 80% 80% at 50% -20%, rgba(124, 58, 237, 0.25) 0%, transparent 100%)",
-        "gradient-mesh": "radial-gradient(at 40% 20%, hsla(280, 100%, 74%, 0.1) 0px, transparent 50%), radial-gradient(at 80% 0%, hsla(189, 100%, 56%, 0.05) 0px, transparent 50%), radial-gradient(at 0% 50%, hsla(355, 100%, 93%, 0.08) 0px, transparent 50%)",
+        "gradient-brand": "linear-gradient(135deg, #1f2937 0%, #111827 50%, #030712 100%)",
+        "gradient-brand-subtle": "linear-gradient(135deg, #f9fafb 0%, #f3f4f6 100%)",
+        "gradient-hero": "radial-gradient(ellipse 80% 80% at 50% -20%, rgba(17, 24, 39, 0.08) 0%, transparent 100%)",
+        "gradient-dark-hero": "radial-gradient(ellipse 80% 80% at 50% -20%, rgba(17, 24, 39, 0.15) 0%, transparent 100%)",
+        "gradient-mesh": "radial-gradient(at 40% 20%, rgba(17, 24, 39, 0.06) 0px, transparent 50%), radial-gradient(at 80% 0%, rgba(8, 145, 178, 0.04) 0px, transparent 50%), radial-gradient(at 0% 50%, rgba(220, 38, 38, 0.03) 0px, transparent 50%)",
       },
       keyframes: {
         "fade-in": {
@@ -107,8 +107,8 @@ const config: Config = {
           "100%": { backgroundPosition: "1000px 0" },
         },
         "pulse-brand": {
-          "0%, 100%": { boxShadow: "0 0 0 0 rgba(124, 58, 237, 0.4)" },
-          "50%": { boxShadow: "0 0 0 8px rgba(124, 58, 237, 0)" },
+          "0%, 100%": { boxShadow: "0 0 0 0 rgba(17, 24, 39, 0.3)" },
+          "50%": { boxShadow: "0 0 0 8px rgba(17, 24, 39, 0)" },
         },
         float: {
           "0%, 100%": { transform: "translateY(0)" },

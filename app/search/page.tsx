@@ -10,7 +10,7 @@ import SearchFilters from "./search-filters";
 
 // ─── Category map ───────────────────────────────────────────────────────────
 
-export const CATEGORY_LABELS: Partial<Record<ServiceCategory, string>> = {
+const CATEGORY_LABELS: Partial<Record<ServiceCategory, string>> = {
   HAIR_SALON: "Fryzjer",
   BARBER: "Barber",
   NAIL_SALON: "Paznokcie",

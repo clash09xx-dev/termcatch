@@ -26,9 +26,9 @@ type EmployeeForm = {
 };
 
 const COLOR_PALETTE = [
-  "#7c3aed", "#2563eb", "#16a34a", "#dc2626",
+  "#111827", "#2563eb", "#16a34a", "#dc2626",
   "#d97706", "#0891b2", "#db2777", "#65a30d",
-  "#9333ea", "#0f766e", "#b45309", "#1d4ed8",
+  "#374151", "#0f766e", "#b45309", "#1d4ed8",
 ];
 
 const EMPTY_FORM: EmployeeForm = {

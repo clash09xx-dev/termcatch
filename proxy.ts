@@ -2,22 +2,12 @@ import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
 // Routes that require authentication
-const PROTECTED_ROUTES = [
-  "/customer",
-  "/business",
-  "/admin",
-];
-
-// Routes that require specific roles
-const ROLE_ROUTES: Record<string, string[]> = {
-  "/business": ["BUSINESS_OWNER", "EMPLOYEE"],
-  "/admin": ["ADMIN", "SUPERADMIN"],
-};
+const PROTECTED_ROUTES = ["/customer", "/business", "/admin"];
 
 // Routes that should redirect to dashboard if already logged in
 const AUTH_ROUTES = ["/login", "/register", "/reset-password"];
 
-export async function middleware(request: NextRequest) {
+export async function proxy(request: NextRequest) {
   let supabaseResponse = NextResponse.next({ request });
 
   const supabase = createServerClient(
@@ -47,9 +37,16 @@ export async function middleware(request: NextRequest) {
 
   const pathname = request.nextUrl.pathname;
 
-  // Redirect logged-in users away from auth pages
+  // Redirect logged-in users away from auth pages (role-aware)
   if (user && AUTH_ROUTES.some((r) => pathname.startsWith(r))) {
-    return NextResponse.redirect(new URL("/customer/dashboard", request.url));
+    const role = (user.user_metadata?.role as string | undefined) ?? "CUSTOMER";
+    const target =
+      role === "BUSINESS_OWNER"
+        ? "/business/dashboard"
+        : role === "ADMIN" || role === "SUPERADMIN"
+          ? "/admin/dashboard"
+          : "/customer/dashboard";
+    return NextResponse.redirect(new URL(target, request.url));
   }
 
   // Protect routes that require authentication
@@ -59,9 +56,6 @@ export async function middleware(request: NextRequest) {
       loginUrl.searchParams.set("redirect", pathname);
       return NextResponse.redirect(loginUrl);
     }
-
-    // TODO: Role-based access check (fetch user role from DB)
-    // For now, basic auth check is sufficient for Phase 1
   }
 
   return supabaseResponse;
