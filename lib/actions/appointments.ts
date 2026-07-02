@@ -202,6 +202,119 @@ export async function createAppointment(data: CreateAppointmentInput) {
   return appointment;
 }
 
+// ─── Customer: Reschedule ─────────────────────────────────────
+
+export async function rescheduleAppointment(input: {
+  appointmentId: string;
+  /** Warsaw-local date "YYYY-MM-DD" */
+  date: string;
+  /** Warsaw-local time "HH:MM" */
+  time: string;
+}) {
+  const customer = await getDbUser();
+
+  const appointment = await prisma.appointment.findUnique({
+    where: { id: input.appointmentId },
+    include: {
+      business: { select: { id: true, name: true, ownerId: true, email: true } },
+      service: { select: { name: true, duration: true } },
+    },
+  });
+
+  if (!appointment) throw new Error("Nie znaleziono rezerwacji.");
+  if (appointment.customerId !== customer.id)
+    throw new Error("Możesz przełożyć tylko własne wizyty.");
+
+  const reschedulableStatuses: AppointmentStatus[] = [
+    AppointmentStatus.PENDING,
+    AppointmentStatus.CONFIRMED,
+  ];
+  if (!reschedulableStatuses.includes(appointment.status)) {
+    throw new Error("Tylko wizyty oczekujące lub potwierdzone można przełożyć.");
+  }
+
+  const newStart = warsawDateTimeToUtc(input.date, input.time);
+  if (isNaN(newStart.getTime())) throw new Error("Nieprawidłowa data wizyty.");
+  if (newStart <= new Date())
+    throw new Error("Nowy termin musi być w przyszłości.");
+
+  const newEnd = new Date(newStart.getTime() + appointment.duration * 60_000);
+
+  // Double-booking guard for the new slot
+  const conflict = await prisma.appointment.findFirst({
+    where: {
+      id: { not: appointment.id },
+      businessId: appointment.businessId,
+      ...(appointment.employeeId ? { employeeId: appointment.employeeId } : {}),
+      status: {
+        notIn: [
+          AppointmentStatus.CANCELLED_CUSTOMER,
+          AppointmentStatus.CANCELLED_BUSINESS,
+        ],
+      },
+      startTime: { lt: newEnd },
+      endTime: { gt: newStart },
+    },
+    select: { id: true },
+  });
+  if (conflict) {
+    throw new Error("Ten termin jest już zajęty. Wybierz inną godzinę.");
+  }
+
+  const oldSlotLabel = describeSlot(appointment.startTime);
+
+  await prisma.appointment.update({
+    where: { id: appointment.id },
+    data: {
+      startTime: newStart,
+      endTime: newEnd,
+      // Salon musi potwierdzić nowy termin
+      status: AppointmentStatus.PENDING,
+    },
+  });
+
+  const newSlotLabel = describeSlot(newStart);
+
+  await Promise.allSettled([
+    notify({
+      userId: appointment.business.ownerId,
+      businessId: appointment.business.id,
+      type: "APPOINTMENT_BOOKED",
+      title: "Wizyta przełożona",
+      body: `${customer.firstName} ${customer.lastName} przełożył(a) wizytę (${appointment.service.name}) z ${oldSlotLabel} na ${newSlotLabel}. Potwierdź nowy termin.`,
+      data: { appointmentId: appointment.id },
+    }),
+    notify({
+      userId: customer.id,
+      businessId: appointment.business.id,
+      type: "APPOINTMENT_BOOKED",
+      title: "Wizyta przełożona",
+      body: `${appointment.service.name} w ${appointment.business.name} — nowy termin: ${newSlotLabel}. Salon potwierdzi zmianę.`,
+      data: { appointmentId: appointment.id },
+    }),
+    appointment.business.email
+      ? sendEmail({
+          to: appointment.business.email,
+          subject: `Wizyta przełożona — ${appointment.service.name}`,
+          heading: "Klient przełożył wizytę",
+          lines: [
+            `Klient: <strong>${customer.firstName} ${customer.lastName}</strong>`,
+            `Usługa: <strong>${appointment.service.name}</strong>`,
+            `Poprzedni termin: ${oldSlotLabel}`,
+            `Nowy termin: <strong>${newSlotLabel}</strong>`,
+            "Potwierdź nowy termin w kalendarzu.",
+          ],
+          ctaLabel: "Otwórz kalendarz",
+          ctaUrl: `${process.env.NEXT_PUBLIC_APP_URL ?? "https://termcatch.com"}/business/calendar`,
+        })
+      : Promise.resolve(),
+  ]);
+
+  revalidatePath("/customer/dashboard");
+  revalidatePath("/business/dashboard");
+  revalidatePath("/business/calendar");
+}
+
 // ─── Customer: Cancel ─────────────────────────────────────────
 
 export async function cancelAppointment(appointmentId: string) {

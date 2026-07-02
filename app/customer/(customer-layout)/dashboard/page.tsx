@@ -7,6 +7,7 @@ import { redirect } from "next/navigation";
 import { formatDate, formatTime, formatCurrency, formatDuration } from "@/lib/utils";
 import { AppointmentStatus } from "@prisma/client";
 import { cancelAppointment } from "@/lib/actions/appointments";
+import RescheduleButton from "./reschedule-button";
 
 function StatusBadge({ status }: { status: AppointmentStatus }) {
   const map: Record<AppointmentStatus, { label: string; className: string }> = {
@@ -161,7 +162,17 @@ export default async function CustomerDashboardPage({ searchParams }: { searchPa
                     <span className="font-medium text-gray-700">{formatCurrency(apt.price)}</span>
                   </div>
                   {((isUpcoming && canCancel) || canReview) && (
-                    <div className="flex items-center gap-2 mt-3">
+                    <div className="flex flex-wrap items-center gap-2 mt-3">
+                      {isUpcoming && canCancel && (
+                        <RescheduleButton
+                          appointmentId={apt.id}
+                          businessId={apt.businessId}
+                          serviceId={apt.serviceId}
+                          employeeId={apt.employeeId}
+                          serviceName={apt.service.name}
+                          businessName={apt.business.name}
+                        />
+                      )}
                       {isUpcoming && canCancel && <CancelButton appointmentId={apt.id} />}
                       {canReview && (
                         <Link href={`/b/${apt.business.slug}?review=${apt.id}`} className="text-xs font-medium text-gray-700 hover:text-gray-900 border border-gray-200 hover:border-gray-300 px-3 py-1.5 rounded-lg transition-colors">
