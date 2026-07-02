@@ -214,7 +214,7 @@ async function SearchResults({ searchParams }: { searchParams: SearchParams }) {
     ? (searchParams.category as ServiceCategory)
     : undefined;
 
-  let businesses: Awaited<ReturnType<typeof prisma.business.findMany>> = [];
+  let businesses: BusinessWithServices[] = [];
   let totalCount = 0;
 
   try {
