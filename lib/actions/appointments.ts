@@ -6,7 +6,13 @@ import { getServerUser } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import { AppointmentStatus, NotificationType } from "@prisma/client";
 import { warsawDateTimeToUtc, warsawTimeString } from "@/lib/timezone";
-import { sendEmail } from "@/lib/email";
+import {
+  sendBookingRequestEmail,
+  sendBookingConfirmationEmail,
+  sendBookingCancellationEmail,
+  sendBookingRescheduleEmail,
+  sendNewBookingNotificationEmail,
+} from "@/lib/email";
 import { formatDate, formatCurrency } from "@/lib/utils";
 
 // ─── Helpers ──────────────────────────────────────────────────
@@ -166,31 +172,20 @@ export async function createAppointment(data: CreateAppointmentInput) {
       body: `${customer.firstName} ${customer.lastName} — ${service.name}, ${slotLabel}.`,
       data: { appointmentId: appointment.id },
     }),
-    sendEmail({
+    sendBookingRequestEmail({
       to: customer.email,
-      subject: `Rezerwacja wysłana — ${business.name}`,
-      heading: "Twoja rezerwacja została wysłana",
-      lines: [
-        `<strong>${service.name}</strong> w <strong>${business.name}</strong>`,
-        `Termin: <strong>${slotLabel}</strong>`,
-        `Cena: <strong>${formatCurrency(appointment.price)}</strong>`,
-        "Salon potwierdzi wizytę — poinformujemy Cię o zmianie statusu.",
-      ],
-      ctaLabel: "Moje rezerwacje",
-      ctaUrl: `${process.env.NEXT_PUBLIC_APP_URL ?? "https://termcatch.com"}/customer/dashboard`,
+      businessName: business.name,
+      serviceName: service.name,
+      slotLabel,
+      priceLabel: formatCurrency(appointment.price),
     }),
     business.email
-      ? sendEmail({
+      ? sendNewBookingNotificationEmail({
           to: business.email,
-          subject: `Nowa rezerwacja — ${service.name}`,
-          heading: "Masz nową rezerwację",
-          lines: [
-            `Klient: <strong>${customer.firstName} ${customer.lastName}</strong>`,
-            `Usługa: <strong>${service.name}</strong>`,
-            `Termin: <strong>${slotLabel}</strong>`,
-          ],
-          ctaLabel: "Otwórz kalendarz",
-          ctaUrl: `${process.env.NEXT_PUBLIC_APP_URL ?? "https://termcatch.com"}/business/calendar`,
+          businessName: business.name,
+          serviceName: service.name,
+          slotLabel,
+          customerName: `${customer.firstName} ${customer.lastName}`,
         })
       : Promise.resolve(),
   ]);
@@ -293,19 +288,13 @@ export async function rescheduleAppointment(input: {
       data: { appointmentId: appointment.id },
     }),
     appointment.business.email
-      ? sendEmail({
+      ? sendBookingRescheduleEmail({
           to: appointment.business.email,
-          subject: `Wizyta przełożona — ${appointment.service.name}`,
-          heading: "Klient przełożył wizytę",
-          lines: [
-            `Klient: <strong>${customer.firstName} ${customer.lastName}</strong>`,
-            `Usługa: <strong>${appointment.service.name}</strong>`,
-            `Poprzedni termin: ${oldSlotLabel}`,
-            `Nowy termin: <strong>${newSlotLabel}</strong>`,
-            "Potwierdź nowy termin w kalendarzu.",
-          ],
-          ctaLabel: "Otwórz kalendarz",
-          ctaUrl: `${process.env.NEXT_PUBLIC_APP_URL ?? "https://termcatch.com"}/business/calendar`,
+          businessName: appointment.business.name,
+          serviceName: appointment.service.name,
+          slotLabel: newSlotLabel,
+          oldSlotLabel,
+          customerName: `${customer.firstName} ${customer.lastName}`,
         })
       : Promise.resolve(),
   ]);
@@ -323,7 +312,7 @@ export async function cancelAppointment(appointmentId: string) {
   const appointment = await prisma.appointment.findUnique({
     where: { id: appointmentId },
     include: {
-      business: { select: { id: true, name: true, ownerId: true } },
+      business: { select: { id: true, name: true, ownerId: true, email: true } },
       service: { select: { name: true } },
     },
   });
@@ -361,6 +350,15 @@ export async function cancelAppointment(appointmentId: string) {
       body: `${customer.firstName} ${customer.lastName} anulował(a) wizytę: ${appointment.service.name}, ${describeSlot(appointment.startTime)}.`,
       data: { appointmentId },
     }),
+    appointment.business.email
+      ? sendBookingCancellationEmail({
+          to: appointment.business.email,
+          businessName: appointment.business.name,
+          serviceName: appointment.service.name,
+          slotLabel: describeSlot(appointment.startTime),
+          cancelledBy: "customer",
+        })
+      : Promise.resolve(),
   ]);
 
   revalidatePath("/customer/dashboard");
@@ -404,17 +402,11 @@ export async function confirmAppointment(appointmentId: string) {
       body: `${appointment.service.name} w ${appointment.business.name}, ${slotLabel}.`,
       data: { appointmentId },
     }),
-    sendEmail({
+    sendBookingConfirmationEmail({
       to: appointment.customer.email,
-      subject: `Wizyta potwierdzona — ${appointment.business.name}`,
-      heading: "Twoja wizyta została potwierdzona",
-      lines: [
-        `<strong>${appointment.service.name}</strong> w <strong>${appointment.business.name}</strong>`,
-        `Termin: <strong>${slotLabel}</strong>`,
-        "Do zobaczenia!",
-      ],
-      ctaLabel: "Moje rezerwacje",
-      ctaUrl: `${process.env.NEXT_PUBLIC_APP_URL ?? "https://termcatch.com"}/customer/dashboard`,
+      businessName: appointment.business.name,
+      serviceName: appointment.service.name,
+      slotLabel,
     }),
   ]);
 
@@ -468,17 +460,12 @@ export async function declineAppointment(appointmentId: string) {
       body: `${appointment.service.name} w ${appointment.business.name}, ${slotLabel}. Przepraszamy — zarezerwuj inny termin.`,
       data: { appointmentId },
     }),
-    sendEmail({
+    sendBookingCancellationEmail({
       to: appointment.customer.email,
-      subject: `Wizyta odwołana — ${appointment.business.name}`,
-      heading: "Twoja wizyta została odwołana",
-      lines: [
-        `<strong>${appointment.service.name}</strong> w <strong>${appointment.business.name}</strong>`,
-        `Termin: <strong>${slotLabel}</strong>`,
-        "Salon odwołał tę wizytę. Możesz zarezerwować inny termin.",
-      ],
-      ctaLabel: "Zarezerwuj ponownie",
-      ctaUrl: `${process.env.NEXT_PUBLIC_APP_URL ?? "https://termcatch.com"}/customer/dashboard`,
+      businessName: appointment.business.name,
+      serviceName: appointment.service.name,
+      slotLabel,
+      cancelledBy: "business",
     }),
   ]);
 

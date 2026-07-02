@@ -1,5 +1,6 @@
 import { LandingNav } from "@/components/layout/landing-nav";
 import { LandingFooter } from "@/components/layout/landing-footer";
+import ContactForm from "./contact-form";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
@@ -53,61 +54,7 @@ export default function ContactPage() {
             </div>
 
             {/* Right — form */}
-            <div className="bg-white border border-gray-200 rounded-2xl p-8 shadow-sm">
-              <h2 className="text-lg font-semibold text-gray-900 mb-6">Napisz do nas</h2>
-              <form className="space-y-4">
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1.5">Imię</label>
-                    <input
-                      type="text"
-                      placeholder="Jan"
-                      className="w-full px-3.5 py-2.5 border border-gray-200 rounded-xl text-sm placeholder-gray-400 focus:outline-none focus:border-gray-400 transition-colors"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1.5">Nazwisko</label>
-                    <input
-                      type="text"
-                      placeholder="Kowalski"
-                      className="w-full px-3.5 py-2.5 border border-gray-200 rounded-xl text-sm placeholder-gray-400 focus:outline-none focus:border-gray-400 transition-colors"
-                    />
-                  </div>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1.5">E-mail</label>
-                  <input
-                    type="email"
-                    placeholder="twoj@email.pl"
-                    className="w-full px-3.5 py-2.5 border border-gray-200 rounded-xl text-sm placeholder-gray-400 focus:outline-none focus:border-gray-400 transition-colors"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1.5">Temat</label>
-                  <select className="w-full px-3.5 py-2.5 border border-gray-200 rounded-xl text-sm text-gray-700 focus:outline-none focus:border-gray-400 transition-colors">
-                    <option>Pytanie ogólne</option>
-                    <option>Wsparcie techniczne</option>
-                    <option>Enterprise / sieć salonów</option>
-                    <option>Partnerstwo</option>
-                    <option>Inne</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1.5">Wiadomość</label>
-                  <textarea
-                    rows={4}
-                    placeholder="Opisz swoje pytanie lub projekt..."
-                    className="w-full px-3.5 py-2.5 border border-gray-200 rounded-xl text-sm placeholder-gray-400 focus:outline-none focus:border-gray-400 transition-colors resize-none"
-                  />
-                </div>
-                <button
-                  type="submit"
-                  className="w-full py-2.5 bg-gray-900 hover:bg-gray-800 text-white text-sm font-semibold rounded-xl transition-colors"
-                >
-                  Wyślij wiadomość
-                </button>
-              </form>
-            </div>
+            <ContactForm />
           </div>
         </div>
       </div>
