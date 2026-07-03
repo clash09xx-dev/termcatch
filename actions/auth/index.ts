@@ -222,11 +222,14 @@ export async function resetPasswordAction(
 }
 
 export async function signInWithGoogleAction(): Promise<void> {
+  const appUrl = (process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000")
+    .trim()
+    .replace(/\/+$/, "");
   const supabase = await createClient();
   const { data, error } = await supabase.auth.signInWithOAuth({
     provider: "google",
     options: {
-      redirectTo: `${process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000"}/auth/callback`,
+      redirectTo: `${appUrl}/auth/callback`,
       queryParams: { access_type: "offline", prompt: "consent" },
     },
   });
@@ -236,11 +239,14 @@ export async function signInWithGoogleAction(): Promise<void> {
 }
 
 export async function signInWithAppleAction(): Promise<void> {
+  const appUrl = (process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000")
+    .trim()
+    .replace(/\/+$/, "");
   const supabase = await createClient();
   const { data, error } = await supabase.auth.signInWithOAuth({
     provider: "apple",
     options: {
-      redirectTo: `${process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000"}/auth/callback`,
+      redirectTo: `${appUrl}/auth/callback`,
     },
   });
 

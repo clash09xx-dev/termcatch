@@ -26,6 +26,11 @@ function LoginForm() {
   const [state, formAction, isPending] = useActionState(loginAction, initialState);
   const searchParams = useSearchParams();
   const redirectTo = searchParams.get("redirect") ?? "";
+  const urlError = searchParams.get("error");
+  const oauthError =
+    urlError === "oauth_callback_failed" || urlError === "auth_callback_failed"
+      ? "Logowanie przez Google/Apple nie powiodło się. Spróbuj ponownie lub zaloguj się e-mailem."
+      : null;
 
   return (
     <div>
@@ -79,9 +84,9 @@ function LoginForm() {
         <div className="flex-1 h-px bg-gray-200" />
       </div>
 
-      {state.error && (
+      {(state.error || oauthError) && (
         <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-xl text-sm text-red-600">
-          {state.error}
+          {state.error ?? oauthError}
         </div>
       )}
       {state.success && (
