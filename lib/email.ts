@@ -78,7 +78,7 @@ function renderHtml(params: Pick<SendEmailParams, "heading" | "lines" | "ctaLabe
       <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:520px;background-color:#ffffff;border-radius:16px;border:1px solid #f3f4f6;overflow:hidden;">
         <tr><td style="padding:28px 32px 0;">
           <a href="${APP_URL}" style="text-decoration:none;">
-            <span style="font-size:18px;font-weight:800;color:#111827;letter-spacing:-0.5px;">termcatch</span>
+            <span style="font-size:18px;letter-spacing:-0.5px;"><span style="font-weight:400;color:#9ca3af;">term</span><span style="font-weight:800;color:#111827;">catch</span></span>
           </a>
         </td></tr>
         <tr><td style="padding:24px 32px 8px;">

@@ -3,46 +3,7 @@
 import Link from "next/link";
 import { useState, useEffect } from "react";
 import { cn } from "@/lib/utils";
-
-function TermcatchMark({ size = 30 }: { size?: number }) {
-  return (
-    <svg
-      width={size}
-      height={size}
-      viewBox="0 0 30 30"
-      fill="none"
-      xmlns="http://www.w3.org/2000/svg"
-    >
-      <rect width="30" height="30" rx="8" fill="#111827" />
-      {/* calendar body outline */}
-      <rect
-        x="5"
-        y="8"
-        width="20"
-        height="15"
-        rx="2.5"
-        stroke="white"
-        strokeWidth="1.4"
-        strokeOpacity="0.25"
-      />
-      {/* header fill */}
-      <rect x="5" y="8" width="20" height="5.5" rx="2.5" fill="white" fillOpacity="0.1" />
-      {/* separator */}
-      <line x1="5" y1="13.5" x2="25" y2="13.5" stroke="white" strokeWidth="1.4" strokeOpacity="0.2" />
-      {/* pins */}
-      <line x1="10" y1="5.5" x2="10" y2="10.5" stroke="white" strokeWidth="1.6" strokeLinecap="round" strokeOpacity="0.6" />
-      <line x1="20" y1="5.5" x2="20" y2="10.5" stroke="white" strokeWidth="1.6" strokeLinecap="round" strokeOpacity="0.6" />
-      {/* checkmark */}
-      <path
-        d="M9 19.5L12.5 23L21 15"
-        stroke="white"
-        strokeWidth="2"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </svg>
-  );
-}
+import { Wordmark } from "@/components/brand/wordmark";
 
 export function LandingNav() {
   const [isScrolled, setIsScrolled] = useState(false);
@@ -71,11 +32,8 @@ export function LandingNav() {
     >
       <div className="max-w-7xl mx-auto px-6 flex items-center justify-between">
         {/* Logo */}
-        <Link href="/" className="flex items-center gap-2.5">
-          <TermcatchMark size={30} />
-          <span className="text-base font-semibold text-gray-900 tracking-tight">
-            termcatch
-          </span>
+        <Link href="/" className="flex items-center">
+          <Wordmark className="text-xl" />
         </Link>
 
         {/* Desktop nav */}

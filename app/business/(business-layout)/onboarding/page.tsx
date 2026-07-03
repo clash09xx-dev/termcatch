@@ -3,6 +3,7 @@
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
+import { Wordmark } from "@/components/brand/wordmark";
 import { createBusiness, type OnboardingInput, type WorkingHourInput } from "@/lib/actions/business";
 import { ServiceCategory } from "@prisma/client";
 
@@ -148,9 +149,8 @@ export default function OnboardingPage() {
     <div className="min-h-screen bg-gray-50 flex flex-col">
       {/* Top bar */}
       <header className="bg-white border-b border-gray-100 h-14 flex items-center px-6">
-        <div className="flex items-center gap-2.5">
-          <TermcatchMark />
-          <span className="text-sm font-semibold text-gray-900">termcatch</span>
+        <div className="flex items-center">
+          <Wordmark className="text-lg" />
         </div>
         <span className="ml-auto text-xs text-gray-400">
           Krok {step} z {STEPS.length}
@@ -493,22 +493,6 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
 
 const inputCls =
   "w-full px-3.5 py-2.5 text-sm border border-gray-200 rounded-xl bg-white text-gray-900 placeholder:text-gray-400 focus:outline-none focus:border-gray-400 transition-colors";
-
-// ─── Logo ─────────────────────────────────────────────────────
-
-function TermcatchMark() {
-  return (
-    <svg width="26" height="26" viewBox="0 0 30 30" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <rect width="30" height="30" rx="8" fill="#111827" />
-      <rect x="5" y="8" width="20" height="15" rx="2.5" stroke="white" strokeWidth="1.4" strokeOpacity="0.25" />
-      <rect x="5" y="8" width="20" height="5.5" rx="2.5" fill="white" fillOpacity="0.1" />
-      <line x1="5" y1="13.5" x2="25" y2="13.5" stroke="white" strokeWidth="1.4" strokeOpacity="0.2" />
-      <line x1="10" y1="5.5" x2="10" y2="10.5" stroke="white" strokeWidth="1.6" strokeLinecap="round" strokeOpacity="0.6" />
-      <line x1="20" y1="5.5" x2="20" y2="10.5" stroke="white" strokeWidth="1.6" strokeLinecap="round" strokeOpacity="0.6" />
-      <path d="M9 19.5L12.5 23L21 15" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
-  );
-}
 
 // ─── Category Icons (SVG) ─────────────────────────────────────
 

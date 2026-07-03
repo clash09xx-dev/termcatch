@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
+import { Wordmark } from "@/components/brand/wordmark";
 
 const NAV_ITEMS = [
   {
@@ -65,11 +66,8 @@ export function CustomerSidebar() {
     <aside className="hidden md:flex flex-col w-56 h-screen border-r border-gray-200 bg-white shrink-0">
       {/* Logo */}
       <div className="flex items-center gap-2.5 px-4 h-16 border-b border-gray-100">
-        <Link href="/" className="flex items-center gap-2">
-          <div className="w-7 h-7 bg-gray-900 rounded-lg flex items-center justify-center">
-            <span className="text-white font-bold text-xs">T</span>
-          </div>
-          <span className="text-sm font-semibold text-gray-900">Termcatch</span>
+        <Link href="/" className="flex items-center">
+          <Wordmark className="text-base" />
         </Link>
       </div>
 

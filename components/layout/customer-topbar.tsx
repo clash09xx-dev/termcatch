@@ -2,15 +2,14 @@
 
 import Link from "next/link";
 import { logoutAction } from "@/actions/auth";
+import { Wordmark } from "@/components/brand/wordmark";
 
 export function CustomerTopbar({ unreadCount = 0 }: { unreadCount?: number }) {
   return (
     <header className="h-16 border-b border-gray-100 bg-white flex items-center gap-4 px-6 shrink-0">
       {/* Mobile logo */}
-      <Link href="/" className="flex items-center gap-2 md:hidden">
-        <div className="w-7 h-7 bg-gray-900 rounded-lg flex items-center justify-center">
-          <span className="text-white font-bold text-xs">T</span>
-        </div>
+      <Link href="/" className="flex items-center md:hidden">
+        <Wordmark className="text-base" />
       </Link>
 
       {/* Search shortcut */}

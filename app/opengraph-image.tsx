@@ -24,30 +24,14 @@ export default function OgImage() {
         <div
           style={{
             display: "flex",
-            alignItems: "center",
-            gap: "20px",
+            alignItems: "baseline",
             marginBottom: "40px",
+            fontSize: "56px",
+            letterSpacing: "-2px",
           }}
         >
-          <div
-            style={{
-              width: "72px",
-              height: "72px",
-              backgroundColor: "#111827",
-              borderRadius: "18px",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              color: "#ffffff",
-              fontSize: "40px",
-              fontWeight: 800,
-            }}
-          >
-            T
-          </div>
-          <div style={{ fontSize: "48px", fontWeight: 800, color: "#111827" }}>
-            termcatch
-          </div>
+          <span style={{ fontWeight: 400, color: "#9ca3af" }}>term</span>
+          <span style={{ fontWeight: 800, color: "#111827" }}>catch</span>
         </div>
         <div
           style={{

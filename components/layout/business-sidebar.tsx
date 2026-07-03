@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { useState } from "react";
+import { Wordmark } from "@/components/brand/wordmark";
 
 type NavItem = {
   href: string;
@@ -68,13 +69,13 @@ export function BusinessSidebar() {
     >
       {/* Logo */}
       <div className="flex items-center gap-3 px-4 h-16 border-b border-gray-100">
-        <div className="w-7 h-7 bg-gray-900 rounded-lg flex items-center justify-center flex-shrink-0">
-          <span className="text-white font-bold text-xs">T</span>
-        </div>
-        {!isCollapsed && (
-          <span className="text-sm font-semibold text-gray-900 truncate">
-            Termcatch
+        {isCollapsed ? (
+          <span className="text-base tracking-tight leading-none flex-shrink-0">
+            <span className="font-normal text-gray-400">t</span>
+            <span className="font-bold text-gray-900">c</span>
           </span>
+        ) : (
+          <Wordmark className="text-base" />
         )}
         <button
           onClick={() => setIsCollapsed(!isCollapsed)}

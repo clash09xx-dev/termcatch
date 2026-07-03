@@ -1,18 +1,5 @@
 import Link from "next/link";
-
-function TermcatchMark({ size = 26 }: { size?: number }) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 30 30" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <rect width="30" height="30" rx="8" fill="#111827" />
-      <rect x="5" y="8" width="20" height="15" rx="2.5" stroke="white" strokeWidth="1.4" strokeOpacity="0.25" />
-      <rect x="5" y="8" width="20" height="5.5" rx="2.5" fill="white" fillOpacity="0.1" />
-      <line x1="5" y1="13.5" x2="25" y2="13.5" stroke="white" strokeWidth="1.4" strokeOpacity="0.2" />
-      <line x1="10" y1="5.5" x2="10" y2="10.5" stroke="white" strokeWidth="1.6" strokeLinecap="round" strokeOpacity="0.6" />
-      <line x1="20" y1="5.5" x2="20" y2="10.5" stroke="white" strokeWidth="1.6" strokeLinecap="round" strokeOpacity="0.6" />
-      <path d="M9 19.5L12.5 23L21 15" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
-  );
-}
+import { Wordmark } from "@/components/brand/wordmark";
 
 const FOOTER_LINKS = {
   "Dla klientów": [
@@ -80,9 +67,8 @@ export function LandingFooter() {
         <div className="grid grid-cols-2 md:grid-cols-5 gap-8 lg:gap-12">
           {/* Brand */}
           <div className="col-span-2 md:col-span-1">
-            <Link href="/" className="flex items-center gap-2.5 mb-4">
-              <TermcatchMark size={26} />
-              <span className="text-base font-semibold text-gray-900 tracking-tight">termcatch</span>
+            <Link href="/" className="flex items-center mb-4">
+              <Wordmark className="text-lg" />
             </Link>
             <p className="text-sm text-gray-500 leading-relaxed mb-6">
               Platforma rezerwacji online dla polskiego rynku beauty i wellness.
