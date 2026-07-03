@@ -31,18 +31,17 @@ function BookingWidget() {
       className="relative"
     >
       <div className="bg-white rounded-2xl border border-gray-200 shadow-2xl shadow-gray-300/30 overflow-hidden">
-        {/* Salon header */}
+        {/* Salon header — poglądowe demo profilu salonu */}
         <div className="flex items-center gap-3 px-5 py-4 border-b border-gray-100">
           <div className="w-10 h-10 rounded-xl bg-gray-900 flex items-center justify-center text-white text-sm font-bold flex-shrink-0">
-            BL
+            T
           </div>
           <div className="min-w-0">
-            <p className="text-sm font-semibold text-gray-900 truncate">Black Label Barber</p>
-            <p className="text-xs text-gray-400">Kraków, Kazimierz · 4.9 (142 opinii)</p>
+            <p className="text-sm font-semibold text-gray-900 truncate">Twój salon</p>
+            <p className="text-xs text-gray-400">Tak klienci widzą Twój profil</p>
           </div>
-          <span className="ml-auto flex items-center gap-1 text-[11px] font-medium text-emerald-700 bg-emerald-50 border border-emerald-100 px-2 py-1 rounded-full flex-shrink-0">
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-            Dostępne dziś
+          <span className="ml-auto flex items-center gap-1 text-[11px] font-medium text-gray-500 bg-gray-50 border border-gray-100 px-2 py-1 rounded-full flex-shrink-0">
+            Podgląd
           </span>
         </div>
 
@@ -134,8 +133,8 @@ function BookingWidget() {
         transition={{ duration: 3.5, repeat: Infinity, ease: "easeInOut", delay: 1 }}
         className="absolute -bottom-3 -left-3 bg-white border border-gray-100 shadow-xl rounded-2xl px-3.5 py-2.5 hidden sm:block"
       >
-        <p className="text-[10px] text-gray-400">Przypomnienie wysłane</p>
-        <p className="text-sm font-bold text-gray-900">4 klientów · SMS</p>
+        <p className="text-[10px] text-gray-400">Powiadomienie wysłane</p>
+        <p className="text-sm font-bold text-gray-900">Wizyta potwierdzona</p>
       </motion.div>
     </motion.div>
   );
