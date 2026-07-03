@@ -8,6 +8,9 @@ import type { AuthState } from "@/actions/auth";
 
 const initialState: AuthState = {};
 
+// Włącz po skonfigurowaniu Apple Developer Account (Supabase → Providers → Apple)
+const APPLE_SIGNIN_ENABLED = false;
+
 const inputCls =
   "w-full px-3.5 py-2.5 border border-gray-200 rounded-xl text-sm text-gray-900 bg-white placeholder:text-gray-400 focus:outline-none focus:border-gray-400 transition-colors";
 
@@ -53,17 +56,21 @@ function LoginForm() {
           </button>
         </form>
 
-        <form action={signInWithAppleAction}>
-          <button
-            type="submit"
-            className="w-full flex items-center justify-center gap-3 px-4 py-2.5 border border-gray-200 rounded-xl text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 transition-colors"
-          >
-            <svg width="18" height="18" viewBox="0 0 814 1000" fill="currentColor">
-              <path d="M788.1 340.9c-5.8 4.5-108.2 62.2-108.2 190.5 0 148.4 130.3 200.9 134.2 202.2-.6 3.2-20.7 71.9-68.7 141.9-42.8 61.6-87.5 123.1-155.5 123.1s-85.5-39.5-164-39.5c-76 0-103.7 40.8-165.9 40.8s-105.3-57.8-155.5-127.4C46 790.7 0 663 0 541.8c0-207.5 135.4-317.3 269-317.3 71 0 130.5 46.4 175 46.4 42.8 0 109.1-49 191.8-49 30.8 0 110.6 2.6 163.9 100.9zm-234.5-181.5c32.4-38.4 56.5-91.4 56.5-144.4 0-7.4-.6-15.5-2-22.3-53.4 2-116.8 35.2-154.5 78.6-29.4 33.6-58.5 86.6-58.5 140.4 0 8.3 1.3 16.6 1.9 19.2 3.2.6 8.4 1.3 13.6 1.3 48 0 108.8-32.1 143-72.8z"/>
-            </svg>
-            Kontynuuj z Apple
-          </button>
-        </form>
+        {/* Apple Sign In — ukryty do czasu konfiguracji Apple Developer Account.
+            Aby przywrócić: zmień APPLE_SIGNIN_ENABLED na true. */}
+        {APPLE_SIGNIN_ENABLED && (
+          <form action={signInWithAppleAction}>
+            <button
+              type="submit"
+              className="w-full flex items-center justify-center gap-3 px-4 py-2.5 border border-gray-200 rounded-xl text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 transition-colors"
+            >
+              <svg width="18" height="18" viewBox="0 0 814 1000" fill="currentColor">
+                <path d="M788.1 340.9c-5.8 4.5-108.2 62.2-108.2 190.5 0 148.4 130.3 200.9 134.2 202.2-.6 3.2-20.7 71.9-68.7 141.9-42.8 61.6-87.5 123.1-155.5 123.1s-85.5-39.5-164-39.5c-76 0-103.7 40.8-165.9 40.8s-105.3-57.8-155.5-127.4C46 790.7 0 663 0 541.8c0-207.5 135.4-317.3 269-317.3 71 0 130.5 46.4 175 46.4 42.8 0 109.1-49 191.8-49 30.8 0 110.6 2.6 163.9 100.9zm-234.5-181.5c32.4-38.4 56.5-91.4 56.5-144.4 0-7.4-.6-15.5-2-22.3-53.4 2-116.8 35.2-154.5 78.6-29.4 33.6-58.5 86.6-58.5 140.4 0 8.3 1.3 16.6 1.9 19.2 3.2.6 8.4 1.3 13.6 1.3 48 0 108.8-32.1 143-72.8z"/>
+              </svg>
+              Kontynuuj z Apple
+            </button>
+          </form>
+        )}
       </div>
 
       <div className="flex items-center gap-3 my-5">
