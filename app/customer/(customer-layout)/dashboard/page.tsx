@@ -1,9 +1,8 @@
 export const dynamic = "force-dynamic";
 
 import Link from "next/link";
-import { getServerUser } from "@/lib/supabase/server";
 import { prisma } from "@/lib/prisma";
-import { redirect } from "next/navigation";
+import { getOrCreateDbUser } from "@/lib/auth-user";
 import { formatDate, formatTime, formatCurrency, formatDuration } from "@/lib/utils";
 import { AppointmentStatus } from "@prisma/client";
 import { cancelAppointment } from "@/lib/actions/appointments";
@@ -45,18 +44,11 @@ function CancelButton({ appointmentId }: { appointmentId: string }) {
 type SearchParams = Promise<{ tab?: string }>;
 
 export default async function CustomerDashboardPage({ searchParams }: { searchParams: SearchParams }) {
-  const user = await getServerUser();
-  if (!user) redirect("/login");
-
   const { tab } = await searchParams;
   const activeTab = tab === "history" ? "history" : "upcoming";
   const now = new Date();
 
-  const dbUser = await prisma.user.findUnique({
-    where: { supabaseId: user.id },
-    select: { id: true, firstName: true },
-  });
-  if (!dbUser) redirect("/login");
+  const dbUser = await getOrCreateDbUser();
 
   const upcomingWhere = {
     customerId: dbUser.id,

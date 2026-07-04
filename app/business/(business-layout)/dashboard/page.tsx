@@ -1,7 +1,7 @@
 export const dynamic = "force-dynamic";
 
-import { getServerUser } from "@/lib/supabase/server";
 import { prisma } from "@/lib/prisma";
+import { getOrCreateDbUser } from "@/lib/auth-user";
 import { formatCurrency, formatDate, formatTime, formatRelativeTime } from "@/lib/utils";
 import { warsawDateString, warsawDayStartUtc, warsawDayEndUtc } from "@/lib/timezone";
 import { redirect } from "next/navigation";
@@ -10,14 +10,10 @@ import { AppointmentStatus } from "@prisma/client";
 import { confirmAppointment, declineAppointment } from "@/lib/actions/appointments";
 
 export default async function BusinessDashboardPage() {
-  const user = await getServerUser();
-  if (!user) redirect("/login");
-
-  const dbUser = await prisma.user.findUnique({
-    where: { supabaseId: user.id },
-    include: { ownedBusinesses: { take: 1 } },
-  });
-  const business = dbUser?.ownedBusinesses[0];
+  const dbUser = await getOrCreateDbUser();
+  const business = (
+    await prisma.business.findMany({ where: { ownerId: dbUser.id }, take: 1 })
+  )[0];
   if (!business) redirect("/business/onboarding");
 
   const now = new Date();

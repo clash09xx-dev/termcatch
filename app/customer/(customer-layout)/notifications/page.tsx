@@ -1,9 +1,8 @@
 export const dynamic = "force-dynamic";
 
 import Link from "next/link";
-import { redirect } from "next/navigation";
-import { getServerUser } from "@/lib/supabase/server";
 import { prisma } from "@/lib/prisma";
+import { getOrCreateDbUser } from "@/lib/auth-user";
 import { markAllNotificationsRead } from "@/lib/actions/notifications";
 import { formatRelativeTime, cn } from "@/lib/utils";
 import { NotificationType } from "@prisma/client";
@@ -43,14 +42,7 @@ function TypeIcon({ type }: { type: NotificationType }) {
 }
 
 export default async function NotificationsPage() {
-  const user = await getServerUser();
-  if (!user) redirect("/login");
-
-  const dbUser = await prisma.user.findUnique({
-    where: { supabaseId: user.id },
-    select: { id: true },
-  });
-  if (!dbUser) redirect("/login");
+  const dbUser = await getOrCreateDbUser();
 
   const notifications = await prisma.notification.findMany({
     where: { userId: dbUser.id, channel: "IN_APP" },
