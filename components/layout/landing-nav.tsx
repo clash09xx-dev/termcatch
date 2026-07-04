@@ -43,8 +43,7 @@ export function LandingNav() {
 
   const links = [
     { href: "/search", label: "Szukaj" },
-    { href: "/pricing", label: "Cennik" },
-    { href: "/for-business", label: "Dla salonów" },
+    { href: "/for-business", label: "Dla specjalistów" },
   ];
 
   return (

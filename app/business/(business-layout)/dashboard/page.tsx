@@ -2,6 +2,8 @@ export const dynamic = "force-dynamic";
 
 import { prisma } from "@/lib/prisma";
 import { getOrCreateDbUser } from "@/lib/auth-user";
+import { getBusinessNotificationSettings } from "@/lib/notification-settings";
+import { NotificationsPrompt } from "@/components/business/notifications-prompt";
 import { formatCurrency, formatDate, formatTime, formatRelativeTime } from "@/lib/utils";
 import { warsawDateString, warsawDayStartUtc, warsawDayEndUtc } from "@/lib/timezone";
 import { redirect } from "next/navigation";
@@ -108,8 +110,11 @@ export default async function BusinessDashboardPage() {
     },
   ];
 
+  const { configured: notifConfigured } = await getBusinessNotificationSettings(business.id);
+
   return (
     <div className="space-y-6">
+      <NotificationsPrompt configured={notifConfigured} />
       {/* Welcome */}
       <div>
         <h2 className="text-xl font-semibold text-gray-900">{business.name}</h2>

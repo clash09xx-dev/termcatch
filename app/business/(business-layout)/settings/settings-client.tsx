@@ -2,6 +2,8 @@
 
 import { useState, useTransition } from "react";
 import { updateBusinessSettings } from "@/lib/actions/business";
+import { NotificationSettingsForm } from "@/components/business/notification-settings-form";
+import type { BusinessNotificationSettings } from "@/lib/notification-settings";
 
 type Settings = {
   advanceBookingDays: number;
@@ -16,6 +18,7 @@ type Settings = {
 
 type Props = {
   settings: Settings;
+  notificationSettings: BusinessNotificationSettings;
 };
 
 type Section = "rezerwacje" | "anulowanie" | "powiadomienia" | "strefa";
@@ -35,7 +38,7 @@ const CANCELLATION_HOURS_OPTIONS = [
   { value: 72, label: "72 godziny" },
 ];
 
-export function SettingsClient({ settings: initialSettings }: Props) {
+export function SettingsClient({ settings: initialSettings, notificationSettings }: Props) {
   const [activeSection, setActiveSection] = useState<Section>("rezerwacje");
   const [settings, setSettings] = useState<Settings>(initialSettings);
   const [isPending, startTransition] = useTransition();
@@ -268,48 +271,7 @@ export function SettingsClient({ settings: initialSettings }: Props) {
 
           {/* Powiadomienia */}
           {activeSection === "powiadomienia" && (
-            <div className="bg-white border border-gray-100 rounded-2xl p-6 space-y-4">
-              <h3 className="text-sm font-semibold text-gray-900">Powiadomienia</h3>
-              <p className="text-sm text-gray-700">
-                Wybierz w jaki sposób chcesz otrzymywać powiadomienia o wizytach i klientach.
-              </p>
-
-              {[
-                {
-                  key: "emailNotifications" as keyof Settings,
-                  label: "Powiadomienia e-mail",
-                  description: "Otrzymuj e-maile o nowych, potwierdzonych i anulowanych wizytach.",
-                },
-                {
-                  key: "smsNotifications" as keyof Settings,
-                  label: "Powiadomienia SMS",
-                  description: "Otrzymuj SMS-y z przypomnieniami i alertami (dodatkowe koszty).",
-                },
-              ].map((item) => (
-                <div
-                  key={item.key}
-                  className="flex items-start justify-between p-4 bg-gray-50 rounded-xl"
-                >
-                  <div>
-                    <p className="text-sm font-medium text-gray-900">{item.label}</p>
-                    <p className="text-xs text-gray-700 mt-0.5">{item.description}</p>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => update(item.key, !settings[item.key] as Settings[typeof item.key])}
-                    className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors flex-shrink-0 ml-4 mt-0.5 ${
-                      settings[item.key] ? "bg-gray-900" : "bg-gray-300"
-                    }`}
-                  >
-                    <span
-                      className={`inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform ${
-                        settings[item.key] ? "translate-x-6" : "translate-x-1"
-                      }`}
-                    />
-                  </button>
-                </div>
-              ))}
-            </div>
+            <NotificationSettingsForm initial={notificationSettings} />
           )}
 
           {/* Niebezpieczna strefa */}

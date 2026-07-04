@@ -3,8 +3,10 @@
 import Link from "next/link";
 import { logoutAction } from "@/actions/auth";
 import { Wordmark } from "@/components/brand/wordmark";
+import { useUnreadCount } from "@/hooks/use-unread-count";
 
-export function CustomerTopbar({ unreadCount = 0 }: { unreadCount?: number }) {
+export function CustomerTopbar() {
+  const unreadCount = useUnreadCount();
   return (
     <header className="h-16 border-b border-gray-100 bg-white flex items-center gap-4 px-6 shrink-0">
       {/* Mobile logo */}

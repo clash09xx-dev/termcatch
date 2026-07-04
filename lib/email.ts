@@ -305,6 +305,25 @@ export async function sendBookingRescheduleEmail(
   });
 }
 
+/** Reminder for the customer — day before the visit. */
+export async function sendBookingReminderEmail(
+  params: BookingEmailBase & { address: string }
+): Promise<{ sent: boolean }> {
+  return sendEmail({
+    to: params.to,
+    subject: `Przypomnienie: jutro wizyta — ${params.businessName}`,
+    heading: "Przypomnienie o wizycie",
+    lines: [
+      `<strong>${params.serviceName}</strong> w <strong>${params.businessName}</strong>`,
+      `Termin: <strong>${params.slotLabel}</strong>`,
+      `Adres: ${params.address}`,
+      "Jeśli nie możesz przyjść — przełóż lub anuluj wizytę w panelu, żeby ktoś inny mógł skorzystać z terminu.",
+    ],
+    ctaLabel: "Moje rezerwacje",
+    ctaUrl: `${APP_URL}/customer/dashboard`,
+  });
+}
+
 /** New booking — notify the salon. */
 export async function sendNewBookingNotificationEmail(
   params: BookingEmailBase & { customerName: string }

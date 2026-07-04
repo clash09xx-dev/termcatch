@@ -458,7 +458,7 @@ export default async function BusinessProfilePage({
                   </div>
                 )}
 
-                {/* Address */}
+                {/* Address + map */}
                 <div className="p-5 border-b border-gray-100">
                   <h3 className="text-sm font-semibold text-gray-900 mb-2 flex items-center gap-2">
                     <svg className="w-4 h-4 text-gray-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8}>
@@ -470,13 +470,28 @@ export default async function BusinessProfilePage({
                   <p className="text-sm text-gray-600">
                     {business.address}, {business.postalCode} {business.city}
                   </p>
+
+                  {/* Google Maps embed */}
+                  <div className="mt-3 rounded-xl overflow-hidden border border-gray-100">
+                    <iframe
+                      title={`Mapa dojazdu — ${business.name}`}
+                      src={`https://www.google.com/maps?q=${encodeURIComponent(
+                        `${business.address}, ${business.postalCode} ${business.city}, Polska`
+                      )}&output=embed&hl=pl`}
+                      className="w-full h-56 border-0"
+                      loading="lazy"
+                      referrerPolicy="no-referrer-when-downgrade"
+                      allowFullScreen
+                    />
+                  </div>
+
                   <a
                     href={mapsUrl}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="inline-flex items-center gap-1.5 mt-2 text-xs font-semibold text-gray-900 hover:underline underline-offset-4"
+                    className="inline-flex items-center gap-1.5 mt-3 text-xs font-semibold text-gray-900 hover:underline underline-offset-4"
                   >
-                    Pokaż na mapie
+                    Otwórz w Google Maps (nawigacja)
                     <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
                       <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 6H5.25A2.25 2.25 0 0 0 3 8.25v10.5A2.25 2.25 0 0 0 5.25 21h10.5A2.25 2.25 0 0 0 18 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25" />
                     </svg>

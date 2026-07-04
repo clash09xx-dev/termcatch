@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
+import { useUnreadCount } from "@/hooks/use-unread-count";
 
 const ITEMS = [
   {
@@ -58,8 +59,9 @@ const ITEMS = [
   },
 ];
 
-export function CustomerMobileNav({ unreadCount = 0 }: { unreadCount?: number }) {
+export function CustomerMobileNav() {
   const pathname = usePathname();
+  const unreadCount = useUnreadCount();
 
   return (
     <nav className="md:hidden fixed bottom-0 inset-x-0 z-40 bg-white border-t border-gray-100 pb-[env(safe-area-inset-bottom)]">

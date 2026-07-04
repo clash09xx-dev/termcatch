@@ -350,6 +350,9 @@ model Business {
   cancellationFeeType  String? @map("cancellation_fee_type")  // "percentage" | "fixed"
   cancellationFeeValue Float?  @map("cancellation_fee_value")
 
+  // Notification preferences: { smsEnabled, smsPhone, whatsappEnabled, whatsappPhone, emailEnabled }
+  notificationSettings Json?   @map("notification_settings")
+
   // Deposits
   requiresDeposit  Boolean @default(false) @map("requires_deposit")
   depositType      String? @map("deposit_type")  // "percentage" | "fixed"

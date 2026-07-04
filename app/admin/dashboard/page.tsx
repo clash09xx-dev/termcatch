@@ -6,6 +6,7 @@ import { getServerUser } from "@/lib/supabase/server";
 import { prisma } from "@/lib/prisma";
 import { formatCurrency, formatRelativeTime } from "@/lib/utils";
 import { Wordmark } from "@/components/brand/wordmark";
+import { AdminViewSwitcher } from "@/components/admin-view-switcher";
 
 function parseAdminEmails(): string[] {
   return (process.env.ADMIN_EMAILS ?? "")
@@ -141,6 +142,7 @@ export default async function AdminDashboardPage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
+      <AdminViewSwitcher />
       <header className="h-14 bg-white border-b border-gray-100 flex items-center px-6 gap-4">
         <Link href="/" className="flex items-center">
           <Wordmark className="text-base" />

@@ -153,6 +153,26 @@ export function StaffClient({ employees: initialEmployees, availableServices }: 
         </button>
       </div>
 
+      {/* Info o planach */}
+      {employees.length >= 1 && (
+        <div className="bg-gray-50 border border-gray-200 rounded-2xl px-5 py-4 flex items-start gap-3">
+          <svg className="w-4 h-4 text-gray-500 flex-shrink-0 mt-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8}>
+            <circle cx="12" cy="12" r="10" />
+            <path d="M12 16v-4M12 8h.01" />
+          </svg>
+          <p className="text-xs text-gray-600 leading-relaxed">
+            {employees.length <= 1 ? (
+              <>Masz <strong>{employees.length}</strong> specjalistę — mieścisz się w planie <strong>Solo (39 zł/mies.)</strong>. Dodanie kolejnych osób będzie wymagało planu Zespół (89 zł/mies., do 5 osób).</>
+            ) : employees.length <= 5 ? (
+              <>Masz <strong>{employees.length}</strong> specjalistów — to plan <strong>Zespół (89 zł/mies., do 5 osób)</strong>. Powyżej 5 osób obowiązuje plan Salon Pro (149 zł/mies., bez limitu).</>
+            ) : (
+              <>Masz <strong>{employees.length}</strong> specjalistów — to plan <strong>Salon Pro (149 zł/mies., bez limitu osób)</strong>.</>
+            )}{" "}
+            W okresie oferty startowej nie pobieramy żadnych opłat.
+          </p>
+        </div>
+      )}
+
       {/* Empty state */}
       {employees.length === 0 ? (
         <div className="bg-white border border-gray-100 rounded-2xl flex flex-col items-center justify-center py-20 text-center px-6">

@@ -3,6 +3,8 @@ import { getServerUser } from "@/lib/supabase/server";
 import { BusinessSidebar } from "@/components/layout/business-sidebar";
 import { BusinessTopbar } from "@/components/layout/business-topbar";
 import { BusinessMobileNav } from "@/components/layout/business-mobile-nav";
+import { AdminViewSwitcher } from "@/components/admin-view-switcher";
+import { isPlatformAdmin } from "@/lib/is-admin";
 
 export default async function BusinessDashboardLayout({
   children,
@@ -26,6 +28,7 @@ export default async function BusinessDashboardLayout({
       </div>
 
       <BusinessMobileNav />
+      {(await isPlatformAdmin()) && <AdminViewSwitcher />}
     </div>
   );
 }

@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { getServerUser } from "@/lib/supabase/server";
 import { prisma } from "@/lib/prisma";
 import { SettingsClient } from "./settings-client";
+import { getBusinessNotificationSettings } from "@/lib/notification-settings";
 
 async function getSettingsData(supabaseId: string) {
   const dbUser = await prisma.user.findUnique({
@@ -23,8 +24,11 @@ export default async function SettingsPage() {
   const business = dbUser?.ownedBusinesses[0];
   if (!business) redirect("/business/onboarding");
 
+  const { settings: notificationSettings } = await getBusinessNotificationSettings(business.id);
+
   return (
     <SettingsClient
+      notificationSettings={notificationSettings}
       settings={{
         advanceBookingDays: business.advanceBookingDays,
         minAdvanceHours: business.minAdvanceHours,

@@ -13,6 +13,25 @@ import {
   sendBookingRescheduleEmail,
   sendNewBookingNotificationEmail,
 } from "@/lib/email";
+import { sendSms, sendWhatsApp } from "@/lib/messaging";
+import { getBusinessNotificationSettings } from "@/lib/notification-settings";
+
+/** SMS/WhatsApp do salonu zgodnie z jego preferencjami — nigdy nie rzuca. */
+async function notifySalonChannels(businessId: string, message: string) {
+  try {
+    const { settings } = await getBusinessNotificationSettings(businessId);
+    const jobs: Promise<boolean>[] = [];
+    if (settings.smsEnabled && settings.smsPhone) {
+      jobs.push(sendSms(settings.smsPhone, message));
+    }
+    if (settings.whatsappEnabled && settings.whatsappPhone) {
+      jobs.push(sendWhatsApp(settings.whatsappPhone, message));
+    }
+    if (jobs.length) await Promise.allSettled(jobs);
+  } catch (err) {
+    console.error("[notifySalonChannels]", err);
+  }
+}
 import { formatDate, formatCurrency } from "@/lib/utils";
 
 // ─── Helpers ──────────────────────────────────────────────────
@@ -188,6 +207,10 @@ export async function createAppointment(data: CreateAppointmentInput) {
           customerName: `${customer.firstName} ${customer.lastName}`,
         })
       : Promise.resolve(),
+    notifySalonChannels(
+      business.id,
+      `Termcatch: nowa rezerwacja — ${service.name}, ${slotLabel}, ${customer.firstName} ${customer.lastName}. Potwierdź w panelu: ${process.env.NEXT_PUBLIC_APP_URL ?? "https://termcatch.com"}/business/dashboard`
+    ),
   ]);
 
   revalidatePath("/customer/dashboard");
@@ -226,6 +249,19 @@ export async function rescheduleAppointment(input: {
   ];
   if (!reschedulableStatuses.includes(appointment.status)) {
     throw new Error("Tylko wizyty oczekujące lub potwierdzone można przełożyć.");
+  }
+
+  // Uczciwa polityka: przełożenie możliwe do X godzin przed wizytą (ustala salon)
+  const policy = await prisma.business.findUnique({
+    where: { id: appointment.businessId },
+    select: { cancellationHours: true, phone: true },
+  });
+  const limitHours = policy?.cancellationHours ?? 24;
+  const hoursLeft = (appointment.startTime.getTime() - Date.now()) / 3_600_000;
+  if (hoursLeft < limitHours) {
+    throw new Error(
+      `Wizytę można przełożyć najpóźniej ${limitHours} godz. przed terminem.${policy?.phone ? ` W nagłych przypadkach zadzwoń do salonu: ${policy.phone}.` : " W nagłych przypadkach skontaktuj się z salonem."}`
+    );
   }
 
   const newStart = warsawDateTimeToUtc(input.date, input.time);
@@ -297,6 +333,10 @@ export async function rescheduleAppointment(input: {
           customerName: `${customer.firstName} ${customer.lastName}`,
         })
       : Promise.resolve(),
+    notifySalonChannels(
+      appointment.business.id,
+      `Termcatch: wizyta przełożona — ${appointment.service.name} z ${oldSlotLabel} na ${newSlotLabel}. Potwierdź nowy termin w panelu.`
+    ),
   ]);
 
   revalidatePath("/customer/dashboard");
@@ -332,6 +372,22 @@ export async function cancelAppointment(appointmentId: string) {
     );
   }
 
+  // Uczciwa polityka: anulowanie do X godzin przed wizytą (ustala salon).
+  // Wizyty jeszcze niepotwierdzone przez salon można anulować zawsze.
+  if (appointment.status === AppointmentStatus.CONFIRMED) {
+    const policy = await prisma.business.findUnique({
+      where: { id: appointment.businessId },
+      select: { cancellationHours: true, phone: true },
+    });
+    const limitHours = policy?.cancellationHours ?? 24;
+    const hoursLeft = (appointment.startTime.getTime() - Date.now()) / 3_600_000;
+    if (hoursLeft < limitHours) {
+      throw new Error(
+        `Potwierdzoną wizytę można anulować najpóźniej ${limitHours} godz. przed terminem.${policy?.phone ? ` W nagłych przypadkach zadzwoń do salonu: ${policy.phone}.` : ""}`
+      );
+    }
+  }
+
   await prisma.appointment.update({
     where: { id: appointmentId },
     data: {
@@ -359,6 +415,10 @@ export async function cancelAppointment(appointmentId: string) {
           cancelledBy: "customer",
         })
       : Promise.resolve(),
+    notifySalonChannels(
+      appointment.business.id,
+      `Termcatch: klient anulował wizytę — ${appointment.service.name}, ${describeSlot(appointment.startTime)}. Termin jest znów wolny.`
+    ),
   ]);
 
   revalidatePath("/customer/dashboard");
