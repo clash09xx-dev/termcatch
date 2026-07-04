@@ -316,8 +316,8 @@ export default function HomePage() {
               transition={{ duration: 0.4 }}
               className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-gray-900 text-white text-xs font-medium mb-9"
             >
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-              Dostępne w Krakowie · wkrótce w Polsce
+              <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />
+              Wersja testowa · platforma w budowie — możesz już testować
             </motion.div>
 
             <motion.h1
