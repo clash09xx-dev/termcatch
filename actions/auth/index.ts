@@ -12,6 +12,11 @@ const RegisterSchema = z.object({
   email: z.string().email("Nieprawidłowy adres e-mail"),
   password: z.string().min(8, "Hasło musi mieć min. 8 znaków"),
   role: z.enum(["CUSTOMER", "BUSINESS_OWNER"]).default("CUSTOMER"),
+  acceptTerms: z.literal(true, {
+    errorMap: () => ({
+      message: "Aby założyć konto, zaakceptuj Regulamin i Politykę prywatności.",
+    }),
+  }),
 });
 
 const LoginSchema = z.object({
@@ -35,6 +40,7 @@ export async function registerAction(
     email: formData.get("email") as string,
     password: formData.get("password") as string,
     role: (formData.get("role") as string) ?? "CUSTOMER",
+    acceptTerms: formData.get("acceptTerms") === "on",
   };
 
   const parsed = RegisterSchema.safeParse(raw);
@@ -57,7 +63,12 @@ export async function registerAction(
       password,
       options: {
         emailRedirectTo: `${process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000"}/auth/callback`,
-        data: { firstName, lastName, role },
+        data: {
+          firstName,
+          lastName,
+          role,
+          acceptedTermsAt: new Date().toISOString(),
+        },
       },
     });
 

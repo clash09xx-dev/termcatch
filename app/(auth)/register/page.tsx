@@ -84,6 +84,13 @@ export default function RegisterPage() {
         )}
       </div>
 
+      <p className="mt-2.5 text-[11px] text-gray-400 leading-relaxed">
+        Kontynuując przez Google lub Apple, akceptujesz{" "}
+        <Link href="/terms" target="_blank" className="underline underline-offset-2 hover:text-gray-600">Regulamin</Link>{" "}
+        i{" "}
+        <Link href="/privacy" target="_blank" className="underline underline-offset-2 hover:text-gray-600">Politykę prywatności</Link>.
+      </p>
+
       <div className="flex items-center gap-3 my-5">
         <div className="flex-1 h-px bg-gray-200" />
         <span className="text-xs text-gray-400">lub</span>
@@ -149,6 +156,29 @@ export default function RegisterPage() {
             <p className="mt-1 text-xs text-red-500">{state.fieldErrors.password[0]}</p>
           )}
         </div>
+
+        <label className="flex items-start gap-2.5 cursor-pointer">
+          <input
+            type="checkbox"
+            name="acceptTerms"
+            required
+            className="mt-0.5 w-4 h-4 accent-gray-900 flex-shrink-0"
+          />
+          <span className="text-xs text-gray-500 leading-relaxed">
+            Akceptuję{" "}
+            <Link href="/terms" target="_blank" className="text-gray-900 underline underline-offset-2 hover:no-underline">
+              Regulamin
+            </Link>{" "}
+            oraz{" "}
+            <Link href="/privacy" target="_blank" className="text-gray-900 underline underline-offset-2 hover:no-underline">
+              Politykę prywatności
+            </Link>{" "}
+            Termcatch.
+          </span>
+        </label>
+        {state.fieldErrors?.acceptTerms && (
+          <p className="text-xs text-red-500">{state.fieldErrors.acceptTerms[0]}</p>
+        )}
 
         <button
           type="submit"
