@@ -2,6 +2,8 @@ import type { Metadata, Viewport } from "next";
 import { Inter } from "next/font/google";
 import { ThemeProvider } from "@/components/providers/theme-provider";
 import { QueryProvider } from "@/components/providers/query-provider";
+import { CookieConsentBanner } from "@/components/cookie-consent";
+import { AnalyticsTracker } from "@/components/analytics-tracker";
 import { Toaster } from "sonner";
 import "./globals.css";
 
@@ -14,20 +16,28 @@ const inter = Inter({
 export const metadata: Metadata = {
   title: {
     template: "%s | Termcatch",
-    default: "Termcatch — Rezerwacje online dla salonów i usług",
+    default: "Termcatch — Rezerwacje online dla salonów beauty | Fryzjer, barber, masaż",
   },
   description:
-    "Zarezerwuj wizytę w najlepszych salonach beauty, barberach, masażystach i innych specjalistach w Polsce. Łatwo, szybko i bezpłatnie.",
+    "Rezerwacja wizyt online w salonach beauty: fryzjer, barber, paznokcie, masaż. Umów wizytę 24/7 w Krakowie i całej Polsce. Polska alternatywa dla Booksy — dla salonów o połowę taniej.",
   keywords: [
-    "rezerwacja wizyt",
-    "salon beauty",
-    "fryzjer",
-    "masaż",
-    "manicure",
-    "Kraków",
-    "Polska",
-    "booksy alternatywa",
+    "rezerwacja wizyt online",
+    "umów wizytę online",
+    "rezerwacja fryzjer",
+    "rezerwacja barber",
+    "rezerwacja masaż",
+    "salon beauty Kraków",
+    "fryzjer Kraków",
+    "barber Kraków",
+    "manicure Kraków",
+    "system rezerwacji dla salonu",
+    "alternatywa dla Booksy",
+    "polska aplikacja do rezerwacji",
+    "online booking",
+    "appointment booking",
+    "beauty salon booking",
   ],
+  alternates: { canonical: "/" },
   authors: [{ name: "Termcatch" }],
   creator: "Termcatch",
   metadataBase: new URL(
@@ -81,6 +91,8 @@ export default function RootLayout({
         >
           <QueryProvider>
             {children}
+            <CookieConsentBanner />
+            <AnalyticsTracker />
             <Toaster
               position="bottom-right"
               toastOptions={{

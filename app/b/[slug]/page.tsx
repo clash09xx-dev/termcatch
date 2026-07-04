@@ -100,6 +100,48 @@ const CATEGORY_LABELS: Record<string, string> = {
   DENTIST: "Stomatolog",
 };
 
+// ─── Metadata (SEO) ──────────────────────────────────────────────────────────
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ slug: string }>;
+}) {
+  const { slug } = await params;
+  const business = await prisma.business.findUnique({
+    where: { slug },
+    select: {
+      name: true,
+      city: true,
+      category: true,
+      shortDescription: true,
+      metaTitle: true,
+      metaDescription: true,
+      status: true,
+    },
+  });
+
+  if (!business || business.status !== "ACTIVE") {
+    return { title: "Salon nie znaleziony" };
+  }
+
+  const categoryLabel = CATEGORY_LABELS[business.category] ?? "Salon";
+  const title =
+    business.metaTitle ??
+    `${business.name} — ${categoryLabel}, ${business.city} | Rezerwacja online`;
+  const description =
+    business.metaDescription ??
+    business.shortDescription ??
+    `Umów wizytę online w ${business.name} (${categoryLabel}, ${business.city}). Sprawdź usługi, ceny i wolne terminy — rezerwacja 24/7 przez Termcatch.`;
+
+  return {
+    title,
+    description,
+    alternates: { canonical: `/b/${slug}` },
+    openGraph: { title, description, type: "website" },
+  };
+}
+
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 export default async function BusinessProfilePage({
@@ -184,8 +226,41 @@ export default async function BusinessProfilePage({
 
   const initials = getInitials(business.name.split(" ")[0] ?? "", business.name.split(" ")[1]);
 
+  // Structured data — LocalBusiness dla Google
+  const jsonLd = {
+    "@context": "https://schema.org",
+    "@type": "HealthAndBeautyBusiness",
+    name: business.name,
+    description: business.shortDescription ?? business.description ?? undefined,
+    url: `${process.env.NEXT_PUBLIC_APP_URL ?? "https://termcatch.com"}/b/${slug}`,
+    telephone: business.phone ?? undefined,
+    image: business.coverImageUrl ?? business.logoUrl ?? undefined,
+    address: {
+      "@type": "PostalAddress",
+      streetAddress: business.address,
+      addressLocality: business.city,
+      postalCode: business.postalCode,
+      addressCountry: "PL",
+    },
+    ...(business.totalReviews > 0
+      ? {
+          aggregateRating: {
+            "@type": "AggregateRating",
+            ratingValue: business.averageRating.toFixed(1),
+            reviewCount: business.totalReviews,
+            bestRating: "5",
+            worstRating: "1",
+          },
+        }
+      : {}),
+  };
+
   return (
     <div className="min-h-screen bg-white">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
       <LandingNav />
 
       {/* Cover image */}

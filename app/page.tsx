@@ -258,9 +258,40 @@ const CATEGORIES = [
   { label: "Spa & wellness", slug: "spa" },
 ];
 
+const HOME_JSON_LD = {
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "Organization",
+      name: "Termcatch",
+      url: "https://termcatch.com",
+      logo: "https://termcatch.com/opengraph-image",
+      email: "hello@termcatch.com",
+      description:
+        "Polska platforma rezerwacji online dla salonów beauty i wellness.",
+      areaServed: "PL",
+    },
+    {
+      "@type": "WebSite",
+      name: "Termcatch",
+      url: "https://termcatch.com",
+      inLanguage: "pl-PL",
+      potentialAction: {
+        "@type": "SearchAction",
+        target: "https://termcatch.com/search?q={search_term_string}",
+        "query-input": "required name=search_term_string",
+      },
+    },
+  ],
+};
+
 export default function HomePage() {
   return (
     <div className="min-h-screen bg-white text-gray-900 overflow-x-hidden">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(HOME_JSON_LD) }}
+      />
       <LandingNav />
 
       {/* ── HERO ─────────────────────────────────────────────────── */}

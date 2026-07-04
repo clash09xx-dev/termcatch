@@ -5,6 +5,7 @@ import Link from "next/link";
 import { registerAction, signInWithGoogleAction, signInWithAppleAction } from "@/actions/auth";
 import type { AuthState } from "@/actions/auth";
 import { cn } from "@/lib/utils";
+import { PasswordInput } from "@/components/ui/password-input";
 
 const initialState: AuthState = {};
 
@@ -139,8 +140,8 @@ export default function RegisterPage() {
 
         <div>
           <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1.5">Hasło</label>
-          <input
-            id="password" name="password" type="password"
+          <PasswordInput
+            id="password" name="password"
             autoComplete="new-password" required placeholder="min. 8 znaków"
             className={inputCls}
           />

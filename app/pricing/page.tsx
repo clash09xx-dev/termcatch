@@ -4,67 +4,66 @@ import { LandingFooter } from "@/components/layout/landing-footer";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "Cennik",
-  description: "Przejrzysty cennik Termcatch — zacznij za darmo, płać tylko gdy rośniesz.",
+  title: "Cennik — o połowę taniej niż Booksy",
+  description:
+    "Przejrzysty cennik Termcatch: plany od 39 zł/mies., 0% prowizji od wizyt. Pierwsze 100 salonów — 3 miesiące bez opłat.",
+  alternates: { canonical: "/pricing" },
 };
 
 const PLANS = [
   {
-    name: "Starter",
-    price: "0 zł",
-    period: "na zawsze",
-    desc: "Idealne na start. Bez limitu czasu, bez karty kredytowej.",
-    cta: "Zacznij za darmo",
-    href: "/register?role=business",
+    name: "Solo",
+    price: "39 zł",
+    period: "miesięcznie",
+    desc: "Dla niezależnych specjalistów — fryzjer, barber, kosmetolog, masażysta pracujący na własny rachunek.",
+    cta: "Wypróbuj 14 dni za darmo",
+    href: "/register?role=business&plan=solo",
     highlight: false,
     features: [
-      "1 pracownik",
-      "Do 30 rezerwacji miesięcznie",
-      "Publiczny profil z linkiem",
-      "Przypomnienia e-mail",
-      "Panel klienta",
+      "1 specjalista",
+      "Nieograniczone rezerwacje",
+      "Publiczny profil salonu i link do rezerwacji",
+      "Powiadomienia e-mail dla klientów",
+      "Kalendarz i zarządzanie grafikiem",
+      "CRM i historia klientów",
+      "0% prowizji od wizyt",
     ],
-    missing: [
-      "Przypomnienia SMS",
-      "Płatności online",
-      "Analityka i raporty",
-      "Priorytetowe wsparcie",
-    ],
+    missing: ["Zespół i wiele stanowisk", "Płatności i zaliczki online", "Pełna analityka"],
   },
   {
-    name: "Pro",
-    price: "99 zł",
+    name: "Zespół",
+    price: "89 zł",
     period: "miesięcznie",
-    desc: "Dla aktywnych salonów. Nieograniczone rezerwacje, SMS i płatności.",
-    cta: "Zacznij bezpłatnie przez 14 dni",
-    href: "/register?role=business&plan=pro",
+    desc: "Dla małych salonów. Do 5 stanowisk, płatności online i pełne przypomnienia.",
+    cta: "Wypróbuj 14 dni za darmo",
+    href: "/register?role=business&plan=team",
     highlight: true,
     features: [
-      "Do 5 pracowników",
-      "Nieograniczone rezerwacje",
-      "Przypomnienia SMS i e-mail",
-      "Płatności i depozyty online",
+      "Do 5 specjalistów",
+      "Wszystko z planu Solo",
+      "Płatności i zaliczki online (Stripe)",
       "Analityka i raporty",
-      "CRM i historia klientów",
-      "Wsparcie w 24h",
+      "Kupony i promocje",
+      "Ochrona przed no-show (zaliczki)",
+      "Wsparcie priorytetowe",
     ],
     missing: [],
   },
   {
-    name: "Business",
-    price: "Indywidualnie",
-    period: "kontakt z nami",
-    desc: "Dla sieci salonów i franczyz. Dedykowane wdrożenie i umowa SLA.",
-    cta: "Skontaktuj się",
-    href: "/contact",
+    name: "Salon Pro",
+    price: "149 zł",
+    period: "miesięcznie",
+    desc: "Dla większych salonów i sieci. Bez limitu stanowisk, AI i dedykowana opieka.",
+    cta: "Wypróbuj 14 dni za darmo",
+    href: "/register?role=business&plan=pro",
     highlight: false,
     features: [
-      "Nieograniczona liczba pracowników",
+      "Nieograniczona liczba specjalistów",
+      "Wszystko z planu Zespół",
+      "AI Asystent (analiza obłożenia, sugestie cen)",
       "Wiele lokalizacji",
-      "Integracje API",
-      "Dedykowany opiekun",
-      "Umowa SLA",
-      "Onboarding i szkolenie",
+      "Faktury i eksporty księgowe",
+      "Dedykowany opiekun i onboarding",
     ],
     missing: [],
   },
@@ -72,20 +71,24 @@ const PLANS = [
 
 const FAQ = [
   {
+    q: "Na czym polega oferta startowa?",
+    a: "Pierwsze 100 salonów, które zarejestrują się w Termcatch, korzysta z pełnego planu przez 3 miesiące całkowicie bez opłat — bez karty, bez zobowiązań. Po tym okresie sam decydujesz, czy zostajesz na wybranym planie.",
+  },
+  {
+    q: "Czym różnicie się od Booksy?",
+    a: "Nasze plany są około o połowę tańsze, nie pobieramy prowizji od wizyt ani opłat za pozyskanie klienta, którego już masz. Płacisz jedną, przewidywalną stawkę miesięczną.",
+  },
+  {
     q: "Czy jest ukryta opłata za instalację?",
     a: "Nie. Rejestracja i konfiguracja są bezpłatne. Płacisz tylko za wybrany plan — i tylko wtedy, kiedy chcesz.",
   },
   {
-    q: "Co się stanie po skończeniu okresu próbnego?",
-    a: "Plan Pro przechodzi na plan Starter automatycznie, jeśli nie wybierzesz subskrypcji. Nie straciasz danych.",
-  },
-  {
     q: "Czy mogę zmienić plan w dowolnym momencie?",
-    a: "Tak. Upgrade działa natychmiast, downgrade — od następnego okresu rozliczeniowego.",
+    a: "Tak. Upgrade działa natychmiast, downgrade — od następnego okresu rozliczeniowego. Możesz też zrezygnować w każdej chwili, bez okresu wypowiedzenia.",
   },
   {
     q: "Jak działają płatności online?",
-    a: "Integrujemy się ze Stripe. Pieniądze trafiają bezpośrednio na Twoje konto — Termcatch pobiera prowizję tylko w planie Pro.",
+    a: "Integrujemy się ze Stripe. Pieniądze za wizyty trafiają bezpośrednio na Twoje konto — Termcatch nie pobiera od nich żadnej prowizji (obowiązuje wyłącznie standardowa opłata operatora Stripe).",
   },
 ];
 
@@ -113,13 +116,33 @@ export default function PricingPage() {
       <div className="pt-28 pb-20 px-6">
         <div className="max-w-6xl mx-auto">
           {/* Header */}
-          <div className="text-center max-w-xl mx-auto mb-16">
+          <div className="text-center max-w-xl mx-auto mb-10">
             <h1 className="text-5xl font-bold text-gray-900 tracking-tight mb-4">
-              Przejrzysty cennik.
+              O połowę taniej niż Booksy.
             </h1>
             <p className="text-gray-500 text-lg">
-              Zacznij za darmo. Płać tylko gdy rośniesz. Bez ukrytych opłat.
+              Jedna przewidywalna stawka. 0% prowizji od wizyt. Bez ukrytych opłat.
             </p>
+          </div>
+
+          {/* Launch offer */}
+          <div className="max-w-3xl mx-auto mb-14">
+            <div className="bg-gray-900 rounded-2xl px-6 py-5 sm:px-8 flex flex-col sm:flex-row items-center gap-4 text-center sm:text-left">
+              <div className="flex-1">
+                <p className="text-white font-bold text-lg">
+                  Oferta startowa: pierwsze 100 salonów — 3 miesiące bez opłat
+                </p>
+                <p className="text-white/60 text-sm mt-1">
+                  Pełny plan, zero kosztów, bez karty. Wystarczy rejestracja salonu.
+                </p>
+              </div>
+              <Link
+                href="/register?role=business"
+                className="px-6 py-3 bg-white text-gray-900 rounded-xl text-sm font-semibold hover:bg-gray-100 transition-colors whitespace-nowrap"
+              >
+                Odbierz ofertę
+              </Link>
+            </div>
           </div>
 
           {/* Plans */}

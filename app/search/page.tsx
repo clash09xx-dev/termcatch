@@ -1,5 +1,12 @@
 export const dynamic = "force-dynamic";
 
+export const metadata = {
+  title: "Szukaj salonu — fryzjer, barber, masaż | Rezerwacja online",
+  description:
+    "Znajdź i zarezerwuj wizytę online: fryzjer, barber, paznokcie, masaż i więcej. Filtruj po mieście i kategorii, sprawdź opinie i wolne terminy.",
+  alternates: { canonical: "/search" },
+};
+
 import { Suspense } from "react";
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";

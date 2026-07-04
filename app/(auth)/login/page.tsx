@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { loginAction, signInWithGoogleAction, signInWithAppleAction } from "@/actions/auth";
 import type { AuthState } from "@/actions/auth";
+import { PasswordInput } from "@/components/ui/password-input";
 
 const initialState: AuthState = {};
 
@@ -120,8 +121,8 @@ function LoginForm() {
               Zapomniałeś hasła?
             </Link>
           </div>
-          <input
-            id="password" name="password" type="password"
+          <PasswordInput
+            id="password" name="password"
             autoComplete="current-password" required placeholder="••••••••"
             className={inputCls}
           />
