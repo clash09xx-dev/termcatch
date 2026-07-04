@@ -42,8 +42,8 @@ export async function GET(request: Request) {
       return fail();
     }
 
-    // Reset hasła → formularz nowego hasła; reszta → dashboard/next
-    if (type === "recovery") {
+    // Reset hasła i zaproszenie → formularz ustawienia hasła; reszta → dashboard/next
+    if (type === "recovery" || type === "invite") {
       return NextResponse.redirect(`${base}/auth/update-password`);
     }
 
