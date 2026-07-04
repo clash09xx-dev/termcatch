@@ -7,6 +7,11 @@ import { prisma } from "@/lib/prisma";
 import { formatCurrency, formatRelativeTime } from "@/lib/utils";
 import { Wordmark } from "@/components/brand/wordmark";
 import { AdminViewSwitcher } from "@/components/admin-view-switcher";
+import {
+  adminBanBusiness,
+  adminRestoreBusiness,
+  adminDeleteBusiness,
+} from "@/lib/actions/admin";
 
 function parseAdminEmails(): string[] {
   return (process.env.ADMIN_EMAILS ?? "")
@@ -109,8 +114,15 @@ export default async function AdminDashboardPage() {
     }),
     prisma.business.findMany({
       orderBy: { createdAt: "desc" },
-      take: 5,
-      select: { id: true, name: true, city: true, createdAt: true, status: true },
+      take: 10,
+      select: {
+        id: true,
+        name: true,
+        city: true,
+        createdAt: true,
+        status: true,
+        _count: { select: { appointments: true } },
+      },
     }),
   ]);
 
@@ -253,34 +265,72 @@ export default async function AdminDashboardPage() {
             )}
           </div>
 
-          {/* Recent businesses */}
+          {/* Recent businesses + zarządzanie */}
           <div className="bg-white rounded-2xl border border-gray-100 shadow-sm">
             <h3 className="text-sm font-semibold text-gray-900 px-6 py-4 border-b border-gray-100">
-              Nowe salony
+              Salony — zarządzanie
             </h3>
             {recentBusinesses.length === 0 ? (
               <p className="text-xs text-gray-400 py-10 text-center">Brak salonów</p>
             ) : (
               <div className="divide-y divide-gray-100">
-                {recentBusinesses.map((b) => (
-                  <div key={b.id} className="px-6 py-3 flex items-center justify-between gap-3">
-                    <div className="min-w-0">
-                      <p className="text-sm font-medium text-gray-900 truncate">{b.name}</p>
-                      <p className="text-xs text-gray-500">
-                        {b.city} · {formatRelativeTime(b.createdAt)}
-                      </p>
+                {recentBusinesses.map((b) => {
+                  const banAction = adminBanBusiness.bind(null, b.id);
+                  const restoreAction = adminRestoreBusiness.bind(null, b.id);
+                  const deleteAction = adminDeleteBusiness.bind(null, b.id);
+                  const isActive = b.status === "ACTIVE";
+                  const canDelete = b._count.appointments === 0;
+                  return (
+                    <div key={b.id} className="px-6 py-3 flex items-center justify-between gap-3">
+                      <div className="min-w-0 flex-1">
+                        <p className="text-sm font-medium text-gray-900 truncate">{b.name}</p>
+                        <p className="text-xs text-gray-500">
+                          {b.city} · {formatRelativeTime(b.createdAt)} · {b._count.appointments} rezerwacji
+                        </p>
+                      </div>
+                      <span
+                        className={
+                          isActive
+                            ? "text-[10px] font-medium px-2 py-0.5 rounded-full bg-green-50 text-green-700 flex-shrink-0"
+                            : "text-[10px] font-medium px-2 py-0.5 rounded-full bg-red-50 text-red-600 flex-shrink-0"
+                        }
+                      >
+                        {isActive ? "Aktywny" : b.status === "BANNED" ? "Zablokowany" : b.status}
+                      </span>
+                      <div className="flex items-center gap-1.5 flex-shrink-0">
+                        {isActive ? (
+                          <form action={banAction}>
+                            <button
+                              type="submit"
+                              className="text-[11px] font-medium px-2.5 py-1.5 border border-gray-200 hover:border-red-200 hover:text-red-600 text-gray-600 rounded-lg transition-colors"
+                            >
+                              Zablokuj
+                            </button>
+                          </form>
+                        ) : (
+                          <form action={restoreAction}>
+                            <button
+                              type="submit"
+                              className="text-[11px] font-medium px-2.5 py-1.5 border border-gray-200 hover:bg-gray-50 text-gray-600 rounded-lg transition-colors"
+                            >
+                              Przywróć
+                            </button>
+                          </form>
+                        )}
+                        {canDelete && (
+                          <form action={deleteAction}>
+                            <button
+                              type="submit"
+                              className="text-[11px] font-medium px-2.5 py-1.5 bg-red-50 hover:bg-red-100 text-red-600 rounded-lg transition-colors"
+                            >
+                              Usuń
+                            </button>
+                          </form>
+                        )}
+                      </div>
                     </div>
-                    <span
-                      className={
-                        b.status === "ACTIVE"
-                          ? "text-[10px] font-medium px-2 py-0.5 rounded-full bg-green-50 text-green-700"
-                          : "text-[10px] font-medium px-2 py-0.5 rounded-full bg-amber-50 text-amber-700"
-                      }
-                    >
-                      {b.status === "ACTIVE" ? "Aktywny" : b.status}
-                    </span>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             )}
           </div>

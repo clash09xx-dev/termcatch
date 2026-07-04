@@ -138,7 +138,8 @@ export default function OnboardingPage() {
         router.push("/business/dashboard");
         router.refresh();
       } catch (err) {
-        setError("Coś poszło nie tak. Spróbuj ponownie.");
+        const e = err as { message?: string };
+        setError(e.message ?? "Coś poszło nie tak. Spróbuj ponownie.");
       }
     });
   }
