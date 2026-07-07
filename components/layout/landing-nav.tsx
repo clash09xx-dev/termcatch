@@ -28,15 +28,11 @@ export function LandingNav() {
     supabase.auth
       .getUser()
       .then(({ data: { user } }) => {
-        if (!user) {
-          setAuth({ status: "guest" });
-          return;
-        }
+        if (!user) { setAuth({ status: "guest" }); return; }
         const role = user.user_metadata?.role as string | undefined;
         setAuth({
           status: "authed",
-          dashboardHref:
-            role === "BUSINESS_OWNER" ? "/business/dashboard" : "/customer/dashboard",
+          dashboardHref: role === "BUSINESS_OWNER" ? "/business/dashboard" : "/customer/dashboard",
         });
       })
       .catch(() => setAuth({ status: "guest" }));
@@ -50,28 +46,25 @@ export function LandingNav() {
   return (
     <header className="fixed top-0 inset-x-0 z-50 px-4 pt-3">
       <div className="max-w-6xl mx-auto">
-        {/* ── Floating glass pill ───────────────────────────────── */}
+        {/* ── Floating dark glass pill ── */}
         <div
-          className={cn(
-            "flex items-center justify-between px-5 py-2.5 rounded-2xl",
-            "transition-all duration-300 ease-out",
-            "backdrop-blur-xl",
-            isScrolled
-              ? [
-                  "bg-white/90",
-                  "border border-gray-200/70",
-                  "shadow-[0_4px_24px_rgba(17,24,39,0.09),inset_0_1px_0_rgba(255,255,255,0.75)]",
-                ].join(" ")
-              : [
-                  "bg-white/65",
-                  "border border-white/55",
-                  "shadow-[0_2px_16px_rgba(17,24,39,0.05),inset_0_1px_0_rgba(255,255,255,0.85)]",
-                ].join(" ")
-          )}
+          className="flex items-center justify-between px-5 py-2.5 rounded-2xl transition-all duration-300"
+          style={{
+            backdropFilter: "blur(28px) saturate(180%)",
+            WebkitBackdropFilter: "blur(28px) saturate(180%)",
+            background: isScrolled
+              ? "rgba(11,13,18,0.88)"
+              : "rgba(11,13,18,0.65)",
+            border: isScrolled
+              ? "1px solid rgba(255,255,255,0.13)"
+              : "1px solid rgba(255,255,255,0.09)",
+            boxShadow: isScrolled
+              ? "0 8px 40px rgba(0,0,0,0.50), inset 0 1px 0 rgba(255,255,255,0.10)"
+              : "0 4px 20px rgba(0,0,0,0.30), inset 0 1px 0 rgba(255,255,255,0.08)",
+          }}
         >
-          {/* Logo */}
           <Link href="/" className="flex items-center flex-shrink-0">
-            <Wordmark className="text-[1.05rem]" />
+            <Wordmark className="text-[1.05rem]" variant="dark" />
           </Link>
 
           {/* Desktop nav */}
@@ -80,7 +73,10 @@ export function LandingNav() {
               <Link
                 key={link.href}
                 href={link.href}
-                className="px-3.5 py-2 text-sm text-gray-500 hover:text-gray-900 hover:bg-black/[0.04] rounded-xl transition-all duration-150"
+                className="px-3.5 py-2 text-sm rounded-xl transition-all duration-150"
+                style={{ color: "rgba(255,255,255,0.55)" }}
+                onMouseEnter={e => (e.currentTarget.style.color = "rgba(255,255,255,0.92)")}
+                onMouseLeave={e => (e.currentTarget.style.color = "rgba(255,255,255,0.55)")}
               >
                 {link.label}
               </Link>
@@ -92,7 +88,12 @@ export function LandingNav() {
             {auth.status === "authed" ? (
               <Link
                 href={auth.dashboardHref}
-                className="text-sm font-semibold px-4 py-2 bg-gray-900 hover:bg-gray-800 text-white rounded-xl transition-colors shadow-sm"
+                className="text-sm font-semibold px-4 py-2 rounded-xl transition-all text-white"
+                style={{
+                  background: "rgba(212,160,23,0.18)",
+                  border: "1px solid rgba(212,160,23,0.30)",
+                  boxShadow: "inset 0 1px 0 rgba(212,160,23,0.20)",
+                }}
               >
                 Mój panel
               </Link>
@@ -100,13 +101,21 @@ export function LandingNav() {
               <>
                 <Link
                   href="/login"
-                  className="text-sm font-medium text-gray-600 hover:text-gray-900 px-3.5 py-2 rounded-xl hover:bg-black/[0.04] transition-all duration-150"
+                  className="text-sm px-3.5 py-2 rounded-xl transition-all duration-150"
+                  style={{ color: "rgba(255,255,255,0.55)" }}
+                  onMouseEnter={e => (e.currentTarget.style.color = "rgba(255,255,255,0.90)")}
+                  onMouseLeave={e => (e.currentTarget.style.color = "rgba(255,255,255,0.55)")}
                 >
                   Zaloguj się
                 </Link>
                 <Link
                   href="/register"
-                  className="text-sm font-semibold px-4 py-2 bg-gray-900 hover:bg-gray-800 text-white rounded-xl transition-all duration-150 shadow-sm"
+                  className="text-sm font-semibold px-4 py-2 rounded-xl transition-all text-white"
+                  style={{
+                    background: "rgba(255,255,255,0.12)",
+                    border: "1px solid rgba(255,255,255,0.18)",
+                    boxShadow: "inset 0 1px 0 rgba(255,255,255,0.12)",
+                  }}
                 >
                   Zarejestruj się
                 </Link>
@@ -118,29 +127,18 @@ export function LandingNav() {
 
           {/* Mobile toggle */}
           <button
-            className="md:hidden p-2 rounded-xl hover:bg-black/[0.05] transition-colors"
+            className="md:hidden p-2 rounded-xl transition-colors"
+            style={{ color: "rgba(255,255,255,0.70)" }}
             onClick={() => setIsMobileOpen(!isMobileOpen)}
             aria-label="Menu"
           >
-            <svg
-              width="18"
-              height="18"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              className="text-gray-700"
-            >
-              {isMobileOpen ? (
-                <path d="M18 6L6 18M6 6l12 12" />
-              ) : (
-                <path d="M4 6h16M4 12h16M4 18h16" />
-              )}
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              {isMobileOpen ? <path d="M18 6L6 18M6 6l12 12" /> : <path d="M4 6h16M4 12h16M4 18h16" />}
             </svg>
           </button>
         </div>
 
-        {/* ── Mobile menu — glass panel ─────────────────────────── */}
+        {/* ── Mobile menu — dark glass ── */}
         <AnimatePresence>
           {isMobileOpen && (
             <motion.div
@@ -148,7 +146,14 @@ export function LandingNav() {
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: -8, scale: 0.98 }}
               transition={{ duration: 0.18, ease: [0.22, 1, 0.36, 1] }}
-              className="mt-2 rounded-2xl overflow-hidden backdrop-blur-xl bg-white/92 border border-gray-200/60 shadow-[0_8px_40px_rgba(17,24,39,0.12),inset_0_1px_0_rgba(255,255,255,0.8)]"
+              className="mt-2 rounded-2xl overflow-hidden"
+              style={{
+                background: "rgba(11,13,18,0.92)",
+                backdropFilter: "blur(28px) saturate(180%)",
+                WebkitBackdropFilter: "blur(28px) saturate(180%)",
+                border: "1px solid rgba(255,255,255,0.12)",
+                boxShadow: "0 16px 48px rgba(0,0,0,0.60), inset 0 1px 0 rgba(255,255,255,0.10)",
+              }}
             >
               <div className="px-4 py-3 space-y-0.5">
                 {links.map((link) => (
@@ -156,18 +161,26 @@ export function LandingNav() {
                     key={link.href}
                     href={link.href}
                     onClick={() => setIsMobileOpen(false)}
-                    className="block px-3 py-2.5 text-sm text-gray-700 hover:bg-gray-900/5 rounded-xl transition-colors"
+                    className="block px-3 py-2.5 text-sm rounded-xl transition-colors"
+                    style={{ color: "rgba(255,255,255,0.65)" }}
                   >
                     {link.label}
                   </Link>
                 ))}
               </div>
-              <div className="px-4 pb-4 pt-1 border-t border-gray-100 space-y-2">
+              <div
+                className="px-4 pb-4 pt-2 space-y-2"
+                style={{ borderTop: "1px solid rgba(255,255,255,0.08)" }}
+              >
                 {auth.status === "authed" ? (
                   <Link
                     href={auth.dashboardHref}
                     onClick={() => setIsMobileOpen(false)}
-                    className="block w-full text-center px-4 py-2.5 text-sm font-semibold bg-gray-900 text-white rounded-xl"
+                    className="block w-full text-center px-4 py-2.5 text-sm font-semibold rounded-xl text-white"
+                    style={{
+                      background: "rgba(212,160,23,0.20)",
+                      border: "1px solid rgba(212,160,23,0.30)",
+                    }}
                   >
                     Mój panel
                   </Link>
@@ -176,14 +189,23 @@ export function LandingNav() {
                     <Link
                       href="/login"
                       onClick={() => setIsMobileOpen(false)}
-                      className="block w-full text-center px-4 py-2.5 text-sm font-medium text-gray-700 border border-gray-200 rounded-xl hover:bg-gray-50 transition-colors"
+                      className="block w-full text-center px-4 py-2.5 text-sm rounded-xl transition-colors"
+                      style={{
+                        color: "rgba(255,255,255,0.70)",
+                        background: "rgba(255,255,255,0.06)",
+                        border: "1px solid rgba(255,255,255,0.10)",
+                      }}
                     >
                       Zaloguj się
                     </Link>
                     <Link
                       href="/register"
                       onClick={() => setIsMobileOpen(false)}
-                      className="block w-full text-center px-4 py-2.5 text-sm font-semibold bg-gray-900 text-white rounded-xl hover:bg-gray-800 transition-colors"
+                      className="block w-full text-center px-4 py-2.5 text-sm font-semibold rounded-xl text-white transition-colors"
+                      style={{
+                        background: "rgba(255,255,255,0.12)",
+                        border: "1px solid rgba(255,255,255,0.18)",
+                      }}
                     >
                       Zarejestruj się
                     </Link>
