@@ -4,7 +4,7 @@ import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { updateBusinessSettings } from "@/lib/actions/business";
 import { NotificationSettingsForm } from "@/components/business/notification-settings-form";
-import { requestDangerCode, confirmBusinessDeletion } from "@/lib/actions/danger";
+import { requestDangerCode, confirmBusinessDeletion, confirmSalonDeletion } from "@/lib/actions/danger";
 import { sendInvite } from "@/actions/invite";
 import type { BusinessNotificationSettings } from "@/lib/notification-settings";
 
@@ -50,6 +50,7 @@ export function SettingsClient({ settings: initialSettings, notificationSettings
 
   // Danger zone state
   const [dangerStep, setDangerStep] = useState<"idle" | "confirm" | "code">("idle");
+  const [dangerAction, setDangerAction] = useState<"salon" | "account">("salon");
   const [dangerCode, setDangerCode] = useState("");
   const [dangerError, setDangerError] = useState("");
   const [dangerLoading, setDangerLoading] = useState(false);
@@ -98,14 +99,23 @@ export function SettingsClient({ settings: initialSettings, notificationSettings
     }
     setDangerLoading(true);
     setDangerError("");
-    const result = await confirmBusinessDeletion(dangerCode);
+    const result = dangerAction === "salon"
+      ? await confirmSalonDeletion(dangerCode)
+      : await confirmBusinessDeletion(dangerCode);
     setDangerLoading(false);
     if (result.error && !result.deleted) {
       setDangerError(result.error);
     } else {
       setDangerStep("idle");
-      router.push("/");
+      router.push(dangerAction === "salon" ? "/business/onboarding" : "/");
     }
+  }
+
+  function openDangerModal(action: "salon" | "account") {
+    setDangerAction(action);
+    setDangerCode("");
+    setDangerError("");
+    setDangerStep("confirm");
   }
 
   function closeDangerModal() {
@@ -345,17 +355,35 @@ export function SettingsClient({ settings: initialSettings, notificationSettings
                 </div>
               </div>
 
+              {/* Usuń profil salonu */}
               <div className="border border-red-100 rounded-xl p-4">
                 <div className="flex items-start justify-between gap-4">
                   <div>
-                    <p className="text-sm font-semibold text-gray-900">Usuń konto biznesowe</p>
+                    <p className="text-sm font-semibold text-gray-900">Usuń profil salonu</p>
                     <p className="text-xs text-gray-500 mt-1">
-                      Trwale usuwa Twój salon i wszystkie dane: usługi, pracowników, klientów, wizyty i opinie.
-                      Ta akcja nie może zostać cofnięta.
+                      Usuwa salon i wszystkie dane (usługi, pracownicy, wizyty, opinie). Twoje konto pozostaje aktywne — możesz zarejestrować nowy salon.
                     </p>
                   </div>
                   <button
-                    onClick={() => setDangerStep("confirm")}
+                    onClick={() => openDangerModal("salon")}
+                    className="ml-4 px-4 py-2 text-sm font-semibold text-red-600 border border-red-200 hover:bg-red-50 rounded-xl transition-colors flex-shrink-0"
+                  >
+                    Usuń salon
+                  </button>
+                </div>
+              </div>
+
+              {/* Usuń konto */}
+              <div className="border border-red-100 rounded-xl p-4">
+                <div className="flex items-start justify-between gap-4">
+                  <div>
+                    <p className="text-sm font-semibold text-gray-900">Usuń konto</p>
+                    <p className="text-xs text-gray-500 mt-1">
+                      Trwale usuwa salon, wszystkie dane oraz Twoje konto. Nie będziesz mógł się zalogować. Ta akcja nie może zostać cofnięta.
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => openDangerModal("account")}
                     className="ml-4 px-4 py-2 text-sm font-semibold text-red-600 border border-red-200 hover:bg-red-50 rounded-xl transition-colors flex-shrink-0"
                   >
                     Usuń konto
@@ -376,7 +404,9 @@ export function SettingsClient({ settings: initialSettings, notificationSettings
               <div className="w-10 h-10 rounded-full bg-red-50 flex items-center justify-center">
                 <WarningIcon className="w-5 h-5 text-red-500" />
               </div>
-              <h3 className="text-base font-semibold text-gray-900">Usuń konto biznesowe</h3>
+              <h3 className="text-base font-semibold text-gray-900">
+                {dangerAction === "salon" ? "Usuń profil salonu" : "Usuń konto"}
+              </h3>
             </div>
 
             {dangerStep === "confirm" && (

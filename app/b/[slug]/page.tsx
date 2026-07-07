@@ -471,13 +471,13 @@ export default async function BusinessProfilePage({
                     {business.address}, {business.postalCode} {business.city}
                   </p>
 
-                  {/* Google Maps embed */}
+                  {/* Google Maps embed — search by name+address for reliable pin */}
                   <div className="mt-3 rounded-xl overflow-hidden border border-gray-100">
                     <iframe
                       title={`Mapa dojazdu — ${business.name}`}
-                      src={`https://maps.google.com/maps?q=${encodeURIComponent(
-                        `${business.address}, ${business.postalCode} ${business.city}, Polska`
-                      )}&z=16&output=embed&iwloc=near&hl=pl`}
+                      src={`https://maps.google.com/maps?f=q&source=s_q&q=${encodeURIComponent(
+                        `${business.name}, ${business.address}, ${business.city}`
+                      )}&z=15&t=m&hl=pl&ie=UTF8&iwloc=B&output=embed`}
                       className="w-full h-56 border-0"
                       loading="lazy"
                       referrerPolicy="no-referrer-when-downgrade"
