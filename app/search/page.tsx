@@ -118,7 +118,16 @@ function BusinessCard({ business }: { business: BusinessWithServices }) {
   return (
     <Link
       href={`/b/${business.slug}`}
-      className="group bg-white border border-gray-100 rounded-2xl shadow-soft overflow-hidden hover:shadow-soft-md hover:-translate-y-0.5 transition-all duration-200"
+      className="group overflow-hidden rounded-2xl transition-all duration-200 hover:-translate-y-0.5"
+      style={{
+        background: "rgba(255,255,255,0.65)",
+        backdropFilter: "blur(28px) saturate(200%)",
+        WebkitBackdropFilter: "blur(28px) saturate(200%)",
+        border: "1px solid rgba(148,163,184,0.22)",
+        boxShadow: "0 8px 32px rgba(100,116,139,0.08), 0 2px 8px rgba(0,0,0,0.03), inset 0 1px 0 rgba(255,255,255,0.90)",
+      }}
+      onMouseEnter={e => { (e.currentTarget as HTMLElement).style.boxShadow = "0 20px 60px rgba(100,116,139,0.14), 0 4px 16px rgba(0,0,0,0.05), inset 0 1px 0 rgba(255,255,255,0.95)"; }}
+      onMouseLeave={e => { (e.currentTarget as HTMLElement).style.boxShadow = "0 8px 32px rgba(100,116,139,0.08), 0 2px 8px rgba(0,0,0,0.03), inset 0 1px 0 rgba(255,255,255,0.90)"; }}
     >
       {/* Cover image */}
       <div className="relative h-44 overflow-hidden">
@@ -130,44 +139,48 @@ function BusinessCard({ business }: { business: BusinessWithServices }) {
             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
           />
         ) : (
-          <div className="w-full h-full bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center">
-            <svg
-              className="w-10 h-10 text-gray-300"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth={1.2}
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                d="M13.5 21v-7.5a.75.75 0 0 1 .75-.75h3a.75.75 0 0 1 .75.75V21m-4.5 0H2.36m11.14 0H18m0 0h3.64m-1.39 0V9.349M3.75 21V9.349m0 0a3.001 3.001 0 0 0 3.75-.615A2.993 2.993 0 0 0 9.75 9.75c.896 0 1.7-.393 2.25-1.016a2.993 2.993 0 0 0 2.25 1.016 2.993 2.993 0 0 0 2.25-1.016 3.001 3.001 0 0 0 3.75.614"
-              />
+          <div
+            className="w-full h-full flex items-center justify-center"
+            style={{ background: "rgba(148,163,184,0.10)" }}
+          >
+            <svg className="w-10 h-10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.2} style={{ color: "#CBD5E1" }}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 21v-7.5a.75.75 0 0 1 .75-.75h3a.75.75 0 0 1 .75.75V21m-4.5 0H2.36m11.14 0H18m0 0h3.64m-1.39 0V9.349M3.75 21V9.349m0 0a3.001 3.001 0 0 0 3.75-.615A2.993 2.993 0 0 0 9.75 9.75c.896 0 1.7-.393 2.25-1.016a2.993 2.993 0 0 0 2.25 1.016 2.993 2.993 0 0 0 2.25-1.016 3.001 3.001 0 0 0 3.75.614" />
             </svg>
           </div>
         )}
-        <span className="absolute top-3 left-3 inline-flex items-center px-2.5 py-1 rounded-lg bg-white/90 backdrop-blur-sm text-xs font-medium text-gray-700 border border-white/60">
+        {/* Glass category chip */}
+        <span
+          className="absolute top-3 left-3 inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-medium"
+          style={{
+            background: "rgba(255,255,255,0.80)",
+            backdropFilter: "blur(12px)",
+            WebkitBackdropFilter: "blur(12px)",
+            border: "1px solid rgba(148,163,184,0.25)",
+            color: "#475569",
+            boxShadow: "inset 0 1px 0 rgba(255,255,255,0.90)",
+          }}
+        >
           {categoryLabel}
         </span>
       </div>
 
       {/* Info */}
       <div className="p-4">
-        <h3 className="font-semibold text-gray-900 text-sm leading-snug line-clamp-1 group-hover:text-gray-700 transition-colors">
+        <h3 className="font-semibold text-slate-800 text-sm leading-snug line-clamp-1">
           {business.name}
         </h3>
         <div className="flex items-center gap-1.5 mt-1.5">
-          <svg className="w-3.5 h-3.5 text-gray-400 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8}>
+          <svg className="w-3.5 h-3.5 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} style={{ color: "#94A3B8" }}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M15 10.5a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
             <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1 1 15 0Z" />
           </svg>
-          <span className="text-xs text-gray-500">{business.city}</span>
+          <span className="text-xs text-slate-400">{business.city}</span>
         </div>
         <div className="mt-2.5">
           <StarRating rating={business.averageRating} count={business.totalReviews} />
         </div>
         {minPrice !== null && (
-          <p className="mt-2.5 text-sm font-semibold text-gray-900">
+          <p className="mt-2.5 text-sm font-semibold text-slate-800">
             Od {formatCurrency(minPrice)}
           </p>
         )}
@@ -180,13 +193,20 @@ function BusinessCard({ business }: { business: BusinessWithServices }) {
 
 function SkeletonCard() {
   return (
-    <div className="bg-white border border-gray-100 rounded-2xl shadow-soft overflow-hidden animate-pulse">
-      <div className="h-44 bg-gray-100" />
+    <div
+      className="rounded-2xl overflow-hidden animate-pulse"
+      style={{
+        background: "rgba(255,255,255,0.55)",
+        border: "1px solid rgba(148,163,184,0.18)",
+        boxShadow: "0 4px 16px rgba(100,116,139,0.06)",
+      }}
+    >
+      <div className="h-44" style={{ background: "rgba(148,163,184,0.10)" }} />
       <div className="p-4 space-y-2.5">
-        <div className="h-4 bg-gray-100 rounded-lg w-3/4" />
-        <div className="h-3 bg-gray-100 rounded-lg w-1/3" />
-        <div className="h-3 bg-gray-100 rounded-lg w-1/2" />
-        <div className="h-4 bg-gray-100 rounded-lg w-1/4 mt-1" />
+        <div className="h-4 rounded-lg w-3/4" style={{ background: "rgba(148,163,184,0.12)" }} />
+        <div className="h-3 rounded-lg w-1/3" style={{ background: "rgba(148,163,184,0.10)" }} />
+        <div className="h-3 rounded-lg w-1/2" style={{ background: "rgba(148,163,184,0.10)" }} />
+        <div className="h-4 rounded-lg w-1/4 mt-1" style={{ background: "rgba(148,163,184,0.12)" }} />
       </div>
     </div>
   );
@@ -276,13 +296,22 @@ async function SearchResults({ searchParams }: { searchParams: SearchParams }) {
   if (businesses.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center py-20 text-center">
-        <div className="w-14 h-14 rounded-2xl bg-gray-100 flex items-center justify-center mb-4">
-          <svg className="w-7 h-7 text-gray-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5}>
+        <div
+          className="w-14 h-14 rounded-2xl flex items-center justify-center mb-4"
+          style={{
+            background: "rgba(255,255,255,0.65)",
+            backdropFilter: "blur(16px)",
+            WebkitBackdropFilter: "blur(16px)",
+            border: "1px solid rgba(148,163,184,0.22)",
+            boxShadow: "0 4px 16px rgba(100,116,139,0.08)",
+          }}
+        >
+          <svg className="w-7 h-7" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} style={{ color: "#94A3B8" }}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
           </svg>
         </div>
-        <p className="text-gray-900 font-semibold">Nie znaleziono salonów</p>
-        <p className="text-gray-500 text-sm mt-1">Spróbuj zmienić filtry lub wyszukaj inną frazę.</p>
+        <p className="text-slate-800 font-semibold">Nie znaleziono salonów</p>
+        <p className="text-slate-400 text-sm mt-1">Spróbuj zmienić filtry lub wyszukaj inną frazę.</p>
       </div>
     );
   }
@@ -295,8 +324,8 @@ async function SearchResults({ searchParams }: { searchParams: SearchParams }) {
 
   return (
     <div>
-      <p className="text-sm text-gray-500 mb-4">
-        Znaleziono <span className="font-semibold text-gray-900">{totalCount}</span>{" "}
+      <p className="text-sm text-slate-400 mb-4">
+        Znaleziono <span className="font-semibold text-slate-800">{totalCount}</span>{" "}
         {totalCount === 1 ? "salon" : totalCount < 5 ? "salony" : "salonów"}
       </p>
 
@@ -312,18 +341,18 @@ async function SearchResults({ searchParams }: { searchParams: SearchParams }) {
           {page > 1 && (
             <Link
               href={`/search?${params.toString()}&page=${page - 1}`}
-              className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-200 rounded-xl hover:bg-gray-50 transition-colors"
+              className="px-4 py-2 text-sm font-medium rounded-xl transition-all"
+              style={{ background: "rgba(255,255,255,0.65)", backdropFilter: "blur(16px)", WebkitBackdropFilter: "blur(16px)", border: "1px solid rgba(148,163,184,0.22)", color: "#475569", boxShadow: "inset 0 1px 0 rgba(255,255,255,0.85)" }}
             >
               Poprzednia
             </Link>
           )}
-          <span className="text-sm text-gray-500 px-2">
-            Strona {page} z {totalPages}
-          </span>
+          <span className="text-sm text-slate-400 px-2">Strona {page} z {totalPages}</span>
           {page < totalPages && (
             <Link
               href={`/search?${params.toString()}&page=${page + 1}`}
-              className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-200 rounded-xl hover:bg-gray-50 transition-colors"
+              className="px-4 py-2 text-sm font-medium rounded-xl transition-all"
+              style={{ background: "rgba(148,163,184,0.18)", backdropFilter: "blur(16px)", WebkitBackdropFilter: "blur(16px)", border: "1px solid rgba(148,163,184,0.32)", color: "#334155", boxShadow: "inset 0 1px 0 rgba(255,255,255,0.70)" }}
             >
               Następna
             </Link>
@@ -344,16 +373,19 @@ export default async function SearchPage({
   const params = await searchParams;
 
   return (
-    <div className="min-h-screen bg-white">
+    <div
+      className="min-h-screen"
+      style={{ background: "radial-gradient(ellipse 80% 60% at 50% -10%, rgba(148,163,184,0.18) 0%, transparent 55%), linear-gradient(160deg, #EEF3F9 0%, #F6F9FC 50%, #EAF0F8 100%)" }}
+    >
       <LandingNav />
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 pt-24 pb-16">
         {/* Header */}
         <div className="mb-6">
-          <h1 className="text-2xl font-bold text-gray-900">
+          <h1 className="text-2xl font-bold text-slate-900">
             {params.q ? `Wyniki dla „${params.q}"` : "Znajdź specjalistę"}
           </h1>
-          <p className="text-sm text-gray-500 mt-1">
+          <p className="text-sm text-slate-400 mt-1">
             Salony i specjaliści dostępni online
           </p>
         </div>

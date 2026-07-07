@@ -15,7 +15,7 @@ export default async function CustomerDashboardLayout({
   if (!user) redirect("/login");
 
   return (
-    <div className="flex h-screen bg-gray-50 overflow-hidden">
+    <div className="flex h-screen overflow-hidden" style={{ background: "radial-gradient(ellipse 90% 60% at 15% 0%, rgba(148,163,184,0.14) 0%, transparent 50%), radial-gradient(ellipse 70% 50% at 90% 100%, rgba(148,163,184,0.08) 0%, transparent 50%), #EEF3F9" }}>
       <CustomerSidebar />
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
         <CustomerTopbar />

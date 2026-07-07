@@ -255,8 +255,19 @@ export default async function BusinessProfilePage({
       : {}),
   };
 
+  const glassCard = {
+    background: "rgba(255,255,255,0.62)",
+    backdropFilter: "blur(28px) saturate(200%)",
+    WebkitBackdropFilter: "blur(28px) saturate(200%)",
+    border: "1px solid rgba(148,163,184,0.20)",
+    boxShadow: "0 8px 32px rgba(100,116,139,0.08), 0 2px 8px rgba(0,0,0,0.03), inset 0 1px 0 rgba(255,255,255,0.90)",
+  } as React.CSSProperties;
+
   return (
-    <div className="min-h-screen bg-white">
+    <div
+      className="min-h-screen"
+      style={{ background: "radial-gradient(ellipse 80% 55% at 50% -5%, rgba(148,163,184,0.18) 0%, transparent 55%), linear-gradient(160deg, #EEF3F9 0%, #F6F9FC 50%, #EAF0F8 100%)" }}
+    >
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
@@ -274,43 +285,45 @@ export default async function BusinessProfilePage({
               className="w-full h-full object-cover"
             />
           ) : (
-            <div className="w-full h-full bg-gradient-to-br from-gray-100 to-gray-200" />
+            <div className="w-full h-full" style={{ background: "linear-gradient(135deg, rgba(148,163,184,0.15) 0%, rgba(148,163,184,0.08) 100%)" }} />
           )}
-          <div className="absolute inset-0 bg-gradient-to-t from-black/30 to-transparent" />
+          <div className="absolute inset-0 bg-gradient-to-t from-white/20 to-transparent" />
         </div>
       </div>
 
       {/* Business header */}
       <div className="max-w-6xl mx-auto px-4 sm:px-6">
-        <div className="relative -mt-10 flex items-end gap-5 pb-6 border-b border-gray-100">
+        <div className="relative -mt-10 flex items-end gap-5 pb-6" style={{ borderBottom: "1px solid rgba(148,163,184,0.18)" }}>
           {/* Logo */}
-          <div className="flex-shrink-0 w-20 h-20 rounded-2xl border-4 border-white shadow-soft-md overflow-hidden bg-white">
+          <div
+            className="flex-shrink-0 w-20 h-20 rounded-2xl overflow-hidden"
+            style={{ ...glassCard, border: "3px solid rgba(255,255,255,0.90)" }}
+          >
             {business.logoUrl ? (
               // eslint-disable-next-line @next/next/no-img-element
-              <img
-                src={business.logoUrl}
-                alt={business.name}
-                className="w-full h-full object-cover"
-              />
+              <img src={business.logoUrl} alt={business.name} className="w-full h-full object-cover" />
             ) : (
-              <div className="w-full h-full bg-gray-900 flex items-center justify-center">
-                <span className="text-white text-xl font-bold">{initials}</span>
+              <div className="w-full h-full flex items-center justify-center" style={{ background: "rgba(148,163,184,0.20)" }}>
+                <span className="text-slate-600 text-xl font-bold">{initials}</span>
               </div>
             )}
           </div>
 
           <div className="flex-1 min-w-0 pb-1">
             <div className="flex flex-wrap items-center gap-2 mb-1">
-              <span className="inline-flex items-center px-2.5 py-1 rounded-lg bg-gray-100 text-xs font-medium text-gray-600">
+              <span
+                className="inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-medium"
+                style={{ background: "rgba(148,163,184,0.16)", border: "1px solid rgba(148,163,184,0.26)", color: "#475569" }}
+              >
                 {categoryLabel}
               </span>
             </div>
-            <h1 className="text-2xl font-bold text-gray-900 leading-tight">{business.name}</h1>
+            <h1 className="text-2xl font-bold text-slate-900 leading-tight">{business.name}</h1>
             <div className="flex flex-wrap items-center gap-4 mt-2">
               {business.averageRating > 0 && (
                 <StarRating rating={business.averageRating} count={business.totalReviews} />
               )}
-              <div className="flex items-center gap-1.5 text-sm text-gray-500">
+              <div className="flex items-center gap-1.5 text-sm text-slate-400">
                 <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M15 10.5a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
                   <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1 1 15 0Z" />
@@ -318,10 +331,7 @@ export default async function BusinessProfilePage({
                 {business.city}
               </div>
               {business.phone && (
-                <a
-                  href={`tel:${business.phone}`}
-                  className="flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-900 transition-colors"
-                >
+                <a href={`tel:${business.phone}`} className="flex items-center gap-1.5 text-sm text-slate-400 hover:text-slate-700 transition-colors">
                   <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8}>
                     <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 6.75c0 8.284 6.716 15 15 15h2.25a2.25 2.25 0 0 0 2.25-2.25v-1.372c0-.516-.351-.966-.852-1.091l-4.423-1.106c-.44-.11-.902.055-1.173.417l-.97 1.293c-.282.376-.769.542-1.21.38a12.035 12.035 0 0 1-7.143-7.143c-.162-.441.004-.928.38-1.21l1.293-.97c.363-.271.527-.734.417-1.173L6.963 3.102a1.125 1.125 0 0 0-1.091-.852H4.5A2.25 2.25 0 0 0 2.25 4.5v2.25Z" />
                   </svg>
@@ -332,11 +342,7 @@ export default async function BusinessProfilePage({
           </div>
 
           <div className="flex-shrink-0 pb-1">
-            <FavouriteButton
-              businessId={business.id}
-              initialIsFavourite={favourite}
-              redirectPath={`/b/${slug}`}
-            />
+            <FavouriteButton businessId={business.id} initialIsFavourite={favourite} redirectPath={`/b/${slug}`} />
           </div>
         </div>
       </div>
@@ -348,26 +354,28 @@ export default async function BusinessProfilePage({
           <div className="flex-1 min-w-0 space-y-8">
             {/* Services */}
             <section>
-              <h2 className="text-lg font-bold text-gray-900 mb-4">Usługi</h2>
+              <h2 className="text-lg font-bold text-slate-900 mb-4">Usługi</h2>
               {business.services.length === 0 ? (
-                <div className="bg-gray-50 rounded-2xl p-8 text-center">
-                  <p className="text-gray-500 text-sm">Ten salon nie dodał jeszcze usług.</p>
+                <div className="rounded-2xl p-8 text-center" style={glassCard}>
+                  <p className="text-slate-400 text-sm">Ten salon nie dodał jeszcze usług.</p>
                 </div>
               ) : (
                 <div className="space-y-2">
                   {business.services.map((service) => (
                     <div
                       key={service.id}
-                      className="bg-white border border-gray-100 rounded-2xl p-4 flex items-center gap-4 shadow-soft"
+                      className="rounded-2xl p-4 flex items-center gap-4"
+                      style={glassCard}
                     >
                       <div className="flex-1 min-w-0">
-                        <p className="text-sm font-semibold text-gray-900">{service.name}</p>
+                        <p className="text-sm font-semibold text-slate-800">{service.name}</p>
                         {service.description && (
-                          <p className="text-xs text-gray-500 mt-0.5 line-clamp-1">
-                            {service.description}
-                          </p>
+                          <p className="text-xs text-slate-400 mt-0.5 line-clamp-1">{service.description}</p>
                         )}
-                        <span className="inline-flex items-center gap-1 mt-1.5 px-2 py-0.5 bg-gray-100 rounded-lg text-xs text-gray-600">
+                        <span
+                          className="inline-flex items-center gap-1 mt-1.5 px-2 py-0.5 rounded-lg text-xs"
+                          style={{ background: "rgba(148,163,184,0.14)", color: "#64748B", border: "1px solid rgba(148,163,184,0.22)" }}
+                        >
                           <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
                             <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
                           </svg>
@@ -378,22 +386,17 @@ export default async function BusinessProfilePage({
                         <div className="text-right">
                           {service.discountedPrice ? (
                             <>
-                              <p className="text-sm font-bold text-gray-900">
-                                {formatCurrency(service.discountedPrice)}
-                              </p>
-                              <p className="text-xs text-gray-400 line-through">
-                                {formatCurrency(service.price)}
-                              </p>
+                              <p className="text-sm font-bold text-slate-800">{formatCurrency(service.discountedPrice)}</p>
+                              <p className="text-xs text-slate-400 line-through">{formatCurrency(service.price)}</p>
                             </>
                           ) : (
-                            <p className="text-sm font-bold text-gray-900">
-                              {formatCurrency(service.price)}
-                            </p>
+                            <p className="text-sm font-bold text-slate-800">{formatCurrency(service.price)}</p>
                           )}
                         </div>
                         <Link
                           href={`/b/${slug}/book?serviceId=${service.id}`}
-                          className="px-4 py-2 bg-gray-900 hover:bg-gray-800 text-white rounded-xl text-xs font-semibold transition-colors whitespace-nowrap"
+                          className="px-4 py-2 rounded-xl text-xs font-semibold transition-all whitespace-nowrap"
+                          style={{ background: "rgba(148,163,184,0.20)", border: "1px solid rgba(148,163,184,0.35)", color: "#334155", boxShadow: "inset 0 1px 0 rgba(255,255,255,0.70)" }}
                         >
                           Zarezerwuj
                         </Link>
@@ -407,9 +410,9 @@ export default async function BusinessProfilePage({
             {/* About */}
             {(business.description || business.shortDescription) && (
               <section>
-                <h2 className="text-lg font-bold text-gray-900 mb-4">O nas</h2>
-                <div className="bg-white border border-gray-100 rounded-2xl p-5 shadow-soft">
-                  <p className="text-sm text-gray-600 leading-relaxed whitespace-pre-line">
+                <h2 className="text-lg font-bold text-slate-900 mb-4">O nas</h2>
+                <div className="rounded-2xl p-5" style={glassCard}>
+                  <p className="text-sm text-slate-500 leading-relaxed whitespace-pre-line">
                     {business.description ?? business.shortDescription}
                   </p>
                 </div>
@@ -418,13 +421,13 @@ export default async function BusinessProfilePage({
 
             {/* Working hours + contact */}
             <section>
-              <h2 className="text-lg font-bold text-gray-900 mb-4">Informacje</h2>
-              <div className="bg-white border border-gray-100 rounded-2xl shadow-soft overflow-hidden">
+              <h2 className="text-lg font-bold text-slate-900 mb-4">Informacje</h2>
+              <div className="rounded-2xl overflow-hidden" style={glassCard}>
                 {/* Working hours */}
                 {sortedWorkingHours.length > 0 && (
-                  <div className="p-5 border-b border-gray-100">
-                    <h3 className="text-sm font-semibold text-gray-900 mb-3 flex items-center gap-2">
-                      <svg className="w-4 h-4 text-gray-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8}>
+                  <div className="p-5" style={{ borderBottom: "1px solid rgba(148,163,184,0.16)" }}>
+                    <h3 className="text-sm font-semibold text-slate-700 mb-3 flex items-center gap-2">
+                      <svg className="w-4 h-4 text-slate-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8}>
                         <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
                       </svg>
                       Godziny otwarcia
@@ -436,19 +439,14 @@ export default async function BusinessProfilePage({
                         return (
                           <div
                             key={wh.id}
-                            className={cn(
-                              "flex items-center justify-between text-sm py-1",
-                              isToday ? "font-semibold text-gray-900" : "text-gray-600"
-                            )}
+                            className={cn("flex items-center justify-between text-sm py-1", isToday ? "font-semibold text-slate-800" : "text-slate-500")}
                           >
                             <span className="flex items-center gap-2">
-                              {isToday && (
-                                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 flex-shrink-0" />
-                              )}
+                              {isToday && <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 flex-shrink-0" />}
                               {!isToday && <span className="w-1.5 h-1.5 flex-shrink-0" />}
                               {DAY_LABELS[wh.dayOfWeek]}
                             </span>
-                            <span className={wh.isOpen ? "" : "text-gray-400"}>
+                            <span className={wh.isOpen ? "" : "text-slate-300"}>
                               {wh.isOpen ? `${wh.openTime} — ${wh.closeTime}` : "Nieczynne"}
                             </span>
                           </div>
@@ -459,38 +457,26 @@ export default async function BusinessProfilePage({
                 )}
 
                 {/* Address + map */}
-                <div className="p-5 border-b border-gray-100">
-                  <h3 className="text-sm font-semibold text-gray-900 mb-2 flex items-center gap-2">
-                    <svg className="w-4 h-4 text-gray-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8}>
+                <div className="p-5" style={{ borderBottom: "1px solid rgba(148,163,184,0.16)" }}>
+                  <h3 className="text-sm font-semibold text-slate-700 mb-2 flex items-center gap-2">
+                    <svg className="w-4 h-4 text-slate-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8}>
                       <path strokeLinecap="round" strokeLinejoin="round" d="M15 10.5a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
                       <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1 1 15 0Z" />
                     </svg>
                     Adres
                   </h3>
-                  <p className="text-sm text-gray-600">
-                    {business.address}, {business.postalCode} {business.city}
-                  </p>
-
-                  {/* Google Maps embed — search by name+address for reliable pin */}
-                  <div className="mt-3 rounded-xl overflow-hidden border border-gray-100">
+                  <p className="text-sm text-slate-500">{business.address}, {business.postalCode} {business.city}</p>
+                  <div className="mt-3 rounded-xl overflow-hidden" style={{ border: "1px solid rgba(148,163,184,0.18)" }}>
                     <iframe
                       title={`Mapa dojazdu — ${business.name}`}
-                      src={`https://maps.google.com/maps?f=q&source=s_q&q=${encodeURIComponent(
-                        `${business.name}, ${business.address}, ${business.city}`
-                      )}&z=15&t=m&hl=pl&ie=UTF8&iwloc=B&output=embed`}
+                      src={`https://maps.google.com/maps?f=q&source=s_q&q=${encodeURIComponent(`${business.name}, ${business.address}, ${business.city}`)}&z=15&t=m&hl=pl&ie=UTF8&iwloc=B&output=embed`}
                       className="w-full h-56 border-0"
                       loading="lazy"
                       referrerPolicy="no-referrer-when-downgrade"
                       allowFullScreen
                     />
                   </div>
-
-                  <a
-                    href={mapsUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center gap-1.5 mt-3 text-xs font-semibold text-gray-900 hover:underline underline-offset-4"
-                  >
+                  <a href={mapsUrl} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1.5 mt-3 text-xs font-semibold text-slate-600 hover:underline underline-offset-4">
                     Otwórz w Google Maps (nawigacja)
                     <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
                       <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 6H5.25A2.25 2.25 0 0 0 3 8.25v10.5A2.25 2.25 0 0 0 5.25 21h10.5A2.25 2.25 0 0 0 18 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25" />
@@ -501,39 +487,16 @@ export default async function BusinessProfilePage({
                 {/* Contact */}
                 {(business.phone || business.email || business.website) && (
                   <div className="p-5">
-                    <h3 className="text-sm font-semibold text-gray-900 mb-2 flex items-center gap-2">
-                      <svg className="w-4 h-4 text-gray-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8}>
+                    <h3 className="text-sm font-semibold text-slate-700 mb-2 flex items-center gap-2">
+                      <svg className="w-4 h-4 text-slate-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8}>
                         <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 6.75c0 8.284 6.716 15 15 15h2.25a2.25 2.25 0 0 0 2.25-2.25v-1.372c0-.516-.351-.966-.852-1.091l-4.423-1.106c-.44-.11-.902.055-1.173.417l-.97 1.293c-.282.376-.769.542-1.21.38a12.035 12.035 0 0 1-7.143-7.143c-.162-.441.004-.928.38-1.21l1.293-.97c.363-.271.527-.734.417-1.173L6.963 3.102a1.125 1.125 0 0 0-1.091-.852H4.5A2.25 2.25 0 0 0 2.25 4.5v2.25Z" />
                       </svg>
                       Kontakt
                     </h3>
                     <div className="space-y-1.5">
-                      {business.phone && (
-                        <a
-                          href={`tel:${business.phone}`}
-                          className="block text-sm text-gray-600 hover:text-gray-900 transition-colors"
-                        >
-                          {business.phone}
-                        </a>
-                      )}
-                      {business.email && (
-                        <a
-                          href={`mailto:${business.email}`}
-                          className="block text-sm text-gray-600 hover:text-gray-900 transition-colors"
-                        >
-                          {business.email}
-                        </a>
-                      )}
-                      {business.website && (
-                        <a
-                          href={business.website}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="block text-sm text-gray-600 hover:text-gray-900 transition-colors"
-                        >
-                          {business.website.replace(/^https?:\/\//, "")}
-                        </a>
-                      )}
+                      {business.phone && <a href={`tel:${business.phone}`} className="block text-sm text-slate-500 hover:text-slate-800 transition-colors">{business.phone}</a>}
+                      {business.email && <a href={`mailto:${business.email}`} className="block text-sm text-slate-500 hover:text-slate-800 transition-colors">{business.email}</a>}
+                      {business.website && <a href={business.website} target="_blank" rel="noopener noreferrer" className="block text-sm text-slate-500 hover:text-slate-800 transition-colors">{business.website.replace(/^https?:\/\//, "")}</a>}
                     </div>
                   </div>
                 )}
@@ -544,86 +507,60 @@ export default async function BusinessProfilePage({
             {business.reviews.length > 0 && (
               <section>
                 <div className="flex items-center justify-between mb-4">
-                  <h2 className="text-lg font-bold text-gray-900">
+                  <h2 className="text-lg font-bold text-slate-900">
                     Opinie{" "}
                     {business.totalReviews > 0 && (
-                      <span className="text-gray-400 font-normal text-base">
-                        ({business.totalReviews})
-                      </span>
+                      <span className="text-slate-400 font-normal text-base">({business.totalReviews})</span>
                     )}
                   </h2>
                   {business.totalReviews > 5 && (
-                    <button className="text-sm font-medium text-gray-600 hover:text-gray-900 underline underline-offset-4 transition-colors">
+                    <button className="text-sm font-medium text-slate-500 hover:text-slate-800 underline underline-offset-4 transition-colors">
                       Pokaż wszystkie
                     </button>
                   )}
                 </div>
 
                 {business.averageRating > 0 && (
-                  <div className="bg-white border border-gray-100 rounded-2xl p-5 shadow-soft mb-3 flex items-center gap-5">
+                  <div className="rounded-2xl p-5 mb-3 flex items-center gap-5" style={glassCard}>
                     <div className="text-center">
-                      <p className="text-4xl font-bold text-gray-900">
-                        {business.averageRating.toFixed(1)}
-                      </p>
-                      <StarRating
-                        rating={business.averageRating}
-                        count={0}
-                        size="sm"
-                      />
+                      <p className="text-4xl font-bold text-slate-800">{business.averageRating.toFixed(1)}</p>
+                      <StarRating rating={business.averageRating} count={0} size="sm" />
                     </div>
-                    <div className="h-12 w-px bg-gray-100" />
-                    <p className="text-sm text-gray-500">
+                    <div className="h-12 w-px" style={{ background: "rgba(148,163,184,0.22)" }} />
+                    <p className="text-sm text-slate-400">
                       Na podstawie{" "}
-                      <span className="font-semibold text-gray-900">
-                        {business.totalReviews}
-                      </span>{" "}
-                      {business.totalReviews === 1
-                        ? "opinii"
-                        : business.totalReviews < 5
-                        ? "opinii"
-                        : "opinii"}
+                      <span className="font-semibold text-slate-700">{business.totalReviews}</span>{" "}
+                      opinii
                     </p>
                   </div>
                 )}
 
                 <div className="space-y-3">
                   {business.reviews.map((review) => (
-                    <div
-                      key={review.id}
-                      className="bg-white border border-gray-100 rounded-2xl p-5 shadow-soft"
-                    >
+                    <div key={review.id} className="rounded-2xl p-5" style={glassCard}>
                       <div className="flex items-start justify-between gap-3">
                         <div className="flex items-center gap-3">
-                          <div className="w-9 h-9 rounded-xl bg-gray-900 flex items-center justify-center flex-shrink-0">
-                            <span className="text-white text-xs font-bold">
-                              {review.customer.firstName[0]}
-                              {review.customer.lastName[0]}
+                          <div
+                            className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0"
+                            style={{ background: "rgba(148,163,184,0.20)", border: "1px solid rgba(148,163,184,0.28)", color: "#475569" }}
+                          >
+                            <span className="text-xs font-bold">
+                              {review.customer.firstName[0]}{review.customer.lastName[0]}
                             </span>
                           </div>
                           <div>
-                            <p className="text-sm font-semibold text-gray-900">
-                              {review.customer.firstName}{" "}
-                              {review.customer.lastName[0]}.
+                            <p className="text-sm font-semibold text-slate-800">
+                              {review.customer.firstName} {review.customer.lastName[0]}.
                             </p>
-                            <StarRating
-                              rating={review.rating}
-                              count={0}
-                              size="sm"
-                            />
+                            <StarRating rating={review.rating} count={0} size="sm" />
                           </div>
                         </div>
-                        <span className="text-xs text-gray-400 flex-shrink-0">
-                          {formatDate(review.createdAt, {
-                            day: "numeric",
-                            month: "short",
-                            year: "numeric",
-                          })}
+                        <span className="text-xs text-slate-400 flex-shrink-0">
+                          {formatDate(review.createdAt, { day: "numeric", month: "short", year: "numeric" })}
                         </span>
                       </div>
                       {review.comment && (
-                        <p className="text-sm text-gray-600 mt-3 leading-relaxed">
-                          {review.comment}
-                        </p>
+                        <p className="text-sm text-slate-500 mt-3 leading-relaxed">{review.comment}</p>
                       )}
                     </div>
                   ))}
@@ -652,21 +589,26 @@ export default async function BusinessProfilePage({
 
       {/* Mobile sticky CTA */}
       {business.services.length > 0 && (
-        <div className="lg:hidden fixed bottom-0 inset-x-0 z-40 bg-white/95 backdrop-blur border-t border-gray-100 px-4 py-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))]">
+        <div
+          className="lg:hidden fixed bottom-0 inset-x-0 z-40 px-4 py-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))]"
+          style={{
+            background: "rgba(255,255,255,0.90)",
+            backdropFilter: "blur(24px) saturate(200%)",
+            WebkitBackdropFilter: "blur(24px) saturate(200%)",
+            borderTop: "1px solid rgba(148,163,184,0.20)",
+          }}
+        >
           <div className="flex items-center gap-3 max-w-6xl mx-auto">
             <div className="flex-1 min-w-0">
-              <p className="text-xs text-gray-500">Usługi od</p>
-              <p className="text-sm font-bold text-gray-900">
-                {formatCurrency(
-                  Math.min(
-                    ...business.services.map((s) => s.discountedPrice ?? s.price)
-                  )
-                )}
+              <p className="text-xs text-slate-400">Usługi od</p>
+              <p className="text-sm font-bold text-slate-800">
+                {formatCurrency(Math.min(...business.services.map((s) => s.discountedPrice ?? s.price)))}
               </p>
             </div>
             <Link
               href={`/b/${slug}/book`}
-              className="px-6 py-3 bg-gray-900 hover:bg-gray-800 text-white rounded-xl text-sm font-semibold transition-colors"
+              className="px-6 py-3 rounded-xl text-sm font-semibold transition-all"
+              style={{ background: "rgba(148,163,184,0.22)", border: "1px solid rgba(148,163,184,0.38)", color: "#334155", boxShadow: "inset 0 1px 0 rgba(255,255,255,0.70)" }}
             >
               Zarezerwuj wizytę
             </Link>

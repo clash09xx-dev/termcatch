@@ -63,11 +63,20 @@ export function CustomerSidebar() {
   const pathname = usePathname();
 
   return (
-    <aside className="hidden md:flex flex-col w-56 h-screen border-r border-gray-200 bg-white shrink-0">
+    <aside
+      className="hidden md:flex flex-col w-56 h-screen shrink-0"
+      style={{
+        background: "rgba(255,255,255,0.65)",
+        backdropFilter: "blur(32px) saturate(200%)",
+        WebkitBackdropFilter: "blur(32px) saturate(200%)",
+        borderRight: "1px solid rgba(148,163,184,0.20)",
+        boxShadow: "4px 0 32px rgba(100,116,139,0.08), inset -1px 0 0 rgba(255,255,255,0.70)",
+      }}
+    >
       {/* Logo */}
-      <div className="flex items-center gap-2.5 px-4 h-16 border-b border-gray-100">
+      <div className="flex items-center gap-2.5 px-4 h-16" style={{ borderBottom: "1px solid rgba(148,163,184,0.16)" }}>
         <Link href="/" className="flex items-center">
-          <Wordmark className="text-base" />
+          <Wordmark className="text-base" variant="light" />
         </Link>
       </div>
 
@@ -75,7 +84,13 @@ export function CustomerSidebar() {
       <div className="px-3 py-4">
         <Link
           href="/search"
-          className="flex items-center gap-2.5 w-full px-3 py-2.5 bg-gray-900 hover:bg-gray-800 text-white text-sm font-medium rounded-xl transition-colors"
+          className="flex items-center gap-2.5 w-full px-3 py-2.5 text-sm font-medium rounded-xl transition-all"
+          style={{
+            background: "rgba(148,163,184,0.18)",
+            border: "1px solid rgba(148,163,184,0.32)",
+            color: "#334155",
+            boxShadow: "inset 0 1px 0 rgba(255,255,255,0.70)",
+          }}
         >
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
             <circle cx="11" cy="11" r="8" />
@@ -93,14 +108,19 @@ export function CustomerSidebar() {
             <Link
               key={item.href}
               href={item.href}
-              className={cn(
-                "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors",
-                isActive
-                  ? "bg-gray-100 text-gray-900"
-                  : "text-gray-500 hover:bg-gray-50 hover:text-gray-900"
-              )}
+              className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all"
+              style={isActive ? {
+                background: "rgba(148,163,184,0.18)",
+                color: "#1E293B",
+                border: "1px solid rgba(148,163,184,0.28)",
+                boxShadow: "inset 0 1px 0 rgba(255,255,255,0.75)",
+              } : {
+                color: "#94A3B8",
+              }}
+              onMouseEnter={e => { if (!isActive) { (e.currentTarget as HTMLElement).style.background = "rgba(148,163,184,0.10)"; (e.currentTarget as HTMLElement).style.color = "#475569"; } }}
+              onMouseLeave={e => { if (!isActive) { (e.currentTarget as HTMLElement).style.background = ""; (e.currentTarget as HTMLElement).style.color = "#94A3B8"; } }}
             >
-              <span className={cn("flex-shrink-0", isActive ? "text-gray-900" : "text-gray-400")}>
+              <span className="flex-shrink-0" style={{ color: isActive ? "#64748B" : "inherit" }}>
                 {item.icon}
               </span>
               {item.label}
@@ -110,17 +130,23 @@ export function CustomerSidebar() {
       </nav>
 
       {/* Bottom */}
-      <div className="p-3 border-t border-gray-100">
+      <div className="p-3" style={{ borderTop: "1px solid rgba(148,163,184,0.16)" }}>
         <Link
           href="/customer/profile"
-          className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-50 transition-colors"
+          className="flex items-center gap-3 px-3 py-2 rounded-lg transition-all"
+          style={{ color: "#64748B" }}
+          onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = "rgba(148,163,184,0.10)"; }}
+          onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = ""; }}
         >
-          <div className="w-7 h-7 rounded-full bg-gray-100 flex items-center justify-center text-xs font-semibold text-gray-600 flex-shrink-0">
+          <div
+            className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-semibold flex-shrink-0"
+            style={{ background: "rgba(148,163,184,0.20)", border: "1px solid rgba(148,163,184,0.30)", color: "#475569" }}
+          >
             U
           </div>
           <div className="flex-1 min-w-0">
-            <p className="text-xs font-medium text-gray-900 truncate">Mój profil</p>
-            <p className="text-[10px] text-gray-400 truncate">Edytuj dane</p>
+            <p className="text-xs font-medium text-slate-700 truncate">Mój profil</p>
+            <p className="text-[10px] text-slate-400 truncate">Edytuj dane</p>
           </div>
         </Link>
       </div>

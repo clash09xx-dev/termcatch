@@ -51,11 +51,21 @@ const config: Config = {
           50: "#FFFBEB",
           100: "#FEF3C0",
           200: "#FDE47A",
-          300: "#E6BC43",   // gold secondary
-          400: "#D4A017",   // gold primary — true metallic gold
+          300: "#E6BC43",
+          400: "#D4A017",
           500: "#B8890E",
           600: "#9A720C",
           700: "#7C5B0A",
+        },
+        // Silver — new brand accent
+        silver: {
+          100: "#F1F5F9",
+          200: "#E2E8F0",
+          300: "#CBD5E1",   // silver light
+          400: "#94A3B8",   // silver primary
+          500: "#64748B",   // silver dark
+          600: "#475569",   // silver text
+          700: "#334155",
         },
         danger: {
           50: "#fff1f2",
@@ -84,12 +94,12 @@ const config: Config = {
         "brand-lg": "0 10px 40px 0 rgb(17 24 39 / 0.25)",
         "inner-brand": "inset 0 2px 4px 0 rgb(17 24 39 / 0.1)",
         // Liquid glass shadows — outer depth + inner white highlight
-        glass: "0 8px 32px rgba(17,24,39,0.08), inset 0 1px 0 rgba(255,255,255,0.65)",
-        "glass-lg": "0 20px 60px rgba(17,24,39,0.12), 0 4px 16px rgba(17,24,39,0.06), inset 0 1px 0 rgba(255,255,255,0.7)",
-        "glass-card": "0 4px 24px rgba(17,24,39,0.06), 0 1px 3px rgba(17,24,39,0.04), inset 0 1px 0 rgba(255,255,255,0.6)",
-        "glass-sm": "0 2px 12px rgba(17,24,39,0.06), inset 0 1px 0 rgba(255,255,255,0.7)",
-        "gold-glow": "0 4px 20px rgba(212,160,23,0.18), 0 1px 4px rgba(212,160,23,0.12)",
-        "widget": "0 24px 64px rgba(17,24,39,0.14), 0 8px 24px rgba(17,24,39,0.08), inset 0 1px 0 rgba(255,255,255,1)",
+        glass: "0 8px 32px rgba(100,116,139,0.10), 0 2px 8px rgba(0,0,0,0.04), inset 0 1px 0 rgba(255,255,255,0.90)",
+        "glass-lg": "0 20px 60px rgba(100,116,139,0.14), 0 4px 16px rgba(0,0,0,0.06), inset 0 1px 0 rgba(255,255,255,0.95)",
+        "glass-card": "0 4px 24px rgba(100,116,139,0.08), 0 1px 3px rgba(0,0,0,0.04), inset 0 1px 0 rgba(255,255,255,0.85)",
+        "glass-sm": "0 2px 12px rgba(100,116,139,0.08), inset 0 1px 0 rgba(255,255,255,0.90)",
+        "silver-glow": "0 4px 20px rgba(148,163,184,0.20), 0 1px 4px rgba(148,163,184,0.12)",
+        "widget": "0 24px 64px rgba(100,116,139,0.16), 0 8px 24px rgba(0,0,0,0.06), inset 0 1px 0 rgba(255,255,255,1)",
       },
       backgroundImage: {
         "gradient-brand": "linear-gradient(135deg, #1f2937 0%, #111827 50%, #030712 100%)",

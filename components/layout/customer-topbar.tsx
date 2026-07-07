@@ -8,16 +8,33 @@ import { useUnreadCount } from "@/hooks/use-unread-count";
 export function CustomerTopbar() {
   const unreadCount = useUnreadCount();
   return (
-    <header className="h-16 border-b border-gray-100 bg-white flex items-center gap-4 px-6 shrink-0">
+    <header
+      className="h-16 flex items-center gap-4 px-6 shrink-0"
+      style={{
+        background: "rgba(255,255,255,0.72)",
+        backdropFilter: "blur(32px) saturate(200%)",
+        WebkitBackdropFilter: "blur(32px) saturate(200%)",
+        borderBottom: "1px solid rgba(148,163,184,0.18)",
+        boxShadow: "0 4px 24px rgba(100,116,139,0.08)",
+      }}
+    >
       {/* Mobile logo */}
       <Link href="/" className="flex items-center md:hidden">
-        <Wordmark className="text-base" />
+        <Wordmark className="text-base" variant="light" />
       </Link>
 
       {/* Search shortcut */}
       <Link
         href="/search"
-        className="flex-1 max-w-sm flex items-center gap-2 px-3 py-2 bg-gray-50 border border-gray-200 rounded-xl text-sm text-gray-400 hover:border-gray-300 transition-colors"
+        className="flex-1 max-w-sm flex items-center gap-2 px-3 py-2 rounded-xl text-sm transition-all"
+        style={{
+          background: "rgba(255,255,255,0.70)",
+          backdropFilter: "blur(16px)",
+          WebkitBackdropFilter: "blur(16px)",
+          border: "1px solid rgba(148,163,184,0.22)",
+          color: "#94A3B8",
+          boxShadow: "inset 0 1px 0 rgba(255,255,255,0.85)",
+        }}
       >
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
           <circle cx="11" cy="11" r="8" />
@@ -28,7 +45,13 @@ export function CustomerTopbar() {
 
       <div className="flex items-center gap-2 ml-auto">
         {/* Notifications */}
-        <Link href="/customer/notifications" className="relative p-2 rounded-lg hover:bg-gray-100 transition-colors text-gray-500">
+        <Link
+          href="/customer/notifications"
+          className="relative p-2 rounded-lg transition-colors"
+          style={{ color: "#94A3B8" }}
+          onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = "rgba(148,163,184,0.10)"; }}
+          onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = ""; }}
+        >
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
             <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
             <path d="M13.73 21a2 2 0 0 1-3.46 0" />
@@ -44,8 +67,11 @@ export function CustomerTopbar() {
         <form action={logoutAction}>
           <button
             type="submit"
-            className="p-2 rounded-lg hover:bg-gray-100 transition-colors text-gray-400 hover:text-gray-600"
+            className="p-2 rounded-lg transition-colors"
+            style={{ color: "#CBD5E1" }}
             title="Wyloguj"
+            onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = "rgba(148,163,184,0.10)"; (e.currentTarget as HTMLElement).style.color = "#64748B"; }}
+            onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = ""; (e.currentTarget as HTMLElement).style.color = "#CBD5E1"; }}
           >
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />

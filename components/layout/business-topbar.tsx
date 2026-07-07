@@ -30,17 +30,17 @@ export function BusinessTopbar() {
     <header
       className="h-14 flex items-center gap-4 px-5 shrink-0 sticky top-0 z-30"
       style={{
-        background: "rgba(255,255,255,0.04)",
-        backdropFilter: "blur(32px) saturate(180%)",
-        WebkitBackdropFilter: "blur(32px) saturate(180%)",
-        borderBottom: "1px solid rgba(255,255,255,0.07)",
-        boxShadow: "0 4px 24px rgba(0,0,0,0.20)",
+        background: "rgba(255,255,255,0.72)",
+        backdropFilter: "blur(32px) saturate(200%)",
+        WebkitBackdropFilter: "blur(32px) saturate(200%)",
+        borderBottom: "1px solid rgba(148,163,184,0.18)",
+        boxShadow: "0 4px 24px rgba(100,116,139,0.08), inset 0 -1px 0 rgba(148,163,184,0.12)",
       }}
     >
       <div className="flex-1 min-w-0">
         <h1
           className="text-[15px] font-semibold truncate tracking-[-0.01em]"
-          style={{ color: "rgba(255,255,255,0.88)" }}
+          style={{ color: "#0F172A" }}
         >
           {title}
         </h1>
@@ -52,9 +52,9 @@ export function BusinessTopbar() {
           href="/business/calendar?action=new"
           className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-lg transition-all"
           style={{
-            color: "rgba(255,255,255,0.80)",
-            background: "rgba(255,255,255,0.08)",
-            border: "1px solid rgba(255,255,255,0.12)",
+            color: "#475569",
+            background: "rgba(148,163,184,0.14)",
+            border: "1px solid rgba(148,163,184,0.28)",
           }}
         >
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
@@ -64,14 +64,14 @@ export function BusinessTopbar() {
         </Link>
 
         {/* Divider */}
-        <div className="hidden sm:block h-5 w-px mx-1" style={{ background: "rgba(255,255,255,0.08)" }} />
+        <div className="hidden sm:block h-5 w-px mx-1" style={{ background: "rgba(148,163,184,0.25)" }} />
 
         {/* Notifications */}
         <button
           className="relative p-2 rounded-lg transition-colors"
-          style={{ color: "rgba(255,255,255,0.40)" }}
+          style={{ color: "#94A3B8" }}
           title="Powiadomienia"
-          onMouseEnter={e => (e.currentTarget.style.background = "rgba(255,255,255,0.06)")}
+          onMouseEnter={e => (e.currentTarget.style.background = "rgba(148,163,184,0.10)")}
           onMouseLeave={e => (e.currentTarget.style.background = "")}
         >
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -87,10 +87,10 @@ export function BusinessTopbar() {
         {/* Help */}
         <button
           className="p-2 rounded-lg transition-colors"
-          style={{ color: "rgba(255,255,255,0.30)" }}
+          style={{ color: "#CBD5E1" }}
           title="Pomoc"
-          onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = "rgba(255,255,255,0.06)"; (e.currentTarget as HTMLElement).style.color = "rgba(255,255,255,0.65)"; }}
-          onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = ""; (e.currentTarget as HTMLElement).style.color = "rgba(255,255,255,0.30)"; }}
+          onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = "rgba(148,163,184,0.10)"; (e.currentTarget as HTMLElement).style.color = "#64748B"; }}
+          onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = ""; (e.currentTarget as HTMLElement).style.color = "#CBD5E1"; }}
         >
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
             <circle cx="12" cy="12" r="10" />
@@ -105,13 +105,13 @@ export function BusinessTopbar() {
             type="submit"
             title="Wyloguj"
             className="flex items-center gap-2 pl-2 pr-2.5 py-1.5 rounded-lg transition-all group"
-            style={{ color: "rgba(255,255,255,0.40)" }}
-            onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = "rgba(255,255,255,0.06)"; (e.currentTarget as HTMLElement).style.color = "rgba(255,255,255,0.70)"; }}
-            onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = ""; (e.currentTarget as HTMLElement).style.color = "rgba(255,255,255,0.40)"; }}
+            style={{ color: "#94A3B8" }}
+            onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = "rgba(148,163,184,0.10)"; (e.currentTarget as HTMLElement).style.color = "#475569"; }}
+            onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = ""; (e.currentTarget as HTMLElement).style.color = "#94A3B8"; }}
           >
             <div
-              className="w-6 h-6 rounded-md flex items-center justify-center text-[9px] font-bold text-white"
-              style={{ background: "rgba(212,160,23,0.22)", border: "1px solid rgba(212,160,23,0.28)" }}
+              className="w-6 h-6 rounded-md flex items-center justify-center text-[9px] font-bold"
+              style={{ background: "rgba(148,163,184,0.22)", border: "1px solid rgba(148,163,184,0.32)", color: "#475569" }}
             >
               AB
             </div>

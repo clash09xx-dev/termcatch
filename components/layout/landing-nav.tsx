@@ -46,25 +46,21 @@ export function LandingNav() {
   return (
     <header className="fixed top-0 inset-x-0 z-50 px-4 pt-3">
       <div className="max-w-6xl mx-auto">
-        {/* ── Floating dark glass pill ── */}
+        {/* ── Floating light glass pill ── */}
         <div
           className="flex items-center justify-between px-5 py-2.5 rounded-2xl transition-all duration-300"
           style={{
-            backdropFilter: "blur(28px) saturate(180%)",
-            WebkitBackdropFilter: "blur(28px) saturate(180%)",
-            background: isScrolled
-              ? "rgba(11,13,18,0.88)"
-              : "rgba(11,13,18,0.65)",
-            border: isScrolled
-              ? "1px solid rgba(255,255,255,0.13)"
-              : "1px solid rgba(255,255,255,0.09)",
+            backdropFilter: "blur(32px) saturate(200%)",
+            WebkitBackdropFilter: "blur(32px) saturate(200%)",
+            background: isScrolled ? "rgba(255,255,255,0.90)" : "rgba(255,255,255,0.72)",
+            border: "1px solid rgba(148,163,184,0.22)",
             boxShadow: isScrolled
-              ? "0 8px 40px rgba(0,0,0,0.50), inset 0 1px 0 rgba(255,255,255,0.10)"
-              : "0 4px 20px rgba(0,0,0,0.30), inset 0 1px 0 rgba(255,255,255,0.08)",
+              ? "0 8px 40px rgba(100,116,139,0.14), 0 2px 8px rgba(0,0,0,0.05), inset 0 1px 0 rgba(255,255,255,0.95)"
+              : "0 4px 20px rgba(100,116,139,0.08), 0 1px 4px rgba(0,0,0,0.03), inset 0 1px 0 rgba(255,255,255,0.90)",
           }}
         >
           <Link href="/" className="flex items-center flex-shrink-0">
-            <Wordmark className="text-[1.05rem]" variant="dark" />
+            <Wordmark className="text-[1.05rem]" variant="light" />
           </Link>
 
           {/* Desktop nav */}
@@ -74,9 +70,9 @@ export function LandingNav() {
                 key={link.href}
                 href={link.href}
                 className="px-3.5 py-2 text-sm rounded-xl transition-all duration-150"
-                style={{ color: "rgba(255,255,255,0.55)" }}
-                onMouseEnter={e => (e.currentTarget.style.color = "rgba(255,255,255,0.92)")}
-                onMouseLeave={e => (e.currentTarget.style.color = "rgba(255,255,255,0.55)")}
+                style={{ color: "#64748B" }}
+                onMouseEnter={e => (e.currentTarget.style.color = "#0F172A")}
+                onMouseLeave={e => (e.currentTarget.style.color = "#64748B")}
               >
                 {link.label}
               </Link>
@@ -88,11 +84,12 @@ export function LandingNav() {
             {auth.status === "authed" ? (
               <Link
                 href={auth.dashboardHref}
-                className="text-sm font-semibold px-4 py-2 rounded-xl transition-all text-white"
+                className="text-sm font-semibold px-4 py-2 rounded-xl transition-all"
                 style={{
-                  background: "rgba(212,160,23,0.18)",
-                  border: "1px solid rgba(212,160,23,0.30)",
-                  boxShadow: "inset 0 1px 0 rgba(212,160,23,0.20)",
+                  background: "rgba(148,163,184,0.18)",
+                  border: "1px solid rgba(148,163,184,0.35)",
+                  color: "#334155",
+                  boxShadow: "inset 0 1px 0 rgba(255,255,255,0.70)",
                 }}
               >
                 Mój panel
@@ -102,19 +99,20 @@ export function LandingNav() {
                 <Link
                   href="/login"
                   className="text-sm px-3.5 py-2 rounded-xl transition-all duration-150"
-                  style={{ color: "rgba(255,255,255,0.55)" }}
-                  onMouseEnter={e => (e.currentTarget.style.color = "rgba(255,255,255,0.90)")}
-                  onMouseLeave={e => (e.currentTarget.style.color = "rgba(255,255,255,0.55)")}
+                  style={{ color: "#64748B" }}
+                  onMouseEnter={e => (e.currentTarget.style.color = "#0F172A")}
+                  onMouseLeave={e => (e.currentTarget.style.color = "#64748B")}
                 >
                   Zaloguj się
                 </Link>
                 <Link
                   href="/register"
-                  className="text-sm font-semibold px-4 py-2 rounded-xl transition-all text-white"
+                  className="text-sm font-semibold px-4 py-2 rounded-xl transition-all"
                   style={{
-                    background: "rgba(255,255,255,0.12)",
-                    border: "1px solid rgba(255,255,255,0.18)",
-                    boxShadow: "inset 0 1px 0 rgba(255,255,255,0.12)",
+                    background: "rgba(148,163,184,0.18)",
+                    border: "1px solid rgba(148,163,184,0.35)",
+                    color: "#334155",
+                    boxShadow: "inset 0 1px 0 rgba(255,255,255,0.70)",
                   }}
                 >
                   Zarejestruj się
@@ -128,7 +126,7 @@ export function LandingNav() {
           {/* Mobile toggle */}
           <button
             className="md:hidden p-2 rounded-xl transition-colors"
-            style={{ color: "rgba(255,255,255,0.70)" }}
+            style={{ color: "#64748B" }}
             onClick={() => setIsMobileOpen(!isMobileOpen)}
             aria-label="Menu"
           >
@@ -138,7 +136,7 @@ export function LandingNav() {
           </button>
         </div>
 
-        {/* ── Mobile menu — dark glass ── */}
+        {/* ── Mobile menu — light glass ── */}
         <AnimatePresence>
           {isMobileOpen && (
             <motion.div
@@ -148,11 +146,11 @@ export function LandingNav() {
               transition={{ duration: 0.18, ease: [0.22, 1, 0.36, 1] }}
               className="mt-2 rounded-2xl overflow-hidden"
               style={{
-                background: "rgba(11,13,18,0.92)",
-                backdropFilter: "blur(28px) saturate(180%)",
-                WebkitBackdropFilter: "blur(28px) saturate(180%)",
-                border: "1px solid rgba(255,255,255,0.12)",
-                boxShadow: "0 16px 48px rgba(0,0,0,0.60), inset 0 1px 0 rgba(255,255,255,0.10)",
+                background: "rgba(255,255,255,0.94)",
+                backdropFilter: "blur(32px) saturate(200%)",
+                WebkitBackdropFilter: "blur(32px) saturate(200%)",
+                border: "1px solid rgba(148,163,184,0.25)",
+                boxShadow: "0 16px 48px rgba(100,116,139,0.15), inset 0 1px 0 rgba(255,255,255,0.95)",
               }}
             >
               <div className="px-4 py-3 space-y-0.5">
@@ -162,24 +160,22 @@ export function LandingNav() {
                     href={link.href}
                     onClick={() => setIsMobileOpen(false)}
                     className="block px-3 py-2.5 text-sm rounded-xl transition-colors"
-                    style={{ color: "rgba(255,255,255,0.65)" }}
+                    style={{ color: "#475569" }}
                   >
                     {link.label}
                   </Link>
                 ))}
               </div>
-              <div
-                className="px-4 pb-4 pt-2 space-y-2"
-                style={{ borderTop: "1px solid rgba(255,255,255,0.08)" }}
-              >
+              <div className="px-4 pb-4 pt-2 space-y-2" style={{ borderTop: "1px solid rgba(148,163,184,0.18)" }}>
                 {auth.status === "authed" ? (
                   <Link
                     href={auth.dashboardHref}
                     onClick={() => setIsMobileOpen(false)}
-                    className="block w-full text-center px-4 py-2.5 text-sm font-semibold rounded-xl text-white"
+                    className="block w-full text-center px-4 py-2.5 text-sm font-semibold rounded-xl"
                     style={{
-                      background: "rgba(212,160,23,0.20)",
-                      border: "1px solid rgba(212,160,23,0.30)",
+                      background: "rgba(148,163,184,0.18)",
+                      border: "1px solid rgba(148,163,184,0.30)",
+                      color: "#334155",
                     }}
                   >
                     Mój panel
@@ -189,11 +185,11 @@ export function LandingNav() {
                     <Link
                       href="/login"
                       onClick={() => setIsMobileOpen(false)}
-                      className="block w-full text-center px-4 py-2.5 text-sm rounded-xl transition-colors"
+                      className="block w-full text-center px-4 py-2.5 text-sm rounded-xl"
                       style={{
-                        color: "rgba(255,255,255,0.70)",
-                        background: "rgba(255,255,255,0.06)",
-                        border: "1px solid rgba(255,255,255,0.10)",
+                        color: "#475569",
+                        background: "rgba(148,163,184,0.10)",
+                        border: "1px solid rgba(148,163,184,0.20)",
                       }}
                     >
                       Zaloguj się
@@ -201,10 +197,11 @@ export function LandingNav() {
                     <Link
                       href="/register"
                       onClick={() => setIsMobileOpen(false)}
-                      className="block w-full text-center px-4 py-2.5 text-sm font-semibold rounded-xl text-white transition-colors"
+                      className="block w-full text-center px-4 py-2.5 text-sm font-semibold rounded-xl"
                       style={{
-                        background: "rgba(255,255,255,0.12)",
-                        border: "1px solid rgba(255,255,255,0.18)",
+                        background: "rgba(148,163,184,0.18)",
+                        border: "1px solid rgba(148,163,184,0.30)",
+                        color: "#334155",
                       }}
                     >
                       Zarejestruj się
