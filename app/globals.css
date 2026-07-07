@@ -5,28 +5,48 @@
 @layer base {
   :root {
     --font-inter: "Inter", system-ui, sans-serif;
+
+    /* Brand */
+    --color-dark: #111827;
+    --color-gold: #D4A017;
+    --color-gold-secondary: #E6BC43;
+    --color-bg: #FAFAF9;
+    --color-card: #FFFFFF;
+
+    /* Liquid Glass */
+    --glass-bg: rgba(255, 255, 255, 0.72);
+    --glass-bg-strong: rgba(255, 255, 255, 0.88);
+    --glass-border: rgba(255, 255, 255, 0.52);
+    --glass-border-subtle: rgba(0, 0, 0, 0.06);
+    --glass-shadow: 0 8px 32px rgba(17, 24, 39, 0.08), inset 0 1px 0 rgba(255, 255, 255, 0.65);
+    --glass-shadow-lg: 0 20px 60px rgba(17, 24, 39, 0.12), 0 4px 16px rgba(17, 24, 39, 0.06), inset 0 1px 0 rgba(255, 255, 255, 0.7);
+    --glass-shadow-sm: 0 2px 12px rgba(17, 24, 39, 0.06), inset 0 1px 0 rgba(255, 255, 255, 0.7);
+    --glass-blur: blur(20px) saturate(180%);
+    --glass-blur-sm: blur(12px) saturate(160%);
   }
 
   html {
     @apply scroll-smooth;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
   }
 
   body {
     @apply bg-white text-gray-900;
     font-family: var(--font-inter);
+    background-color: var(--color-card);
   }
 
-  /* Scrollbar */
-  ::-webkit-scrollbar { width: 6px; height: 6px; }
+  /* Refined scrollbar */
+  ::-webkit-scrollbar { width: 5px; height: 5px; }
   ::-webkit-scrollbar-track { background: transparent; }
   ::-webkit-scrollbar-thumb { background: #e4e4e7; border-radius: 9999px; }
-  ::-webkit-scrollbar-thumb:hover { background: #d4d4d8; }
+  ::-webkit-scrollbar-thumb:hover { background: #d1d1d6; }
 
-  /* Focus ring — gray, not violet */
+  /* Focus ring — gold-tinted on interactive */
   *:focus-visible {
-    @apply outline-none ring-2 ring-gray-400 ring-offset-2;
+    @apply outline-none ring-2 ring-gray-400/70 ring-offset-2;
   }
 }
 
@@ -35,12 +55,44 @@
     @apply max-w-7xl mx-auto px-4 sm:px-6 lg:px-8;
   }
 
-  /* Card used by dashboard pages */
+  /* Card */
   .card {
     @apply bg-white rounded-2xl border border-gray-100 shadow-soft;
   }
   .card-hover {
     @apply card hover:shadow-soft-md hover:-translate-y-0.5 transition-all duration-200;
+  }
+
+  /* Liquid Glass — Nav, dialogs, popovers, floating widgets */
+  .glass {
+    background: var(--glass-bg);
+    backdrop-filter: var(--glass-blur);
+    -webkit-backdrop-filter: var(--glass-blur);
+    border: 1px solid var(--glass-border);
+    box-shadow: var(--glass-shadow);
+  }
+
+  .glass-strong {
+    background: var(--glass-bg-strong);
+    backdrop-filter: var(--glass-blur);
+    -webkit-backdrop-filter: var(--glass-blur);
+    border: 1px solid rgba(0, 0, 0, 0.07);
+    box-shadow: var(--glass-shadow);
+  }
+
+  .glass-sm {
+    background: rgba(255, 255, 255, 0.80);
+    backdrop-filter: var(--glass-blur-sm);
+    -webkit-backdrop-filter: var(--glass-blur-sm);
+    border: 1px solid var(--glass-border);
+    box-shadow: var(--glass-shadow-sm);
+  }
+
+  /* Premium card with glass treatment */
+  .card-glass {
+    background: rgba(255, 255, 255, 0.95);
+    border: 1px solid rgba(255, 255, 255, 0.6);
+    box-shadow: 0 24px 64px rgba(17, 24, 39, 0.12), 0 8px 24px rgba(17, 24, 39, 0.06), inset 0 1px 0 rgba(255, 255, 255, 1);
   }
 
   .skeleton {
@@ -52,6 +104,10 @@
   .no-scrollbar::-webkit-scrollbar { display: none; }
   .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
   .text-balance { text-wrap: balance; }
+
+  /* Glass fill helpers */
+  .bg-glass { background: var(--glass-bg); }
+  .bg-glass-strong { background: var(--glass-bg-strong); }
 }
 
 @keyframes cursor-blink {

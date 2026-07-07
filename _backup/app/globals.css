@@ -1,0 +1,60 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --font-inter: "Inter", system-ui, sans-serif;
+  }
+
+  html {
+    @apply scroll-smooth;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  body {
+    @apply bg-white text-gray-900;
+    font-family: var(--font-inter);
+  }
+
+  /* Scrollbar */
+  ::-webkit-scrollbar { width: 6px; height: 6px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: #e4e4e7; border-radius: 9999px; }
+  ::-webkit-scrollbar-thumb:hover { background: #d4d4d8; }
+
+  /* Focus ring — gray, not violet */
+  *:focus-visible {
+    @apply outline-none ring-2 ring-gray-400 ring-offset-2;
+  }
+}
+
+@layer components {
+  .container-page {
+    @apply max-w-7xl mx-auto px-4 sm:px-6 lg:px-8;
+  }
+
+  /* Card used by dashboard pages */
+  .card {
+    @apply bg-white rounded-2xl border border-gray-100 shadow-soft;
+  }
+  .card-hover {
+    @apply card hover:shadow-soft-md hover:-translate-y-0.5 transition-all duration-200;
+  }
+
+  .skeleton {
+    @apply bg-gray-100 rounded-lg animate-pulse;
+  }
+}
+
+@layer utilities {
+  .no-scrollbar::-webkit-scrollbar { display: none; }
+  .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+  .text-balance { text-wrap: balance; }
+}
+
+@keyframes cursor-blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0; }
+}

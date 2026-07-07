@@ -48,14 +48,14 @@ const config: Config = {
           600: "#d97706",
         },
         gold: {
-          50: "#FFFBEB",
-          100: "#FEF3C0",
-          200: "#FDE47A",
-          300: "#E6BC43",   // gold secondary
-          400: "#D4A017",   // gold primary — true metallic gold
-          500: "#B8890E",
-          600: "#9A720C",
-          700: "#7C5B0A",
+          50: "#FFFDF0",
+          100: "#FEF9DB",
+          200: "#FBF0A0",
+          300: "#F0D060",
+          400: "#D4AF37",
+          500: "#B8960C",
+          600: "#9B7D0A",
+          700: "#7D6408",
         },
         danger: {
           50: "#fff1f2",
@@ -83,13 +83,6 @@ const config: Config = {
         brand: "0 4px 14px 0 rgb(17 24 39 / 0.20)",
         "brand-lg": "0 10px 40px 0 rgb(17 24 39 / 0.25)",
         "inner-brand": "inset 0 2px 4px 0 rgb(17 24 39 / 0.1)",
-        // Liquid glass shadows — outer depth + inner white highlight
-        glass: "0 8px 32px rgba(17,24,39,0.08), inset 0 1px 0 rgba(255,255,255,0.65)",
-        "glass-lg": "0 20px 60px rgba(17,24,39,0.12), 0 4px 16px rgba(17,24,39,0.06), inset 0 1px 0 rgba(255,255,255,0.7)",
-        "glass-card": "0 4px 24px rgba(17,24,39,0.06), 0 1px 3px rgba(17,24,39,0.04), inset 0 1px 0 rgba(255,255,255,0.6)",
-        "glass-sm": "0 2px 12px rgba(17,24,39,0.06), inset 0 1px 0 rgba(255,255,255,0.7)",
-        "gold-glow": "0 4px 20px rgba(212,160,23,0.18), 0 1px 4px rgba(212,160,23,0.12)",
-        "widget": "0 24px 64px rgba(17,24,39,0.14), 0 8px 24px rgba(17,24,39,0.08), inset 0 1px 0 rgba(255,255,255,1)",
       },
       backgroundImage: {
         "gradient-brand": "linear-gradient(135deg, #1f2937 0%, #111827 50%, #030712 100%)",
@@ -97,12 +90,6 @@ const config: Config = {
         "gradient-hero": "radial-gradient(ellipse 80% 80% at 50% -20%, rgba(17, 24, 39, 0.08) 0%, transparent 100%)",
         "gradient-dark-hero": "radial-gradient(ellipse 80% 80% at 50% -20%, rgba(17, 24, 39, 0.15) 0%, transparent 100%)",
         "gradient-mesh": "radial-gradient(at 40% 20%, rgba(17, 24, 39, 0.06) 0px, transparent 50%), radial-gradient(at 80% 0%, rgba(8, 145, 178, 0.04) 0px, transparent 50%), radial-gradient(at 0% 50%, rgba(220, 38, 38, 0.03) 0px, transparent 50%)",
-        // Premium new gradients
-        "gradient-gold": "linear-gradient(135deg, #D4A017 0%, #E6BC43 100%)",
-        "gradient-gold-subtle": "linear-gradient(135deg, rgba(212,160,23,0.08) 0%, rgba(230,188,67,0.04) 100%)",
-        "gradient-hero-warm": "radial-gradient(ellipse 70% 55% at 85% -5%, rgba(212,160,23,0.055) 0%, transparent 65%), radial-gradient(ellipse 60% 60% at -10% 80%, rgba(17,24,39,0.03) 0%, transparent 60%)",
-        "gradient-sidebar": "linear-gradient(180deg, #ffffff 0%, #fafafa 100%)",
-        "gradient-card-top": "linear-gradient(180deg, rgba(255,255,255,1) 0%, rgba(250,250,250,1) 100%)",
       },
       keyframes: {
         "fade-in": {

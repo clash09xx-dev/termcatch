@@ -30,7 +30,7 @@ function BookingWidget() {
       transition={{ duration: 0.8, delay: 0.2, ease: [0.22, 1, 0.36, 1] }}
       className="relative"
     >
-      <div className="bg-white/96 rounded-2xl border border-gray-100/80 shadow-widget overflow-hidden">
+      <div className="bg-white rounded-2xl border border-gray-200 shadow-2xl shadow-gray-300/30 overflow-hidden">
         {/* Salon header — poglądowe demo profilu salonu */}
         <div className="flex items-center gap-3 px-5 py-4 border-b border-gray-100">
           <div className="w-10 h-10 rounded-xl bg-gray-900 flex items-center justify-center text-white text-sm font-bold flex-shrink-0">
@@ -122,7 +122,7 @@ function BookingWidget() {
       <motion.div
         animate={{ y: [0, -6, 0] }}
         transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
-        className="absolute -top-3 -right-3 rounded-2xl px-3.5 py-2.5 hidden sm:block backdrop-blur-md bg-white/88 border border-white/60 shadow-[0_8px_32px_rgba(17,24,39,0.10),inset_0_1px_0_rgba(255,255,255,0.9)]"
+        className="absolute -top-3 -right-3 bg-white border border-gray-100 shadow-xl rounded-2xl px-3.5 py-2.5 hidden sm:block"
       >
         <p className="text-[10px] text-gray-400">Nowa rezerwacja</p>
         <p className="text-sm font-bold text-gray-900">Dziś · 15:30</p>
@@ -131,7 +131,7 @@ function BookingWidget() {
       <motion.div
         animate={{ y: [0, 6, 0] }}
         transition={{ duration: 3.5, repeat: Infinity, ease: "easeInOut", delay: 1 }}
-        className="absolute -bottom-3 -left-3 rounded-2xl px-3.5 py-2.5 hidden sm:block backdrop-blur-md bg-white/88 border border-white/60 shadow-[0_8px_32px_rgba(17,24,39,0.10),inset_0_1px_0_rgba(255,255,255,0.9)]"
+        className="absolute -bottom-3 -left-3 bg-white border border-gray-100 shadow-xl rounded-2xl px-3.5 py-2.5 hidden sm:block"
       >
         <p className="text-[10px] text-gray-400">Powiadomienie wysłane</p>
         <p className="text-sm font-bold text-gray-900">Wizyta potwierdzona</p>
@@ -298,24 +298,14 @@ export default function HomePage() {
       <section className="relative min-h-screen flex items-center overflow-hidden px-6 pt-16">
         {/* Subtle grid background */}
         <div
-          className="absolute inset-0 pointer-events-none opacity-[0.016]"
+          className="absolute inset-0 pointer-events-none opacity-[0.018]"
           style={{
             backgroundImage: "linear-gradient(to right, #000 1px, transparent 1px), linear-gradient(to bottom, #000 1px, transparent 1px)",
-            backgroundSize: "64px 64px",
+            backgroundSize: "60px 60px",
           }}
         />
-        {/* Top-right warm glow */}
-        <div className="absolute -top-40 -right-20 w-[700px] h-[700px] rounded-full bg-gray-100 blur-3xl opacity-50 pointer-events-none" />
-        {/* Subtle gold warmth — very faint, customer sees it as premium tone */}
-        <div
-          className="absolute top-0 right-0 w-[500px] h-[500px] pointer-events-none"
-          style={{ background: "radial-gradient(ellipse 70% 60% at 90% 0%, rgba(212,160,23,0.055) 0%, transparent 65%)" }}
-        />
-        {/* Bottom-left counter-glow */}
-        <div
-          className="absolute bottom-0 left-0 w-[400px] h-[400px] pointer-events-none"
-          style={{ background: "radial-gradient(ellipse 60% 60% at 0% 100%, rgba(17,24,39,0.025) 0%, transparent 65%)" }}
-        />
+        {/* Top-right soft glow */}
+        <div className="absolute -top-40 -right-40 w-[600px] h-[600px] rounded-full bg-gray-100 blur-3xl opacity-60 pointer-events-none" />
 
         <div className="relative z-10 max-w-7xl mx-auto w-full grid lg:grid-cols-[1fr_480px] gap-14 xl:gap-20 items-center py-20">
           {/* Left — text */}
@@ -456,9 +446,9 @@ export default function HomePage() {
                 initial="hidden" whileInView="show" viewport={{ once: true }}
                 custom={i} variants={fade}
               >
-                <div className="w-12 h-12 rounded-2xl border border-gray-200/80 bg-white shadow-[0_2px_8px_rgba(17,24,39,0.06),inset_0_1px_0_rgba(255,255,255,1)] flex items-center justify-center text-xs font-bold text-gray-400 mb-5 relative">
+                <div className="w-12 h-12 rounded-2xl border border-gray-200 bg-white shadow-sm flex items-center justify-center text-xs font-bold text-gray-400 mb-5 relative">
                   {step.n}
-                  <span className="absolute -top-1.5 -right-1.5 w-4 h-4 rounded-full bg-gray-900 text-white text-[8px] font-bold flex items-center justify-center shadow-sm">
+                  <span className="absolute -top-1.5 -right-1.5 w-4 h-4 rounded-full bg-gray-900 text-white text-[8px] font-bold flex items-center justify-center">
                     {i + 1}
                   </span>
                 </div>
@@ -543,7 +533,7 @@ export default function HomePage() {
                   key={f.title}
                   initial="hidden" whileInView="show" viewport={{ once: true }}
                   custom={i} variants={fade}
-                  className="flex gap-4 p-5 bg-white rounded-2xl border border-gray-100 shadow-[0_2px_12px_rgba(17,24,39,0.05),inset_0_1px_0_rgba(255,255,255,1)]"
+                  className="flex gap-4 p-5 bg-white rounded-2xl border border-gray-100 shadow-sm"
                 >
                   <div className="w-8 h-8 rounded-lg bg-gray-900 flex items-center justify-center text-white text-xs font-bold flex-shrink-0 mt-0.5">
                     {`0${i + 1}`}
