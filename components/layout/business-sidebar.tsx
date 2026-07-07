@@ -114,21 +114,21 @@ export function BusinessSidebar() {
                       className={cn(
                         "flex items-center gap-3 px-2.5 py-2 rounded-lg text-sm font-medium transition-colors group",
                         isActive
-                          ? "bg-gray-100 text-gray-900"
+                          ? "bg-amber-50 text-gray-900"
                           : "text-gray-500 hover:bg-gray-50 hover:text-gray-900"
                       )}
                     >
                       <item.icon
                         className={cn(
                           "flex-shrink-0",
-                          isActive ? "text-gray-900" : "text-gray-400 group-hover:text-gray-600"
+                          isActive ? "text-amber-500" : "text-gray-400 group-hover:text-gray-600"
                         )}
                       />
                       {!isCollapsed && (
                         <>
                           <span className="flex-1 truncate">{item.label}</span>
                           {item.badge && (
-                            <span className="text-[10px] px-1.5 py-0.5 rounded-full font-medium bg-gray-100 text-gray-600">
+                            <span className="text-[10px] px-1.5 py-0.5 rounded-full font-medium bg-amber-100 text-amber-700">
                               {item.badge}
                             </span>
                           )}
