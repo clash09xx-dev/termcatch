@@ -63,18 +63,24 @@ export function BusinessSidebar() {
   return (
     <aside
       className={cn(
-        "hidden lg:flex flex-col h-screen shrink-0",
-        "border-r border-gray-100 bg-white transition-all duration-300",
+        "hidden lg:flex flex-col h-screen shrink-0 transition-all duration-300",
         isCollapsed ? "w-[58px]" : "w-[228px]"
       )}
-      style={{ boxShadow: "1px 0 0 0 rgba(0,0,0,0.04)" }}
+      style={{
+        background: "rgba(255,255,255,0.68)",
+        backdropFilter: "blur(28px) saturate(180%)",
+        WebkitBackdropFilter: "blur(28px) saturate(180%)",
+        borderRight: "1px solid rgba(255,255,255,0.55)",
+        boxShadow: "1px 0 0 rgba(255,255,255,0.4), 6px 0 32px rgba(17,24,39,0.07), inset -1px 0 0 rgba(255,255,255,0.3)",
+      }}
     >
       {/* ── Logo header ───────────────────────────────────────── */}
       <div
         className={cn(
-          "flex items-center h-14 border-b border-gray-100 flex-shrink-0",
+          "flex items-center h-14 flex-shrink-0",
           isCollapsed ? "px-3.5 justify-center" : "px-4"
         )}
+        style={{ borderBottom: "1px solid rgba(255,255,255,0.45)" }}
       >
         {isCollapsed ? (
           <button
@@ -171,7 +177,7 @@ export function BusinessSidebar() {
 
       {/* ── Bottom user card ──────────────────────────────────── */}
       {!isCollapsed && (
-        <div className="p-2.5 border-t border-gray-100 flex-shrink-0">
+        <div className="p-2.5 flex-shrink-0" style={{ borderTop: "1px solid rgba(255,255,255,0.45)" }}>
           <Link
             href="/business/settings"
             className="flex items-center gap-2.5 p-2 rounded-lg hover:bg-gray-50 transition-colors group"
@@ -201,7 +207,7 @@ export function BusinessSidebar() {
 
       {/* Collapsed avatar */}
       {isCollapsed && (
-        <div className="p-2 border-t border-gray-100 flex-shrink-0 flex justify-center">
+        <div className="p-2 flex-shrink-0 flex justify-center" style={{ borderTop: "1px solid rgba(255,255,255,0.45)" }}>
           <Link
             href="/business/settings"
             title="Ustawienia"

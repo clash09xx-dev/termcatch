@@ -27,7 +27,16 @@ export function BusinessTopbar() {
   const title = PAGE_TITLES[pathname] ?? "Dashboard";
 
   return (
-    <header className="h-14 border-b border-gray-100 bg-white/95 backdrop-blur-sm flex items-center gap-4 px-5 shrink-0 sticky top-0 z-30">
+    <header
+      className="h-14 flex items-center gap-4 px-5 shrink-0 sticky top-0 z-30"
+      style={{
+        background: "rgba(255,255,255,0.65)",
+        backdropFilter: "blur(28px) saturate(180%)",
+        WebkitBackdropFilter: "blur(28px) saturate(180%)",
+        borderBottom: "1px solid rgba(255,255,255,0.50)",
+        boxShadow: "0 1px 0 rgba(255,255,255,0.35), 0 4px 24px rgba(17,24,39,0.06)",
+      }}
+    >
       <div className="flex-1 min-w-0">
         <h1 className="text-[15px] font-semibold text-gray-900 truncate tracking-[-0.01em]">{title}</h1>
       </div>

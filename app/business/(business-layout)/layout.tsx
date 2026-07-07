@@ -15,7 +15,7 @@ export default async function BusinessDashboardLayout({
   if (!user) redirect("/login");
 
   return (
-    <div className="flex h-screen bg-gray-50 overflow-hidden">
+    <div className="flex h-screen overflow-hidden" style={{ background: "radial-gradient(ellipse 90% 70% at 20% 0%, rgba(212,160,23,0.055) 0%, transparent 55%), radial-gradient(ellipse 70% 60% at 85% 100%, rgba(17,24,39,0.04) 0%, transparent 55%), #f2ede7" }}>
       {/* Sidebar */}
       <BusinessSidebar />
 
