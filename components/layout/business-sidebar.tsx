@@ -107,28 +107,31 @@ export function BusinessSidebar() {
                   (item.href !== "/business/dashboard" && pathname.startsWith(item.href));
 
                 return (
-                  <li key={item.href}>
+                  <li key={item.href} className="relative">
+                    {isActive && (
+                      <span className="absolute left-0 top-1.5 bottom-1.5 w-0.5 rounded-full bg-amber-600" />
+                    )}
                     <Link
                       href={item.href}
                       title={isCollapsed ? item.label : undefined}
                       className={cn(
                         "flex items-center gap-3 px-2.5 py-2 rounded-lg text-sm font-medium transition-colors group",
                         isActive
-                          ? "bg-amber-50 text-gray-900"
+                          ? "bg-gray-50 text-gray-900"
                           : "text-gray-500 hover:bg-gray-50 hover:text-gray-900"
                       )}
                     >
                       <item.icon
                         className={cn(
                           "flex-shrink-0",
-                          isActive ? "text-amber-500" : "text-gray-400 group-hover:text-gray-600"
+                          isActive ? "text-amber-600" : "text-gray-400 group-hover:text-gray-600"
                         )}
                       />
                       {!isCollapsed && (
                         <>
                           <span className="flex-1 truncate">{item.label}</span>
                           {item.badge && (
-                            <span className="text-[10px] px-1.5 py-0.5 rounded-full font-medium bg-amber-100 text-amber-700">
+                            <span className="text-[10px] px-1.5 py-0.5 rounded-full font-medium bg-amber-100 text-amber-800">
                               {item.badge}
                             </span>
                           )}
