@@ -475,9 +475,9 @@ export default async function BusinessProfilePage({
                   <div className="mt-3 rounded-xl overflow-hidden border border-gray-100">
                     <iframe
                       title={`Mapa dojazdu — ${business.name}`}
-                      src={`https://www.google.com/maps?q=${encodeURIComponent(
+                      src={`https://maps.google.com/maps?q=${encodeURIComponent(
                         `${business.address}, ${business.postalCode} ${business.city}, Polska`
-                      )}&output=embed&hl=pl`}
+                      )}&z=16&output=embed&iwloc=near&hl=pl`}
                       className="w-full h-56 border-0"
                       loading="lazy"
                       referrerPolicy="no-referrer-when-downgrade"

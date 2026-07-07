@@ -235,7 +235,7 @@ function HeroSearch() {
       {/* Submit */}
       <button
         type="submit"
-        className="px-6 py-3.5 bg-gray-900 hover:bg-gray-800 text-white text-sm font-semibold rounded-xl transition-colors flex items-center justify-center gap-2 shadow-sm flex-shrink-0"
+        className="px-6 py-3.5 bg-gold-400 hover:bg-gold-500 text-gray-900 text-sm font-semibold rounded-xl transition-colors flex items-center justify-center gap-2 shadow-sm flex-shrink-0"
       >
         <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
           <circle cx="11" cy="11" r="8" /><path d="m21 21-4.35-4.35" />
@@ -314,9 +314,9 @@ export default function HomePage() {
               initial={{ opacity: 0, y: -10 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.4 }}
-              className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-gray-900 text-white text-xs font-medium mb-9"
+              className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-gray-900 border border-gold-400/30 text-white text-xs font-medium mb-9"
             >
-              <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />
+              <span className="w-1.5 h-1.5 rounded-full bg-gold-400 animate-pulse" />
               Wersja testowa · platforma w budowie — możesz już testować
             </motion.div>
 
@@ -328,7 +328,7 @@ export default function HomePage() {
             >
               Rezerwuj<br />
               bez<br />
-              <span className="italic font-bold">telefonu.</span>
+              <span className="italic font-bold text-gold-400">telefonu.</span>
             </motion.h1>
 
             <motion.p
@@ -352,7 +352,7 @@ export default function HomePage() {
                 <Link
                   key={c.slug}
                   href={`/search?category=${c.slug}`}
-                  className="px-3.5 py-1.5 rounded-full border border-gray-200 bg-white text-sm text-gray-600 hover:bg-gray-900 hover:text-white hover:border-gray-900 transition-all duration-150"
+                  className="px-3.5 py-1.5 rounded-full border border-gray-200 bg-white text-sm text-gray-600 hover:bg-gold-400 hover:text-white hover:border-gold-400 transition-all duration-150"
                 >
                   {c.label}
                 </Link>
@@ -446,9 +446,9 @@ export default function HomePage() {
                 initial="hidden" whileInView="show" viewport={{ once: true }}
                 custom={i} variants={fade}
               >
-                <div className="w-12 h-12 rounded-2xl border border-gray-200 bg-white shadow-sm flex items-center justify-center text-xs font-bold text-gray-400 mb-5 relative">
+                <div className="w-12 h-12 rounded-2xl border border-gold-300 bg-gold-50 shadow-sm flex items-center justify-center text-sm font-bold text-gold-500 mb-5 relative">
                   {step.n}
-                  <span className="absolute -top-1.5 -right-1.5 w-4 h-4 rounded-full bg-gray-900 text-white text-[8px] font-bold flex items-center justify-center">
+                  <span className="absolute -top-1.5 -right-1.5 w-4 h-4 rounded-full bg-gold-400 text-gray-900 text-[8px] font-bold flex items-center justify-center">
                     {i + 1}
                   </span>
                 </div>
@@ -491,7 +491,7 @@ export default function HomePage() {
                   "Analityka i raporty",
                 ].map((f) => (
                   <div key={f} className="flex items-center gap-3 text-sm text-gray-300">
-                    <svg className="w-4 h-4 text-gray-500 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                    <svg className="w-4 h-4 text-gold-400 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
                       <path strokeLinecap="round" strokeLinejoin="round" d="m5 13 4 4L19 7" />
                     </svg>
                     {f}
@@ -569,7 +569,7 @@ export default function HomePage() {
               custom={i} variants={fade}
               className="text-center"
             >
-              <p className="text-3xl font-bold text-gray-900 tabular-nums">{s.num}</p>
+              <p className="text-3xl font-bold text-gold-400 tabular-nums">{s.num}</p>
               <p className="mt-1.5 text-sm text-gray-400">{s.label}</p>
             </motion.div>
           ))}
@@ -591,6 +591,11 @@ export default function HomePage() {
               style={{ backgroundImage: "radial-gradient(circle, white 1px, transparent 1px)", backgroundSize: "24px 24px" }}
             />
             <div className="relative z-10">
+              <div className="flex items-center justify-center gap-2 mb-6">
+                <span className="h-px w-10 bg-gold-400/50" />
+                <span className="w-1.5 h-1.5 rounded-full bg-gold-400" />
+                <span className="h-px w-10 bg-gold-400/50" />
+              </div>
               <h2 className="text-4xl font-bold text-white mb-4">Zacznij dziś — za darmo</h2>
               <p className="text-gray-400 mb-10 max-w-sm mx-auto text-base">
                 Żadnych kart kredytowych. Żadnych ukrytych opłat.
@@ -598,13 +603,13 @@ export default function HomePage() {
               <div className="flex flex-col sm:flex-row gap-3 justify-center">
                 <Link
                   href="/search"
-                  className="inline-flex items-center justify-center px-7 py-3.5 bg-white hover:bg-gray-100 text-gray-900 font-semibold text-sm rounded-xl transition-colors"
+                  className="inline-flex items-center justify-center px-7 py-3.5 bg-gold-400 hover:bg-gold-500 text-gray-900 font-semibold text-sm rounded-xl transition-colors"
                 >
                   Znajdź specjalistę
                 </Link>
                 <Link
                   href="/register?role=business"
-                  className="inline-flex items-center justify-center px-7 py-3.5 bg-white/10 hover:bg-white/15 text-white font-medium text-sm rounded-xl border border-white/10 transition-colors"
+                  className="inline-flex items-center justify-center px-7 py-3.5 bg-white/10 hover:bg-white/15 text-white font-medium text-sm rounded-xl border border-gold-400/30 transition-colors"
                 >
                   Zarejestruj salon →
                 </Link>

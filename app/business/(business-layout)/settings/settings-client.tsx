@@ -146,7 +146,7 @@ export function SettingsClient({ settings: initialSettings, notificationSettings
           {/* Invite button */}
           <button
             onClick={() => setShowInvite(true)}
-            className="flex items-center gap-2 px-3.5 py-2 border border-amber-200 bg-amber-50 hover:bg-amber-100 text-amber-700 rounded-xl text-sm font-medium transition-colors"
+            className="flex items-center gap-2 px-3.5 py-2 border border-gold-300 bg-gold-50 hover:bg-gold-100 text-gold-700 rounded-xl text-sm font-medium transition-colors"
           >
             <GiftIcon className="w-4 h-4" />
             Zaproś znajomego
@@ -468,8 +468,8 @@ export function SettingsClient({ settings: initialSettings, notificationSettings
           <div className="absolute inset-0 bg-black/30 backdrop-blur-sm" onClick={closeInviteModal} />
           <div className="relative bg-white rounded-2xl shadow-soft-xl w-full max-w-md animate-scale-in p-6">
             <div className="flex items-center gap-3 mb-1">
-              <div className="w-10 h-10 rounded-full bg-amber-50 border border-amber-100 flex items-center justify-center">
-                <GiftIcon className="w-5 h-5 text-amber-500" />
+              <div className="w-10 h-10 rounded-full bg-gold-50 border border-gold-200 flex items-center justify-center">
+                <GiftIcon className="w-5 h-5 text-gold-500" />
               </div>
               <h3 className="text-base font-semibold text-gray-900">Zaproś znajomego</h3>
             </div>
@@ -479,8 +479,8 @@ export function SettingsClient({ settings: initialSettings, notificationSettings
 
             {inviteState === "sent" ? (
               <div className="text-center py-4">
-                <div className="w-12 h-12 rounded-full bg-amber-50 border border-amber-100 flex items-center justify-center mx-auto mb-3">
-                  <CheckIcon className="w-6 h-6 text-amber-500" />
+                <div className="w-12 h-12 rounded-full bg-gold-50 border border-gold-200 flex items-center justify-center mx-auto mb-3">
+                  <CheckIcon className="w-6 h-6 text-gold-500" />
                 </div>
                 <p className="text-sm font-semibold text-gray-900">Zaproszenie wysłane</p>
                 <p className="text-xs text-gray-500 mt-1">{inviteEmail}</p>

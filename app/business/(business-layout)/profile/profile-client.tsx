@@ -1,7 +1,9 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useState, useTransition, useRef, useCallback } from "react";
 import { updateBusinessProfile } from "@/lib/actions/business";
+import { uploadBusinessImage } from "@/lib/actions/upload";
+import { cn } from "@/lib/utils";
 import type { Business } from "@prisma/client";
 
 type Props = {
@@ -262,58 +264,20 @@ export function ProfileClient({ business }: Props) {
           {/* Tab 3: Media */}
           {activeTab === "media" && (
             <>
-              <div>
-                <label className="block text-sm font-medium text-gray-900 mb-1.5">
-                  URL logo
-                </label>
-                <input
-                  type="url"
-                  value={logoUrl}
-                  onChange={(e) => setLogoUrl(e.target.value)}
-                  placeholder="https://..."
-                  className="w-full border border-gray-200 rounded-xl px-3.5 py-2.5 text-sm focus:outline-none focus:border-gray-400"
-                />
-                {logoUrl && (
-                  <div className="mt-3">
-                    <p className="text-xs text-gray-700 mb-2">Podgląd:</p>
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img
-                      src={logoUrl}
-                      alt="Logo podgląd"
-                      className="w-20 h-20 rounded-xl object-cover border border-gray-200"
-                      onError={(e) => {
-                        (e.currentTarget as HTMLImageElement).style.display = "none";
-                      }}
-                    />
-                  </div>
-                )}
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-900 mb-1.5">
-                  URL zdjęcia okładkowego
-                </label>
-                <input
-                  type="url"
-                  value={coverImageUrl}
-                  onChange={(e) => setCoverImageUrl(e.target.value)}
-                  placeholder="https://..."
-                  className="w-full border border-gray-200 rounded-xl px-3.5 py-2.5 text-sm focus:outline-none focus:border-gray-400"
-                />
-                {coverImageUrl && (
-                  <div className="mt-3">
-                    <p className="text-xs text-gray-700 mb-2">Podgląd:</p>
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img
-                      src={coverImageUrl}
-                      alt="Okładka podgląd"
-                      className="w-full h-40 rounded-xl object-cover border border-gray-200"
-                      onError={(e) => {
-                        (e.currentTarget as HTMLImageElement).style.display = "none";
-                      }}
-                    />
-                  </div>
-                )}
-              </div>
+              <ImageUploadField
+                label="Logo salonu"
+                hint="Kwadratowe zdjęcie. Zalecany rozmiar: 400×400 px."
+                value={logoUrl}
+                onChange={setLogoUrl}
+                shape="square"
+              />
+              <ImageUploadField
+                label="Zdjęcie okładkowe"
+                hint="Poziome zdjęcie bannerowe. Zalecany rozmiar: 1200×400 px."
+                value={coverImageUrl}
+                onChange={setCoverImageUrl}
+                shape="wide"
+              />
             </>
           )}
 
@@ -364,6 +328,137 @@ export function ProfileClient({ business }: Props) {
         </div>
       </div>
     </div>
+  );
+}
+
+// ── Drag & drop image upload ──────────────────────────────────────────────────
+
+function ImageUploadField({
+  label,
+  hint,
+  value,
+  onChange,
+  shape,
+}: {
+  label: string;
+  hint?: string;
+  value: string;
+  onChange: (url: string) => void;
+  shape: "square" | "wide";
+}) {
+  const [dragging, setDragging] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const [error, setError] = useState("");
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  const handleFile = useCallback(
+    async (file: File) => {
+      setError("");
+      setUploading(true);
+      const fd = new FormData();
+      fd.append("file", file);
+      const result = await uploadBusinessImage(fd);
+      setUploading(false);
+      if (result.error) {
+        setError(result.error);
+      } else if (result.url) {
+        onChange(result.url);
+      }
+    },
+    [onChange]
+  );
+
+  function onDrop(e: React.DragEvent) {
+    e.preventDefault();
+    setDragging(false);
+    const file = e.dataTransfer.files[0];
+    if (file) handleFile(file);
+  }
+
+  const heightClass = shape === "square" ? "h-36" : "h-44";
+
+  return (
+    <div>
+      <label className="block text-sm font-medium text-gray-900 mb-1">{label}</label>
+      {hint && <p className="text-xs text-gray-500 mb-2">{hint}</p>}
+
+      <div
+        onDragOver={(e) => { e.preventDefault(); setDragging(true); }}
+        onDragLeave={() => setDragging(false)}
+        onDrop={onDrop}
+        onClick={() => !uploading && inputRef.current?.click()}
+        className={cn(
+          "relative rounded-xl border-2 border-dashed cursor-pointer transition-all overflow-hidden",
+          heightClass,
+          dragging
+            ? "border-gray-400 bg-gray-100"
+            : "border-gray-200 hover:border-gray-400 bg-gray-50",
+          uploading && "pointer-events-none"
+        )}
+      >
+        {value ? (
+          <>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={value}
+              alt=""
+              className="absolute inset-0 w-full h-full object-cover"
+            />
+            <div className="absolute inset-0 bg-black/0 hover:bg-black/40 transition-colors flex items-center justify-center opacity-0 hover:opacity-100">
+              <span className="text-white text-xs font-semibold bg-black/60 px-3 py-1.5 rounded-lg backdrop-blur-sm">
+                Zmień zdjęcie
+              </span>
+            </div>
+          </>
+        ) : (
+          <div className="flex flex-col items-center justify-center h-full gap-2 text-gray-400">
+            <UploadIcon className="w-8 h-8" />
+            <p className="text-sm font-medium">Przeciągnij zdjęcie lub kliknij</p>
+            <p className="text-xs text-gray-400">JPG, PNG, WebP · maks. 5 MB</p>
+          </div>
+        )}
+
+        {uploading && (
+          <div className="absolute inset-0 flex items-center justify-center bg-white/75 rounded-xl">
+            <SpinnerIcon className="w-6 h-6 animate-spin text-gray-500" />
+          </div>
+        )}
+      </div>
+
+      {error && <p className="mt-1.5 text-xs text-red-500">{error}</p>}
+
+      {value && !uploading && (
+        <button
+          type="button"
+          onClick={() => onChange("")}
+          className="mt-1.5 text-xs text-gray-400 hover:text-red-500 transition-colors"
+        >
+          Usuń zdjęcie
+        </button>
+      )}
+
+      <input
+        ref={inputRef}
+        type="file"
+        accept="image/jpeg,image/png,image/webp,image/avif"
+        className="hidden"
+        onChange={(e) => {
+          const file = e.target.files?.[0];
+          if (file) {
+            handleFile(file);
+            e.target.value = "";
+          }
+        }}
+      />
+    </div>
+  );
+}
+
+function UploadIcon({ className }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5m-13.5-9L12 3m0 0 4.5 4.5M12 3v13.5" />
+    </svg>
   );
 }
 

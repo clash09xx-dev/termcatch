@@ -16,21 +16,28 @@ function Toggle({
   checked,
   onChange,
   name,
+  disabled,
 }: {
   checked: boolean;
   onChange: (v: boolean) => void;
   name: string;
+  disabled?: boolean;
 }) {
   return (
     <>
       <input type="checkbox" name={name} checked={checked} readOnly className="hidden" />
       <button
         type="button"
-        onClick={() => onChange(!checked)}
+        onClick={() => !disabled && onChange(!checked)}
         role="switch"
         aria-checked={checked}
+        disabled={disabled}
         className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors flex-shrink-0 ml-4 mt-0.5 ${
-          checked ? "bg-gray-900" : "bg-gray-300"
+          disabled
+            ? "bg-gray-200 cursor-not-allowed opacity-50"
+            : checked
+            ? "bg-gray-900"
+            : "bg-gray-300"
         }`}
       >
         <span
@@ -53,8 +60,6 @@ export function NotificationSettingsForm({
     initialState
   );
   const [email, setEmail] = useState(initial.emailEnabled);
-  const [sms, setSms] = useState(initial.smsEnabled);
-  const [whatsapp, setWhatsapp] = useState(initial.whatsappEnabled);
 
   return (
     <form action={formAction} className="bg-white border border-gray-100 rounded-2xl p-6 space-y-4">
@@ -63,6 +68,12 @@ export function NotificationSettingsForm({
         Wybierz, jak chcesz dostawać informacje o nowych, przełożonych i anulowanych
         wizytach. Powiadomienia w aplikacji mobilnej pojawią się wraz z premierą aplikacji.
       </p>
+
+      {/* Hidden fields to preserve SMS/WhatsApp values in DB */}
+      <input type="hidden" name="smsEnabled" value="false" />
+      <input type="hidden" name="smsPhone" value={initial.smsPhone ?? ""} />
+      <input type="hidden" name="whatsappEnabled" value="false" />
+      <input type="hidden" name="whatsappPhone" value={initial.whatsappPhone ?? ""} />
 
       {/* E-mail */}
       <div className="flex items-start justify-between p-4 bg-gray-50 rounded-xl">
@@ -75,60 +86,22 @@ export function NotificationSettingsForm({
         <Toggle name="emailEnabled" checked={email} onChange={setEmail} />
       </div>
 
-      {/* SMS */}
-      <div className="p-4 bg-gray-50 rounded-xl">
+      {/* SMS — disabled / coming soon */}
+      <div className="p-4 bg-gray-50 rounded-xl opacity-60">
         <div className="flex items-start justify-between">
           <div>
-            <p className="text-sm font-medium text-gray-900">SMS</p>
+            <div className="flex items-center gap-2">
+              <p className="text-sm font-medium text-gray-900">SMS</p>
+              <span className="text-[10px] px-1.5 py-0.5 rounded-full font-medium bg-gray-200 text-gray-500">
+                Wkrótce
+              </span>
+            </div>
             <p className="text-xs text-gray-500 mt-0.5">
               Krótki SMS przy nowej rezerwacji i anulowaniu.
             </p>
           </div>
-          <Toggle name="smsEnabled" checked={sms} onChange={setSms} />
+          <Toggle name="_smsDisabled" checked={false} onChange={() => {}} disabled />
         </div>
-        {sms && (
-          <div className="mt-3">
-            <label className="block text-xs font-medium text-gray-600 mb-1">
-              Numer telefonu dla SMS
-            </label>
-            <input
-              type="tel"
-              name="smsPhone"
-              defaultValue={initial.smsPhone}
-              placeholder="+48 600 000 000"
-              className={inputCls}
-            />
-          </div>
-        )}
-        {!sms && <input type="hidden" name="smsPhone" value={initial.smsPhone} />}
-      </div>
-
-      {/* WhatsApp */}
-      <div className="p-4 bg-gray-50 rounded-xl">
-        <div className="flex items-start justify-between">
-          <div>
-            <p className="text-sm font-medium text-gray-900">WhatsApp</p>
-            <p className="text-xs text-gray-500 mt-0.5">
-              Wiadomość WhatsApp przy nowej rezerwacji i anulowaniu.
-            </p>
-          </div>
-          <Toggle name="whatsappEnabled" checked={whatsapp} onChange={setWhatsapp} />
-        </div>
-        {whatsapp && (
-          <div className="mt-3">
-            <label className="block text-xs font-medium text-gray-600 mb-1">
-              Numer WhatsApp
-            </label>
-            <input
-              type="tel"
-              name="whatsappPhone"
-              defaultValue={initial.whatsappPhone}
-              placeholder="+48 600 000 000"
-              className={inputCls}
-            />
-          </div>
-        )}
-        {!whatsapp && <input type="hidden" name="whatsappPhone" value={initial.whatsappPhone} />}
       </div>
 
       {state.error && (
