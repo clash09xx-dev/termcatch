@@ -4,62 +4,111 @@
 
 @layer base {
   :root {
-    /* Light glass theme tokens */
-    --bg-base:       #F2F6FB;
-    --bg-surface:    #FFFFFF;
-    --bg-elevated:   #FFFFFF;
+    /* ── Page backgrounds ─────────────────────────────────── */
+    --bg-base:     #F8FAFC;
+    --bg-surface:  #FFFFFF;
+    --bg-elevated: #FFFFFF;
 
-    /* Glass backgrounds — white with varying opacity */
-    --glass-bg:      rgba(255,255,255,0.62);
-    --glass-bg-md:   rgba(255,255,255,0.75);
-    --glass-bg-lg:   rgba(255,255,255,0.85);
+    /* ── Glass backgrounds ────────────────────────────────── */
+    --glass-bg:    rgba(255,255,255,0.72);
+    --glass-bg-md: rgba(255,255,255,0.82);
+    --glass-bg-lg: rgba(255,255,255,0.90);
+    --glass-bg-xl: rgba(255,255,255,0.96);
 
-    /* Glass borders — bright highlight on top, subtle on sides */
-    --glass-border:        rgba(148,163,184,0.22);
+    /* ── Chrome / silver borders ──────────────────────────── */
+    --glass-border:        rgba(203,213,225,0.55);   /* slate-300 chrome edge */
     --glass-border-bright: rgba(255,255,255,0.90);
+    --chrome-ring:         rgba(203,213,225,0.40);
 
-    /* Shadows — cool silver-tone, soft */
-    --glass-shadow:    0 8px 32px rgba(100,116,139,0.10), 0 2px 8px rgba(0,0,0,0.04), inset 0 1px 0 rgba(255,255,255,0.90);
-    --glass-shadow-lg: 0 24px 64px rgba(100,116,139,0.14), 0 4px 16px rgba(0,0,0,0.05), inset 0 1px 0 rgba(255,255,255,0.95);
-    --glass-shadow-sm: 0 4px 16px rgba(100,116,139,0.08), 0 1px 4px rgba(0,0,0,0.03), inset 0 1px 0 rgba(255,255,255,0.85);
+    /* ── Apple-tier multi-layer shadows ──────────────────── */
+    /* Every glass surface gets:                               */
+    /*   1. Ultra-thin chrome outline ring                     */
+    /*   2. Tight contact shadow                               */
+    /*   3. Medium depth shadow                                */
+    /*   4. Wide ambient float                                 */
+    /*   5. Inner top specular highlight                       */
+    /*   6. Inner bottom chrome reflection                     */
+    --glass-shadow:
+      0 0 0 0.5px rgba(203,213,225,0.45),
+      0 1px 2px rgba(0,0,0,0.04),
+      0 6px 20px rgba(100,116,139,0.09),
+      0 20px 48px rgba(100,116,139,0.05),
+      inset 0 1px 0 rgba(255,255,255,0.95),
+      inset 0 -1px 0 rgba(203,213,225,0.10);
 
-    --glass-blur:    blur(32px) saturate(200%);
+    --glass-shadow-lg:
+      0 0 0 0.5px rgba(203,213,225,0.50),
+      0 2px 4px rgba(0,0,0,0.05),
+      0 12px 36px rgba(100,116,139,0.12),
+      0 40px 80px rgba(100,116,139,0.07),
+      inset 0 1px 0 rgba(255,255,255,1),
+      inset 0 -1px 0 rgba(203,213,225,0.12);
+
+    --glass-shadow-sm:
+      0 0 0 0.5px rgba(203,213,225,0.35),
+      0 1px 2px rgba(0,0,0,0.03),
+      0 3px 10px rgba(100,116,139,0.07),
+      inset 0 1px 0 rgba(255,255,255,0.90);
+
+    /* ── Blur ─────────────────────────────────────────────── */
+    --glass-blur:    blur(40px) saturate(200%);
+    --glass-blur-md: blur(24px) saturate(190%);
     --glass-blur-sm: blur(16px) saturate(180%);
 
-    /* Silver accent */
-    --color-silver:      #94A3B8;
-    --color-silver-dim:  rgba(148,163,184,0.15);
-    --color-silver-text: #475569;
+    /* ── Chrome / Silver palette ──────────────────────────── */
+    --color-silver:       #94A3B8;   /* slate-400 */
+    --color-chrome:       #CBD5E1;   /* slate-300 */
+    --color-silver-pale:  #E2E8F0;   /* slate-200 */
+    --color-silver-dim:   rgba(148,163,184,0.12);
+    --color-chrome-dim:   rgba(203,213,225,0.18);
+    --color-silver-text:  #475569;   /* slate-600 */
 
-    /* Text */
-    --text-primary:   #0F172A;
-    --text-secondary: #64748B;
-    --text-muted:     #94A3B8;
+    /* ── Typography ───────────────────────────────────────── */
+    --text-primary:   #0F172A;   /* slate-900 */
+    --text-secondary: #64748B;   /* slate-500 */
+    --text-muted:     #94A3B8;   /* slate-400 */
+    --text-chrome:    #CBD5E1;   /* slate-300 */
 
-    --separator: rgba(148,163,184,0.18);
+    --separator: rgba(203,213,225,0.28);
   }
 
   html {
     @apply scroll-smooth;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
   }
 
   body {
     background: var(--bg-base);
     color: var(--text-primary);
     font-family: var(--font-inter, system-ui, sans-serif);
+    font-feature-settings: "kern" 1, "liga" 1, "calt" 1;
   }
 
-  /* Scrollbar */
+  /* ── Premium scrollbar ────────────────────────────────────── */
   ::-webkit-scrollbar { width: 4px; height: 4px; }
   ::-webkit-scrollbar-track { background: transparent; }
-  ::-webkit-scrollbar-thumb { background: rgba(148,163,184,0.30); border-radius: 9999px; }
-  ::-webkit-scrollbar-thumb:hover { background: rgba(148,163,184,0.50); }
+  ::-webkit-scrollbar-thumb {
+    background: rgba(203,213,225,0.50);
+    border-radius: 9999px;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: rgba(148,163,184,0.70);
+  }
 
+  /* ── Focus ring — precise chrome ─────────────────────────── */
   *:focus-visible {
     outline: none;
-    box-shadow: 0 0 0 2px rgba(148,163,184,0.55);
+    box-shadow:
+      0 0 0 1.5px rgba(148,163,184,0.55),
+      0 0 0 3.5px rgba(203,213,225,0.22);
+  }
+
+  /* ── Selection ────────────────────────────────────────────── */
+  ::selection {
+    background: rgba(203,213,225,0.45);
+    color: #0F172A;
   }
 }
 
@@ -68,7 +117,7 @@
     @apply max-w-7xl mx-auto px-4 sm:px-6 lg:px-8;
   }
 
-  /* Light glass card */
+  /* ── Glass card — primary surface ─────────────────────────── */
   .card {
     background: var(--glass-bg);
     backdrop-filter: var(--glass-blur);
@@ -77,16 +126,21 @@
     border: 1px solid var(--glass-border);
     box-shadow: var(--glass-shadow);
   }
+
   .card-hover {
-    @apply card transition-all duration-200;
+    @apply card;
+    transition:
+      transform 240ms cubic-bezier(0.34, 1.56, 0.64, 1),
+      box-shadow 200ms ease,
+      background 200ms ease;
   }
   .card-hover:hover {
     background: var(--glass-bg-md);
-    transform: translateY(-1px);
+    transform: translateY(-2px);
     box-shadow: var(--glass-shadow-lg);
   }
 
-  /* Glass utilities */
+  /* ── Glass utilities ──────────────────────────────────────── */
   .glass {
     background: var(--glass-bg);
     backdrop-filter: var(--glass-blur);
@@ -105,14 +159,21 @@
     background: var(--glass-bg);
     backdrop-filter: var(--glass-blur-sm);
     -webkit-backdrop-filter: var(--glass-blur-sm);
-    border: 1px solid var(--glass-border);
+    border: 1px solid rgba(203,213,225,0.40);
     box-shadow: var(--glass-shadow-sm);
   }
 
+  /* ── Skeleton ─────────────────────────────────────────────── */
   .skeleton {
-    background: rgba(148,163,184,0.12);
+    background: linear-gradient(
+      90deg,
+      rgba(203,213,225,0.14) 25%,
+      rgba(226,232,240,0.28) 50%,
+      rgba(203,213,225,0.14) 75%
+    );
+    background-size: 400% 100%;
     border-radius: 0.5rem;
-    animation: pulse 2s cubic-bezier(0.4,0,0.6,1) infinite;
+    animation: skeleton-shimmer 1.8s ease-in-out infinite;
   }
 }
 
@@ -120,9 +181,14 @@
   .no-scrollbar::-webkit-scrollbar { display: none; }
   .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
   .text-balance { text-wrap: balance; }
-  .text-primary   { color: var(--text-primary); }
-  .text-secondary { color: var(--text-secondary); }
+  .text-primary     { color: var(--text-primary); }
+  .text-secondary   { color: var(--text-secondary); }
   .text-muted-glass { color: var(--text-muted); }
+}
+
+@keyframes skeleton-shimmer {
+  0%   { background-position: 100% 0; }
+  100% { background-position: -100% 0; }
 }
 
 @keyframes cursor-blink {

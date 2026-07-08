@@ -118,18 +118,16 @@ function BusinessCard({ business }: { business: BusinessWithServices }) {
   return (
     <Link
       href={`/b/${business.slug}`}
-      className="group overflow-hidden rounded-2xl transition-all duration-200"
+      className="group overflow-hidden rounded-2xl transition-all duration-200 hover:-translate-y-0.5"
       style={{
-        background: "rgba(255,255,255,0.72)",
-        backdropFilter: "blur(36px) saturate(200%)",
-        WebkitBackdropFilter: "blur(36px) saturate(200%)",
-        border: "1px solid rgba(203,213,225,0.45)",
-        boxShadow: "0 0 0 0.5px rgba(203,213,225,0.30), 0 1px 2px rgba(0,0,0,0.03), 0 6px 20px rgba(100,116,139,0.08), inset 0 1px 0 rgba(255,255,255,0.95)",
-        transform: "translateY(0)",
-        transition: "transform 240ms cubic-bezier(0.34,1.56,0.64,1), box-shadow 200ms ease",
+        background: "rgba(255,255,255,0.65)",
+        backdropFilter: "blur(28px) saturate(200%)",
+        WebkitBackdropFilter: "blur(28px) saturate(200%)",
+        border: "1px solid rgba(148,163,184,0.22)",
+        boxShadow: "0 8px 32px rgba(100,116,139,0.08), 0 2px 8px rgba(0,0,0,0.03), inset 0 1px 0 rgba(255,255,255,0.90)",
       }}
-      onMouseEnter={e => { (e.currentTarget as HTMLElement).style.transform = "translateY(-2px)"; (e.currentTarget as HTMLElement).style.boxShadow = "0 0 0 0.5px rgba(203,213,225,0.40), 0 2px 4px rgba(0,0,0,0.04), 0 12px 36px rgba(100,116,139,0.12), 0 32px 64px rgba(100,116,139,0.06), inset 0 1px 0 rgba(255,255,255,1)"; }}
-      onMouseLeave={e => { (e.currentTarget as HTMLElement).style.transform = "translateY(0)"; (e.currentTarget as HTMLElement).style.boxShadow = "0 0 0 0.5px rgba(203,213,225,0.30), 0 1px 2px rgba(0,0,0,0.03), 0 6px 20px rgba(100,116,139,0.08), inset 0 1px 0 rgba(255,255,255,0.95)"; }}
+      onMouseEnter={e => { (e.currentTarget as HTMLElement).style.boxShadow = "0 20px 60px rgba(100,116,139,0.14), 0 4px 16px rgba(0,0,0,0.05), inset 0 1px 0 rgba(255,255,255,0.95)"; }}
+      onMouseLeave={e => { (e.currentTarget as HTMLElement).style.boxShadow = "0 8px 32px rgba(100,116,139,0.08), 0 2px 8px rgba(0,0,0,0.03), inset 0 1px 0 rgba(255,255,255,0.90)"; }}
     >
       {/* Cover image */}
       <div className="relative h-44 overflow-hidden">
@@ -143,7 +141,7 @@ function BusinessCard({ business }: { business: BusinessWithServices }) {
         ) : (
           <div
             className="w-full h-full flex items-center justify-center"
-            style={{ background: "linear-gradient(135deg, rgba(241,245,249,0.90) 0%, rgba(226,232,240,0.60) 100%)" }}
+            style={{ background: "rgba(148,163,184,0.10)" }}
           >
             <svg className="w-10 h-10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.2} style={{ color: "#CBD5E1" }}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 21v-7.5a.75.75 0 0 1 .75-.75h3a.75.75 0 0 1 .75.75V21m-4.5 0H2.36m11.14 0H18m0 0h3.64m-1.39 0V9.349M3.75 21V9.349m0 0a3.001 3.001 0 0 0 3.75-.615A2.993 2.993 0 0 0 9.75 9.75c.896 0 1.7-.393 2.25-1.016a2.993 2.993 0 0 0 2.25 1.016 2.993 2.993 0 0 0 2.25-1.016 3.001 3.001 0 0 0 3.75.614" />
@@ -154,12 +152,12 @@ function BusinessCard({ business }: { business: BusinessWithServices }) {
         <span
           className="absolute top-3 left-3 inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-medium"
           style={{
-            background: "rgba(255,255,255,0.88)",
-            backdropFilter: "blur(20px) saturate(200%)",
-            WebkitBackdropFilter: "blur(20px) saturate(200%)",
-            border: "1px solid rgba(203,213,225,0.50)",
+            background: "rgba(255,255,255,0.80)",
+            backdropFilter: "blur(12px)",
+            WebkitBackdropFilter: "blur(12px)",
+            border: "1px solid rgba(148,163,184,0.25)",
             color: "#475569",
-            boxShadow: "0 0 0 0.5px rgba(203,213,225,0.25), inset 0 1px 0 rgba(255,255,255,0.95)",
+            boxShadow: "inset 0 1px 0 rgba(255,255,255,0.90)",
           }}
         >
           {categoryLabel}
@@ -196,19 +194,19 @@ function BusinessCard({ business }: { business: BusinessWithServices }) {
 function SkeletonCard() {
   return (
     <div
-      className="rounded-2xl overflow-hidden"
+      className="rounded-2xl overflow-hidden animate-pulse"
       style={{
-        background: "rgba(255,255,255,0.65)",
-        border: "1px solid rgba(203,213,225,0.40)",
-        boxShadow: "0 0 0 0.5px rgba(203,213,225,0.25), 0 2px 12px rgba(100,116,139,0.06), inset 0 1px 0 rgba(255,255,255,0.90)",
+        background: "rgba(255,255,255,0.55)",
+        border: "1px solid rgba(148,163,184,0.18)",
+        boxShadow: "0 4px 16px rgba(100,116,139,0.06)",
       }}
     >
-      <div className="h-44 skeleton" style={{ borderRadius: 0 }} />
+      <div className="h-44" style={{ background: "rgba(148,163,184,0.10)" }} />
       <div className="p-4 space-y-2.5">
-        <div className="h-4 rounded-lg w-3/4 skeleton" />
-        <div className="h-3 rounded-lg w-1/3 skeleton" />
-        <div className="h-3 rounded-lg w-1/2 skeleton" />
-        <div className="h-4 rounded-lg w-1/4 mt-1 skeleton" />
+        <div className="h-4 rounded-lg w-3/4" style={{ background: "rgba(148,163,184,0.12)" }} />
+        <div className="h-3 rounded-lg w-1/3" style={{ background: "rgba(148,163,184,0.10)" }} />
+        <div className="h-3 rounded-lg w-1/2" style={{ background: "rgba(148,163,184,0.10)" }} />
+        <div className="h-4 rounded-lg w-1/4 mt-1" style={{ background: "rgba(148,163,184,0.12)" }} />
       </div>
     </div>
   );
@@ -301,11 +299,11 @@ async function SearchResults({ searchParams }: { searchParams: SearchParams }) {
         <div
           className="w-14 h-14 rounded-2xl flex items-center justify-center mb-4"
           style={{
-            background: "rgba(255,255,255,0.78)",
-            backdropFilter: "blur(24px) saturate(200%)",
-            WebkitBackdropFilter: "blur(24px) saturate(200%)",
-            border: "1px solid rgba(203,213,225,0.45)",
-            boxShadow: "0 0 0 0.5px rgba(203,213,225,0.25), 0 4px 16px rgba(100,116,139,0.08), inset 0 1px 0 rgba(255,255,255,0.90)",
+            background: "rgba(255,255,255,0.65)",
+            backdropFilter: "blur(16px)",
+            WebkitBackdropFilter: "blur(16px)",
+            border: "1px solid rgba(148,163,184,0.22)",
+            boxShadow: "0 4px 16px rgba(100,116,139,0.08)",
           }}
         >
           <svg className="w-7 h-7" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} style={{ color: "#94A3B8" }}>
@@ -344,7 +342,7 @@ async function SearchResults({ searchParams }: { searchParams: SearchParams }) {
             <Link
               href={`/search?${params.toString()}&page=${page - 1}`}
               className="px-4 py-2 text-sm font-medium rounded-xl transition-all"
-              style={{ background: "rgba(255,255,255,0.78)", backdropFilter: "blur(20px) saturate(200%)", WebkitBackdropFilter: "blur(20px) saturate(200%)", border: "1px solid rgba(203,213,225,0.45)", color: "#475569", boxShadow: "0 0 0 0.5px rgba(203,213,225,0.25), inset 0 1px 0 rgba(255,255,255,0.90)" }}
+              style={{ background: "rgba(255,255,255,0.65)", backdropFilter: "blur(16px)", WebkitBackdropFilter: "blur(16px)", border: "1px solid rgba(148,163,184,0.22)", color: "#475569", boxShadow: "inset 0 1px 0 rgba(255,255,255,0.85)" }}
             >
               Poprzednia
             </Link>
@@ -354,7 +352,7 @@ async function SearchResults({ searchParams }: { searchParams: SearchParams }) {
             <Link
               href={`/search?${params.toString()}&page=${page + 1}`}
               className="px-4 py-2 text-sm font-medium rounded-xl transition-all"
-              style={{ background: "rgba(203,213,225,0.20)", backdropFilter: "blur(20px) saturate(200%)", WebkitBackdropFilter: "blur(20px) saturate(200%)", border: "1px solid rgba(203,213,225,0.55)", color: "#334155", boxShadow: "0 0 0 0.5px rgba(203,213,225,0.25), inset 0 1px 0 rgba(255,255,255,0.80)" }}
+              style={{ background: "rgba(148,163,184,0.18)", backdropFilter: "blur(16px)", WebkitBackdropFilter: "blur(16px)", border: "1px solid rgba(148,163,184,0.32)", color: "#334155", boxShadow: "inset 0 1px 0 rgba(255,255,255,0.70)" }}
             >
               Następna
             </Link>
@@ -377,7 +375,7 @@ export default async function SearchPage({
   return (
     <div
       className="min-h-screen"
-      style={{ background: "radial-gradient(ellipse 100% 70% at 60% -15%, rgba(226,232,240,0.50) 0%, transparent 55%), radial-gradient(ellipse 70% 55% at -5% 90%, rgba(203,213,225,0.28) 0%, transparent 55%), radial-gradient(ellipse 50% 40% at 50% 50%, rgba(241,245,249,0.55) 0%, transparent 65%), linear-gradient(165deg, #F4F7FB 0%, #F8FAFC 50%, #EEF4FB 100%)" }}
+      style={{ background: "radial-gradient(ellipse 80% 60% at 50% -10%, rgba(148,163,184,0.18) 0%, transparent 55%), linear-gradient(160deg, #EEF3F9 0%, #F6F9FC 50%, #EAF0F8 100%)" }}
     >
       <LandingNav />
 

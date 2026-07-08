@@ -256,17 +256,17 @@ export default async function BusinessProfilePage({
   };
 
   const glassCard = {
-    background: "rgba(255,255,255,0.72)",
-    backdropFilter: "blur(36px) saturate(200%)",
-    WebkitBackdropFilter: "blur(36px) saturate(200%)",
-    border: "1px solid rgba(203,213,225,0.45)",
-    boxShadow: "0 0 0 0.5px rgba(203,213,225,0.30), 0 1px 2px rgba(0,0,0,0.03), 0 6px 20px rgba(100,116,139,0.08), inset 0 1px 0 rgba(255,255,255,0.95), inset 0 -1px 0 rgba(203,213,225,0.08)",
+    background: "rgba(255,255,255,0.62)",
+    backdropFilter: "blur(28px) saturate(200%)",
+    WebkitBackdropFilter: "blur(28px) saturate(200%)",
+    border: "1px solid rgba(148,163,184,0.20)",
+    boxShadow: "0 8px 32px rgba(100,116,139,0.08), 0 2px 8px rgba(0,0,0,0.03), inset 0 1px 0 rgba(255,255,255,0.90)",
   } as React.CSSProperties;
 
   return (
     <div
       className="min-h-screen"
-      style={{ background: "radial-gradient(ellipse 100% 70% at 60% -10%, rgba(226,232,240,0.50) 0%, transparent 55%), radial-gradient(ellipse 70% 55% at -5% 90%, rgba(203,213,225,0.28) 0%, transparent 55%), radial-gradient(ellipse 50% 40% at 50% 50%, rgba(241,245,249,0.55) 0%, transparent 65%), linear-gradient(165deg, #F4F7FB 0%, #F8FAFC 50%, #EEF4FB 100%)" }}
+      style={{ background: "radial-gradient(ellipse 80% 55% at 50% -5%, rgba(148,163,184,0.18) 0%, transparent 55%), linear-gradient(160deg, #EEF3F9 0%, #F6F9FC 50%, #EAF0F8 100%)" }}
     >
       <script
         type="application/ld+json"
@@ -285,7 +285,7 @@ export default async function BusinessProfilePage({
               className="w-full h-full object-cover"
             />
           ) : (
-            <div className="w-full h-full" style={{ background: "linear-gradient(135deg, rgba(226,232,240,0.55) 0%, rgba(203,213,225,0.30) 100%)" }} />
+            <div className="w-full h-full" style={{ background: "linear-gradient(135deg, rgba(148,163,184,0.15) 0%, rgba(148,163,184,0.08) 100%)" }} />
           )}
           <div className="absolute inset-0 bg-gradient-to-t from-white/20 to-transparent" />
         </div>
@@ -293,7 +293,7 @@ export default async function BusinessProfilePage({
 
       {/* Business header */}
       <div className="max-w-6xl mx-auto px-4 sm:px-6">
-        <div className="relative -mt-10 flex items-end gap-5 pb-6" style={{ borderBottom: "1px solid rgba(203,213,225,0.28)" }}>
+        <div className="relative -mt-10 flex items-end gap-5 pb-6" style={{ borderBottom: "1px solid rgba(148,163,184,0.18)" }}>
           {/* Logo */}
           <div
             className="flex-shrink-0 w-20 h-20 rounded-2xl overflow-hidden"
@@ -303,7 +303,7 @@ export default async function BusinessProfilePage({
               // eslint-disable-next-line @next/next/no-img-element
               <img src={business.logoUrl} alt={business.name} className="w-full h-full object-cover" />
             ) : (
-              <div className="w-full h-full flex items-center justify-center" style={{ background: "linear-gradient(135deg, rgba(226,232,240,0.60) 0%, rgba(203,213,225,0.35) 100%)" }}>
+              <div className="w-full h-full flex items-center justify-center" style={{ background: "rgba(148,163,184,0.20)" }}>
                 <span className="text-slate-600 text-xl font-bold">{initials}</span>
               </div>
             )}
@@ -313,7 +313,7 @@ export default async function BusinessProfilePage({
             <div className="flex flex-wrap items-center gap-2 mb-1">
               <span
                 className="inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-medium"
-                style={{ background: "rgba(203,213,225,0.22)", border: "1px solid rgba(203,213,225,0.50)", color: "#475569", boxShadow: "inset 0 1px 0 rgba(255,255,255,0.70)" }}
+                style={{ background: "rgba(148,163,184,0.16)", border: "1px solid rgba(148,163,184,0.26)", color: "#475569" }}
               >
                 {categoryLabel}
               </span>
@@ -374,7 +374,7 @@ export default async function BusinessProfilePage({
                         )}
                         <span
                           className="inline-flex items-center gap-1 mt-1.5 px-2 py-0.5 rounded-lg text-xs"
-                          style={{ background: "rgba(203,213,225,0.18)", color: "#64748B", border: "1px solid rgba(203,213,225,0.42)", boxShadow: "inset 0 1px 0 rgba(255,255,255,0.70)" }}
+                          style={{ background: "rgba(148,163,184,0.14)", color: "#64748B", border: "1px solid rgba(148,163,184,0.22)" }}
                         >
                           <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
                             <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
@@ -396,7 +396,7 @@ export default async function BusinessProfilePage({
                         <Link
                           href={`/b/${slug}/book?serviceId=${service.id}`}
                           className="px-4 py-2 rounded-xl text-xs font-semibold transition-all whitespace-nowrap"
-                          style={{ background: "rgba(203,213,225,0.22)", border: "1px solid rgba(203,213,225,0.55)", color: "#334155", boxShadow: "0 0 0 0.5px rgba(203,213,225,0.20), inset 0 1px 0 rgba(255,255,255,0.80)" }}
+                          style={{ background: "rgba(148,163,184,0.20)", border: "1px solid rgba(148,163,184,0.35)", color: "#334155", boxShadow: "inset 0 1px 0 rgba(255,255,255,0.70)" }}
                         >
                           Zarezerwuj
                         </Link>
@@ -425,7 +425,7 @@ export default async function BusinessProfilePage({
               <div className="rounded-2xl overflow-hidden" style={glassCard}>
                 {/* Working hours */}
                 {sortedWorkingHours.length > 0 && (
-                  <div className="p-5" style={{ borderBottom: "1px solid rgba(203,213,225,0.25)" }}>
+                  <div className="p-5" style={{ borderBottom: "1px solid rgba(148,163,184,0.16)" }}>
                     <h3 className="text-sm font-semibold text-slate-700 mb-3 flex items-center gap-2">
                       <svg className="w-4 h-4 text-slate-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8}>
                         <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
@@ -457,7 +457,7 @@ export default async function BusinessProfilePage({
                 )}
 
                 {/* Address + map */}
-                <div className="p-5" style={{ borderBottom: "1px solid rgba(203,213,225,0.25)" }}>
+                <div className="p-5" style={{ borderBottom: "1px solid rgba(148,163,184,0.16)" }}>
                   <h3 className="text-sm font-semibold text-slate-700 mb-2 flex items-center gap-2">
                     <svg className="w-4 h-4 text-slate-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8}>
                       <path strokeLinecap="round" strokeLinejoin="round" d="M15 10.5a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
@@ -466,7 +466,7 @@ export default async function BusinessProfilePage({
                     Adres
                   </h3>
                   <p className="text-sm text-slate-500">{business.address}, {business.postalCode} {business.city}</p>
-                  <div className="mt-3 rounded-xl overflow-hidden" style={{ border: "1px solid rgba(203,213,225,0.35)" }}>
+                  <div className="mt-3 rounded-xl overflow-hidden" style={{ border: "1px solid rgba(148,163,184,0.18)" }}>
                     <iframe
                       title={`Mapa dojazdu — ${business.name}`}
                       src={`https://maps.google.com/maps?f=q&source=s_q&q=${encodeURIComponent(`${business.name}, ${business.address}, ${business.city}`)}&z=15&t=m&hl=pl&ie=UTF8&iwloc=B&output=embed`}
@@ -526,7 +526,7 @@ export default async function BusinessProfilePage({
                       <p className="text-4xl font-bold text-slate-800">{business.averageRating.toFixed(1)}</p>
                       <StarRating rating={business.averageRating} count={0} size="sm" />
                     </div>
-                    <div className="h-12 w-px" style={{ background: "rgba(203,213,225,0.35)" }} />
+                    <div className="h-12 w-px" style={{ background: "rgba(148,163,184,0.22)" }} />
                     <p className="text-sm text-slate-400">
                       Na podstawie{" "}
                       <span className="font-semibold text-slate-700">{business.totalReviews}</span>{" "}
@@ -542,7 +542,7 @@ export default async function BusinessProfilePage({
                         <div className="flex items-center gap-3">
                           <div
                             className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0"
-                            style={{ background: "rgba(203,213,225,0.25)", border: "1px solid rgba(203,213,225,0.55)", color: "#475569", boxShadow: "inset 0 1px 0 rgba(255,255,255,0.70)" }}
+                            style={{ background: "rgba(148,163,184,0.20)", border: "1px solid rgba(148,163,184,0.28)", color: "#475569" }}
                           >
                             <span className="text-xs font-bold">
                               {review.customer.firstName[0]}{review.customer.lastName[0]}
@@ -595,7 +595,7 @@ export default async function BusinessProfilePage({
             background: "rgba(255,255,255,0.90)",
             backdropFilter: "blur(24px) saturate(200%)",
             WebkitBackdropFilter: "blur(24px) saturate(200%)",
-            borderTop: "1px solid rgba(203,213,225,0.35)",
+            borderTop: "1px solid rgba(148,163,184,0.20)",
           }}
         >
           <div className="flex items-center gap-3 max-w-6xl mx-auto">
@@ -608,7 +608,7 @@ export default async function BusinessProfilePage({
             <Link
               href={`/b/${slug}/book`}
               className="px-6 py-3 rounded-xl text-sm font-semibold transition-all"
-              style={{ background: "rgba(203,213,225,0.22)", border: "1px solid rgba(203,213,225,0.55)", color: "#334155", boxShadow: "0 0 0 0.5px rgba(203,213,225,0.25), inset 0 1px 0 rgba(255,255,255,0.80)" }}
+              style={{ background: "rgba(148,163,184,0.22)", border: "1px solid rgba(148,163,184,0.38)", color: "#334155", boxShadow: "inset 0 1px 0 rgba(255,255,255,0.70)" }}
             >
               Zarezerwuj wizytę
             </Link>

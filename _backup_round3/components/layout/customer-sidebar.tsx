@@ -66,15 +66,15 @@ export function CustomerSidebar() {
     <aside
       className="hidden md:flex flex-col w-56 h-screen shrink-0"
       style={{
-        background: "rgba(255,255,255,0.78)",
-        backdropFilter: "blur(40px) saturate(200%)",
-        WebkitBackdropFilter: "blur(40px) saturate(200%)",
-        borderRight: "1px solid rgba(203,213,225,0.45)",
-        boxShadow: "4px 0 24px rgba(100,116,139,0.08), inset -1px 0 0 rgba(255,255,255,0.80)",
+        background: "rgba(255,255,255,0.65)",
+        backdropFilter: "blur(32px) saturate(200%)",
+        WebkitBackdropFilter: "blur(32px) saturate(200%)",
+        borderRight: "1px solid rgba(148,163,184,0.20)",
+        boxShadow: "4px 0 32px rgba(100,116,139,0.08), inset -1px 0 0 rgba(255,255,255,0.70)",
       }}
     >
       {/* Logo */}
-      <div className="flex items-center gap-2.5 px-4 h-16" style={{ borderBottom: "1px solid rgba(203,213,225,0.28)" }}>
+      <div className="flex items-center gap-2.5 px-4 h-16" style={{ borderBottom: "1px solid rgba(148,163,184,0.16)" }}>
         <Link href="/" className="flex items-center">
           <Wordmark className="text-base" variant="light" />
         </Link>
@@ -86,10 +86,10 @@ export function CustomerSidebar() {
           href="/search"
           className="flex items-center gap-2.5 w-full px-3 py-2.5 text-sm font-medium rounded-xl transition-all"
           style={{
-            background: "rgba(203,213,225,0.20)",
-            border: "1px solid rgba(203,213,225,0.55)",
+            background: "rgba(148,163,184,0.18)",
+            border: "1px solid rgba(148,163,184,0.32)",
             color: "#334155",
-            boxShadow: "0 0 0 0.5px rgba(203,213,225,0.20), inset 0 1px 0 rgba(255,255,255,0.80)",
+            boxShadow: "inset 0 1px 0 rgba(255,255,255,0.70)",
           }}
         >
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
@@ -110,16 +110,15 @@ export function CustomerSidebar() {
               href={item.href}
               className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all"
               style={isActive ? {
-                background: "rgba(203,213,225,0.22)",
+                background: "rgba(148,163,184,0.18)",
                 color: "#1E293B",
-                border: "1px solid rgba(203,213,225,0.50)",
-                boxShadow: "0 0 0 0.5px rgba(203,213,225,0.20), inset 0 1px 0 rgba(255,255,255,0.90)",
+                border: "1px solid rgba(148,163,184,0.28)",
+                boxShadow: "inset 0 1px 0 rgba(255,255,255,0.75)",
               } : {
                 color: "#94A3B8",
-                border: "1px solid transparent",
               }}
-              onMouseEnter={e => { if (!isActive) { (e.currentTarget as HTMLElement).style.background = "rgba(203,213,225,0.14)"; (e.currentTarget as HTMLElement).style.color = "#475569"; (e.currentTarget as HTMLElement).style.border = "1px solid rgba(203,213,225,0.30)"; } }}
-              onMouseLeave={e => { if (!isActive) { (e.currentTarget as HTMLElement).style.background = ""; (e.currentTarget as HTMLElement).style.color = "#94A3B8"; (e.currentTarget as HTMLElement).style.border = "1px solid transparent"; } }}
+              onMouseEnter={e => { if (!isActive) { (e.currentTarget as HTMLElement).style.background = "rgba(148,163,184,0.10)"; (e.currentTarget as HTMLElement).style.color = "#475569"; } }}
+              onMouseLeave={e => { if (!isActive) { (e.currentTarget as HTMLElement).style.background = ""; (e.currentTarget as HTMLElement).style.color = "#94A3B8"; } }}
             >
               <span className="flex-shrink-0" style={{ color: isActive ? "#64748B" : "inherit" }}>
                 {item.icon}
@@ -131,7 +130,7 @@ export function CustomerSidebar() {
       </nav>
 
       {/* Bottom */}
-      <div className="p-3" style={{ borderTop: "1px solid rgba(203,213,225,0.28)" }}>
+      <div className="p-3" style={{ borderTop: "1px solid rgba(148,163,184,0.16)" }}>
         <Link
           href="/customer/profile"
           className="flex items-center gap-3 px-3 py-2 rounded-lg transition-all"
@@ -141,7 +140,7 @@ export function CustomerSidebar() {
         >
           <div
             className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-semibold flex-shrink-0"
-            style={{ background: "rgba(203,213,225,0.25)", border: "1px solid rgba(203,213,225,0.55)", color: "#475569", boxShadow: "inset 0 1px 0 rgba(255,255,255,0.70)" }}
+            style={{ background: "rgba(148,163,184,0.20)", border: "1px solid rgba(148,163,184,0.30)", color: "#475569" }}
           >
             U
           </div>

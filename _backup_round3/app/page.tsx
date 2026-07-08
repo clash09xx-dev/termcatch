@@ -7,118 +7,70 @@ import { motion, useInView } from "framer-motion";
 import { LandingNav } from "@/components/layout/landing-nav";
 import { LandingFooter } from "@/components/layout/landing-footer";
 
-// ── Premium Chrome Glass style helpers ───────────────────────────────────────
-// Every surface is multi-layer: chrome ring → contact → depth → ambient
-// + inner top highlight + inner bottom chrome reflection.
+// ── Light glass style helpers ─────────────────────────────────────────────────
 
 const G = {
-  // Primary large glass card — widget, feature card, CTA
   card: {
-    background: "rgba(255,255,255,0.72)",
-    backdropFilter: "blur(40px) saturate(200%)",
-    WebkitBackdropFilter: "blur(40px) saturate(200%)",
-    border: "1px solid rgba(203,213,225,0.50)",
-    boxShadow:
-      "0 0 0 0.5px rgba(203,213,225,0.40), 0 2px 4px rgba(0,0,0,0.04), 0 12px 36px rgba(100,116,139,0.10), 0 40px 80px rgba(100,116,139,0.05), inset 0 1px 0 rgba(255,255,255,0.98), inset 0 -1px 0 rgba(203,213,225,0.10)",
-  } as React.CSSProperties,
-
-  // Secondary panel — steps, feature cards, stat cards
-  panel: {
     background: "rgba(255,255,255,0.65)",
     backdropFilter: "blur(32px) saturate(200%)",
     WebkitBackdropFilter: "blur(32px) saturate(200%)",
-    border: "1px solid rgba(203,213,225,0.40)",
-    boxShadow:
-      "0 0 0 0.5px rgba(203,213,225,0.30), 0 1px 2px rgba(0,0,0,0.03), 0 6px 20px rgba(100,116,139,0.08), inset 0 1px 0 rgba(255,255,255,0.92), inset 0 -1px 0 rgba(203,213,225,0.08)",
+    border: "1px solid rgba(148,163,184,0.22)",
+    boxShadow: "0 24px 64px rgba(100,116,139,0.12), 0 4px 16px rgba(0,0,0,0.04), inset 0 1px 0 rgba(255,255,255,0.92)",
   } as React.CSSProperties,
-
-  // Small glass chip — floating label, number badge
+  panel: {
+    background: "rgba(255,255,255,0.55)",
+    backdropFilter: "blur(24px) saturate(180%)",
+    WebkitBackdropFilter: "blur(24px) saturate(180%)",
+    border: "1px solid rgba(148,163,184,0.20)",
+    boxShadow: "0 8px 32px rgba(100,116,139,0.08), 0 2px 8px rgba(0,0,0,0.03), inset 0 1px 0 rgba(255,255,255,0.88)",
+  } as React.CSSProperties,
   chip: {
-    background: "rgba(255,255,255,0.80)",
-    backdropFilter: "blur(20px) saturate(200%)",
-    WebkitBackdropFilter: "blur(20px) saturate(200%)",
-    border: "1px solid rgba(203,213,225,0.50)",
-    boxShadow:
-      "0 0 0 0.5px rgba(203,213,225,0.35), 0 2px 8px rgba(100,116,139,0.08), 0 8px 24px rgba(100,116,139,0.05), inset 0 1px 0 rgba(255,255,255,0.95)",
+    background: "rgba(255,255,255,0.72)",
+    backdropFilter: "blur(16px) saturate(180%)",
+    WebkitBackdropFilter: "blur(16px) saturate(180%)",
+    border: "1px solid rgba(148,163,184,0.25)",
+    boxShadow: "0 4px 16px rgba(100,116,139,0.08), inset 0 1px 0 rgba(255,255,255,0.90)",
   } as React.CSSProperties,
-
-  // Pill — category, badge, subtle tag
   pill: {
-    background: "rgba(255,255,255,0.68)",
-    backdropFilter: "blur(16px) saturate(190%)",
-    WebkitBackdropFilter: "blur(16px) saturate(190%)",
-    border: "1px solid rgba(203,213,225,0.40)",
-    boxShadow:
-      "0 0 0 0.5px rgba(203,213,225,0.25), 0 1px 4px rgba(100,116,139,0.06), inset 0 1px 0 rgba(255,255,255,0.90)",
+    background: "rgba(255,255,255,0.60)",
+    backdropFilter: "blur(12px)",
+    WebkitBackdropFilter: "blur(12px)",
+    border: "1px solid rgba(148,163,184,0.22)",
+    boxShadow: "0 2px 8px rgba(100,116,139,0.06), inset 0 1px 0 rgba(255,255,255,0.85)",
   } as React.CSSProperties,
-
-  // Input — Apple search style
   input: {
-    background: "rgba(255,255,255,0.80)",
-    backdropFilter: "blur(20px) saturate(200%)",
-    WebkitBackdropFilter: "blur(20px) saturate(200%)",
-    border: "1px solid rgba(203,213,225,0.50)",
-    boxShadow:
-      "0 0 0 0.5px rgba(203,213,225,0.30), 0 1px 3px rgba(0,0,0,0.04), inset 0 1px 0 rgba(255,255,255,0.90), inset 0 1px 3px rgba(0,0,0,0.03)",
+    background: "rgba(255,255,255,0.70)",
+    backdropFilter: "blur(16px)",
+    WebkitBackdropFilter: "blur(16px)",
+    border: "1px solid rgba(148,163,184,0.25)",
+    boxShadow: "0 2px 8px rgba(100,116,139,0.06), inset 0 1px 0 rgba(255,255,255,0.90)",
     color: "#0F172A",
   } as React.CSSProperties,
-
-  // Inner interactive button — booking widget rows
   innerBtn: {
-    background: "rgba(255,255,255,0.60)",
-    backdropFilter: "blur(12px) saturate(180%)",
-    WebkitBackdropFilter: "blur(12px) saturate(180%)",
-    border: "1px solid rgba(203,213,225,0.40)",
-    boxShadow: "0 0 0 0.5px rgba(203,213,225,0.20), inset 0 1px 0 rgba(255,255,255,0.85)",
+    background: "rgba(255,255,255,0.55)",
+    backdropFilter: "blur(8px)",
+    WebkitBackdropFilter: "blur(8px)",
+    border: "1px solid rgba(148,163,184,0.22)",
+    boxShadow: "inset 0 1px 0 rgba(255,255,255,0.80)",
   } as React.CSSProperties,
-
-  // Primary CTA button — chrome silver
   silverBtn: {
-    background: "rgba(148,163,184,0.16)",
-    backdropFilter: "blur(16px) saturate(190%)",
-    WebkitBackdropFilter: "blur(16px) saturate(190%)",
-    border: "1px solid rgba(203,213,225,0.60)",
-    color: "#1E293B",
-    boxShadow:
-      "0 0 0 0.5px rgba(203,213,225,0.35), 0 2px 8px rgba(148,163,184,0.12), 0 8px 24px rgba(148,163,184,0.08), inset 0 1px 0 rgba(255,255,255,0.80)",
+    background: "rgba(148,163,184,0.18)",
+    backdropFilter: "blur(12px)",
+    WebkitBackdropFilter: "blur(12px)",
+    border: "1px solid rgba(148,163,184,0.38)",
+    color: "#334155",
+    boxShadow: "0 4px 16px rgba(148,163,184,0.15), inset 0 1px 0 rgba(255,255,255,0.70)",
   } as React.CSSProperties,
-
-  divider: { borderBottom: "1px solid rgba(203,213,225,0.22)" } as React.CSSProperties,
+  divider: { borderBottom: "1px solid rgba(148,163,184,0.16)" } as React.CSSProperties,
 };
 
-// ── Section backgrounds — premium ambient mesh ────────────────────────────────
-// Layered cool-chrome radial glows on white/near-white base.
-// Glass elements need colored surfaces underneath to look physical.
+// Section backgrounds
 const BG = {
-  hero: [
-    "radial-gradient(ellipse 100% 70% at 80% -10%, rgba(226,232,240,0.50) 0%, transparent 55%)",
-    "radial-gradient(ellipse 70% 60% at -5% 85%, rgba(203,213,225,0.30) 0%, transparent 55%)",
-    "radial-gradient(ellipse 50% 40% at 50% 50%, rgba(241,245,249,0.60) 0%, transparent 65%)",
-    "linear-gradient(168deg, #F4F7FB 0%, #F8FAFC 45%, #EEF4FB 100%)",
-  ].join(", "),
-
-  steps: [
-    "radial-gradient(ellipse 80% 65% at 50% 60%, rgba(203,213,225,0.18) 0%, transparent 65%)",
-    "radial-gradient(ellipse 50% 40% at 90% 10%, rgba(226,232,240,0.20) 0%, transparent 55%)",
-    "#F3F7FB",
-  ].join(", "),
-
-  business: [
-    "radial-gradient(ellipse 90% 60% at 20% 50%, rgba(203,213,225,0.16) 0%, transparent 60%)",
-    "radial-gradient(ellipse 60% 50% at 80% 80%, rgba(226,232,240,0.14) 0%, transparent 55%)",
-    "#EFF4FA",
-  ].join(", "),
-
-  numbers: [
-    "radial-gradient(ellipse 70% 60% at 50% 50%, rgba(226,232,240,0.20) 0%, transparent 65%)",
-    "#F3F7FB",
-  ].join(", "),
-
-  cta: [
-    "radial-gradient(ellipse 80% 65% at 50% 80%, rgba(203,213,225,0.18) 0%, transparent 60%)",
-    "radial-gradient(ellipse 60% 50% at 20% 20%, rgba(226,232,240,0.16) 0%, transparent 55%)",
-    "#F0F5FB",
-  ].join(", "),
+  hero:     "radial-gradient(ellipse 80% 60% at 75% -5%, rgba(148,163,184,0.22) 0%, transparent 55%), radial-gradient(ellipse 60% 50% at -5% 80%, rgba(148,163,184,0.14) 0%, transparent 55%), linear-gradient(160deg, #EEF3F9 0%, #F6F9FC 50%, #EAF0F8 100%)",
+  steps:    "radial-gradient(ellipse 70% 60% at 50% 50%, rgba(148,163,184,0.12) 0%, transparent 65%), #F0F4F9",
+  business: "radial-gradient(ellipse 80% 55% at 30% 50%, rgba(148,163,184,0.10) 0%, transparent 60%), #EDF2F8",
+  numbers:  "#F0F4F9",
+  cta:      "#EEF3F9",
 };
 
 // ── Interactive Booking Widget ────────────────────────────────────────────────
@@ -145,10 +97,8 @@ function BookingWidget() {
     >
       {/* Main glass card */}
       <div className="relative rounded-3xl overflow-hidden" style={G.card}>
-        {/* Top specular catch-light */}
-        <div className="absolute inset-0 bg-gradient-to-br from-white/60 via-transparent to-transparent pointer-events-none" />
-        {/* Chrome top edge */}
-        <div className="absolute top-0 left-8 right-8 h-px pointer-events-none" style={{ background: "linear-gradient(90deg, transparent, rgba(255,255,255,0.95), transparent)" }} />
+        {/* Top shimmer */}
+        <div className="absolute inset-0 bg-gradient-to-br from-white/50 via-transparent to-white/10 pointer-events-none" />
 
         {/* Header */}
         <div className="relative flex items-center gap-3 px-5 py-4" style={G.divider}>
@@ -178,7 +128,7 @@ function BookingWidget() {
                   onClick={() => setSvc(i)}
                   className="w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-sm transition-all duration-150"
                   style={svc === i
-                    ? { background: "rgba(203,213,225,0.28)", border: "1px solid rgba(203,213,225,0.60)", color: "#1E293B", boxShadow: "0 0 0 0.5px rgba(203,213,225,0.25), inset 0 1px 0 rgba(255,255,255,0.90)" }
+                    ? { background: "rgba(148,163,184,0.22)", border: "1px solid rgba(148,163,184,0.40)", color: "#1E293B", boxShadow: "inset 0 1px 0 rgba(255,255,255,0.75)" }
                     : { ...G.innerBtn, color: "#64748B" }
                   }
                 >
@@ -201,7 +151,7 @@ function BookingWidget() {
                   onClick={() => { setDay(i); setSlot(null); }}
                   className="flex-1 py-2 rounded-lg text-xs font-semibold transition-all duration-150"
                   style={day === i
-                    ? { background: "rgba(203,213,225,0.30)", border: "1px solid rgba(203,213,225,0.60)", color: "#334155", boxShadow: "0 0 0 0.5px rgba(203,213,225,0.20), inset 0 1px 0 rgba(255,255,255,0.85)" }
+                    ? { background: "rgba(100,116,139,0.22)", border: "1px solid rgba(100,116,139,0.38)", color: "#334155" }
                     : { ...G.innerBtn, color: "#94A3B8" }
                   }
                 >
@@ -241,23 +191,23 @@ function BookingWidget() {
 
       {/* Floating chips */}
       <motion.div
-        animate={{ y: [0, -7, 0] }}
-        transition={{ duration: 3.4, repeat: Infinity, ease: [0.45, 0, 0.55, 1] }}
-        className="absolute -top-6 -right-6 rounded-2xl px-4 py-3 hidden sm:block"
+        animate={{ y: [0, -8, 0] }}
+        transition={{ duration: 3.2, repeat: Infinity, ease: "easeInOut" }}
+        className="absolute -top-5 -right-5 rounded-2xl px-4 py-3 hidden sm:block"
         style={G.chip}
       >
-        <p className="text-[10px] font-medium tracking-wide text-slate-400 uppercase">Nowa rezerwacja</p>
-        <p className="text-sm font-semibold text-slate-700 mt-0.5">Dziś · 15:30</p>
+        <p className="text-[10px] font-medium text-slate-400">Nowa rezerwacja</p>
+        <p className="text-sm font-bold text-slate-700">Dziś · 15:30</p>
       </motion.div>
 
       <motion.div
-        animate={{ y: [0, 7, 0] }}
-        transition={{ duration: 4.0, repeat: Infinity, ease: [0.45, 0, 0.55, 1], delay: 1.2 }}
-        className="absolute -bottom-6 -left-6 rounded-2xl px-4 py-3 hidden sm:block"
+        animate={{ y: [0, 8, 0] }}
+        transition={{ duration: 3.8, repeat: Infinity, ease: "easeInOut", delay: 1 }}
+        className="absolute -bottom-5 -left-5 rounded-2xl px-4 py-3 hidden sm:block"
         style={G.chip}
       >
-        <p className="text-[10px] font-medium tracking-wide text-slate-400 uppercase">Powiadomienie</p>
-        <p className="text-sm font-semibold text-slate-700 mt-0.5">Wizyta potwierdzona</p>
+        <p className="text-[10px] font-medium text-slate-400">Powiadomienie wysłane</p>
+        <p className="text-sm font-bold text-slate-700">Wizyta potwierdzona</p>
       </motion.div>
     </motion.div>
   );
@@ -302,19 +252,16 @@ function HeroSearch() {
           style={G.input}
         />
       </div>
-      <motion.button
+      <button
         type="submit"
-        whileHover={{ scale: 1.015, y: -0.5 }}
-        whileTap={{ scale: 0.985 }}
-        transition={{ type: "spring", stiffness: 400, damping: 25 }}
-        className="px-6 py-3.5 text-sm font-semibold rounded-xl flex items-center justify-center gap-2 flex-shrink-0"
+        className="px-6 py-3.5 text-sm font-semibold rounded-xl transition-all flex items-center justify-center gap-2 flex-shrink-0 hover:scale-[1.02]"
         style={G.silverBtn}
       >
         <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
           <circle cx="11" cy="11" r="8" /><path d="m21 21-4.35-4.35" />
         </svg>
         Szukaj
-      </motion.button>
+      </button>
     </form>
   );
 }
@@ -352,14 +299,14 @@ export default function HomePage() {
 
       {/* ── HERO ─────────────────────────────────────────────────── */}
       <section className="relative min-h-screen flex items-center overflow-hidden px-6 pt-16">
-        {/* Dot grid — chrome refined */}
+        {/* Subtle dot grid */}
         <div
           className="absolute inset-0 pointer-events-none"
           style={{
-            backgroundImage: "radial-gradient(circle, rgba(203,213,225,0.35) 1px, transparent 1px)",
-            backgroundSize: "38px 38px",
-            maskImage: "radial-gradient(ellipse 85% 75% at 50% 50%, black 30%, transparent 100%)",
-            WebkitMaskImage: "radial-gradient(ellipse 85% 75% at 50% 50%, black 30%, transparent 100%)",
+            backgroundImage: "radial-gradient(circle, rgba(148,163,184,0.20) 1px, transparent 1px)",
+            backgroundSize: "40px 40px",
+            maskImage: "radial-gradient(ellipse 80% 80% at 50% 50%, black 40%, transparent 100%)",
+            WebkitMaskImage: "radial-gradient(ellipse 80% 80% at 50% 50%, black 40%, transparent 100%)",
           }}
         />
 
@@ -516,8 +463,8 @@ export default function HomePage() {
               style={G.card}
             >
               <div className="absolute inset-0 bg-gradient-to-br from-white/60 via-transparent to-transparent pointer-events-none" />
-              {/* Chrome top specular edge */}
-              <div className="absolute top-0 left-0 right-0 h-px" style={{ background: "linear-gradient(90deg, transparent, rgba(255,255,255,0.95) 30%, rgba(255,255,255,0.95) 70%, transparent)" }} />
+              {/* Silver top shimmer line */}
+              <div className="absolute top-0 left-0 right-0 h-px" style={{ background: "linear-gradient(90deg, transparent, rgba(148,163,184,0.50), transparent)" }} />
 
               <div className="relative">
                 <span className="text-xs font-semibold uppercase tracking-widest block mb-6 text-slate-400">Panel specjalisty</span>
@@ -615,19 +562,19 @@ export default function HomePage() {
             className="relative rounded-3xl p-14 text-center overflow-hidden"
             style={G.card}
           >
-            {/* Chrome dot grid */}
+            {/* Dot grid */}
             <div className="absolute inset-0 pointer-events-none"
-              style={{ backgroundImage: "radial-gradient(circle, rgba(203,213,225,0.28) 1px, transparent 1px)", backgroundSize: "24px 24px" }} />
-            {/* Chrome top specular */}
+              style={{ backgroundImage: "radial-gradient(circle, rgba(148,163,184,0.18) 1px, transparent 1px)", backgroundSize: "24px 24px" }} />
+            {/* Silver top shimmer */}
             <div className="absolute top-0 left-0 right-0 h-px"
-              style={{ background: "linear-gradient(90deg, transparent, rgba(255,255,255,0.98) 30%, rgba(255,255,255,0.98) 70%, transparent)" }} />
+              style={{ background: "linear-gradient(90deg, transparent, rgba(148,163,184,0.55), transparent)" }} />
             <div className="absolute inset-0 bg-gradient-to-br from-white/60 via-transparent to-transparent pointer-events-none" />
 
             <div className="relative z-10">
-              <div className="flex items-center justify-center gap-3 mb-6">
-                <span className="h-px w-12" style={{ background: "linear-gradient(90deg, transparent, rgba(203,213,225,0.70))" }} />
-                <span className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ background: "#CBD5E1", boxShadow: "0 0 0 2px rgba(203,213,225,0.30)" }} />
-                <span className="h-px w-12" style={{ background: "linear-gradient(90deg, rgba(203,213,225,0.70), transparent)" }} />
+              <div className="flex items-center justify-center gap-2 mb-6">
+                <span className="h-px w-10" style={{ background: "rgba(148,163,184,0.40)" }} />
+                <span className="w-1.5 h-1.5 rounded-full" style={{ background: "#94A3B8" }} />
+                <span className="h-px w-10" style={{ background: "rgba(148,163,184,0.40)" }} />
               </div>
               <h2 className="text-4xl font-bold mb-4 text-slate-900">Zacznij dziś — za darmo</h2>
               <p className="mb-10 max-w-sm mx-auto text-base text-slate-500">

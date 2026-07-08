@@ -30,11 +30,11 @@ export function BusinessTopbar() {
     <header
       className="h-14 flex items-center gap-4 px-5 shrink-0 sticky top-0 z-30"
       style={{
-        background: "rgba(255,255,255,0.82)",
-        backdropFilter: "blur(40px) saturate(200%)",
-        WebkitBackdropFilter: "blur(40px) saturate(200%)",
-        borderBottom: "1px solid rgba(203,213,225,0.35)",
-        boxShadow: "0 0 0 0.5px rgba(203,213,225,0.20), 0 1px 3px rgba(0,0,0,0.04), 0 4px 16px rgba(100,116,139,0.06), inset 0 1px 0 rgba(255,255,255,0.90)",
+        background: "rgba(255,255,255,0.72)",
+        backdropFilter: "blur(32px) saturate(200%)",
+        WebkitBackdropFilter: "blur(32px) saturate(200%)",
+        borderBottom: "1px solid rgba(148,163,184,0.18)",
+        boxShadow: "0 4px 24px rgba(100,116,139,0.08), inset 0 -1px 0 rgba(148,163,184,0.12)",
       }}
     >
       <div className="flex-1 min-w-0">
@@ -53,9 +53,8 @@ export function BusinessTopbar() {
           className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-lg transition-all"
           style={{
             color: "#475569",
-            background: "rgba(203,213,225,0.18)",
-            border: "1px solid rgba(203,213,225,0.50)",
-            boxShadow: "0 0 0 0.5px rgba(203,213,225,0.15), inset 0 1px 0 rgba(255,255,255,0.80)",
+            background: "rgba(148,163,184,0.14)",
+            border: "1px solid rgba(148,163,184,0.28)",
           }}
         >
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
@@ -65,7 +64,7 @@ export function BusinessTopbar() {
         </Link>
 
         {/* Divider */}
-        <div className="hidden sm:block h-5 w-px mx-1" style={{ background: "rgba(203,213,225,0.40)" }} />
+        <div className="hidden sm:block h-5 w-px mx-1" style={{ background: "rgba(148,163,184,0.25)" }} />
 
         {/* Notifications */}
         <button
@@ -112,7 +111,7 @@ export function BusinessTopbar() {
           >
             <div
               className="w-6 h-6 rounded-md flex items-center justify-center text-[9px] font-bold"
-              style={{ background: "rgba(203,213,225,0.25)", border: "1px solid rgba(203,213,225,0.55)", color: "#475569", boxShadow: "inset 0 1px 0 rgba(255,255,255,0.70)" }}
+              style={{ background: "rgba(148,163,184,0.22)", border: "1px solid rgba(148,163,184,0.32)", color: "#475569" }}
             >
               AB
             </div>

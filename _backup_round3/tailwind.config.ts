@@ -93,22 +93,13 @@ const config: Config = {
         brand: "0 4px 14px 0 rgb(17 24 39 / 0.20)",
         "brand-lg": "0 10px 40px 0 rgb(17 24 39 / 0.25)",
         "inner-brand": "inset 0 2px 4px 0 rgb(17 24 39 / 0.1)",
-        // ── Premium Apple-tier glass shadows ──────────────────────
-        // chrome ring + contact + depth + ambient + top-highlight + bottom-chrome
-        glass:
-          "0 0 0 0.5px rgba(203,213,225,0.45), 0 1px 2px rgba(0,0,0,0.04), 0 6px 20px rgba(100,116,139,0.09), 0 20px 48px rgba(100,116,139,0.05), inset 0 1px 0 rgba(255,255,255,0.95), inset 0 -1px 0 rgba(203,213,225,0.10)",
-        "glass-lg":
-          "0 0 0 0.5px rgba(203,213,225,0.50), 0 2px 4px rgba(0,0,0,0.05), 0 12px 36px rgba(100,116,139,0.12), 0 40px 80px rgba(100,116,139,0.07), inset 0 1px 0 rgba(255,255,255,1), inset 0 -1px 0 rgba(203,213,225,0.12)",
-        "glass-card":
-          "0 0 0 0.5px rgba(203,213,225,0.40), 0 1px 2px rgba(0,0,0,0.04), 0 8px 24px rgba(100,116,139,0.08), inset 0 1px 0 rgba(255,255,255,0.90)",
-        "glass-sm":
-          "0 0 0 0.5px rgba(203,213,225,0.35), 0 1px 2px rgba(0,0,0,0.03), 0 3px 10px rgba(100,116,139,0.07), inset 0 1px 0 rgba(255,255,255,0.90)",
-        "silver-glow":
-          "0 4px 20px rgba(148,163,184,0.18), 0 1px 4px rgba(148,163,184,0.10)",
-        widget:
-          "0 0 0 0.5px rgba(203,213,225,0.50), 0 2px 4px rgba(0,0,0,0.05), 0 20px 60px rgba(100,116,139,0.12), 0 48px 96px rgba(100,116,139,0.07), inset 0 1px 0 rgba(255,255,255,1)",
-        "chrome-ring":
-          "0 0 0 0.5px rgba(203,213,225,0.60), inset 0 1px 0 rgba(255,255,255,0.90)",
+        // Liquid glass shadows — outer depth + inner white highlight
+        glass: "0 8px 32px rgba(100,116,139,0.10), 0 2px 8px rgba(0,0,0,0.04), inset 0 1px 0 rgba(255,255,255,0.90)",
+        "glass-lg": "0 20px 60px rgba(100,116,139,0.14), 0 4px 16px rgba(0,0,0,0.06), inset 0 1px 0 rgba(255,255,255,0.95)",
+        "glass-card": "0 4px 24px rgba(100,116,139,0.08), 0 1px 3px rgba(0,0,0,0.04), inset 0 1px 0 rgba(255,255,255,0.85)",
+        "glass-sm": "0 2px 12px rgba(100,116,139,0.08), inset 0 1px 0 rgba(255,255,255,0.90)",
+        "silver-glow": "0 4px 20px rgba(148,163,184,0.20), 0 1px 4px rgba(148,163,184,0.12)",
+        "widget": "0 24px 64px rgba(100,116,139,0.16), 0 8px 24px rgba(0,0,0,0.06), inset 0 1px 0 rgba(255,255,255,1)",
       },
       backgroundImage: {
         "gradient-brand": "linear-gradient(135deg, #1f2937 0%, #111827 50%, #030712 100%)",

@@ -64,17 +64,17 @@ export function BusinessSidebar() {
     <aside
       className={cn("hidden lg:flex flex-col h-screen shrink-0 transition-all duration-300", isCollapsed ? "w-[58px]" : "w-[228px]")}
       style={{
-        background: "rgba(255,255,255,0.78)",
-        backdropFilter: "blur(40px) saturate(200%)",
-        WebkitBackdropFilter: "blur(40px) saturate(200%)",
-        borderRight: "1px solid rgba(203,213,225,0.45)",
-        boxShadow: "0 0 0 0.5px rgba(203,213,225,0.25) inset, 4px 0 24px rgba(100,116,139,0.08), inset -1px 0 0 rgba(255,255,255,0.80)",
+        background: "rgba(255,255,255,0.65)",
+        backdropFilter: "blur(32px) saturate(200%)",
+        WebkitBackdropFilter: "blur(32px) saturate(200%)",
+        borderRight: "1px solid rgba(148,163,184,0.20)",
+        boxShadow: "4px 0 32px rgba(100,116,139,0.08), inset -1px 0 0 rgba(255,255,255,0.70)",
       }}
     >
       {/* ── Logo ── */}
       <div
         className={cn("flex items-center h-14 flex-shrink-0", isCollapsed ? "px-3.5 justify-center" : "px-4")}
-        style={{ borderBottom: "1px solid rgba(203,213,225,0.28)" }}
+        style={{ borderBottom: "1px solid rgba(148,163,184,0.16)" }}
       >
         {isCollapsed ? (
           <button
@@ -110,8 +110,8 @@ export function BusinessSidebar() {
           <div key={si} className={si > 0 ? "mt-4" : ""}>
             {section.label && !isCollapsed && (
               <p
-                className="px-2.5 mb-1 text-[9px] font-semibold uppercase tracking-[0.12em] select-none"
-                style={{ color: "#CBD5E1", letterSpacing: "0.12em" }}
+                className="px-2.5 mb-1 text-[9px] font-semibold uppercase tracking-[0.10em] select-none"
+                style={{ color: "#CBD5E1" }}
               >
                 {section.label}
               </p>
@@ -141,28 +141,24 @@ export function BusinessSidebar() {
                         isCollapsed ? "px-2 py-2 justify-center" : "pl-3 pr-2.5 py-2"
                       )}
                       style={isActive ? {
-                        background: "rgba(203,213,225,0.22)",
+                        background: "rgba(148,163,184,0.18)",
                         color: "#1E293B",
-                        backdropFilter: "blur(12px) saturate(180%)",
-                        WebkitBackdropFilter: "blur(12px) saturate(180%)",
-                        border: "1px solid rgba(203,213,225,0.50)",
-                        boxShadow: "0 0 0 0.5px rgba(203,213,225,0.20), inset 0 1px 0 rgba(255,255,255,0.90)",
+                        backdropFilter: "blur(8px)",
+                        border: "1px solid rgba(148,163,184,0.28)",
+                        boxShadow: "inset 0 1px 0 rgba(255,255,255,0.75)",
                       } : {
                         color: "#94A3B8",
-                        border: "1px solid transparent",
                       }}
                       onMouseEnter={e => {
                         if (!isActive) {
-                          (e.currentTarget as HTMLElement).style.background = "rgba(203,213,225,0.14)";
+                          (e.currentTarget as HTMLElement).style.background = "rgba(148,163,184,0.10)";
                           (e.currentTarget as HTMLElement).style.color = "#475569";
-                          (e.currentTarget as HTMLElement).style.border = "1px solid rgba(203,213,225,0.30)";
                         }
                       }}
                       onMouseLeave={e => {
                         if (!isActive) {
                           (e.currentTarget as HTMLElement).style.background = "";
                           (e.currentTarget as HTMLElement).style.color = "#94A3B8";
-                          (e.currentTarget as HTMLElement).style.border = "1px solid transparent";
                         }
                       }}
                     >
@@ -177,10 +173,9 @@ export function BusinessSidebar() {
                             <span
                               className="text-[9px] px-1.5 py-0.5 rounded-full font-semibold tracking-wide uppercase"
                               style={{
-                                background: "rgba(203,213,225,0.22)",
+                                background: "rgba(148,163,184,0.18)",
                                 color: "#64748B",
-                                border: "1px solid rgba(203,213,225,0.50)",
-                                boxShadow: "inset 0 1px 0 rgba(255,255,255,0.70)",
+                                border: "1px solid rgba(148,163,184,0.30)",
                               }}
                             >
                               {item.badge}
@@ -199,7 +194,7 @@ export function BusinessSidebar() {
 
       {/* ── Bottom user card ── */}
       {!isCollapsed && (
-        <div className="p-2.5 flex-shrink-0" style={{ borderTop: "1px solid rgba(203,213,225,0.28)" }}>
+        <div className="p-2.5 flex-shrink-0" style={{ borderTop: "1px solid rgba(148,163,184,0.16)" }}>
           <Link
             href="/business/settings"
             className="flex items-center gap-2.5 p-2 rounded-lg transition-all group"
@@ -209,7 +204,7 @@ export function BusinessSidebar() {
           >
             <div
               className="w-7 h-7 rounded-lg flex items-center justify-center text-[10px] font-bold flex-shrink-0"
-              style={{ background: "rgba(203,213,225,0.25)", border: "1px solid rgba(203,213,225,0.55)", color: "#475569", boxShadow: "inset 0 1px 0 rgba(255,255,255,0.70)" }}
+              style={{ background: "rgba(148,163,184,0.22)", border: "1px solid rgba(148,163,184,0.32)", color: "#475569" }}
             >
               M
             </div>

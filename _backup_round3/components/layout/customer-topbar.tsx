@@ -11,11 +11,11 @@ export function CustomerTopbar() {
     <header
       className="h-16 flex items-center gap-4 px-6 shrink-0"
       style={{
-        background: "rgba(255,255,255,0.82)",
-        backdropFilter: "blur(40px) saturate(200%)",
-        WebkitBackdropFilter: "blur(40px) saturate(200%)",
-        borderBottom: "1px solid rgba(203,213,225,0.35)",
-        boxShadow: "0 0 0 0.5px rgba(203,213,225,0.20), 0 1px 3px rgba(0,0,0,0.04), 0 4px 16px rgba(100,116,139,0.06), inset 0 1px 0 rgba(255,255,255,0.90)",
+        background: "rgba(255,255,255,0.72)",
+        backdropFilter: "blur(32px) saturate(200%)",
+        WebkitBackdropFilter: "blur(32px) saturate(200%)",
+        borderBottom: "1px solid rgba(148,163,184,0.18)",
+        boxShadow: "0 4px 24px rgba(100,116,139,0.08)",
       }}
     >
       {/* Mobile logo */}
@@ -28,12 +28,12 @@ export function CustomerTopbar() {
         href="/search"
         className="flex-1 max-w-sm flex items-center gap-2 px-3 py-2 rounded-xl text-sm transition-all"
         style={{
-          background: "rgba(255,255,255,0.78)",
-          backdropFilter: "blur(20px) saturate(190%)",
-          WebkitBackdropFilter: "blur(20px) saturate(190%)",
-          border: "1px solid rgba(203,213,225,0.45)",
+          background: "rgba(255,255,255,0.70)",
+          backdropFilter: "blur(16px)",
+          WebkitBackdropFilter: "blur(16px)",
+          border: "1px solid rgba(148,163,184,0.22)",
           color: "#94A3B8",
-          boxShadow: "0 0 0 0.5px rgba(203,213,225,0.25), inset 0 1px 0 rgba(255,255,255,0.90), inset 0 1px 3px rgba(0,0,0,0.02)",
+          boxShadow: "inset 0 1px 0 rgba(255,255,255,0.85)",
         }}
       >
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
