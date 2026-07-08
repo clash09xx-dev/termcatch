@@ -229,19 +229,13 @@ function BookingWidget() {
           </div>
 
           {/* CTA */}
-          <motion.div
-            whileHover={{ scale: 1.015, y: -1 }}
-            whileTap={{ scale: 0.978 }}
-            transition={{ type: "spring", stiffness: 420, damping: 26 }}
+          <Link
+            href="/register"
+            className="flex items-center justify-center w-full py-3 text-sm font-semibold rounded-xl transition-all hover:scale-[1.01]"
+            style={G.silverBtn}
           >
-            <Link
-              href="/register"
-              className="flex items-center justify-center w-full py-3 text-sm font-semibold rounded-xl"
-              style={G.silverBtn}
-            >
-              {slot !== null ? `Zarezerwuj na ${SLOTS[slot]}` : "Wybierz godzinę"}
-            </Link>
-          </motion.div>
+            {slot !== null ? `Zarezerwuj na ${SLOTS[slot]}` : "Wybierz godzinę"}
+          </Link>
         </div>
       </div>
 
@@ -376,18 +370,11 @@ export default function HomePage() {
             <motion.div
               initial={{ opacity: 0, y: -10 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
-              className="inline-flex items-center gap-2.5 px-3.5 py-1.5 rounded-full text-xs font-medium mb-9"
-              style={{ ...G.pill, color: "#64748B", letterSpacing: "0.01em" }}
+              transition={{ duration: 0.4 }}
+              className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium mb-9"
+              style={{ ...G.pill, color: "#475569" }}
             >
-              {/* Double-ring status dot */}
-              <span className="relative flex h-2 w-2 flex-shrink-0">
-                <span
-                  className="absolute inline-flex h-full w-full rounded-full opacity-75"
-                  style={{ background: "#94A3B8", animation: "dot-pulse 2s cubic-bezier(0.4,0,0.6,1) infinite" }}
-                />
-                <span className="relative inline-flex rounded-full h-2 w-2" style={{ background: "#CBD5E1" }} />
-              </span>
+              <span className="w-1.5 h-1.5 rounded-full animate-pulse" style={{ background: "#94A3B8" }} />
               Wersja testowa · platforma w budowie — możesz już testować
             </motion.div>
 
@@ -395,22 +382,11 @@ export default function HomePage() {
               initial={{ opacity: 0, y: 30 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.7, delay: 0.05, ease: [0.22, 1, 0.36, 1] }}
-              className="text-6xl sm:text-7xl xl:text-8xl font-bold leading-[0.95] text-slate-900"
-              style={{ letterSpacing: "-0.04em" }}
+              className="text-6xl sm:text-7xl xl:text-8xl font-bold leading-[1.0] tracking-tight text-slate-900"
             >
               Rezerwuj<br />
               bez<br />
-              <span
-                className="italic font-bold"
-                style={{
-                  background: "linear-gradient(135deg, #94A3B8 0%, #CBD5E1 45%, #94A3B8 100%)",
-                  WebkitBackgroundClip: "text",
-                  WebkitTextFillColor: "transparent",
-                  backgroundClip: "text",
-                }}
-              >
-                telefonu.
-              </span>
+              <span className="italic font-bold text-slate-400">telefonu.</span>
             </motion.h1>
 
             <motion.p
@@ -430,20 +406,14 @@ export default function HomePage() {
               className="flex flex-wrap gap-2 mt-8"
             >
               {CATEGORIES.map((c) => (
-                <motion.div
+                <Link
                   key={c.slug}
-                  whileHover={{ scale: 1.06, y: -1 }}
-                  whileTap={{ scale: 0.96 }}
-                  transition={{ type: "spring", stiffness: 420, damping: 22 }}
+                  href={`/search?category=${c.slug}`}
+                  className="px-3.5 py-1.5 rounded-full text-sm transition-all duration-150 hover:scale-[1.03] text-slate-600"
+                  style={G.pill}
                 >
-                  <Link
-                    href={`/search?category=${c.slug}`}
-                    className="px-3.5 py-1.5 rounded-full text-sm text-slate-600 block"
-                    style={G.pill}
-                  >
-                    {c.label}
-                  </Link>
-                </motion.div>
+                  {c.label}
+                </Link>
               ))}
             </motion.div>
 
@@ -492,8 +462,6 @@ export default function HomePage() {
         </motion.div>
       </section>
 
-      <div className="grad-sep" />
-
       {/* ── HOW IT WORKS ─────────────────────────────────────────── */}
       <section className="py-28 px-6" style={{ background: BG.steps }}>
         <div className="max-w-5xl mx-auto">
@@ -501,7 +469,7 @@ export default function HomePage() {
             <span className="inline-block text-xs font-semibold uppercase tracking-widest mb-4 px-3 py-1 rounded-full text-slate-500" style={G.pill}>
               Jak to działa
             </span>
-            <h2 className="text-4xl font-bold text-slate-900" style={{ letterSpacing: "-0.03em" }}>Trzy kroki. Nic więcej.</h2>
+            <h2 className="text-4xl font-bold text-slate-900">Trzy kroki. Nic więcej.</h2>
           </motion.div>
 
           <div className="grid md:grid-cols-3 gap-5">
@@ -513,9 +481,7 @@ export default function HomePage() {
               <motion.div
                 key={step.n}
                 initial="hidden" whileInView="show" viewport={{ once: true }} custom={i} variants={fade}
-                whileHover={{ y: -4, scale: 1.008 }}
-                transition={{ type: "spring", stiffness: 360, damping: 28 }}
-                className="relative p-7 rounded-3xl overflow-hidden glass-shimmer-wrap"
+                className="relative p-7 rounded-3xl overflow-hidden"
                 style={G.panel}
               >
                 <div className="absolute inset-0 bg-gradient-to-br from-white/60 via-transparent to-transparent pointer-events-none" />
@@ -536,8 +502,6 @@ export default function HomePage() {
         </div>
       </section>
 
-      <div className="grad-sep" />
-
       {/* ── FOR BUSINESS ─────────────────────────────────────────── */}
       <section className="py-28 px-6" style={{ background: BG.business }}>
         <div className="max-w-5xl mx-auto">
@@ -557,7 +521,7 @@ export default function HomePage() {
 
               <div className="relative">
                 <span className="text-xs font-semibold uppercase tracking-widest block mb-6 text-slate-400">Panel specjalisty</span>
-                <h2 className="text-3xl font-bold leading-snug mb-5 text-slate-900" style={{ letterSpacing: "-0.03em" }}>
+                <h2 className="text-3xl font-bold leading-snug mb-5 text-slate-900">
                   Mniej administracji.<br />Więcej klientów.
                 </h2>
                 <p className="text-sm leading-relaxed mb-9 text-slate-500">
@@ -573,21 +537,14 @@ export default function HomePage() {
                     </div>
                   ))}
                 </div>
-                <motion.div
-                  whileHover={{ scale: 1.015, y: -1 }}
-                  whileTap={{ scale: 0.978 }}
-                  transition={{ type: "spring", stiffness: 420, damping: 26 }}
-                  className="inline-flex"
+                <Link
+                  href="/register?role=business"
+                  className="inline-flex items-center gap-2 px-6 py-3 text-sm font-semibold rounded-xl transition-all hover:scale-[1.02]"
+                  style={G.silverBtn}
                 >
-                  <Link
-                    href="/register?role=business"
-                    className="inline-flex items-center gap-2 px-6 py-3 text-sm font-semibold rounded-xl"
-                    style={G.silverBtn}
-                  >
-                    Zarejestruj salon — za darmo
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="m9 18 6-6-6-6" /></svg>
-                  </Link>
-                </motion.div>
+                  Zarejestruj salon — za darmo
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="m9 18 6-6-6-6" /></svg>
+                </Link>
               </div>
             </motion.div>
 
@@ -602,9 +559,7 @@ export default function HomePage() {
                 <motion.div
                   key={f.title}
                   initial="hidden" whileInView="show" viewport={{ once: true }} custom={i} variants={fade}
-                  whileHover={{ y: -3, scale: 1.008 }}
-                  transition={{ type: "spring", stiffness: 360, damping: 28 }}
-                  className="relative flex gap-4 p-5 rounded-2xl overflow-hidden glass-shimmer-wrap"
+                  className="relative flex gap-4 p-5 rounded-2xl overflow-hidden"
                   style={G.panel}
                 >
                   <div className="absolute inset-0 bg-gradient-to-br from-white/50 via-transparent to-transparent pointer-events-none" />
@@ -626,8 +581,6 @@ export default function HomePage() {
         </div>
       </section>
 
-      <div className="grad-sep" />
-
       {/* ── NUMBERS ──────────────────────────────────────────────── */}
       <section className="py-20 px-6" style={{ background: BG.numbers }}>
         <div className="max-w-4xl mx-auto grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -640,9 +593,7 @@ export default function HomePage() {
             <motion.div
               key={s.label}
               initial="hidden" whileInView="show" viewport={{ once: true }} custom={i} variants={fade}
-              whileHover={{ y: -4, scale: 1.012 }}
-              transition={{ type: "spring", stiffness: 380, damping: 26 }}
-              className="relative text-center p-6 rounded-2xl overflow-hidden glass-shimmer-wrap"
+              className="relative text-center p-6 rounded-2xl overflow-hidden"
               style={G.panel}
             >
               <div className="absolute inset-0 bg-gradient-to-b from-white/60 to-transparent pointer-events-none" />
@@ -652,8 +603,6 @@ export default function HomePage() {
           ))}
         </div>
       </section>
-
-      <div className="grad-sep" />
 
       {/* ── CTA ──────────────────────────────────────────────────── */}
       <section className="py-28 px-6" style={{ background: BG.cta }}>
@@ -680,37 +629,25 @@ export default function HomePage() {
                 <span className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ background: "#CBD5E1", boxShadow: "0 0 0 2px rgba(203,213,225,0.30)" }} />
                 <span className="h-px w-12" style={{ background: "linear-gradient(90deg, rgba(203,213,225,0.70), transparent)" }} />
               </div>
-              <h2 className="text-4xl font-bold mb-4 text-slate-900" style={{ letterSpacing: "-0.03em" }}>Zacznij dziś — za darmo</h2>
+              <h2 className="text-4xl font-bold mb-4 text-slate-900">Zacznij dziś — za darmo</h2>
               <p className="mb-10 max-w-sm mx-auto text-base text-slate-500">
                 Żadnych kart kredytowych. Żadnych ukrytych opłat.
               </p>
               <div className="flex flex-col sm:flex-row gap-3 justify-center">
-                <motion.div
-                  whileHover={{ scale: 1.015, y: -1 }}
-                  whileTap={{ scale: 0.978 }}
-                  transition={{ type: "spring", stiffness: 420, damping: 26 }}
+                <Link
+                  href="/search"
+                  className="inline-flex items-center justify-center px-7 py-3.5 font-semibold text-sm rounded-xl transition-all hover:scale-[1.02] text-slate-700"
+                  style={G.innerBtn}
                 >
-                  <Link
-                    href="/search"
-                    className="inline-flex items-center justify-center px-7 py-3.5 font-semibold text-sm rounded-xl text-slate-700"
-                    style={G.innerBtn}
-                  >
-                    Znajdź specjalistę
-                  </Link>
-                </motion.div>
-                <motion.div
-                  whileHover={{ scale: 1.015, y: -1 }}
-                  whileTap={{ scale: 0.978 }}
-                  transition={{ type: "spring", stiffness: 420, damping: 26 }}
+                  Znajdź specjalistę
+                </Link>
+                <Link
+                  href="/register?role=business"
+                  className="inline-flex items-center justify-center px-7 py-3.5 font-semibold text-sm rounded-xl transition-all hover:scale-[1.02]"
+                  style={G.silverBtn}
                 >
-                  <Link
-                    href="/register?role=business"
-                    className="inline-flex items-center justify-center px-7 py-3.5 font-semibold text-sm rounded-xl"
-                    style={G.silverBtn}
-                  >
-                    Zarejestruj salon →
-                  </Link>
-                </motion.div>
+                  Zarejestruj salon →
+                </Link>
               </div>
             </div>
           </motion.div>

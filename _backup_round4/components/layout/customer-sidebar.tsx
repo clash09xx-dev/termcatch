@@ -3,7 +3,6 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
-import { motion } from "framer-motion";
 import { Wordmark } from "@/components/brand/wordmark";
 
 const NAV_ITEMS = [
@@ -83,29 +82,22 @@ export function CustomerSidebar() {
 
       {/* Find button */}
       <div className="px-3 py-4">
-        <motion.div
-          whileHover={{ scale: 1.02, y: -0.5 }}
-          whileTap={{ scale: 0.975 }}
-          transition={{ type: "spring", stiffness: 420, damping: 26 }}
-          className="glass-shimmer-wrap rounded-xl"
+        <Link
+          href="/search"
+          className="flex items-center gap-2.5 w-full px-3 py-2.5 text-sm font-medium rounded-xl transition-all"
+          style={{
+            background: "rgba(203,213,225,0.20)",
+            border: "1px solid rgba(203,213,225,0.55)",
+            color: "#334155",
+            boxShadow: "0 0 0 0.5px rgba(203,213,225,0.20), inset 0 1px 0 rgba(255,255,255,0.80)",
+          }}
         >
-          <Link
-            href="/search"
-            className="flex items-center gap-2.5 w-full px-3 py-2.5 text-sm font-medium rounded-xl"
-            style={{
-              background: "rgba(203,213,225,0.20)",
-              border: "1px solid rgba(203,213,225,0.55)",
-              color: "#334155",
-              boxShadow: "0 0 0 0.5px rgba(203,213,225,0.20), inset 0 1px 0 rgba(255,255,255,0.80)",
-            }}
-          >
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-              <circle cx="11" cy="11" r="8" />
-              <path d="m21 21-4.35-4.35" />
-            </svg>
-            Zarezerwuj wizytę
-          </Link>
-        </motion.div>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+            <circle cx="11" cy="11" r="8" />
+            <path d="m21 21-4.35-4.35" />
+          </svg>
+          Zarezerwuj wizytę
+        </Link>
       </div>
 
       {/* Nav */}
@@ -113,41 +105,27 @@ export function CustomerSidebar() {
         {NAV_ITEMS.map((item) => {
           const isActive = pathname === item.href || pathname.startsWith(item.href + "/");
           return (
-            <div key={item.href} className="relative">
-              {isActive && (
-                <span
-                  className="absolute left-0 top-[5px] bottom-[5px] w-[3px] rounded-full"
-                  style={{ background: "linear-gradient(180deg, #CBD5E1 0%, #94A3B8 50%, #CBD5E1 100%)" }}
-                />
-              )}
-              <motion.div
-                whileHover={!isActive ? { x: 1 } : {}}
-                transition={{ type: "spring", stiffness: 400, damping: 30 }}
-              >
-                <Link
-                  href={item.href}
-                  className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium"
-                  style={isActive ? {
-                    background: "rgba(203,213,225,0.22)",
-                    color: "#1E293B",
-                    border: "1px solid rgba(203,213,225,0.50)",
-                    boxShadow: "0 0 0 0.5px rgba(203,213,225,0.20), inset 0 1px 0 rgba(255,255,255,0.90)",
-                    transition: "none",
-                  } : {
-                    color: "#94A3B8",
-                    border: "1px solid transparent",
-                    transition: "background 150ms ease, color 150ms ease, border-color 150ms ease",
-                  }}
-                  onMouseEnter={e => { if (!isActive) { (e.currentTarget as HTMLElement).style.background = "rgba(203,213,225,0.14)"; (e.currentTarget as HTMLElement).style.color = "#475569"; (e.currentTarget as HTMLElement).style.borderColor = "rgba(203,213,225,0.30)"; } }}
-                  onMouseLeave={e => { if (!isActive) { (e.currentTarget as HTMLElement).style.background = ""; (e.currentTarget as HTMLElement).style.color = "#94A3B8"; (e.currentTarget as HTMLElement).style.borderColor = "transparent"; } }}
-                >
-                  <span className="flex-shrink-0" style={{ color: isActive ? "#64748B" : "inherit" }}>
-                    {item.icon}
-                  </span>
-                  {item.label}
-                </Link>
-              </motion.div>
-            </div>
+            <Link
+              key={item.href}
+              href={item.href}
+              className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all"
+              style={isActive ? {
+                background: "rgba(203,213,225,0.22)",
+                color: "#1E293B",
+                border: "1px solid rgba(203,213,225,0.50)",
+                boxShadow: "0 0 0 0.5px rgba(203,213,225,0.20), inset 0 1px 0 rgba(255,255,255,0.90)",
+              } : {
+                color: "#94A3B8",
+                border: "1px solid transparent",
+              }}
+              onMouseEnter={e => { if (!isActive) { (e.currentTarget as HTMLElement).style.background = "rgba(203,213,225,0.14)"; (e.currentTarget as HTMLElement).style.color = "#475569"; (e.currentTarget as HTMLElement).style.border = "1px solid rgba(203,213,225,0.30)"; } }}
+              onMouseLeave={e => { if (!isActive) { (e.currentTarget as HTMLElement).style.background = ""; (e.currentTarget as HTMLElement).style.color = "#94A3B8"; (e.currentTarget as HTMLElement).style.border = "1px solid transparent"; } }}
+            >
+              <span className="flex-shrink-0" style={{ color: isActive ? "#64748B" : "inherit" }}>
+                {item.icon}
+              </span>
+              {item.label}
+            </Link>
           );
         })}
       </nav>

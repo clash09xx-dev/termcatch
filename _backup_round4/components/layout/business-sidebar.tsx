@@ -4,7 +4,6 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { useState } from "react";
-import { motion } from "framer-motion";
 import { Wordmark } from "@/components/brand/wordmark";
 
 type NavItem = {
@@ -118,7 +117,7 @@ export function BusinessSidebar() {
               </p>
             )}
             {section.label && isCollapsed && (
-              <div className="mx-2 my-1.5 h-px" style={{ background: "linear-gradient(90deg, transparent, rgba(148,163,184,0.28), transparent)" }} />
+              <div className="mx-2 my-1.5 h-px" style={{ background: "rgba(148,163,184,0.18)" }} />
             )}
             <ul className="space-y-px">
               {section.items.map((item) => {
@@ -131,18 +130,14 @@ export function BusinessSidebar() {
                     {isActive && !isCollapsed && (
                       <span
                         className="absolute left-0 top-[5px] bottom-[5px] w-[3px] rounded-full"
-                        style={{ background: "linear-gradient(180deg, #CBD5E1 0%, #94A3B8 50%, #CBD5E1 100%)" }}
+                        style={{ background: "#94A3B8" }}
                       />
                     )}
-                    <motion.div
-                      whileHover={!isActive ? { x: 1 } : {}}
-                      transition={{ type: "spring", stiffness: 400, damping: 30 }}
-                    >
                     <Link
                       href={item.href}
                       title={isCollapsed ? item.label : undefined}
                       className={cn(
-                        "flex items-center gap-2.5 rounded-lg text-sm font-medium group",
+                        "flex items-center gap-2.5 rounded-lg text-sm font-medium transition-all duration-150 group",
                         isCollapsed ? "px-2 py-2 justify-center" : "pl-3 pr-2.5 py-2"
                       )}
                       style={isActive ? {
@@ -152,24 +147,22 @@ export function BusinessSidebar() {
                         WebkitBackdropFilter: "blur(12px) saturate(180%)",
                         border: "1px solid rgba(203,213,225,0.50)",
                         boxShadow: "0 0 0 0.5px rgba(203,213,225,0.20), inset 0 1px 0 rgba(255,255,255,0.90)",
-                        transition: "none",
                       } : {
                         color: "#94A3B8",
                         border: "1px solid transparent",
-                        transition: "background 150ms ease, color 150ms ease, border-color 150ms ease",
                       }}
                       onMouseEnter={e => {
                         if (!isActive) {
                           (e.currentTarget as HTMLElement).style.background = "rgba(203,213,225,0.14)";
                           (e.currentTarget as HTMLElement).style.color = "#475569";
-                          (e.currentTarget as HTMLElement).style.borderColor = "rgba(203,213,225,0.30)";
+                          (e.currentTarget as HTMLElement).style.border = "1px solid rgba(203,213,225,0.30)";
                         }
                       }}
                       onMouseLeave={e => {
                         if (!isActive) {
                           (e.currentTarget as HTMLElement).style.background = "";
                           (e.currentTarget as HTMLElement).style.color = "#94A3B8";
-                          (e.currentTarget as HTMLElement).style.borderColor = "transparent";
+                          (e.currentTarget as HTMLElement).style.border = "1px solid transparent";
                         }
                       }}
                     >
@@ -196,7 +189,6 @@ export function BusinessSidebar() {
                         </>
                       )}
                     </Link>
-                    </motion.div>
                   </li>
                 );
               })}

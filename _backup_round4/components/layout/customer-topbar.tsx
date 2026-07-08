@@ -1,7 +1,6 @@
 "use client";
 
 import Link from "next/link";
-import { motion } from "framer-motion";
 import { logoutAction } from "@/actions/auth";
 import { Wordmark } from "@/components/brand/wordmark";
 import { useUnreadCount } from "@/hooks/use-unread-count";
@@ -25,30 +24,24 @@ export function CustomerTopbar() {
       </Link>
 
       {/* Search shortcut */}
-      <motion.div
-        className="flex-1 max-w-sm glass-shimmer-wrap rounded-xl"
-        whileHover={{ scale: 1.01 }}
-        transition={{ type: "spring", stiffness: 400, damping: 28 }}
+      <Link
+        href="/search"
+        className="flex-1 max-w-sm flex items-center gap-2 px-3 py-2 rounded-xl text-sm transition-all"
+        style={{
+          background: "rgba(255,255,255,0.78)",
+          backdropFilter: "blur(20px) saturate(190%)",
+          WebkitBackdropFilter: "blur(20px) saturate(190%)",
+          border: "1px solid rgba(203,213,225,0.45)",
+          color: "#94A3B8",
+          boxShadow: "0 0 0 0.5px rgba(203,213,225,0.25), inset 0 1px 0 rgba(255,255,255,0.90), inset 0 1px 3px rgba(0,0,0,0.02)",
+        }}
       >
-        <Link
-          href="/search"
-          className="flex items-center gap-2 px-3 py-2 rounded-xl text-sm w-full"
-          style={{
-            background: "rgba(255,255,255,0.78)",
-            backdropFilter: "blur(20px) saturate(190%)",
-            WebkitBackdropFilter: "blur(20px) saturate(190%)",
-            border: "1px solid rgba(203,213,225,0.45)",
-            color: "#94A3B8",
-            boxShadow: "0 0 0 0.5px rgba(203,213,225,0.25), inset 0 1px 0 rgba(255,255,255,0.90), inset 0 1px 3px rgba(0,0,0,0.02)",
-          }}
-        >
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-            <circle cx="11" cy="11" r="8" />
-            <path d="m21 21-4.35-4.35" />
-          </svg>
-          Szukaj specjalisty...
-        </Link>
-      </motion.div>
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+          <circle cx="11" cy="11" r="8" />
+          <path d="m21 21-4.35-4.35" />
+        </svg>
+        Szukaj specjalisty...
+      </Link>
 
       <div className="flex items-center gap-2 ml-auto">
         {/* Notifications */}

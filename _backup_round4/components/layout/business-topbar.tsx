@@ -2,7 +2,6 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { motion } from "framer-motion";
 import { logoutAction } from "@/actions/auth";
 
 const PAGE_TITLES: Record<string, string> = {
@@ -49,28 +48,21 @@ export function BusinessTopbar() {
 
       <div className="flex items-center gap-1.5">
         {/* New appointment */}
-        <motion.div
-          whileHover={{ scale: 1.03, y: -0.5 }}
-          whileTap={{ scale: 0.975 }}
-          transition={{ type: "spring", stiffness: 420, damping: 26 }}
-          className="hidden sm:block"
+        <Link
+          href="/business/calendar?action=new"
+          className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-lg transition-all"
+          style={{
+            color: "#475569",
+            background: "rgba(203,213,225,0.18)",
+            border: "1px solid rgba(203,213,225,0.50)",
+            boxShadow: "0 0 0 0.5px rgba(203,213,225,0.15), inset 0 1px 0 rgba(255,255,255,0.80)",
+          }}
         >
-          <Link
-            href="/business/calendar?action=new"
-            className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-lg glass-shimmer-wrap"
-            style={{
-              color: "#475569",
-              background: "rgba(203,213,225,0.18)",
-              border: "1px solid rgba(203,213,225,0.50)",
-              boxShadow: "0 0 0 0.5px rgba(203,213,225,0.15), inset 0 1px 0 rgba(255,255,255,0.80)",
-            }}
-          >
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-              <path d="M12 5v14M5 12h14" />
-            </svg>
-            Nowa wizyta
-          </Link>
-        </motion.div>
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+            <path d="M12 5v14M5 12h14" />
+          </svg>
+          Nowa wizyta
+        </Link>
 
         {/* Divider */}
         <div className="hidden sm:block h-5 w-px mx-1" style={{ background: "rgba(203,213,225,0.40)" }} />

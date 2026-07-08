@@ -16,11 +16,18 @@
     --glass-bg-xl: rgba(255,255,255,0.96);
 
     /* ── Chrome / silver borders ──────────────────────────── */
-    --glass-border:        rgba(203,213,225,0.55);
+    --glass-border:        rgba(203,213,225,0.55);   /* slate-300 chrome edge */
     --glass-border-bright: rgba(255,255,255,0.90);
     --chrome-ring:         rgba(203,213,225,0.40);
 
     /* ── Apple-tier multi-layer shadows ──────────────────── */
+    /* Every glass surface gets:                               */
+    /*   1. Ultra-thin chrome outline ring                     */
+    /*   2. Tight contact shadow                               */
+    /*   3. Medium depth shadow                                */
+    /*   4. Wide ambient float                                 */
+    /*   5. Inner top specular highlight                       */
+    /*   6. Inner bottom chrome reflection                     */
     --glass-shadow:
       0 0 0 0.5px rgba(203,213,225,0.45),
       0 1px 2px rgba(0,0,0,0.04),
@@ -49,25 +56,20 @@
     --glass-blur-sm: blur(16px) saturate(180%);
 
     /* ── Chrome / Silver palette ──────────────────────────── */
-    --color-silver:       #94A3B8;
-    --color-chrome:       #CBD5E1;
-    --color-silver-pale:  #E2E8F0;
+    --color-silver:       #94A3B8;   /* slate-400 */
+    --color-chrome:       #CBD5E1;   /* slate-300 */
+    --color-silver-pale:  #E2E8F0;   /* slate-200 */
     --color-silver-dim:   rgba(148,163,184,0.12);
     --color-chrome-dim:   rgba(203,213,225,0.18);
-    --color-silver-text:  #475569;
+    --color-silver-text:  #475569;   /* slate-600 */
 
     /* ── Typography ───────────────────────────────────────── */
-    --text-primary:   #0F172A;
-    --text-secondary: #64748B;
-    --text-muted:     #94A3B8;
-    --text-chrome:    #CBD5E1;
+    --text-primary:   #0F172A;   /* slate-900 */
+    --text-secondary: #64748B;   /* slate-500 */
+    --text-muted:     #94A3B8;   /* slate-400 */
+    --text-chrome:    #CBD5E1;   /* slate-300 */
 
     --separator: rgba(203,213,225,0.28);
-
-    /* ── Spring timing ────────────────────────────────────── */
-    --spring: cubic-bezier(0.34, 1.56, 0.64, 1);
-    --smooth: cubic-bezier(0.16, 1, 0.3, 1);
-    --ease-out: cubic-bezier(0.0, 0, 0.2, 1);
   }
 
   html {
@@ -82,24 +84,6 @@
     color: var(--text-primary);
     font-family: var(--font-inter, system-ui, sans-serif);
     font-feature-settings: "kern" 1, "liga" 1, "calt" 1;
-    position: relative;
-  }
-
-  /* ── Noise grain — the "physical material" layer ──────────
-     This single effect makes flat CSS gradients feel like
-     polished aluminium instead of painted web gradients.
-     Same technique used by Raycast, Linear, Arc.            */
-  body::before {
-    content: '';
-    position: fixed;
-    inset: 0;
-    z-index: 9998;
-    pointer-events: none;
-    opacity: 0.028;
-    mix-blend-mode: soft-light;
-    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise' color-interpolation-filters='linearRGB'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.90' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='1'/%3E%3C/svg%3E");
-    background-repeat: repeat;
-    background-size: 192px 192px;
   }
 
   /* ── Premium scrollbar ────────────────────────────────────── */
@@ -108,13 +92,12 @@
   ::-webkit-scrollbar-thumb {
     background: rgba(203,213,225,0.50);
     border-radius: 9999px;
-    transition: background 200ms ease;
   }
   ::-webkit-scrollbar-thumb:hover {
     background: rgba(148,163,184,0.70);
   }
 
-  /* ── Focus ring — precise chrome double ring ──────────────── */
+  /* ── Focus ring — precise chrome ─────────────────────────── */
   *:focus-visible {
     outline: none;
     box-shadow:
@@ -126,15 +109,6 @@
   ::selection {
     background: rgba(203,213,225,0.45);
     color: #0F172A;
-  }
-
-  /* ── Input autofill ───────────────────────────────────────── */
-  input:-webkit-autofill,
-  input:-webkit-autofill:hover,
-  input:-webkit-autofill:focus {
-    -webkit-text-fill-color: #0F172A;
-    -webkit-box-shadow: 0 0 0px 1000px rgba(255,255,255,0.80) inset;
-    transition: background-color 5000s ease-in-out 0s;
   }
 }
 
@@ -153,17 +127,16 @@
     box-shadow: var(--glass-shadow);
   }
 
-  /* Spring lift on hover */
   .card-hover {
     @apply card;
     transition:
-      transform 300ms var(--spring),
-      box-shadow 200ms var(--smooth),
+      transform 240ms cubic-bezier(0.34, 1.56, 0.64, 1),
+      box-shadow 200ms ease,
       background 200ms ease;
   }
   .card-hover:hover {
     background: var(--glass-bg-md);
-    transform: translateY(-3px);
+    transform: translateY(-2px);
     box-shadow: var(--glass-shadow-lg);
   }
 
@@ -190,61 +163,7 @@
     box-shadow: var(--glass-shadow-sm);
   }
 
-  /* ── Gradient separator ───────────────────────────────────── */
-  /* Usage: <div class="grad-sep" /> */
-  .grad-sep {
-    height: 1px;
-    background: linear-gradient(
-      90deg,
-      transparent 0%,
-      rgba(203,213,225,0.55) 20%,
-      rgba(203,213,225,0.55) 80%,
-      transparent 100%
-    );
-    border: none;
-  }
-
-  /* Vertical variant */
-  .grad-sep-v {
-    width: 1px;
-    background: linear-gradient(
-      180deg,
-      transparent 0%,
-      rgba(203,213,225,0.45) 20%,
-      rgba(203,213,225,0.45) 80%,
-      transparent 100%
-    );
-    border: none;
-  }
-
-  /* ── Glass shimmer sweep — sweeping specular highlight ──────
-     Apply to a ::before/::after pseudo element on glass cards.
-     Usage: add class 'glass-shimmer-wrap' to the card,
-     then the pseudo element animates on hover.               */
-  .glass-shimmer-wrap {
-    position: relative;
-    overflow: hidden;
-  }
-  .glass-shimmer-wrap::after {
-    content: '';
-    position: absolute;
-    inset: 0;
-    background: linear-gradient(
-      105deg,
-      transparent 40%,
-      rgba(255,255,255,0.28) 50%,
-      transparent 60%
-    );
-    transform: translateX(-100%);
-    transition: transform 0ms;
-    pointer-events: none;
-  }
-  .glass-shimmer-wrap:hover::after {
-    transform: translateX(200%);
-    transition: transform 600ms var(--smooth);
-  }
-
-  /* ── Premium skeleton ─────────────────────────────────────── */
+  /* ── Skeleton ─────────────────────────────────────────────── */
   .skeleton {
     background: linear-gradient(
       90deg,
@@ -256,21 +175,6 @@
     border-radius: 0.5rem;
     animation: skeleton-shimmer 1.8s ease-in-out infinite;
   }
-
-  /* ── Premium button spring base ───────────────────────────── */
-  .btn-spring {
-    transition:
-      transform 240ms var(--spring),
-      box-shadow 200ms var(--smooth),
-      background 150ms ease;
-  }
-  .btn-spring:hover {
-    transform: translateY(-1px);
-  }
-  .btn-spring:active {
-    transform: translateY(0) scale(0.982);
-    transition-duration: 80ms;
-  }
 }
 
 @layer utilities {
@@ -280,13 +184,7 @@
   .text-primary     { color: var(--text-primary); }
   .text-secondary   { color: var(--text-secondary); }
   .text-muted-glass { color: var(--text-muted); }
-  /* Premium heading tracking */
-  .tracking-display  { letter-spacing: -0.04em; }
-  .tracking-heading  { letter-spacing: -0.03em; }
-  .tracking-subhead  { letter-spacing: -0.015em; }
 }
-
-/* ── Keyframes ────────────────────────────────────────────────── */
 
 @keyframes skeleton-shimmer {
   0%   { background-position: 100% 0; }
@@ -296,30 +194,4 @@
 @keyframes cursor-blink {
   0%, 100% { opacity: 1; }
   50%       { opacity: 0; }
-}
-
-/* Slow ambient float — for hero floating chips */
-@keyframes float-gentle {
-  0%, 100% { transform: translateY(0px); }
-  50%       { transform: translateY(-8px); }
-}
-
-/* Glass shimmer sweep — single one-shot sweep on load */
-@keyframes shimmer-once {
-  0%   { transform: translateX(-100%) rotate(-15deg); opacity: 0; }
-  10%  { opacity: 1; }
-  90%  { opacity: 1; }
-  100% { transform: translateX(300%) rotate(-15deg); opacity: 0; }
-}
-
-/* Subtle scale-in for glass panels */
-@keyframes glass-in {
-  from { opacity: 0; transform: scale(0.97) translateY(6px); }
-  to   { opacity: 1; transform: scale(1) translateY(0); }
-}
-
-/* Dot pulse — for status indicators */
-@keyframes dot-pulse {
-  0%, 100% { opacity: 1; transform: scale(1); }
-  50%       { opacity: 0.5; transform: scale(0.85); }
 }

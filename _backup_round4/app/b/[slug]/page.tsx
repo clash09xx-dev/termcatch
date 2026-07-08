@@ -318,7 +318,7 @@ export default async function BusinessProfilePage({
                 {categoryLabel}
               </span>
             </div>
-            <h1 className="text-2xl font-bold text-slate-900 leading-tight" style={{ letterSpacing: "-0.03em" }}>{business.name}</h1>
+            <h1 className="text-2xl font-bold text-slate-900 leading-tight">{business.name}</h1>
             <div className="flex flex-wrap items-center gap-4 mt-2">
               {business.averageRating > 0 && (
                 <StarRating rating={business.averageRating} count={business.totalReviews} />
@@ -354,7 +354,7 @@ export default async function BusinessProfilePage({
           <div className="flex-1 min-w-0 space-y-8">
             {/* Services */}
             <section>
-              <h2 className="text-lg font-bold text-slate-900 mb-4" style={{ letterSpacing: "-0.025em" }}>Usługi</h2>
+              <h2 className="text-lg font-bold text-slate-900 mb-4">Usługi</h2>
               {business.services.length === 0 ? (
                 <div className="rounded-2xl p-8 text-center" style={glassCard}>
                   <p className="text-slate-400 text-sm">Ten salon nie dodał jeszcze usług.</p>
@@ -364,7 +364,7 @@ export default async function BusinessProfilePage({
                   {business.services.map((service) => (
                     <div
                       key={service.id}
-                      className="rounded-2xl p-4 flex items-center gap-4 glass-shimmer-wrap"
+                      className="rounded-2xl p-4 flex items-center gap-4"
                       style={glassCard}
                     >
                       <div className="flex-1 min-w-0">
@@ -395,23 +395,8 @@ export default async function BusinessProfilePage({
                         </div>
                         <Link
                           href={`/b/${slug}/book?serviceId=${service.id}`}
-                          className="px-4 py-2 rounded-xl text-xs font-semibold whitespace-nowrap glass-shimmer-wrap"
-                          style={{
-                            background: "rgba(203,213,225,0.22)",
-                            border: "1px solid rgba(203,213,225,0.55)",
-                            color: "#334155",
-                            boxShadow: "0 0 0 0.5px rgba(203,213,225,0.20), inset 0 1px 0 rgba(255,255,255,0.80)",
-                            transform: "translateY(0)",
-                            transition: "transform 280ms cubic-bezier(0.34,1.56,0.64,1), box-shadow 180ms ease",
-                          }}
-                          onMouseEnter={e => {
-                            (e.currentTarget as HTMLElement).style.transform = "translateY(-1px) scale(1.02)";
-                            (e.currentTarget as HTMLElement).style.boxShadow = "0 0 0 0.5px rgba(203,213,225,0.35), 0 4px 12px rgba(100,116,139,0.12), inset 0 1px 0 rgba(255,255,255,0.90)";
-                          }}
-                          onMouseLeave={e => {
-                            (e.currentTarget as HTMLElement).style.transform = "translateY(0) scale(1)";
-                            (e.currentTarget as HTMLElement).style.boxShadow = "0 0 0 0.5px rgba(203,213,225,0.20), inset 0 1px 0 rgba(255,255,255,0.80)";
-                          }}
+                          className="px-4 py-2 rounded-xl text-xs font-semibold transition-all whitespace-nowrap"
+                          style={{ background: "rgba(203,213,225,0.22)", border: "1px solid rgba(203,213,225,0.55)", color: "#334155", boxShadow: "0 0 0 0.5px rgba(203,213,225,0.20), inset 0 1px 0 rgba(255,255,255,0.80)" }}
                         >
                           Zarezerwuj
                         </Link>

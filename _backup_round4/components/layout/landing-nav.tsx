@@ -126,10 +126,10 @@ export function LandingNav() {
         <AnimatePresence>
           {isMobileOpen && (
             <motion.div
-              initial={{ opacity: 0, y: -8, scale: 0.96 }}
+              initial={{ opacity: 0, y: -6, scale: 0.985 }}
               animate={{ opacity: 1, y: 0, scale: 1 }}
-              exit={{ opacity: 0, y: -6, scale: 0.97 }}
-              transition={{ type: "spring", stiffness: 380, damping: 32 }}
+              exit={{ opacity: 0, y: -6, scale: 0.985 }}
+              transition={{ duration: 0.2, ease: [0.22, 1, 0.36, 1] }}
               className="mt-2 rounded-2xl overflow-hidden"
               style={{
                 background: "rgba(255,255,255,0.92)",
@@ -232,24 +232,27 @@ function NavLink({ href, children }: { href: string; children: React.ReactNode }
 
 function ChromeBtn({ href, children }: { href: string; children: React.ReactNode }) {
   return (
-    <motion.div
-      whileHover={{ scale: 1.03, y: -0.5 }}
-      whileTap={{ scale: 0.975 }}
-      transition={{ type: "spring", stiffness: 420, damping: 26 }}
-      className="glass-shimmer-wrap rounded-xl"
+    <Link
+      href={href}
+      className="text-sm font-semibold px-4 py-2 rounded-xl transition-all duration-150"
+      style={{
+        background: "rgba(148,163,184,0.14)",
+        border: "1px solid rgba(203,213,225,0.55)",
+        color: "#334155",
+        boxShadow: "0 0 0 0.5px rgba(203,213,225,0.25), inset 0 1px 0 rgba(255,255,255,0.80)",
+      }}
+      onMouseEnter={e => {
+        (e.currentTarget as HTMLElement).style.background = "rgba(148,163,184,0.22)";
+        (e.currentTarget as HTMLElement).style.boxShadow = "0 0 0 0.5px rgba(203,213,225,0.35), 0 2px 8px rgba(100,116,139,0.10), inset 0 1px 0 rgba(255,255,255,0.90)";
+        (e.currentTarget as HTMLElement).style.transform = "translateY(-0.5px)";
+      }}
+      onMouseLeave={e => {
+        (e.currentTarget as HTMLElement).style.background = "rgba(148,163,184,0.14)";
+        (e.currentTarget as HTMLElement).style.boxShadow = "0 0 0 0.5px rgba(203,213,225,0.25), inset 0 1px 0 rgba(255,255,255,0.80)";
+        (e.currentTarget as HTMLElement).style.transform = "";
+      }}
     >
-      <Link
-        href={href}
-        className="text-sm font-semibold px-4 py-2 rounded-xl block transition-colors duration-150"
-        style={{
-          background: "rgba(148,163,184,0.14)",
-          border: "1px solid rgba(203,213,225,0.55)",
-          color: "#334155",
-          boxShadow: "0 0 0 0.5px rgba(203,213,225,0.25), inset 0 1px 0 rgba(255,255,255,0.80)",
-        }}
-      >
-        {children}
-      </Link>
-    </motion.div>
+      {children}
+    </Link>
   );
 }
