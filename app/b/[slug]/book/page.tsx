@@ -6,6 +6,14 @@ import { LandingNav } from "@/components/layout/landing-nav";
 import { BusinessStatus } from "@prisma/client";
 import BookingWizard from "./booking-wizard";
 
+// Ambient chrome mesh — same recipe as the marketing hero
+const BG = [
+  "radial-gradient(ellipse 120% 80% at 85% -20%, rgba(203,213,225,0.70) 0%, transparent 50%)",
+  "radial-gradient(ellipse 80% 70% at -8% 90%, rgba(148,163,184,0.28) 0%, transparent 55%)",
+  "radial-gradient(ellipse 60% 50% at 50% 55%, rgba(226,232,240,0.65) 0%, transparent 65%)",
+  "linear-gradient(168deg, #E8EFF8 0%, #F1F6FB 40%, #E5EEF9 100%)",
+].join(", ");
+
 export default async function BookPage({
   params,
   searchParams,
@@ -38,9 +46,21 @@ export default async function BookPage({
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen" style={{ background: BG }}>
       <LandingNav />
-      <div className="max-w-2xl mx-auto px-4 sm:px-6 pt-28 pb-16">
+
+      {/* Chrome dot grid */}
+      <div
+        className="fixed inset-0 pointer-events-none"
+        style={{
+          backgroundImage: "radial-gradient(circle, rgba(203,213,225,0.35) 1px, transparent 1px)",
+          backgroundSize: "38px 38px",
+          maskImage: "radial-gradient(ellipse 85% 75% at 50% 40%, black 30%, transparent 100%)",
+          WebkitMaskImage: "radial-gradient(ellipse 85% 75% at 50% 40%, black 30%, transparent 100%)",
+        }}
+      />
+
+      <div className="relative max-w-xl mx-auto px-4 sm:px-6 pt-28 md:pt-32 pb-20">
         <BookingWizard
           business={{
             id: business.id,

@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
 import { formatCurrency, formatDuration, formatDate, getInitials, cn } from "@/lib/utils";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
@@ -48,6 +49,121 @@ interface BookingWizardProps {
 
 type Step = 1 | 2 | 3 | 4 | 5;
 
+// ─── Machined Silver / Liquid Glass tokens ───────────────────────────────────
+// Container gets the blur; repeated list rows use solid whites (perf).
+
+const INK = "linear-gradient(180deg, #1E293B 0%, #0F172A 100%)";
+
+const INK_SHADOW =
+  "0 1px 2px rgba(0,0,0,0.20), 0 10px 24px rgba(15,23,42,0.28), 0 2px 6px rgba(15,23,42,0.18), inset 0 1px 0 rgba(255,255,255,0.15)";
+
+const S = {
+  card: {
+    background: "rgba(255,255,255,0.72)",
+    backdropFilter: "blur(40px) saturate(200%)",
+    WebkitBackdropFilter: "blur(40px) saturate(200%)",
+    border: "1px solid rgba(203,213,225,0.50)",
+    boxShadow:
+      "0 0 0 0.5px rgba(203,213,225,0.40), 0 2px 4px rgba(0,0,0,0.04), 0 12px 36px rgba(100,116,139,0.10), 0 40px 80px rgba(100,116,139,0.05), inset 0 1px 0 rgba(255,255,255,0.98), inset 0 -1px 0 rgba(203,213,225,0.10)",
+  } as React.CSSProperties,
+
+  // Selectable list row — rest state (no blur: these repeat)
+  row: {
+    background: "rgba(255,255,255,0.80)",
+    border: "1px solid rgba(203,213,225,0.45)",
+    boxShadow: "0 0 0 0.5px rgba(203,213,225,0.20), 0 1px 2px rgba(0,0,0,0.02), inset 0 1px 0 rgba(255,255,255,0.90)",
+  } as React.CSSProperties,
+
+  // Selectable list row — ink-filled selected state
+  rowSelected: {
+    background: INK,
+    border: "1px solid #0F172A",
+    boxShadow: "0 1px 2px rgba(0,0,0,0.18), 0 8px 20px rgba(15,23,42,0.22), inset 0 1px 0 rgba(255,255,255,0.12)",
+  } as React.CSSProperties,
+
+  // Static summary panel
+  panel: {
+    background: "rgba(248,250,252,0.85)",
+    border: "1px solid rgba(203,213,225,0.45)",
+    boxShadow: "0 0 0 0.5px rgba(203,213,225,0.20), inset 0 1px 0 rgba(255,255,255,0.95)",
+  } as React.CSSProperties,
+
+  // Sticky footer bar inside the card
+  footer: {
+    background: "rgba(248,250,252,0.92)",
+    backdropFilter: "blur(24px) saturate(180%)",
+    WebkitBackdropFilter: "blur(24px) saturate(180%)",
+    borderTop: "1px solid rgba(203,213,225,0.45)",
+    boxShadow: "0 -8px 24px rgba(100,116,139,0.06)",
+  } as React.CSSProperties,
+};
+
+const SPRING = { type: "spring", stiffness: 420, damping: 26 } as const;
+
+// ─── Buttons ─────────────────────────────────────────────────────────────────
+
+function PrimaryBtn({
+  children,
+  onClick,
+  disabled,
+  className,
+}: {
+  children: React.ReactNode;
+  onClick?: () => void;
+  disabled?: boolean;
+  className?: string;
+}) {
+  return (
+    <motion.button
+      type="button"
+      onClick={onClick}
+      disabled={disabled}
+      whileHover={disabled ? undefined : { scale: 1.015, y: -1 }}
+      whileTap={disabled ? undefined : { scale: 0.978 }}
+      transition={SPRING}
+      className={cn(
+        "py-3 px-4 rounded-xl text-sm font-semibold disabled:opacity-40 disabled:cursor-not-allowed",
+        className
+      )}
+      style={{ background: INK, border: "1px solid #0F172A", color: "#F8FAFC", boxShadow: INK_SHADOW }}
+    >
+      {children}
+    </motion.button>
+  );
+}
+
+function GhostBtn({
+  children,
+  onClick,
+  disabled,
+  className,
+}: {
+  children: React.ReactNode;
+  onClick?: () => void;
+  disabled?: boolean;
+  className?: string;
+}) {
+  return (
+    <motion.button
+      type="button"
+      onClick={onClick}
+      disabled={disabled}
+      whileHover={disabled ? undefined : { scale: 1.015, y: -1 }}
+      whileTap={disabled ? undefined : { scale: 0.978 }}
+      transition={SPRING}
+      className={cn("py-3 px-4 rounded-xl text-sm font-semibold disabled:opacity-40", className)}
+      style={{
+        background: "rgba(255,255,255,0.72)",
+        border: "1px solid rgba(203,213,225,0.55)",
+        color: "#334155",
+        boxShadow: "0 0 0 0.5px rgba(203,213,225,0.25), 0 1px 2px rgba(0,0,0,0.03), inset 0 1px 0 rgba(255,255,255,0.90)",
+      }}
+    >
+      {children}
+    </motion.button>
+  );
+}
+
 // ─── Step indicator ──────────────────────────────────────────────────────────
 
 const STEP_LABELS = ["Usługa", "Specjalista", "Termin", "Potwierdzenie"];
@@ -60,55 +176,86 @@ function StepIndicator({
   hasEmployees: boolean;
 }) {
   const steps = hasEmployees ? STEP_LABELS : STEP_LABELS.filter((_, i) => i !== 1);
-  const displayStep = current === 5 ? steps.length : hasEmployees ? current - 1 : current > 2 ? current - 2 : current - 1;
+  // Map internal step (1,2,3,4 with employees / 1,3,4 without) to display position 1..n
+  const displayStep =
+    current === 5
+      ? steps.length
+      : hasEmployees
+      ? Math.min(current, 4)
+      : current === 1
+      ? 1
+      : current === 3
+      ? 2
+      : 3;
 
   return (
-    <div className="flex items-center gap-0 mb-8">
+    <ol className="flex items-center mb-8" aria-label={`Krok ${displayStep} z ${steps.length}`}>
       {steps.map((label, i) => {
         const stepNum = i + 1;
         const isDone = displayStep > stepNum;
         const isCurrent = displayStep === stepNum;
         return (
-          <div key={label} className="flex items-center flex-1 last:flex-none">
-            <div className="flex flex-col items-center gap-1">
+          <li
+            key={label}
+            className="flex items-center flex-1 last:flex-none"
+            aria-current={isCurrent ? "step" : undefined}
+          >
+            <div className="flex flex-col items-center gap-1.5">
               <div
-                className={cn(
-                  "w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold transition-colors",
-                  isDone
-                    ? "bg-gray-900 text-white"
-                    : isCurrent
-                    ? "bg-gray-900 text-white"
-                    : "bg-gray-100 text-gray-400"
-                )}
+                className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold transition-all duration-200"
+                style={
+                  isDone || isCurrent
+                    ? {
+                        background: INK,
+                        color: "#F8FAFC",
+                        border: "1px solid #0F172A",
+                        boxShadow: isCurrent
+                          ? "0 0 0 3px rgba(30,41,59,0.12), 0 2px 6px rgba(15,23,42,0.20), inset 0 1px 0 rgba(255,255,255,0.15)"
+                          : "0 1px 3px rgba(15,23,42,0.15), inset 0 1px 0 rgba(255,255,255,0.12)",
+                      }
+                    : {
+                        background: "rgba(255,255,255,0.70)",
+                        color: "#94A3B8",
+                        border: "1px solid rgba(203,213,225,0.50)",
+                        boxShadow: "inset 0 1px 0 rgba(255,255,255,0.90)",
+                      }
+                }
               >
                 {isDone ? (
-                  <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5}>
+                  <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} aria-hidden="true">
                     <path strokeLinecap="round" strokeLinejoin="round" d="m5 13 4 4L19 7" />
                   </svg>
                 ) : (
                   stepNum
                 )}
               </div>
-              <span className={cn("text-[10px] font-medium", isCurrent ? "text-gray-900" : "text-gray-400")}>
+              <span
+                className={cn(
+                  "text-[10px] font-semibold uppercase tracking-wider",
+                  isCurrent ? "text-slate-800" : "text-slate-400"
+                )}
+              >
                 {label}
               </span>
             </div>
             {i < steps.length - 1 && (
               <div
-                className={cn(
-                  "flex-1 h-px mx-2 mb-4 transition-colors",
-                  displayStep > stepNum ? "bg-gray-900" : "bg-gray-200"
-                )}
+                className="flex-1 h-px mx-2.5 mb-5 transition-colors duration-300"
+                style={{
+                  background: isDone
+                    ? "linear-gradient(90deg, rgba(51,65,85,0.55), rgba(51,65,85,0.35))"
+                    : "rgba(203,213,225,0.60)",
+                }}
               />
             )}
-          </div>
+          </li>
         );
       })}
-    </div>
+    </ol>
   );
 }
 
-// ─── Date chips ──────────────────────────────────────────────────────────────
+// ─── Date helpers ────────────────────────────────────────────────────────────
 
 const DAY_SHORT = ["Nd", "Pn", "Wt", "Śr", "Cz", "Pt", "Sb"];
 const MONTH_SHORT = [
@@ -135,6 +282,20 @@ function dateToString(d: Date): string {
   return `${year}-${month}-${day}`;
 }
 
+// ─── Step transition variants ────────────────────────────────────────────────
+
+const stepVariants = {
+  enter: (dir: number) => ({ opacity: 0, x: dir * 36 }),
+  center: { opacity: 1, x: 0 },
+  exit: (dir: number) => ({ opacity: 0, x: dir * -28 }),
+};
+
+const stepVariantsReduced = {
+  enter: { opacity: 0, x: 0 },
+  center: { opacity: 1, x: 0 },
+  exit: { opacity: 0, x: 0 },
+};
+
 // ─── Main wizard ─────────────────────────────────────────────────────────────
 
 export default function BookingWizard({
@@ -145,9 +306,11 @@ export default function BookingWizard({
   initialServiceId,
 }: BookingWizardProps) {
   const router = useRouter();
+  const reduceMotion = useReducedMotion();
   const hasEmployees = employees.length > 0;
 
   const [step, setStep] = useState<Step>(1);
+  const [direction, setDirection] = useState(1);
   const [selectedServiceId, setSelectedServiceId] = useState<string>(
     initialServiceId ?? services[0]?.id ?? ""
   );
@@ -200,6 +363,7 @@ export default function BookingWizard({
   }, [step, selectedDate, fetchSlots]);
 
   const goNext = () => {
+    setDirection(1);
     if (step === 1) {
       if (hasEmployees) setStep(2);
       else setStep(3);
@@ -211,6 +375,7 @@ export default function BookingWizard({
   };
 
   const goBack = () => {
+    setDirection(-1);
     if (step === 3) {
       if (hasEmployees) setStep(2);
       else setStep(1);
@@ -238,6 +403,7 @@ export default function BookingWizard({
         customerNote: notes || undefined,
       });
 
+      setDirection(1);
       setStep(5);
     } catch (err) {
       const error = err as { message?: string };
@@ -253,456 +419,563 @@ export default function BookingWizard({
     }
   };
 
-  const effectiveStep = step === 5 ? 5 : step;
+  // Footer nav config per step
+  const nextDisabled =
+    step === 1 ? !selectedServiceId : step === 3 ? !selectedDate || !selectedTime : false;
+
+  const price = selectedService
+    ? formatCurrency(selectedService.discountedPrice ?? selectedService.price)
+    : "";
+
+  const summaryMeta = selectedService
+    ? [
+        formatDuration(selectedService.duration),
+        selectedEmployee ? `${selectedEmployee.firstName} ${selectedEmployee.lastName.charAt(0)}.` : null,
+        selectedDate && selectedTime
+          ? `${formatDate(selectedDate, { day: "numeric", month: "short" })} · ${selectedTime}`
+          : null,
+      ].filter(Boolean).join(" · ")
+    : "";
 
   return (
     <div>
       {step !== 5 && (
         <>
           <div className="mb-6">
-            <h1 className="text-2xl font-bold text-gray-900">Rezerwacja</h1>
-            <p className="text-sm text-gray-500 mt-1">{business.name}</p>
+            <Link
+              href={`/b/${business.slug}`}
+              className="inline-flex items-center gap-1.5 text-sm text-slate-500 hover:text-slate-800 transition-colors mb-3"
+            >
+              <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} aria-hidden="true">
+                <path strokeLinecap="round" strokeLinejoin="round" d="m15 18-6-6 6-6" />
+              </svg>
+              <span className="truncate max-w-[280px]">{business.name}</span>
+            </Link>
+            <h1 className="text-[1.75rem] font-bold text-slate-900 leading-tight" style={{ letterSpacing: "-0.03em" }}>
+              Rezerwacja
+            </h1>
           </div>
-          <StepIndicator current={effectiveStep} hasEmployees={hasEmployees} />
+          <StepIndicator current={step} hasEmployees={hasEmployees} />
         </>
       )}
 
-      <div className="bg-white border border-gray-100 rounded-2xl shadow-soft p-6">
-        {/* Step 1: Wybierz usługę */}
-        {step === 1 && (
-          <div>
-            <h2 className="text-base font-bold text-gray-900 mb-4">Wybierz usługę</h2>
-            <div className="space-y-2">
-              {services.map((service) => (
-                <button
-                  key={service.id}
-                  type="button"
-                  onClick={() => setSelectedServiceId(service.id)}
-                  className={cn(
-                    "w-full text-left p-4 rounded-xl border transition-all",
-                    selectedServiceId === service.id
-                      ? "border-gray-900 bg-gray-50 ring-1 ring-gray-900"
-                      : "border-gray-200 hover:border-gray-300 hover:bg-gray-50"
-                  )}
-                >
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-semibold text-gray-900">{service.name}</p>
-                      {service.description && (
-                        <p className="text-xs text-gray-500 mt-0.5 line-clamp-2">
-                          {service.description}
-                        </p>
-                      )}
-                      <span className="inline-flex items-center gap-1 mt-1.5 px-2 py-0.5 bg-gray-100 rounded-md text-xs text-gray-600">
-                        <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
-                          <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
-                        </svg>
-                        {formatDuration(service.duration)}
-                      </span>
-                    </div>
-                    <div className="text-right flex-shrink-0">
-                      {service.discountedPrice ? (
-                        <>
-                          <p className="text-sm font-bold text-gray-900">
-                            {formatCurrency(service.discountedPrice)}
-                          </p>
-                          <p className="text-xs text-gray-400 line-through">
-                            {formatCurrency(service.price)}
-                          </p>
-                        </>
-                      ) : (
-                        <p className="text-sm font-bold text-gray-900">
-                          {formatCurrency(service.price)}
-                        </p>
-                      )}
-                    </div>
-                  </div>
-                </button>
-              ))}
-            </div>
-            <div className="mt-6">
-              <button
-                type="button"
-                onClick={goNext}
-                disabled={!selectedServiceId}
-                className="w-full py-3 bg-gray-900 hover:bg-gray-800 disabled:opacity-40 disabled:cursor-not-allowed text-white rounded-xl text-sm font-semibold transition-colors"
-              >
-                Dalej
-              </button>
-            </div>
-          </div>
-        )}
+      <div className="relative rounded-3xl" style={S.card}>
+        {/* Chrome top specular edge */}
+        <div
+          className="absolute top-0 left-8 right-8 h-px pointer-events-none"
+          style={{ background: "linear-gradient(90deg, transparent, rgba(255,255,255,0.95), transparent)" }}
+        />
 
-        {/* Step 2: Wybierz specjalistę */}
-        {step === 2 && hasEmployees && (
-          <div>
-            <h2 className="text-base font-bold text-gray-900 mb-4">Wybierz specjalistę</h2>
-            <div className="space-y-2">
-              {/* Any employee option */}
-              <button
-                type="button"
-                onClick={() => setSelectedEmployeeId(null)}
-                className={cn(
-                  "w-full text-left p-4 rounded-xl border transition-all flex items-center gap-3",
-                  selectedEmployeeId === null
-                    ? "border-gray-900 bg-gray-50 ring-1 ring-gray-900"
-                    : "border-gray-200 hover:border-gray-300 hover:bg-gray-50"
-                )}
-              >
-                <div className="w-10 h-10 rounded-xl bg-gray-100 flex items-center justify-center flex-shrink-0">
-                  <svg className="w-5 h-5 text-gray-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M18 18.72a9.094 9.094 0 0 0 3.741-.479 3 3 0 0 0-4.682-2.72m.94 3.198.001.031c0 .225-.012.447-.037.666A11.944 11.944 0 0 1 12 21c-2.17 0-4.207-.576-5.963-1.584A6.062 6.062 0 0 1 6 18.719m12 0a5.971 5.971 0 0 0-.941-3.197m0 0A5.995 5.995 0 0 0 12 12.75a5.995 5.995 0 0 0-5.058 2.772m0 0a3 3 0 0 0-4.681 2.72 8.986 8.986 0 0 0 3.74.477m.94-3.197a5.971 5.971 0 0 0-.94 3.197M15 6.75a3 3 0 1 1-6 0 3 3 0 0 1 6 0Zm6 3a2.25 2.25 0 1 1-4.5 0 2.25 2.25 0 0 1 4.5 0Zm-13.5 0a2.25 2.25 0 1 1-4.5 0 2.25 2.25 0 0 1 4.5 0Z" />
-                  </svg>
-                </div>
-                <div>
-                  <p className="text-sm font-semibold text-gray-900">Dowolny specjalista</p>
-                  <p className="text-xs text-gray-500">Pierwszy dostępny</p>
-                </div>
-              </button>
-
-              {employees.map((employee) => (
-                <button
-                  key={employee.id}
-                  type="button"
-                  onClick={() => setSelectedEmployeeId(employee.id)}
-                  className={cn(
-                    "w-full text-left p-4 rounded-xl border transition-all flex items-center gap-3",
-                    selectedEmployeeId === employee.id
-                      ? "border-gray-900 bg-gray-50 ring-1 ring-gray-900"
-                      : "border-gray-200 hover:border-gray-300 hover:bg-gray-50"
-                  )}
-                >
-                  {employee.avatarUrl ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img
-                      src={employee.avatarUrl}
-                      alt={`${employee.firstName} ${employee.lastName}`}
-                      className="w-10 h-10 rounded-xl object-cover flex-shrink-0"
-                    />
-                  ) : (
-                    <div
-                      className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
-                      style={{ backgroundColor: employee.color }}
-                    >
-                      <span className="text-white text-xs font-bold">
-                        {getInitials(employee.firstName, employee.lastName)}
-                      </span>
-                    </div>
-                  )}
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-semibold text-gray-900">
-                      {employee.firstName} {employee.lastName}
-                    </p>
-                    {employee.bio && (
-                      <p className="text-xs text-gray-500 mt-0.5 line-clamp-1">{employee.bio}</p>
-                    )}
-                  </div>
-                </button>
-              ))}
-            </div>
-            <div className="mt-6 flex gap-3">
-              <button
-                type="button"
-                onClick={goBack}
-                className="px-4 py-3 border border-gray-200 text-gray-700 rounded-xl text-sm font-medium hover:bg-gray-50 transition-colors"
-              >
-                Wstecz
-              </button>
-              <button
-                type="button"
-                onClick={goNext}
-                className="flex-1 py-3 bg-gray-900 hover:bg-gray-800 text-white rounded-xl text-sm font-semibold transition-colors"
-              >
-                Dalej
-              </button>
-            </div>
-          </div>
-        )}
-
-        {/* Step 3: Wybierz termin */}
-        {step === 3 && (
-          <div>
-            <h2 className="text-base font-bold text-gray-900 mb-4">Wybierz termin</h2>
-
-            {/* Date chips */}
-            <div>
-              <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">
-                Data
-              </p>
-              <div className="flex gap-2 overflow-x-auto pb-2 -mx-1 px-1 scrollbar-hide">
-                {days.map((day) => {
-                  const dateStr = dateToString(day);
-                  const dayOfWeekIdx = day.getDay();
-                  const isSelected = selectedDate === dateStr;
-                  const isToday = dateStr === dateToString(new Date());
-
-                  // Check if business is open that day
-                  const dayName = ["SUNDAY","MONDAY","TUESDAY","WEDNESDAY","THURSDAY","FRIDAY","SATURDAY"][dayOfWeekIdx];
-                  const wh = workingHours.find((w) => w.dayOfWeek === dayName);
-                  const isOpen = wh?.isOpen ?? false;
-
-                  return (
-                    <button
-                      key={dateStr}
-                      type="button"
-                      disabled={!isOpen}
-                      onClick={() => {
-                        setSelectedDate(dateStr);
-                        setSelectedTime("");
-                        fetchSlots(dateStr);
-                      }}
-                      className={cn(
-                        "flex-shrink-0 flex flex-col items-center px-3.5 py-2.5 rounded-xl border text-center transition-all min-w-[56px]",
-                        isSelected
-                          ? "border-gray-900 bg-gray-900 text-white"
-                          : isOpen
-                          ? "border-gray-200 text-gray-700 hover:border-gray-300 hover:bg-gray-50"
-                          : "border-gray-100 text-gray-300 cursor-not-allowed"
-                      )}
-                    >
-                      <span className="text-[10px] font-medium">{DAY_SHORT[dayOfWeekIdx]}</span>
-                      <span className="text-sm font-bold mt-0.5">{day.getDate()}</span>
-                      <span className="text-[10px]">{MONTH_SHORT[day.getMonth()]}</span>
-                      {isToday && (
-                        <span className={cn(
-                          "text-[9px] font-semibold mt-0.5",
-                          isSelected ? "text-white/70" : "text-gray-400"
-                        )}>
-                          dziś
-                        </span>
-                      )}
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-
-            {/* Time slots */}
-            {selectedDate && (
-              <div className="mt-5">
-                <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">
-                  Godzina
-                </p>
-                {loadingSlots ? (
-                  <div className="grid grid-cols-4 gap-2">
-                    {Array.from({ length: 8 }).map((_, i) => (
-                      <div key={i} className="h-10 bg-gray-100 rounded-xl animate-pulse" />
-                    ))}
-                  </div>
-                ) : availableSlots.length === 0 ? (
-                  <div className="text-center py-8 border border-dashed border-gray-200 rounded-xl">
-                    <p className="text-sm text-gray-500">
-                      Brak dostępnych terminów na ten dzień
-                    </p>
-                  </div>
-                ) : (
-                  <div className="grid grid-cols-4 gap-2">
-                    {availableSlots.map((slot) => (
-                      <button
-                        key={slot}
-                        type="button"
-                        onClick={() => setSelectedTime(slot)}
-                        className={cn(
-                          "py-2.5 rounded-xl border text-sm font-medium transition-all",
-                          selectedTime === slot
-                            ? "border-gray-900 bg-gray-900 text-white"
-                            : "border-gray-200 text-gray-700 hover:border-gray-300 hover:bg-gray-50"
-                        )}
+        <div className="px-5 sm:px-6 pt-5 sm:pt-6 overflow-x-hidden">
+          <AnimatePresence mode="wait" initial={false} custom={direction}>
+            <motion.div
+              key={step}
+              custom={direction}
+              variants={reduceMotion ? stepVariantsReduced : stepVariants}
+              initial="enter"
+              animate="center"
+              exit="exit"
+              transition={{ duration: 0.26, ease: [0.22, 1, 0.36, 1] }}
+            >
+              {/* Step 1: Wybierz usługę */}
+              {step === 1 && (
+                <div className="pb-5">
+                  <h2 className="text-base font-bold text-slate-900 mb-4" style={{ letterSpacing: "-0.015em" }}>
+                    Wybierz usługę
+                  </h2>
+                  {services.length === 0 ? (
+                    <div className="text-center py-10 rounded-2xl" style={S.panel}>
+                      <p className="text-sm text-slate-500">Ten salon nie ma jeszcze dostępnych usług.</p>
+                      <Link
+                        href={`/b/${business.slug}`}
+                        className="inline-block mt-3 text-sm font-semibold text-slate-700 underline underline-offset-2"
                       >
-                        {slot}
-                      </button>
-                    ))}
+                        Wróć do profilu salonu
+                      </Link>
+                    </div>
+                  ) : (
+                    <div className="space-y-2" role="group" aria-label="Usługa">
+                      {services.map((service) => {
+                        const isSelected = selectedServiceId === service.id;
+                        return (
+                          <button
+                            key={service.id}
+                            type="button"
+                            onClick={() => setSelectedServiceId(service.id)}
+                            aria-pressed={isSelected}
+                            className="w-full text-left p-4 rounded-xl transition-all duration-150"
+                            style={isSelected ? S.rowSelected : S.row}
+                          >
+                            <div className="flex items-start justify-between gap-3">
+                              <div className="flex-1 min-w-0">
+                                <p className={cn("text-sm font-semibold", isSelected ? "text-white" : "text-slate-900")}>
+                                  {service.name}
+                                </p>
+                                {service.description && (
+                                  <p className={cn("text-xs mt-0.5 line-clamp-2", isSelected ? "text-slate-300" : "text-slate-500")}>
+                                    {service.description}
+                                  </p>
+                                )}
+                                <span
+                                  className={cn(
+                                    "inline-flex items-center gap-1 mt-1.5 px-2 py-0.5 rounded-md text-xs",
+                                    isSelected ? "text-slate-200" : "text-slate-600"
+                                  )}
+                                  style={
+                                    isSelected
+                                      ? { background: "rgba(255,255,255,0.12)", border: "1px solid rgba(255,255,255,0.15)" }
+                                      : { background: "rgba(203,213,225,0.25)", border: "1px solid rgba(203,213,225,0.35)" }
+                                  }
+                                >
+                                  <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} aria-hidden="true">
+                                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
+                                  </svg>
+                                  {formatDuration(service.duration)}
+                                </span>
+                              </div>
+                              <div className="text-right flex-shrink-0">
+                                {service.discountedPrice ? (
+                                  <>
+                                    <p className={cn("text-sm font-bold tabular-nums", isSelected ? "text-white" : "text-slate-900")}>
+                                      {formatCurrency(service.discountedPrice)}
+                                    </p>
+                                    <p className={cn("text-xs line-through tabular-nums", isSelected ? "text-slate-400" : "text-slate-400")}>
+                                      {formatCurrency(service.price)}
+                                    </p>
+                                  </>
+                                ) : (
+                                  <p className={cn("text-sm font-bold tabular-nums", isSelected ? "text-white" : "text-slate-900")}>
+                                    {formatCurrency(service.price)}
+                                  </p>
+                                )}
+                              </div>
+                            </div>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Step 2: Wybierz specjalistę */}
+              {step === 2 && hasEmployees && (
+                <div className="pb-5">
+                  <h2 className="text-base font-bold text-slate-900 mb-4" style={{ letterSpacing: "-0.015em" }}>
+                    Wybierz specjalistę
+                  </h2>
+                  <div className="space-y-2" role="group" aria-label="Specjalista">
+                    {/* Any employee option */}
+                    <button
+                      type="button"
+                      onClick={() => setSelectedEmployeeId(null)}
+                      aria-pressed={selectedEmployeeId === null}
+                      className="w-full text-left p-4 rounded-xl transition-all duration-150 flex items-center gap-3"
+                      style={selectedEmployeeId === null ? S.rowSelected : S.row}
+                    >
+                      <div
+                        className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
+                        style={
+                          selectedEmployeeId === null
+                            ? { background: "rgba(255,255,255,0.14)", border: "1px solid rgba(255,255,255,0.18)" }
+                            : { background: "rgba(203,213,225,0.28)", border: "1px solid rgba(203,213,225,0.40)" }
+                        }
+                      >
+                        <svg
+                          className={cn("w-5 h-5", selectedEmployeeId === null ? "text-slate-200" : "text-slate-500")}
+                          viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} aria-hidden="true"
+                        >
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M18 18.72a9.094 9.094 0 0 0 3.741-.479 3 3 0 0 0-4.682-2.72m.94 3.198.001.031c0 .225-.012.447-.037.666A11.944 11.944 0 0 1 12 21c-2.17 0-4.207-.576-5.963-1.584A6.062 6.062 0 0 1 6 18.719m12 0a5.971 5.971 0 0 0-.941-3.197m0 0A5.995 5.995 0 0 0 12 12.75a5.995 5.995 0 0 0-5.058 2.772m0 0a3 3 0 0 0-4.681 2.72 8.986 8.986 0 0 0 3.74.477m.94-3.197a5.971 5.971 0 0 0-.94 3.197M15 6.75a3 3 0 1 1-6 0 3 3 0 0 1 6 0Zm6 3a2.25 2.25 0 1 1-4.5 0 2.25 2.25 0 0 1 4.5 0Zm-13.5 0a2.25 2.25 0 1 1-4.5 0 2.25 2.25 0 0 1 4.5 0Z" />
+                        </svg>
+                      </div>
+                      <div>
+                        <p className={cn("text-sm font-semibold", selectedEmployeeId === null ? "text-white" : "text-slate-900")}>
+                          Dowolny specjalista
+                        </p>
+                        <p className={cn("text-xs", selectedEmployeeId === null ? "text-slate-300" : "text-slate-500")}>
+                          Pierwszy dostępny
+                        </p>
+                      </div>
+                    </button>
+
+                    {employees.map((employee) => {
+                      const isSelected = selectedEmployeeId === employee.id;
+                      return (
+                        <button
+                          key={employee.id}
+                          type="button"
+                          onClick={() => setSelectedEmployeeId(employee.id)}
+                          aria-pressed={isSelected}
+                          className="w-full text-left p-4 rounded-xl transition-all duration-150 flex items-center gap-3"
+                          style={isSelected ? S.rowSelected : S.row}
+                        >
+                          {employee.avatarUrl ? (
+                            // eslint-disable-next-line @next/next/no-img-element
+                            <img
+                              src={employee.avatarUrl}
+                              alt=""
+                              className="w-10 h-10 rounded-xl object-cover flex-shrink-0"
+                            />
+                          ) : (
+                            <div
+                              className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
+                              style={{ backgroundColor: employee.color }}
+                            >
+                              <span className="text-white text-xs font-bold">
+                                {getInitials(employee.firstName, employee.lastName)}
+                              </span>
+                            </div>
+                          )}
+                          <div className="flex-1 min-w-0">
+                            <p className={cn("text-sm font-semibold", isSelected ? "text-white" : "text-slate-900")}>
+                              {employee.firstName} {employee.lastName}
+                            </p>
+                            {employee.bio && (
+                              <p className={cn("text-xs mt-0.5 line-clamp-1", isSelected ? "text-slate-300" : "text-slate-500")}>
+                                {employee.bio}
+                              </p>
+                            )}
+                          </div>
+                        </button>
+                      );
+                    })}
                   </div>
-                )}
-              </div>
-            )}
+                </div>
+              )}
 
-            <div className="mt-6 flex gap-3">
-              <button
-                type="button"
-                onClick={goBack}
-                className="px-4 py-3 border border-gray-200 text-gray-700 rounded-xl text-sm font-medium hover:bg-gray-50 transition-colors"
-              >
-                Wstecz
-              </button>
-              <button
-                type="button"
-                onClick={goNext}
-                disabled={!selectedDate || !selectedTime}
-                className="flex-1 py-3 bg-gray-900 hover:bg-gray-800 disabled:opacity-40 disabled:cursor-not-allowed text-white rounded-xl text-sm font-semibold transition-colors"
-              >
-                Dalej
-              </button>
-            </div>
-          </div>
-        )}
+              {/* Step 3: Wybierz termin */}
+              {step === 3 && (
+                <div className="pb-5">
+                  <h2 className="text-base font-bold text-slate-900 mb-4" style={{ letterSpacing: "-0.015em" }}>
+                    Wybierz termin
+                  </h2>
 
-        {/* Step 4: Potwierdzenie */}
-        {step === 4 && selectedService && (
-          <div>
-            <h2 className="text-base font-bold text-gray-900 mb-4">Potwierdź rezerwację</h2>
+                  {/* Date rail */}
+                  <div>
+                    <p className="text-[11px] font-semibold text-slate-500 uppercase mb-2" style={{ letterSpacing: "0.08em" }}>
+                      Data
+                    </p>
+                    <div
+                      className="flex gap-2 overflow-x-auto pb-2 -mx-1 px-1 no-scrollbar snap-x"
+                      role="group"
+                      aria-label="Data wizyty"
+                    >
+                      {days.map((day) => {
+                        const dateStr = dateToString(day);
+                        const dayOfWeekIdx = day.getDay();
+                        const isSelected = selectedDate === dateStr;
+                        const isToday = dateStr === dateToString(new Date());
 
-            {/* Summary */}
-            <div className="bg-gray-50 rounded-xl p-4 space-y-3 mb-5">
-              <div className="flex items-start justify-between gap-2">
-                <span className="text-sm text-gray-500">Usługa</span>
-                <span className="text-sm font-semibold text-gray-900 text-right">{selectedService.name}</span>
-              </div>
-              <div className="h-px bg-gray-200" />
-              <div className="flex items-center justify-between gap-2">
-                <span className="text-sm text-gray-500">Czas trwania</span>
-                <span className="text-sm font-medium text-gray-900">
-                  {formatDuration(selectedService.duration)}
-                </span>
-              </div>
-              <div className="h-px bg-gray-200" />
-              <div className="flex items-center justify-between gap-2">
-                <span className="text-sm text-gray-500">Cena</span>
-                <span className="text-sm font-semibold text-gray-900">
-                  {formatCurrency(selectedService.discountedPrice ?? selectedService.price)}
-                </span>
-              </div>
-              <div className="h-px bg-gray-200" />
-              <div className="flex items-center justify-between gap-2">
-                <span className="text-sm text-gray-500">Specjalista</span>
-                <span className="text-sm font-medium text-gray-900">
-                  {selectedEmployee
-                    ? `${selectedEmployee.firstName} ${selectedEmployee.lastName}`
-                    : "Dowolny specjalista"}
-                </span>
-              </div>
-              <div className="h-px bg-gray-200" />
-              <div className="flex items-center justify-between gap-2">
-                <span className="text-sm text-gray-500">Data</span>
-                <span className="text-sm font-medium text-gray-900">
-                  {formatDate(selectedDate, {
-                    weekday: "long",
-                    day: "numeric",
-                    month: "long",
-                  })}
-                </span>
-              </div>
-              <div className="h-px bg-gray-200" />
-              <div className="flex items-center justify-between gap-2">
-                <span className="text-sm text-gray-500">Godzina</span>
-                <span className="text-sm font-semibold text-gray-900">{selectedTime}</span>
-              </div>
-            </div>
+                        const dayName = ["SUNDAY","MONDAY","TUESDAY","WEDNESDAY","THURSDAY","FRIDAY","SATURDAY"][dayOfWeekIdx];
+                        const wh = workingHours.find((w) => w.dayOfWeek === dayName);
+                        const isOpen = wh?.isOpen ?? false;
 
-            {/* Notes */}
-            <div className="mb-5">
-              <label className="block text-xs font-semibold text-gray-600 mb-1.5">
-                Uwagi dla specjalisty{" "}
-                <span className="text-gray-400 font-normal">— opcjonalnie</span>
-              </label>
-              <textarea
-                value={notes}
-                onChange={(e) => setNotes(e.target.value)}
-                placeholder="Np. alergie, preferencje, pytania..."
-                rows={3}
-                className="w-full px-3 py-2.5 text-sm bg-white border border-gray-200 rounded-xl outline-none focus:ring-2 focus:ring-gray-900/10 focus:border-gray-300 placeholder-gray-400 text-gray-800 resize-none"
-              />
-            </div>
+                        return (
+                          <button
+                            key={dateStr}
+                            type="button"
+                            disabled={!isOpen}
+                            aria-pressed={isSelected}
+                            aria-label={`${day.toLocaleDateString("pl-PL", { weekday: "long", day: "numeric", month: "long" })}${!isOpen ? " — zamknięte" : ""}`}
+                            onClick={() => {
+                              setSelectedDate(dateStr);
+                              setSelectedTime("");
+                            }}
+                            className={cn(
+                              "flex-shrink-0 flex flex-col items-center px-3.5 py-2.5 rounded-xl text-center transition-all duration-150 min-w-[58px] snap-start",
+                              !isOpen && "opacity-35 cursor-not-allowed"
+                            )}
+                            style={isSelected ? S.rowSelected : S.row}
+                          >
+                            <span className={cn("text-[10px] font-medium", isSelected ? "text-slate-300" : "text-slate-500")}>
+                              {DAY_SHORT[dayOfWeekIdx]}
+                            </span>
+                            <span className={cn("text-sm font-bold mt-0.5 tabular-nums", isSelected ? "text-white" : "text-slate-800")}>
+                              {day.getDate()}
+                            </span>
+                            <span className={cn("text-[10px]", isSelected ? "text-slate-300" : "text-slate-500")}>
+                              {MONTH_SHORT[day.getMonth()]}
+                            </span>
+                            {isToday && (
+                              <span className={cn("text-[9px] font-semibold mt-0.5", isSelected ? "text-slate-200" : "text-slate-400")}>
+                                dziś
+                              </span>
+                            )}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
 
-            {submitError && (
-              <div className="mb-4 px-4 py-3 bg-red-50 border border-red-100 rounded-xl">
-                <p className="text-sm text-red-600">{submitError}</p>
-              </div>
-            )}
+                  {/* Time slots */}
+                  {selectedDate && (
+                    <div className="mt-5" aria-busy={loadingSlots} aria-live="polite">
+                      <p className="text-[11px] font-semibold text-slate-500 uppercase mb-2" style={{ letterSpacing: "0.08em" }}>
+                        Godzina
+                      </p>
+                      {loadingSlots ? (
+                        <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
+                          {Array.from({ length: 8 }).map((_, i) => (
+                            <div
+                              key={i}
+                              className="h-10 rounded-xl animate-pulse"
+                              style={{ background: "rgba(203,213,225,0.30)" }}
+                            />
+                          ))}
+                        </div>
+                      ) : availableSlots.length === 0 ? (
+                        <div
+                          className="text-center py-8 rounded-xl"
+                          style={{ border: "1px dashed rgba(148,163,184,0.45)", background: "rgba(248,250,252,0.60)" }}
+                        >
+                          <p className="text-sm text-slate-600">Brak dostępnych terminów na ten dzień</p>
+                          <p className="text-xs text-slate-500 mt-1">Wybierz inną datę powyżej</p>
+                        </div>
+                      ) : (
+                        <div className="grid grid-cols-3 sm:grid-cols-4 gap-2" role="group" aria-label="Godzina wizyty">
+                          {availableSlots.map((slot) => {
+                            const isSelected = selectedTime === slot;
+                            return (
+                              <button
+                                key={slot}
+                                type="button"
+                                onClick={() => setSelectedTime(slot)}
+                                aria-pressed={isSelected}
+                                className={cn(
+                                  "py-2.5 rounded-xl text-sm font-medium tabular-nums transition-all duration-150",
+                                  isSelected ? "text-white font-semibold" : "text-slate-700"
+                                )}
+                                style={isSelected ? S.rowSelected : S.row}
+                              >
+                                {slot}
+                              </button>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              )}
 
-            <div className="flex gap-3">
-              <button
-                type="button"
-                onClick={goBack}
-                disabled={isSubmitting}
-                className="px-4 py-3 border border-gray-200 text-gray-700 rounded-xl text-sm font-medium hover:bg-gray-50 transition-colors disabled:opacity-40"
-              >
-                Wstecz
-              </button>
-              <button
-                type="button"
-                onClick={handleConfirm}
-                disabled={isSubmitting}
-                className="flex-1 py-3 bg-gray-900 hover:bg-gray-800 disabled:opacity-60 disabled:cursor-not-allowed text-white rounded-xl text-sm font-semibold transition-colors flex items-center justify-center gap-2"
-              >
-                {isSubmitting ? (
-                  <>
-                    <svg className="w-4 h-4 animate-spin" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M4 12a8 8 0 0 1 8-8" />
+              {/* Step 4: Potwierdzenie */}
+              {step === 4 && selectedService && (
+                <div className="pb-5">
+                  <h2 className="text-base font-bold text-slate-900 mb-4" style={{ letterSpacing: "-0.015em" }}>
+                    Potwierdź rezerwację
+                  </h2>
+
+                  {/* Summary */}
+                  <dl className="rounded-2xl p-4 space-y-3 mb-5" style={S.panel}>
+                    {[
+                      { label: "Usługa", value: selectedService.name, bold: true },
+                      { label: "Czas trwania", value: formatDuration(selectedService.duration) },
+                      { label: "Cena", value: price, bold: true, nums: true },
+                      {
+                        label: "Specjalista",
+                        value: selectedEmployee
+                          ? `${selectedEmployee.firstName} ${selectedEmployee.lastName}`
+                          : "Dowolny specjalista",
+                      },
+                      {
+                        label: "Data",
+                        value: formatDate(selectedDate, { weekday: "long", day: "numeric", month: "long" }),
+                      },
+                      { label: "Godzina", value: selectedTime, bold: true, nums: true },
+                    ].map((row, i, arr) => (
+                      <div key={row.label}>
+                        <div className="flex items-start justify-between gap-2">
+                          <dt className="text-sm text-slate-500">{row.label}</dt>
+                          <dd
+                            className={cn(
+                              "text-sm text-slate-900 text-right",
+                              row.bold ? "font-semibold" : "font-medium",
+                              row.nums && "tabular-nums"
+                            )}
+                          >
+                            {row.value}
+                          </dd>
+                        </div>
+                        {i < arr.length - 1 && (
+                          <div className="h-px mt-3" style={{ background: "rgba(203,213,225,0.40)" }} />
+                        )}
+                      </div>
+                    ))}
+                  </dl>
+
+                  {/* Notes */}
+                  <div className="mb-4">
+                    <label htmlFor="booking-notes" className="block text-xs font-semibold text-slate-600 mb-1.5">
+                      Uwagi dla specjalisty{" "}
+                      <span className="text-slate-400 font-normal">— opcjonalnie</span>
+                    </label>
+                    <textarea
+                      id="booking-notes"
+                      value={notes}
+                      onChange={(e) => setNotes(e.target.value)}
+                      placeholder="Np. alergie, preferencje, pytania..."
+                      rows={3}
+                      className="input-glass w-full px-3.5 py-2.5 text-sm rounded-xl outline-none placeholder:text-slate-400 text-slate-800 resize-none transition-shadow"
+                    />
+                  </div>
+
+                  {/* Cancellation note */}
+                  <p className="flex items-start gap-2 text-xs text-slate-500 leading-relaxed">
+                    <svg className="w-3.5 h-3.5 flex-shrink-0 mt-0.5 text-slate-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} aria-hidden="true">
+                      <circle cx="12" cy="12" r="10" />
+                      <path strokeLinecap="round" d="M12 8v4M12 16h.01" />
                     </svg>
-                    Potwierdzanie...
-                  </>
-                ) : (
-                  "Potwierdź rezerwację"
-                )}
-              </button>
-            </div>
-          </div>
-        )}
+                    Wizytę możesz bezpłatnie odwołać lub przełożyć w swoim panelu klienta.
+                  </p>
 
-        {/* Step 5: Sukces */}
-        {step === 5 && selectedService && (
-          <div className="text-center py-4">
-            <div className="w-16 h-16 rounded-2xl bg-emerald-50 border border-emerald-100 flex items-center justify-center mx-auto mb-5">
-              <svg className="w-8 h-8 text-emerald-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75 11.25 15 15 9.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
-              </svg>
-            </div>
+                  {submitError && (
+                    <div
+                      role="alert"
+                      className="mt-4 px-4 py-3 rounded-xl"
+                      style={{ background: "rgba(244,63,94,0.08)", border: "1px solid rgba(244,63,94,0.25)" }}
+                    >
+                      <p className="text-sm font-medium" style={{ color: "#BE123C" }}>{submitError}</p>
+                    </div>
+                  )}
+                </div>
+              )}
 
-            <h2 className="text-xl font-bold text-gray-900 mb-1">Rezerwacja wysłana!</h2>
-            <p className="text-sm text-gray-500 mb-6">
-              Salon potwierdzi Twoją wizytę — damy Ci znać e-mailem i w powiadomieniach.
-            </p>
+              {/* Step 5: Sukces */}
+              {step === 5 && selectedService && (
+                <div className="text-center pt-3 pb-6">
+                  <motion.div
+                    initial={reduceMotion ? { opacity: 0 } : { scale: 0.4, opacity: 0 }}
+                    animate={reduceMotion ? { opacity: 1 } : { scale: 1, opacity: 1 }}
+                    transition={reduceMotion ? { duration: 0.2 } : { type: "spring", stiffness: 320, damping: 18, delay: 0.05 }}
+                    className="w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-5"
+                    style={{
+                      background: "rgba(16,185,129,0.10)",
+                      border: "1px solid rgba(16,185,129,0.25)",
+                      boxShadow: "0 0 0 0.5px rgba(16,185,129,0.15), 0 8px 24px rgba(16,185,129,0.10), inset 0 1px 0 rgba(255,255,255,0.60)",
+                    }}
+                  >
+                    <svg className="w-8 h-8" viewBox="0 0 24 24" fill="none" stroke="#047857" strokeWidth={2} aria-hidden="true">
+                      <motion.path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        d="m7.5 12.5 3 3 6-7"
+                        initial={reduceMotion ? { opacity: 1 } : { pathLength: 0 }}
+                        animate={reduceMotion ? { opacity: 1 } : { pathLength: 1 }}
+                        transition={reduceMotion ? undefined : { delay: 0.28, duration: 0.4, ease: "easeOut" }}
+                      />
+                    </svg>
+                  </motion.div>
 
-            {/* Summary */}
-            <div className="bg-gray-50 rounded-xl p-4 space-y-2.5 mb-6 text-left">
-              <div className="flex items-center justify-between text-sm">
-                <span className="text-gray-500">Salon</span>
-                <span className="font-semibold text-gray-900">{business.name}</span>
-              </div>
-              <div className="h-px bg-gray-200" />
-              <div className="flex items-center justify-between text-sm">
-                <span className="text-gray-500">Usługa</span>
-                <span className="font-medium text-gray-900">{selectedService.name}</span>
-              </div>
-              <div className="h-px bg-gray-200" />
-              <div className="flex items-center justify-between text-sm">
-                <span className="text-gray-500">Specjalista</span>
-                <span className="font-medium text-gray-900">
-                  {selectedEmployee
-                    ? `${selectedEmployee.firstName} ${selectedEmployee.lastName}`
-                    : "Dowolny specjalista"}
-                </span>
-              </div>
-              <div className="h-px bg-gray-200" />
-              <div className="flex items-center justify-between text-sm">
-                <span className="text-gray-500">Data i godzina</span>
-                <span className="font-semibold text-gray-900">
-                  {formatDate(selectedDate, { day: "numeric", month: "short" })} · {selectedTime}
-                </span>
-              </div>
-              <div className="h-px bg-gray-200" />
-              <div className="flex items-center justify-between text-sm">
-                <span className="text-gray-500">Do zapłaty</span>
-                <span className="font-bold text-gray-900">
-                  {formatCurrency(selectedService.discountedPrice ?? selectedService.price)}
-                </span>
-              </div>
-            </div>
+                  <h2 className="text-xl font-bold text-slate-900 mb-1" style={{ letterSpacing: "-0.02em" }}>
+                    Rezerwacja wysłana!
+                  </h2>
+                  <p className="text-sm text-slate-500 mb-6 max-w-xs mx-auto">
+                    Salon potwierdzi Twoją wizytę — damy Ci znać e-mailem i w powiadomieniach.
+                  </p>
 
-            <div className="flex flex-col gap-2">
-              <Link
-                href="/customer/dashboard"
-                className="block w-full py-3 bg-gray-900 hover:bg-gray-800 text-white rounded-xl text-sm font-semibold transition-colors text-center"
-              >
-                Moje rezerwacje
-              </Link>
-              <Link
-                href={`/b/${business.slug}`}
-                className="block w-full py-3 border border-gray-200 text-gray-700 rounded-xl text-sm font-medium hover:bg-gray-50 transition-colors text-center"
-              >
-                Wróć do salonu
-              </Link>
+                  {/* Appointment card */}
+                  <div className="rounded-2xl p-4 space-y-2.5 mb-6 text-left" style={S.panel}>
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="text-slate-500">Salon</span>
+                      <span className="font-semibold text-slate-900">{business.name}</span>
+                    </div>
+                    <div className="h-px" style={{ background: "rgba(203,213,225,0.40)" }} />
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="text-slate-500">Usługa</span>
+                      <span className="font-medium text-slate-900">{selectedService.name}</span>
+                    </div>
+                    <div className="h-px" style={{ background: "rgba(203,213,225,0.40)" }} />
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="text-slate-500">Specjalista</span>
+                      <span className="font-medium text-slate-900">
+                        {selectedEmployee
+                          ? `${selectedEmployee.firstName} ${selectedEmployee.lastName}`
+                          : "Dowolny specjalista"}
+                      </span>
+                    </div>
+                    <div className="h-px" style={{ background: "rgba(203,213,225,0.40)" }} />
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="text-slate-500">Data i godzina</span>
+                      <span className="font-semibold text-slate-900 tabular-nums">
+                        {formatDate(selectedDate, { day: "numeric", month: "short" })} · {selectedTime}
+                      </span>
+                    </div>
+                    <div className="h-px" style={{ background: "rgba(203,213,225,0.40)" }} />
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="text-slate-500">Do zapłaty</span>
+                      <span className="font-bold text-slate-900 tabular-nums">{price}</span>
+                    </div>
+                  </div>
+
+                  <div className="flex flex-col gap-2">
+                    <motion.div whileHover={{ scale: 1.01, y: -1 }} whileTap={{ scale: 0.982 }} transition={SPRING}>
+                      <Link
+                        href="/customer/dashboard"
+                        className="block w-full py-3 rounded-xl text-sm font-semibold text-center"
+                        style={{ background: INK, border: "1px solid #0F172A", color: "#F8FAFC", boxShadow: INK_SHADOW }}
+                      >
+                        Moje rezerwacje
+                      </Link>
+                    </motion.div>
+                    <motion.div whileHover={{ scale: 1.01, y: -1 }} whileTap={{ scale: 0.982 }} transition={SPRING}>
+                      <Link
+                        href={`/b/${business.slug}`}
+                        className="block w-full py-3 rounded-xl text-sm font-semibold text-center"
+                        style={{
+                          background: "rgba(255,255,255,0.72)",
+                          border: "1px solid rgba(203,213,225,0.55)",
+                          color: "#334155",
+                          boxShadow: "0 0 0 0.5px rgba(203,213,225,0.25), 0 1px 2px rgba(0,0,0,0.03), inset 0 1px 0 rgba(255,255,255,0.90)",
+                        }}
+                      >
+                        Wróć do salonu
+                      </Link>
+                    </motion.div>
+                  </div>
+                </div>
+              )}
+            </motion.div>
+          </AnimatePresence>
+        </div>
+
+        {/* Sticky footer — running summary + navigation */}
+        {step !== 5 && (
+          <div className="sticky bottom-0 z-10 rounded-b-3xl px-5 sm:px-6 pt-3.5 pb-4" style={S.footer}>
+            {selectedService && (
+              <div className="flex items-baseline justify-between gap-3 mb-3">
+                <div className="min-w-0">
+                  <p className="text-sm font-semibold text-slate-800 truncate">{selectedService.name}</p>
+                  <p className="text-xs text-slate-500 truncate tabular-nums">{summaryMeta}</p>
+                </div>
+                <p className="text-base font-bold text-slate-900 tabular-nums flex-shrink-0" style={{ letterSpacing: "-0.01em" }}>
+                  {price}
+                </p>
+              </div>
+            )}
+            <div className="flex gap-2.5">
+              {step > 1 && (
+                <GhostBtn onClick={goBack} disabled={isSubmitting} className="px-5">
+                  Wstecz
+                </GhostBtn>
+              )}
+              {step === 4 ? (
+                <PrimaryBtn onClick={handleConfirm} disabled={isSubmitting} className="flex-1">
+                  {isSubmitting ? (
+                    <span className="inline-flex items-center justify-center gap-2">
+                      <svg className="w-4 h-4 animate-spin" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} aria-hidden="true">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M4 12a8 8 0 0 1 8-8" />
+                      </svg>
+                      Potwierdzanie...
+                    </span>
+                  ) : (
+                    "Potwierdź rezerwację"
+                  )}
+                </PrimaryBtn>
+              ) : (
+                <PrimaryBtn onClick={goNext} disabled={nextDisabled} className="flex-1">
+                  Dalej
+                </PrimaryBtn>
+              )}
             </div>
           </div>
         )}

@@ -395,22 +395,12 @@ export default async function BusinessProfilePage({
                         </div>
                         <Link
                           href={`/b/${slug}/book?serviceId=${service.id}`}
-                          className="px-4 py-2 rounded-xl text-xs font-semibold whitespace-nowrap glass-shimmer-wrap"
+                          className="btn-spring px-4 py-2 rounded-xl text-xs font-semibold whitespace-nowrap glass-shimmer-wrap"
                           style={{
                             background: "rgba(203,213,225,0.22)",
                             border: "1px solid rgba(203,213,225,0.55)",
                             color: "#334155",
                             boxShadow: "0 0 0 0.5px rgba(203,213,225,0.20), inset 0 1px 0 rgba(255,255,255,0.80)",
-                            transform: "translateY(0)",
-                            transition: "transform 280ms cubic-bezier(0.34,1.56,0.64,1), box-shadow 180ms ease",
-                          }}
-                          onMouseEnter={e => {
-                            (e.currentTarget as HTMLElement).style.transform = "translateY(-1px) scale(1.02)";
-                            (e.currentTarget as HTMLElement).style.boxShadow = "0 0 0 0.5px rgba(203,213,225,0.35), 0 4px 12px rgba(100,116,139,0.12), inset 0 1px 0 rgba(255,255,255,0.90)";
-                          }}
-                          onMouseLeave={e => {
-                            (e.currentTarget as HTMLElement).style.transform = "translateY(0) scale(1)";
-                            (e.currentTarget as HTMLElement).style.boxShadow = "0 0 0 0.5px rgba(203,213,225,0.20), inset 0 1px 0 rgba(255,255,255,0.80)";
                           }}
                         >
                           Zarezerwuj
