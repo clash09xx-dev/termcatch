@@ -6,6 +6,7 @@ import { prisma } from "@/lib/prisma";
 import { LandingNav } from "@/components/layout/landing-nav";
 import { formatCurrency, formatDate, formatDuration, getInitials, cn } from "@/lib/utils";
 import { BusinessStatus, ReviewStatus } from "@prisma/client";
+import { PlaceholderCover } from "@/components/ui/placeholder-cover";
 import BookingWidget from "./booking-widget";
 import ReviewForm from "./review-form";
 import FavouriteButton from "@/components/booking/favourite-button";
@@ -34,47 +35,46 @@ const DAY_ORDER: Record<string, number> = {
   SUNDAY: 6,
 };
 
-function StarRating({
+const STAR_PATH =
+  "M11.48 3.499a.562.562 0 0 1 1.04 0l2.125 5.111a.563.563 0 0 0 .475.345l5.518.442c.499.04.701.663.321.988l-4.204 3.602a.563.563 0 0 0-.182.557l1.285 5.385a.562.562 0 0 1-.84.61l-4.725-2.885a.562.562 0 0 0-.586 0L6.982 20.54a.562.562 0 0 1-.84-.61l1.285-5.386a.562.562 0 0 0-.182-.557l-4.204-3.602a.562.562 0 0 1 .321-.988l5.518-.442a.563.563 0 0 0 .475-.345L11.48 3.5Z";
+
+function Star({ className }: { className?: string }) {
+  return (
+    <svg className={cn("text-amber-400", className)} viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+      <path d={STAR_PATH} />
+    </svg>
+  );
+}
+
+function reviewsWord(n: number) {
+  return n === 1 ? "opinia" : n < 5 ? "opinie" : "opinii";
+}
+
+// Single filled star + number — never five hollow stars
+function Rating({
   rating,
   count,
   size = "md",
 }: {
   rating: number;
-  count: number;
-  size?: "sm" | "md" | "lg";
+  count?: number;
+  size?: "sm" | "md";
 }) {
-  const sizeClass = size === "lg" ? "w-5 h-5" : size === "sm" ? "w-3 h-3" : "w-4 h-4";
-  const rounded = Math.round(rating * 2) / 2;
-
   return (
-    <div className="flex items-center gap-1.5">
-      <div className="flex items-center gap-0.5">
-        {[1, 2, 3, 4, 5].map((star) => {
-          const filled = rounded >= star;
-          return (
-            <svg
-              key={star}
-              className={cn(sizeClass, filled ? "text-amber-400" : "text-gray-200")}
-              viewBox="0 0 24 24"
-              fill={filled ? "currentColor" : "none"}
-              stroke="currentColor"
-              strokeWidth={filled ? 0 : 1.5}
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                d="M11.48 3.499a.562.562 0 0 1 1.04 0l2.125 5.111a.563.563 0 0 0 .475.345l5.518.442c.499.04.701.663.321.988l-4.204 3.602a.563.563 0 0 0-.182.557l1.285 5.385a.562.562 0 0 1-.84.61l-4.725-2.885a.562.562 0 0 0-.586 0L6.982 20.54a.562.562 0 0 1-.84-.61l1.285-5.386a.562.562 0 0 0-.182-.557l-4.204-3.602a.562.562 0 0 1 .321-.988l5.518-.442a.563.563 0 0 0 .475-.345L11.48 3.5Z"
-              />
-            </svg>
-          );
-        })}
-      </div>
-      {count > 0 && (
-        <span className={cn("text-gray-500", size === "sm" ? "text-xs" : "text-sm")}>
-          {rating.toFixed(1)} ({count} {count === 1 ? "opinia" : count < 5 ? "opinie" : "opinii"})
+    <span className="inline-flex items-center gap-1.5">
+      <Star className={size === "sm" ? "w-3.5 h-3.5" : "w-4 h-4"} />
+      <span
+        className={cn("font-semibold text-slate-900 tabular-nums", size === "sm" ? "text-xs" : "text-sm")}
+        aria-label={`Ocena ${rating.toFixed(1)} na 5`}
+      >
+        {rating.toFixed(1)}
+      </span>
+      {count !== undefined && count > 0 && (
+        <span className={cn("text-slate-500", size === "sm" ? "text-xs" : "text-sm")}>
+          ({count} {reviewsWord(count)})
         </span>
       )}
-    </div>
+    </span>
   );
 }
 
@@ -99,6 +99,28 @@ const CATEGORY_LABELS: Record<string, string> = {
   GENERAL_PHYSICIAN: "Lekarz ogólny",
   DENTIST: "Stomatolog",
 };
+
+// "Otwarte · do 18:00" — computed per-request in Europe/Warsaw
+function getOpenStatus(
+  hours: { dayOfWeek: string; isOpen: boolean; openTime: string; closeTime: string }[]
+): { open: boolean; label: string } {
+  const now = new Date();
+  const dayName = now
+    .toLocaleDateString("en-US", { timeZone: "Europe/Warsaw", weekday: "long" })
+    .toUpperCase();
+  const hm = new Intl.DateTimeFormat("en-GB", {
+    timeZone: "Europe/Warsaw",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+  }).format(now);
+
+  const today = hours.find((h) => h.dayOfWeek === dayName);
+  if (!today || !today.isOpen) return { open: false, label: "Dziś zamknięte" };
+  if (hm < today.openTime) return { open: false, label: `Otwiera o ${today.openTime}` };
+  if (hm < today.closeTime) return { open: true, label: `Otwarte · do ${today.closeTime}` };
+  return { open: false, label: "Dziś zamknięte" };
+}
 
 // ─── Metadata (SEO) ──────────────────────────────────────────────────────────
 
@@ -220,11 +242,22 @@ export default async function BusinessProfilePage({
     (a, b) => (DAY_ORDER[a.dayOfWeek] ?? 0) - (DAY_ORDER[b.dayOfWeek] ?? 0)
   );
 
+  const openStatus = sortedWorkingHours.length > 0 ? getOpenStatus(sortedWorkingHours) : null;
+
   const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
     `${business.address}, ${business.city}`
   )}`;
 
   const initials = getInitials(business.name.split(" ")[0] ?? "", business.name.split(" ")[1]);
+
+  // Rating distribution — only when the 5 fetched reviews are ALL reviews (no partial-data bars)
+  const distribution =
+    business.totalReviews > 0 && business.reviews.length >= business.totalReviews
+      ? [5, 4, 3, 2, 1].map((s) => ({
+          star: s,
+          count: business.reviews.filter((r) => r.rating === s).length,
+        }))
+      : null;
 
   // Structured data — LocalBusiness dla Google
   const jsonLd = {
@@ -263,6 +296,15 @@ export default async function BusinessProfilePage({
     boxShadow: "0 0 0 0.5px rgba(203,213,225,0.30), 0 1px 2px rgba(0,0,0,0.03), 0 6px 20px rgba(100,116,139,0.08), inset 0 1px 0 rgba(255,255,255,0.95), inset 0 -1px 0 rgba(203,213,225,0.08)",
   } as React.CSSProperties;
 
+  // Solid-white row card — repeats in lists, so no backdrop blur (perf)
+  const rowCard = {
+    background: "rgba(255,255,255,0.80)",
+    border: "1px solid rgba(203,213,225,0.45)",
+    boxShadow: "0 0 0 0.5px rgba(203,213,225,0.22), 0 1px 2px rgba(0,0,0,0.02), 0 4px 14px rgba(100,116,139,0.06), inset 0 1px 0 rgba(255,255,255,0.92)",
+  } as React.CSSProperties;
+
+  const INK = "linear-gradient(180deg, #1E293B 0%, #0F172A 100%)";
+
   return (
     <div
       className="min-h-screen"
@@ -274,68 +316,111 @@ export default async function BusinessProfilePage({
       />
       <LandingNav />
 
-      {/* Cover image */}
+      {/* Cover — real photo gets height; placeholder stays intentional and low */}
       <div className="pt-16">
-        <div className="relative h-[280px] w-full">
-          {business.coverImageUrl ? (
-            // eslint-disable-next-line @next/next/no-img-element
+        {business.coverImageUrl ? (
+          <div className="relative h-[200px] sm:h-[280px] w-full">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               src={business.coverImageUrl}
               alt={business.name}
               className="w-full h-full object-cover"
             />
-          ) : (
-            <div className="w-full h-full" style={{ background: "linear-gradient(135deg, rgba(226,232,240,0.55) 0%, rgba(203,213,225,0.30) 100%)" }} />
-          )}
-          <div className="absolute inset-0 bg-gradient-to-t from-white/20 to-transparent" />
-        </div>
+            <div className="absolute inset-0 bg-gradient-to-t from-white/25 to-transparent" />
+          </div>
+        ) : (
+          <div className="relative h-[140px] sm:h-[160px] w-full">
+            <PlaceholderCover category={business.category} />
+          </div>
+        )}
       </div>
 
       {/* Business header */}
       <div className="max-w-6xl mx-auto px-4 sm:px-6">
-        <div className="relative -mt-10 flex items-end gap-5 pb-6" style={{ borderBottom: "1px solid rgba(203,213,225,0.28)" }}>
+        <div
+          className="fade-rise relative -mt-10 flex items-end gap-4 sm:gap-5 pb-6"
+          style={{ borderBottom: "1px solid rgba(203,213,225,0.28)" }}
+        >
           {/* Logo */}
           <div
             className="flex-shrink-0 w-20 h-20 rounded-2xl overflow-hidden"
-            style={{ ...glassCard, border: "3px solid rgba(255,255,255,0.90)" }}
+            style={{ ...glassCard, border: "3px solid rgba(255,255,255,0.92)" }}
           >
             {business.logoUrl ? (
               // eslint-disable-next-line @next/next/no-img-element
               <img src={business.logoUrl} alt={business.name} className="w-full h-full object-cover" />
             ) : (
-              <div className="w-full h-full flex items-center justify-center" style={{ background: "linear-gradient(135deg, rgba(226,232,240,0.60) 0%, rgba(203,213,225,0.35) 100%)" }}>
-                <span className="text-slate-600 text-xl font-bold">{initials}</span>
+              <div
+                className="w-full h-full flex items-center justify-center"
+                style={{ background: "linear-gradient(140deg, #E8EEF6 0%, #F4F7FB 50%, #DFE7F1 100%)" }}
+              >
+                <span
+                  className="text-xl font-bold"
+                  style={{
+                    background: "linear-gradient(135deg, #475569 0%, #94A3B8 55%, #334155 100%)",
+                    WebkitBackgroundClip: "text",
+                    WebkitTextFillColor: "transparent",
+                    backgroundClip: "text",
+                  }}
+                >
+                  {initials}
+                </span>
               </div>
             )}
           </div>
 
           <div className="flex-1 min-w-0 pb-1">
-            <div className="flex flex-wrap items-center gap-2 mb-1">
+            <div className="flex flex-wrap items-center gap-2 mb-1.5">
               <span
                 className="inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-medium"
                 style={{ background: "rgba(203,213,225,0.22)", border: "1px solid rgba(203,213,225,0.50)", color: "#475569", boxShadow: "inset 0 1px 0 rgba(255,255,255,0.70)" }}
               >
                 {categoryLabel}
               </span>
-            </div>
-            <h1 className="text-2xl font-bold text-slate-900 leading-tight" style={{ letterSpacing: "-0.03em" }}>{business.name}</h1>
-            <div className="flex flex-wrap items-center gap-4 mt-2">
-              {business.averageRating > 0 && (
-                <StarRating rating={business.averageRating} count={business.totalReviews} />
+              {openStatus && (
+                <span
+                  className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold"
+                  style={
+                    openStatus.open
+                      ? { background: "rgba(16,185,129,0.10)", border: "1px solid rgba(16,185,129,0.25)", color: "#047857" }
+                      : { background: "rgba(203,213,225,0.18)", border: "1px solid rgba(203,213,225,0.45)", color: "#64748B" }
+                  }
+                >
+                  <span
+                    className="w-1.5 h-1.5 rounded-full flex-shrink-0"
+                    style={{ background: openStatus.open ? "#10B981" : "#94A3B8" }}
+                  />
+                  <span className="tabular-nums">{openStatus.label}</span>
+                </span>
               )}
-              <div className="flex items-center gap-1.5 text-sm text-slate-400">
-                <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8}>
+            </div>
+            <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 leading-tight" style={{ letterSpacing: "-0.03em" }}>
+              {business.name}
+            </h1>
+            <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 mt-2">
+              {business.totalReviews > 0 ? (
+                <Rating rating={business.averageRating} count={business.totalReviews} />
+              ) : (
+                <span
+                  className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold"
+                  style={{ background: "rgba(255,255,255,0.70)", border: "1px solid rgba(203,213,225,0.55)", color: "#475569", boxShadow: "inset 0 1px 0 rgba(255,255,255,0.90)" }}
+                >
+                  Nowy salon
+                </span>
+              )}
+              <div className="flex items-center gap-1.5 text-sm text-slate-500">
+                <svg className="w-4 h-4 text-slate-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} aria-hidden="true">
                   <path strokeLinecap="round" strokeLinejoin="round" d="M15 10.5a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
                   <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1 1 15 0Z" />
                 </svg>
                 {business.city}
               </div>
               {business.phone && (
-                <a href={`tel:${business.phone}`} className="flex items-center gap-1.5 text-sm text-slate-400 hover:text-slate-700 transition-colors">
-                  <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8}>
+                <a href={`tel:${business.phone}`} className="flex items-center gap-1.5 text-sm text-slate-500 hover:text-slate-800 transition-colors">
+                  <svg className="w-4 h-4 text-slate-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} aria-hidden="true">
                     <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 6.75c0 8.284 6.716 15 15 15h2.25a2.25 2.25 0 0 0 2.25-2.25v-1.372c0-.516-.351-.966-.852-1.091l-4.423-1.106c-.44-.11-.902.055-1.173.417l-.97 1.293c-.282.376-.769.542-1.21.38a12.035 12.035 0 0 1-7.143-7.143c-.162-.441.004-.928.38-1.21l1.293-.97c.363-.271.527-.734.417-1.173L6.963 3.102a1.125 1.125 0 0 0-1.091-.852H4.5A2.25 2.25 0 0 0 2.25 4.5v2.25Z" />
                   </svg>
-                  {business.phone}
+                  <span className="tabular-nums">{business.phone}</span>
                 </a>
               )}
             </div>
@@ -351,51 +436,54 @@ export default async function BusinessProfilePage({
       <div className="max-w-6xl mx-auto px-4 sm:px-6 py-8">
         <div className="flex gap-8 items-start">
           {/* Left column */}
-          <div className="flex-1 min-w-0 space-y-8">
+          <div className="flex-1 min-w-0 space-y-10">
             {/* Services */}
-            <section>
+            <section className="fade-rise fade-rise-d1">
               <h2 className="text-lg font-bold text-slate-900 mb-4" style={{ letterSpacing: "-0.025em" }}>Usługi</h2>
               {business.services.length === 0 ? (
                 <div className="rounded-2xl p-8 text-center" style={glassCard}>
-                  <p className="text-slate-400 text-sm">Ten salon nie dodał jeszcze usług.</p>
+                  <p className="text-slate-500 text-sm">Ten salon nie dodał jeszcze usług.</p>
                 </div>
               ) : (
-                <div className="space-y-2">
+                <div className="space-y-2.5">
                   {business.services.map((service) => (
                     <div
                       key={service.id}
-                      className="rounded-2xl p-4 flex items-center gap-4 glass-shimmer-wrap"
-                      style={glassCard}
+                      className="card-hover-lift rounded-2xl p-4 sm:p-5 flex items-start gap-4"
+                      style={rowCard}
                     >
                       <div className="flex-1 min-w-0">
-                        <p className="text-sm font-semibold text-slate-800">{service.name}</p>
+                        <p className="text-[15px] font-semibold text-slate-900" style={{ letterSpacing: "-0.01em" }}>
+                          {service.name}
+                        </p>
                         {service.description && (
-                          <p className="text-xs text-slate-400 mt-0.5 line-clamp-1">{service.description}</p>
+                          <p className="text-xs text-slate-500 mt-1 line-clamp-1">{service.description}</p>
                         )}
-                        <span
-                          className="inline-flex items-center gap-1 mt-1.5 px-2 py-0.5 rounded-lg text-xs"
-                          style={{ background: "rgba(203,213,225,0.18)", color: "#64748B", border: "1px solid rgba(203,213,225,0.42)", boxShadow: "inset 0 1px 0 rgba(255,255,255,0.70)" }}
-                        >
-                          <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
+                        <p className="flex items-center gap-1.5 mt-2 text-xs text-slate-500">
+                          <svg className="w-3.5 h-3.5 text-slate-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} aria-hidden="true">
                             <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
                           </svg>
                           {formatDuration(service.duration)}
-                        </span>
+                        </p>
                       </div>
-                      <div className="flex items-center gap-3 flex-shrink-0">
+                      <div className="flex flex-col items-end gap-2.5 flex-shrink-0">
                         <div className="text-right">
                           {service.discountedPrice ? (
-                            <>
-                              <p className="text-sm font-bold text-slate-800">{formatCurrency(service.discountedPrice)}</p>
-                              <p className="text-xs text-slate-400 line-through">{formatCurrency(service.price)}</p>
-                            </>
+                            <div className="flex items-baseline gap-2">
+                              <span className="text-xs text-slate-400 line-through tabular-nums">{formatCurrency(service.price)}</span>
+                              <span className="text-base font-bold text-slate-900 tabular-nums" style={{ letterSpacing: "-0.01em" }}>
+                                {formatCurrency(service.discountedPrice)}
+                              </span>
+                            </div>
                           ) : (
-                            <p className="text-sm font-bold text-slate-800">{formatCurrency(service.price)}</p>
+                            <span className="text-base font-bold text-slate-900 tabular-nums" style={{ letterSpacing: "-0.01em" }}>
+                              {formatCurrency(service.price)}
+                            </span>
                           )}
                         </div>
                         <Link
                           href={`/b/${slug}/book?serviceId=${service.id}`}
-                          className="btn-spring px-4 py-2 rounded-xl text-xs font-semibold whitespace-nowrap glass-shimmer-wrap"
+                          className="btn-spring px-4 py-2 rounded-xl text-xs font-semibold whitespace-nowrap"
                           style={{
                             background: "rgba(203,213,225,0.22)",
                             border: "1px solid rgba(203,213,225,0.55)",
@@ -403,7 +491,7 @@ export default async function BusinessProfilePage({
                             boxShadow: "0 0 0 0.5px rgba(203,213,225,0.20), inset 0 1px 0 rgba(255,255,255,0.80)",
                           }}
                         >
-                          Zarezerwuj
+                          Umów
                         </Link>
                       </div>
                     </div>
@@ -414,29 +502,107 @@ export default async function BusinessProfilePage({
 
             {/* About */}
             {(business.description || business.shortDescription) && (
-              <section>
-                <h2 className="text-lg font-bold text-slate-900 mb-4">O nas</h2>
+              <section className="fade-rise fade-rise-d2">
+                <h2 className="text-lg font-bold text-slate-900 mb-4" style={{ letterSpacing: "-0.025em" }}>O nas</h2>
                 <div className="rounded-2xl p-5" style={glassCard}>
-                  <p className="text-sm text-slate-500 leading-relaxed whitespace-pre-line">
+                  <p className="text-sm text-slate-600 leading-relaxed whitespace-pre-line">
                     {business.description ?? business.shortDescription}
                   </p>
                 </div>
               </section>
             )}
 
+            {/* Gallery */}
+            {business.images.length > 0 && (
+              <section className="fade-rise fade-rise-d2">
+                <h2 className="text-lg font-bold text-slate-900 mb-4" style={{ letterSpacing: "-0.025em" }}>Galeria</h2>
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
+                  {business.images.map((src, i) => (
+                    <div
+                      key={`${src}-${i}`}
+                      className="relative aspect-[4/3] rounded-xl overflow-hidden"
+                      style={{ border: "1px solid rgba(203,213,225,0.45)", boxShadow: "0 1px 2px rgba(0,0,0,0.03), 0 4px 14px rgba(100,116,139,0.07)" }}
+                    >
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img
+                        src={src}
+                        alt={`${business.name} — zdjęcie ${i + 1}`}
+                        loading="lazy"
+                        className="w-full h-full object-cover transition-transform duration-500 hover:scale-[1.04]"
+                      />
+                    </div>
+                  ))}
+                </div>
+              </section>
+            )}
+
+            {/* Team */}
+            {business.employees.length > 0 && (
+              <section className="fade-rise fade-rise-d3">
+                <h2 className="text-lg font-bold text-slate-900 mb-4" style={{ letterSpacing: "-0.025em" }}>Zespół</h2>
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
+                  {business.employees.map((employee) => (
+                    <div
+                      key={employee.id}
+                      className="card-hover-lift rounded-2xl p-4 flex flex-col items-start gap-3"
+                      style={rowCard}
+                    >
+                      {employee.avatarUrl ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img
+                          src={employee.avatarUrl}
+                          alt=""
+                          className="w-12 h-12 rounded-xl object-cover"
+                          style={{ border: "1px solid rgba(203,213,225,0.45)" }}
+                        />
+                      ) : (
+                        <div
+                          className="w-12 h-12 rounded-xl flex items-center justify-center"
+                          style={{ backgroundColor: employee.color, boxShadow: "inset 0 1px 0 rgba(255,255,255,0.25)" }}
+                        >
+                          <span className="text-white text-sm font-bold">
+                            {getInitials(employee.firstName, employee.lastName)}
+                          </span>
+                        </div>
+                      )}
+                      <div className="min-w-0">
+                        <p className="text-sm font-semibold text-slate-900 truncate">
+                          {employee.firstName} {employee.lastName}
+                        </p>
+                        {(employee.title || employee.bio) && (
+                          <p className="text-xs text-slate-500 mt-0.5 line-clamp-2">
+                            {employee.title ?? employee.bio}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </section>
+            )}
+
             {/* Working hours + contact */}
-            <section>
-              <h2 className="text-lg font-bold text-slate-900 mb-4">Informacje</h2>
+            <section className="fade-rise fade-rise-d4">
+              <h2 className="text-lg font-bold text-slate-900 mb-4" style={{ letterSpacing: "-0.025em" }}>Informacje</h2>
               <div className="rounded-2xl overflow-hidden" style={glassCard}>
                 {/* Working hours */}
                 {sortedWorkingHours.length > 0 && (
                   <div className="p-5" style={{ borderBottom: "1px solid rgba(203,213,225,0.25)" }}>
-                    <h3 className="text-sm font-semibold text-slate-700 mb-3 flex items-center gap-2">
-                      <svg className="w-4 h-4 text-slate-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8}>
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
-                      </svg>
-                      Godziny otwarcia
-                    </h3>
+                    <div className="flex items-center justify-between gap-3 mb-3">
+                      <h3 className="text-sm font-semibold text-slate-700 flex items-center gap-2">
+                        <svg className="w-4 h-4 text-slate-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} aria-hidden="true">
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
+                        </svg>
+                        Godziny otwarcia
+                      </h3>
+                      {openStatus && (
+                        <span
+                          className={cn("text-xs font-semibold tabular-nums", openStatus.open ? "text-emerald-700" : "text-slate-500")}
+                        >
+                          {openStatus.label}
+                        </span>
+                      )}
+                    </div>
                     <div className="space-y-1.5">
                       {sortedWorkingHours.map((wh) => {
                         const today = new Date().toLocaleDateString("en-US", { timeZone: "Europe/Warsaw", weekday: "long" }).toUpperCase();
@@ -451,7 +617,7 @@ export default async function BusinessProfilePage({
                               {!isToday && <span className="w-1.5 h-1.5 flex-shrink-0" />}
                               {DAY_LABELS[wh.dayOfWeek]}
                             </span>
-                            <span className={wh.isOpen ? "" : "text-slate-300"}>
+                            <span className={cn("tabular-nums", !wh.isOpen && "text-slate-400")}>
                               {wh.isOpen ? `${wh.openTime} — ${wh.closeTime}` : "Nieczynne"}
                             </span>
                           </div>
@@ -464,13 +630,13 @@ export default async function BusinessProfilePage({
                 {/* Address + map */}
                 <div className="p-5" style={{ borderBottom: "1px solid rgba(203,213,225,0.25)" }}>
                   <h3 className="text-sm font-semibold text-slate-700 mb-2 flex items-center gap-2">
-                    <svg className="w-4 h-4 text-slate-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8}>
+                    <svg className="w-4 h-4 text-slate-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} aria-hidden="true">
                       <path strokeLinecap="round" strokeLinejoin="round" d="M15 10.5a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
                       <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1 1 15 0Z" />
                     </svg>
                     Adres
                   </h3>
-                  <p className="text-sm text-slate-500">{business.address}, {business.postalCode} {business.city}</p>
+                  <p className="text-sm text-slate-600">{business.address}, {business.postalCode} {business.city}</p>
                   <div className="mt-3 rounded-xl overflow-hidden" style={{ border: "1px solid rgba(203,213,225,0.35)" }}>
                     <iframe
                       title={`Mapa dojazdu — ${business.name}`}
@@ -481,9 +647,9 @@ export default async function BusinessProfilePage({
                       allowFullScreen
                     />
                   </div>
-                  <a href={mapsUrl} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1.5 mt-3 text-xs font-semibold text-slate-600 hover:underline underline-offset-4">
+                  <a href={mapsUrl} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1.5 mt-3 text-xs font-semibold text-slate-600 hover:text-slate-900 hover:underline underline-offset-4 transition-colors">
                     Otwórz w Google Maps (nawigacja)
-                    <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
+                    <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} aria-hidden="true">
                       <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 6H5.25A2.25 2.25 0 0 0 3 8.25v10.5A2.25 2.25 0 0 0 5.25 21h10.5A2.25 2.25 0 0 0 18 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25" />
                     </svg>
                   </a>
@@ -493,15 +659,15 @@ export default async function BusinessProfilePage({
                 {(business.phone || business.email || business.website) && (
                   <div className="p-5">
                     <h3 className="text-sm font-semibold text-slate-700 mb-2 flex items-center gap-2">
-                      <svg className="w-4 h-4 text-slate-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8}>
+                      <svg className="w-4 h-4 text-slate-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} aria-hidden="true">
                         <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 6.75c0 8.284 6.716 15 15 15h2.25a2.25 2.25 0 0 0 2.25-2.25v-1.372c0-.516-.351-.966-.852-1.091l-4.423-1.106c-.44-.11-.902.055-1.173.417l-.97 1.293c-.282.376-.769.542-1.21.38a12.035 12.035 0 0 1-7.143-7.143c-.162-.441.004-.928.38-1.21l1.293-.97c.363-.271.527-.734.417-1.173L6.963 3.102a1.125 1.125 0 0 0-1.091-.852H4.5A2.25 2.25 0 0 0 2.25 4.5v2.25Z" />
                       </svg>
                       Kontakt
                     </h3>
                     <div className="space-y-1.5">
-                      {business.phone && <a href={`tel:${business.phone}`} className="block text-sm text-slate-500 hover:text-slate-800 transition-colors">{business.phone}</a>}
-                      {business.email && <a href={`mailto:${business.email}`} className="block text-sm text-slate-500 hover:text-slate-800 transition-colors">{business.email}</a>}
-                      {business.website && <a href={business.website} target="_blank" rel="noopener noreferrer" className="block text-sm text-slate-500 hover:text-slate-800 transition-colors">{business.website.replace(/^https?:\/\//, "")}</a>}
+                      {business.phone && <a href={`tel:${business.phone}`} className="block text-sm text-slate-600 hover:text-slate-900 transition-colors tabular-nums">{business.phone}</a>}
+                      {business.email && <a href={`mailto:${business.email}`} className="block text-sm text-slate-600 hover:text-slate-900 transition-colors">{business.email}</a>}
+                      {business.website && <a href={business.website} target="_blank" rel="noopener noreferrer" className="block text-sm text-slate-600 hover:text-slate-900 transition-colors">{business.website.replace(/^https?:\/\//, "")}</a>}
                     </div>
                   </div>
                 )}
@@ -510,62 +676,88 @@ export default async function BusinessProfilePage({
 
             {/* Reviews */}
             {business.reviews.length > 0 && (
-              <section>
-                <div className="flex items-center justify-between mb-4">
-                  <h2 className="text-lg font-bold text-slate-900">
-                    Opinie{" "}
-                    {business.totalReviews > 0 && (
-                      <span className="text-slate-400 font-normal text-base">({business.totalReviews})</span>
-                    )}
-                  </h2>
-                  {business.totalReviews > 5 && (
-                    <button className="text-sm font-medium text-slate-500 hover:text-slate-800 underline underline-offset-4 transition-colors">
-                      Pokaż wszystkie
-                    </button>
+              <section className="fade-rise fade-rise-d5">
+                <h2 className="text-lg font-bold text-slate-900 mb-4" style={{ letterSpacing: "-0.025em" }}>
+                  Opinie{" "}
+                  {business.totalReviews > 0 && (
+                    <span className="text-slate-400 font-normal text-base">({business.totalReviews})</span>
                   )}
-                </div>
+                </h2>
 
                 {business.averageRating > 0 && (
-                  <div className="rounded-2xl p-5 mb-3 flex items-center gap-5" style={glassCard}>
-                    <div className="text-center">
-                      <p className="text-4xl font-bold text-slate-800">{business.averageRating.toFixed(1)}</p>
-                      <StarRating rating={business.averageRating} count={0} size="sm" />
+                  <div className="rounded-2xl p-5 mb-3 flex items-center gap-6" style={glassCard}>
+                    <div className="text-center flex-shrink-0">
+                      <p className="text-4xl font-bold text-slate-900 tabular-nums" style={{ letterSpacing: "-0.03em" }}>
+                        {business.averageRating.toFixed(1)}
+                      </p>
+                      <div className="flex items-center justify-center gap-1 mt-1">
+                        <Star className="w-3.5 h-3.5" />
+                        <span className="text-xs text-slate-500">
+                          {business.totalReviews} {reviewsWord(business.totalReviews)}
+                        </span>
+                      </div>
                     </div>
-                    <div className="h-12 w-px" style={{ background: "rgba(203,213,225,0.35)" }} />
-                    <p className="text-sm text-slate-400">
-                      Na podstawie{" "}
-                      <span className="font-semibold text-slate-700">{business.totalReviews}</span>{" "}
-                      opinii
-                    </p>
+                    {distribution ? (
+                      <div className="flex-1 min-w-0 space-y-1.5">
+                        {distribution.map(({ star, count }) => {
+                          const pct = business.totalReviews > 0 ? (count / business.totalReviews) * 100 : 0;
+                          return (
+                            <div key={star} className="flex items-center gap-2.5">
+                              <span className="w-3 text-xs font-medium text-slate-500 tabular-nums text-right">{star}</span>
+                              <Star className="w-3 h-3 flex-shrink-0" />
+                              <div className="flex-1 h-1.5 rounded-full overflow-hidden" style={{ background: "rgba(203,213,225,0.35)" }}>
+                                <div
+                                  className="h-full rounded-full"
+                                  style={{ width: `${pct}%`, background: INK }}
+                                />
+                              </div>
+                              <span className="w-4 text-xs text-slate-500 tabular-nums">{count}</span>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    ) : (
+                      <>
+                        <div className="h-12 w-px flex-shrink-0" style={{ background: "rgba(203,213,225,0.35)" }} />
+                        <p className="text-sm text-slate-500">
+                          Na podstawie{" "}
+                          <span className="font-semibold text-slate-800">{business.totalReviews}</span>{" "}
+                          {reviewsWord(business.totalReviews)} klientów
+                        </p>
+                      </>
+                    )}
                   </div>
                 )}
 
-                <div className="space-y-3">
+                <div className="space-y-2.5">
                   {business.reviews.map((review) => (
-                    <div key={review.id} className="rounded-2xl p-5" style={glassCard}>
+                    <div key={review.id} className="card-hover-lift rounded-2xl p-5" style={rowCard}>
                       <div className="flex items-start justify-between gap-3">
                         <div className="flex items-center gap-3">
                           <div
                             className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0"
-                            style={{ background: "rgba(203,213,225,0.25)", border: "1px solid rgba(203,213,225,0.55)", color: "#475569", boxShadow: "inset 0 1px 0 rgba(255,255,255,0.70)" }}
+                            style={{ background: "linear-gradient(140deg, rgba(226,232,240,0.70) 0%, rgba(203,213,225,0.40) 100%)", border: "1px solid rgba(203,213,225,0.55)", boxShadow: "inset 0 1px 0 rgba(255,255,255,0.80)" }}
                           >
-                            <span className="text-xs font-bold">
+                            <span className="text-xs font-bold text-slate-600">
                               {review.customer.firstName[0]}{review.customer.lastName[0]}
                             </span>
                           </div>
                           <div>
-                            <p className="text-sm font-semibold text-slate-800">
+                            <p className="text-sm font-semibold text-slate-900">
                               {review.customer.firstName} {review.customer.lastName[0]}.
                             </p>
-                            <StarRating rating={review.rating} count={0} size="sm" />
+                            <div className="flex items-center gap-1 mt-0.5">
+                              <Star className="w-3.5 h-3.5" />
+                              <span className="text-xs font-semibold text-slate-700 tabular-nums">{review.rating}.0</span>
+                            </div>
                           </div>
                         </div>
-                        <span className="text-xs text-slate-400 flex-shrink-0">
+                        <span className="text-xs text-slate-400 flex-shrink-0 tabular-nums">
                           {formatDate(review.createdAt, { day: "numeric", month: "short", year: "numeric" })}
                         </span>
                       </div>
                       {review.comment && (
-                        <p className="text-sm text-slate-500 mt-3 leading-relaxed">{review.comment}</p>
+                        <p className="text-sm text-slate-600 mt-3 leading-relaxed">{review.comment}</p>
                       )}
                     </div>
                   ))}
@@ -576,7 +768,7 @@ export default async function BusinessProfilePage({
 
           {/* Right column — Booking widget */}
           <div className="hidden lg:block w-[360px] flex-shrink-0">
-            <div className="sticky top-24">
+            <div className="sticky top-24 fade-rise fade-rise-d2">
               <BookingWidget
                 slug={slug}
                 services={business.services.map((s) => ({
@@ -601,19 +793,25 @@ export default async function BusinessProfilePage({
             backdropFilter: "blur(24px) saturate(200%)",
             WebkitBackdropFilter: "blur(24px) saturate(200%)",
             borderTop: "1px solid rgba(203,213,225,0.35)",
+            boxShadow: "0 -8px 24px rgba(100,116,139,0.08)",
           }}
         >
           <div className="flex items-center gap-3 max-w-6xl mx-auto">
             <div className="flex-1 min-w-0">
-              <p className="text-xs text-slate-400">Usługi od</p>
-              <p className="text-sm font-bold text-slate-800">
+              <p className="text-xs text-slate-500">Usługi od</p>
+              <p className="text-base font-bold text-slate-900 tabular-nums" style={{ letterSpacing: "-0.01em" }}>
                 {formatCurrency(Math.min(...business.services.map((s) => s.discountedPrice ?? s.price)))}
               </p>
             </div>
             <Link
               href={`/b/${slug}/book`}
-              className="px-6 py-3 rounded-xl text-sm font-semibold transition-all"
-              style={{ background: "rgba(203,213,225,0.22)", border: "1px solid rgba(203,213,225,0.55)", color: "#334155", boxShadow: "0 0 0 0.5px rgba(203,213,225,0.25), inset 0 1px 0 rgba(255,255,255,0.80)" }}
+              className="btn-spring px-6 py-3 rounded-xl text-sm font-semibold"
+              style={{
+                background: INK,
+                border: "1px solid #0F172A",
+                color: "#F8FAFC",
+                boxShadow: "0 1px 2px rgba(0,0,0,0.20), 0 10px 24px rgba(15,23,42,0.28), inset 0 1px 0 rgba(255,255,255,0.15)",
+              }}
             >
               Zarezerwuj wizytę
             </Link>
