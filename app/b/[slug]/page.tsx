@@ -46,11 +46,36 @@ function Star({ className }: { className?: string }) {
   );
 }
 
+// Five-star row filled to the exact average (fractional fill via width clip —
+// no SVG gradient ids, so it is safe to repeat in RSC lists).
+// Rendered only for rated salons; unrated ones get the "Nowy salon" chip.
+function StarRow({ rating, sizeClass = "w-3.5 h-3.5" }: { rating: number; sizeClass?: string }) {
+  return (
+    <span className="inline-flex items-center gap-0.5" aria-hidden="true">
+      {[1, 2, 3, 4, 5].map((i) => {
+        const fill = Math.max(0, Math.min(1, rating - (i - 1)));
+        return (
+          <span key={i} className={cn("relative inline-block flex-shrink-0", sizeClass)}>
+            <svg className={cn("absolute inset-0 text-slate-300", sizeClass)} viewBox="0 0 24 24" fill="currentColor">
+              <path d={STAR_PATH} />
+            </svg>
+            <span className="absolute inset-0 overflow-hidden" style={{ width: `${fill * 100}%` }}>
+              <svg className={cn("text-amber-400", sizeClass)} viewBox="0 0 24 24" fill="currentColor">
+                <path d={STAR_PATH} />
+              </svg>
+            </span>
+          </span>
+        );
+      })}
+    </span>
+  );
+}
+
 function reviewsWord(n: number) {
   return n === 1 ? "opinia" : n < 5 ? "opinie" : "opinii";
 }
 
-// Single filled star + number — never five hollow stars
+// Star row + average + review count, e.g. ★★★★½ 4.5 (1230 opinii)
 function Rating({
   rating,
   count,
@@ -61,12 +86,13 @@ function Rating({
   size?: "sm" | "md";
 }) {
   return (
-    <span className="inline-flex items-center gap-1.5">
-      <Star className={size === "sm" ? "w-3.5 h-3.5" : "w-4 h-4"} />
-      <span
-        className={cn("font-semibold text-slate-900 tabular-nums", size === "sm" ? "text-xs" : "text-sm")}
-        aria-label={`Ocena ${rating.toFixed(1)} na 5`}
-      >
+    <span
+      className="inline-flex items-center gap-1.5"
+      role="img"
+      aria-label={`Ocena ${rating.toFixed(1)} na 5${count ? `, ${count} ${reviewsWord(count)}` : ""}`}
+    >
+      <StarRow rating={rating} sizeClass={size === "sm" ? "w-3 h-3" : "w-3.5 h-3.5"} />
+      <span className={cn("font-semibold text-slate-900 tabular-nums", size === "sm" ? "text-xs" : "text-sm")}>
         {rating.toFixed(1)}
       </span>
       {count !== undefined && count > 0 && (
@@ -675,27 +701,47 @@ export default async function BusinessProfilePage({
             </section>
 
             {/* Reviews */}
-            {business.reviews.length > 0 && (
-              <section className="fade-rise fade-rise-d5">
-                <h2 className="text-lg font-bold text-slate-900 mb-4" style={{ letterSpacing: "-0.025em" }}>
-                  Opinie{" "}
-                  {business.totalReviews > 0 && (
-                    <span className="text-slate-400 font-normal text-base">({business.totalReviews})</span>
-                  )}
-                </h2>
+            <section className="fade-rise fade-rise-d5">
+              <h2 className="text-lg font-bold text-slate-900 mb-4" style={{ letterSpacing: "-0.025em" }}>
+                Opinie{" "}
+                {business.totalReviews > 0 && (
+                  <span className="text-slate-400 font-normal text-base">({business.totalReviews})</span>
+                )}
+              </h2>
 
+              {business.reviews.length === 0 ? (
+                <div className="rounded-2xl p-8 text-center" style={glassCard}>
+                  <div
+                    className="w-12 h-12 rounded-2xl flex items-center justify-center mx-auto mb-3"
+                    style={{
+                      background: "rgba(255,255,255,0.78)",
+                      border: "1px solid rgba(203,213,225,0.50)",
+                      boxShadow: "0 0 0 0.5px rgba(203,213,225,0.25), inset 0 1px 0 rgba(255,255,255,0.90)",
+                    }}
+                  >
+                    <svg className="w-6 h-6 text-slate-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} aria-hidden="true">
+                      <path strokeLinecap="round" strokeLinejoin="round" d={STAR_PATH} />
+                    </svg>
+                  </div>
+                  <p className="text-sm font-semibold text-slate-800">Ten salon nie ma jeszcze opinii</p>
+                  <p className="text-xs text-slate-500 mt-1 max-w-xs mx-auto leading-relaxed">
+                    Opinię może wystawić tylko klient po zakończonej wizycie — dzięki temu wszystkie oceny są prawdziwe.
+                  </p>
+                </div>
+              ) : (
+                <>
                 {business.averageRating > 0 && (
                   <div className="rounded-2xl p-5 mb-3 flex items-center gap-6" style={glassCard}>
                     <div className="text-center flex-shrink-0">
                       <p className="text-4xl font-bold text-slate-900 tabular-nums" style={{ letterSpacing: "-0.03em" }}>
                         {business.averageRating.toFixed(1)}
                       </p>
-                      <div className="flex items-center justify-center gap-1 mt-1">
-                        <Star className="w-3.5 h-3.5" />
-                        <span className="text-xs text-slate-500">
-                          {business.totalReviews} {reviewsWord(business.totalReviews)}
-                        </span>
+                      <div className="flex justify-center mt-1.5">
+                        <StarRow rating={business.averageRating} sizeClass="w-3.5 h-3.5" />
                       </div>
+                      <p className="text-xs text-slate-500 mt-1 tabular-nums">
+                        {business.totalReviews} {reviewsWord(business.totalReviews)}
+                      </p>
                     </div>
                     {distribution ? (
                       <div className="flex-1 min-w-0 space-y-1.5">
@@ -746,9 +792,8 @@ export default async function BusinessProfilePage({
                             <p className="text-sm font-semibold text-slate-900">
                               {review.customer.firstName} {review.customer.lastName[0]}.
                             </p>
-                            <div className="flex items-center gap-1 mt-0.5">
-                              <Star className="w-3.5 h-3.5" />
-                              <span className="text-xs font-semibold text-slate-700 tabular-nums">{review.rating}.0</span>
+                            <div className="mt-0.5" role="img" aria-label={`Ocena ${review.rating} na 5`}>
+                              <StarRow rating={review.rating} sizeClass="w-3 h-3" />
                             </div>
                           </div>
                         </div>
@@ -762,8 +807,9 @@ export default async function BusinessProfilePage({
                     </div>
                   ))}
                 </div>
-              </section>
-            )}
+                </>
+              )}
+            </section>
           </div>
 
           {/* Right column — Booking widget */}

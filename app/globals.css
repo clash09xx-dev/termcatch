@@ -378,10 +378,12 @@
   to   { opacity: 1; transform: scale(1) translateY(0); }
 }
 
-/* Staggered section entrance — RSC-safe (see .fade-rise) */
+/* Staggered section entrance — RSC-safe (see .fade-rise).
+   Ends at transform:none so the retained fill-mode style never becomes
+   a containing block for position:fixed descendants (sheets, modals). */
 @keyframes fade-rise {
   from { opacity: 0; transform: translateY(12px); }
-  to   { opacity: 1; transform: translateY(0); }
+  to   { opacity: 1; transform: none; }
 }
 
 /* Dot pulse — for status indicators */

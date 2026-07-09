@@ -11,87 +11,40 @@ import { Suspense } from "react";
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { LandingNav } from "@/components/layout/landing-nav";
-import { formatCurrency } from "@/lib/utils";
+import { formatCurrency, cn } from "@/lib/utils";
 import { ServiceCategory, BusinessStatus } from "@prisma/client";
-import SearchFilters from "./search-filters";
-
-// ─── Category map ───────────────────────────────────────────────────────────
-
-const CATEGORY_LABELS: Partial<Record<ServiceCategory, string>> = {
-  HAIR_SALON: "Fryzjer",
-  BARBER: "Barber",
-  NAIL_SALON: "Paznokcie",
-  MASSAGE: "Masaż",
-  SPA: "SPA",
-  BEAUTY_CLINIC: "Klinika urody",
-  EYEBROWS_LASHES: "Brwi & Rzęsy",
-  MAKEUP: "Makijaż",
-  TATTOO: "Tatuaż",
-  PIERCING: "Piercing",
-  TANNING: "Solarium",
-  PHYSIOTHERAPY: "Fizjoterapia",
-  PERSONAL_TRAINER: "Trener personalny",
-  YOGA: "Joga",
-  PILATES: "Pilates",
-  NUTRITIONIST: "Dietetyk",
-  PSYCHOLOGIST: "Psycholog",
-  PSYCHIATRIST: "Psychiatra",
-  DIETICIAN: "Dietetyk",
-  GENERAL_PHYSICIAN: "Lekarz ogólny",
-  DENTIST: "Stomatolog",
-  DERMATOLOGIST: "Dermatolog",
-  GYNECOLOGIST: "Ginekolog",
-  OPHTHALMOLOGIST: "Okulista",
-  ORTHOPEDIST: "Ortopeda",
-  PEDIATRICIAN: "Pediatra",
-  PET_GROOMING: "Grooming",
-  PHOTOGRAPHY: "Fotografia",
-};
+import { parseCategoryParam, categoryLabel } from "@/lib/categories";
+import { PlaceholderCover } from "@/components/ui/placeholder-cover";
+import { FilterPanel, MobileFilters } from "./search-filters";
 
 const PAGE_SIZE = 20;
+const PRICE_SORT_CAP = 500;
 
-// ─── Stars SVG ───────────────────────────────────────────────────────────────
+const INK = "linear-gradient(180deg, #1E293B 0%, #0F172A 100%)";
 
-function StarRating({ rating, count }: { rating: number; count: number }) {
-  const rounded = Math.round(rating * 2) / 2;
+const STAR_PATH =
+  "M11.48 3.499a.562.562 0 0 1 1.04 0l2.125 5.111a.563.563 0 0 0 .475.345l5.518.442c.499.04.701.663.321.988l-4.204 3.602a.563.563 0 0 0-.182.557l1.285 5.385a.562.562 0 0 1-.84.61l-4.725-2.885a.562.562 0 0 0-.586 0L6.982 20.54a.562.562 0 0 1-.84-.61l1.285-5.386a.562.562 0 0 0-.182-.557l-4.204-3.602a.562.562 0 0 1 .321-.988l5.518-.442a.563.563 0 0 0 .475-.345L11.48 3.5Z";
+
+// Five-star row filled to the exact average (fractional fill via width clip)
+function StarRow({ rating, sizeClass = "w-3 h-3" }: { rating: number; sizeClass?: string }) {
   return (
-    <div className="flex items-center gap-1.5">
-      <div className="flex items-center gap-0.5">
-        {[1, 2, 3, 4, 5].map((star) => {
-          const filled = rounded >= star;
-          const half = !filled && rounded >= star - 0.5;
-          return (
-            <svg
-              key={star}
-              className={`w-3.5 h-3.5 ${filled || half ? "text-amber-400" : "text-gray-200"}`}
-              viewBox="0 0 24 24"
-              fill={filled ? "currentColor" : half ? "url(#half)" : "none"}
-              stroke="currentColor"
-              strokeWidth={filled || half ? 0 : 1.5}
-            >
-              {half && (
-                <defs>
-                  <linearGradient id={`half-${star}`}>
-                    <stop offset="50%" stopColor="currentColor" />
-                    <stop offset="50%" stopColor="transparent" />
-                  </linearGradient>
-                </defs>
-              )}
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                d="M11.48 3.499a.562.562 0 0 1 1.04 0l2.125 5.111a.563.563 0 0 0 .475.345l5.518.442c.499.04.701.663.321.988l-4.204 3.602a.563.563 0 0 0-.182.557l1.285 5.385a.562.562 0 0 1-.84.61l-4.725-2.885a.562.562 0 0 0-.586 0L6.982 20.54a.562.562 0 0 1-.84-.61l1.285-5.386a.562.562 0 0 0-.182-.557l-4.204-3.602a.562.562 0 0 1 .321-.988l5.518-.442a.563.563 0 0 0 .475-.345L11.48 3.5Z"
-                fill={filled ? "currentColor" : "none"}
-              />
+    <span className="inline-flex items-center gap-0.5" aria-hidden="true">
+      {[1, 2, 3, 4, 5].map((i) => {
+        const fill = Math.max(0, Math.min(1, rating - (i - 1)));
+        return (
+          <span key={i} className={cn("relative inline-block flex-shrink-0", sizeClass)}>
+            <svg className={cn("absolute inset-0 text-slate-300", sizeClass)} viewBox="0 0 24 24" fill="currentColor">
+              <path d={STAR_PATH} />
             </svg>
-          );
-        })}
-      </div>
-      <span className="text-xs text-gray-500">
-        {rating > 0 ? rating.toFixed(1) : "—"}
-        {count > 0 && <span className="ml-1 text-gray-400">({count})</span>}
-      </span>
-    </div>
+            <span className="absolute inset-0 overflow-hidden" style={{ width: `${fill * 100}%` }}>
+              <svg className={cn("text-amber-400", sizeClass)} viewBox="0 0 24 24" fill="currentColor">
+                <path d={STAR_PATH} />
+              </svg>
+            </span>
+          </span>
+        );
+      })}
+    </span>
   );
 }
 
@@ -109,35 +62,31 @@ type BusinessWithServices = {
   services: { price: number; discountedPrice: number | null }[];
 };
 
-function BusinessCard({ business }: { business: BusinessWithServices }) {
-  const minPrice = business.services.length > 0
+function minServicePrice(business: BusinessWithServices): number | null {
+  return business.services.length > 0
     ? Math.min(...business.services.map((s) => s.discountedPrice ?? s.price))
     : null;
-  const categoryLabel = CATEGORY_LABELS[business.category] ?? business.category;
+}
+
+function BusinessCard({ business }: { business: BusinessWithServices }) {
+  const minPrice = minServicePrice(business);
 
   return (
     <Link
       href={`/b/${business.slug}`}
-      className="group overflow-hidden rounded-2xl glass-shimmer-wrap search-card"
+      className="group overflow-hidden rounded-2xl search-card"
     >
-      {/* Cover image */}
+      {/* Cover */}
       <div className="relative h-44 overflow-hidden">
         {business.coverImageUrl ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img
             src={business.coverImageUrl}
             alt={business.name}
-            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+            className="w-full h-full object-cover group-hover:scale-[1.04] transition-transform duration-500"
           />
         ) : (
-          <div
-            className="w-full h-full flex items-center justify-center"
-            style={{ background: "linear-gradient(135deg, rgba(241,245,249,0.90) 0%, rgba(226,232,240,0.60) 100%)" }}
-          >
-            <svg className="w-10 h-10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.2} style={{ color: "#CBD5E1" }}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 21v-7.5a.75.75 0 0 1 .75-.75h3a.75.75 0 0 1 .75.75V21m-4.5 0H2.36m11.14 0H18m0 0h3.64m-1.39 0V9.349M3.75 21V9.349m0 0a3.001 3.001 0 0 0 3.75-.615A2.993 2.993 0 0 0 9.75 9.75c.896 0 1.7-.393 2.25-1.016a2.993 2.993 0 0 0 2.25 1.016 2.993 2.993 0 0 0 2.25-1.016 3.001 3.001 0 0 0 3.75.614" />
-            </svg>
-          </div>
+          <PlaceholderCover category={business.category} glyphClassName="w-11 h-11 sm:w-12 sm:h-12" />
         )}
         {/* Glass category chip */}
         <span
@@ -151,30 +100,60 @@ function BusinessCard({ business }: { business: BusinessWithServices }) {
             boxShadow: "0 0 0 0.5px rgba(203,213,225,0.25), inset 0 1px 0 rgba(255,255,255,0.95)",
           }}
         >
-          {categoryLabel}
+          {categoryLabel(business.category)}
         </span>
       </div>
 
       {/* Info */}
       <div className="p-4">
-        <h3 className="font-semibold text-slate-800 text-sm leading-snug line-clamp-1">
+        <h3
+          className="font-semibold text-slate-900 text-[15px] leading-snug line-clamp-1"
+          style={{ letterSpacing: "-0.01em" }}
+        >
           {business.name}
         </h3>
+
         <div className="flex items-center gap-1.5 mt-1.5">
-          <svg className="w-3.5 h-3.5 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} style={{ color: "#94A3B8" }}>
+          <svg className="w-3.5 h-3.5 flex-shrink-0 text-slate-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} aria-hidden="true">
             <path strokeLinecap="round" strokeLinejoin="round" d="M15 10.5a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
             <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1 1 15 0Z" />
           </svg>
-          <span className="text-xs text-slate-400">{business.city}</span>
+          <span className="text-xs text-slate-500">{business.city}</span>
         </div>
-        <div className="mt-2.5">
-          <StarRating rating={business.averageRating} count={business.totalReviews} />
+
+        {/* Rating — single star + number, or honest "Nowy salon" chip */}
+        <div className="mt-2.5 flex items-center justify-between gap-2">
+          {business.totalReviews > 0 ? (
+            <span
+              className="inline-flex items-center gap-1.5"
+              role="img"
+              aria-label={`Ocena ${business.averageRating.toFixed(1)} na 5, ${business.totalReviews} opinii`}
+            >
+              <StarRow rating={business.averageRating} sizeClass="w-3 h-3" />
+              <span className="text-xs font-semibold text-slate-900 tabular-nums">
+                {business.averageRating.toFixed(1)}
+              </span>
+              <span className="text-xs text-slate-500 tabular-nums">({business.totalReviews})</span>
+            </span>
+          ) : (
+            <span
+              className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-semibold text-slate-600"
+              style={{
+                background: "rgba(255,255,255,0.70)",
+                border: "1px solid rgba(203,213,225,0.55)",
+                boxShadow: "inset 0 1px 0 rgba(255,255,255,0.90)",
+              }}
+            >
+              Nowy salon
+            </span>
+          )}
+
+          {minPrice !== null && (
+            <span className="text-sm font-bold text-slate-900 tabular-nums" style={{ letterSpacing: "-0.01em" }}>
+              od {formatCurrency(minPrice)}
+            </span>
+          )}
         </div>
-        {minPrice !== null && (
-          <p className="mt-2.5 text-sm font-semibold text-slate-800">
-            Od {formatCurrency(minPrice)}
-          </p>
-        )}
       </div>
     </Link>
   );
@@ -196,8 +175,7 @@ function SkeletonCard() {
       <div className="p-4 space-y-2.5">
         <div className="h-4 rounded-lg w-3/4 skeleton" />
         <div className="h-3 rounded-lg w-1/3 skeleton" />
-        <div className="h-3 rounded-lg w-1/2 skeleton" />
-        <div className="h-4 rounded-lg w-1/4 mt-1 skeleton" />
+        <div className="h-4 rounded-lg w-1/2 skeleton" />
       </div>
     </div>
   );
@@ -220,69 +198,82 @@ type SearchParams = {
   category?: string;
   city?: string;
   date?: string;
+  sort?: string;
   page?: string;
 };
+
+function buildSearchUrl(params: SearchParams, overrides: Partial<SearchParams>): string {
+  const merged = { ...params, ...overrides };
+  const url = new URLSearchParams();
+  if (merged.q) url.set("q", merged.q);
+  if (merged.category) url.set("category", merged.category);
+  if (merged.city) url.set("city", merged.city);
+  if (merged.sort && merged.sort !== "rating") url.set("sort", merged.sort);
+  if (merged.page && merged.page !== "1") url.set("page", merged.page);
+  const qs = url.toString();
+  return `/search${qs ? `?${qs}` : ""}`;
+}
 
 async function SearchResults({ searchParams }: { searchParams: SearchParams }) {
   const page = Math.max(1, parseInt(searchParams.page ?? "1", 10));
   const skip = (page - 1) * PAGE_SIZE;
+  const sort = searchParams.sort === "price" ? "price" : "rating";
 
-  const categoryFilter = searchParams.category &&
-    Object.keys(ServiceCategory).includes(searchParams.category)
-    ? (searchParams.category as ServiceCategory)
-    : undefined;
+  // Accepts enum names, canonical slugs, and legacy lowercase slugs —
+  // old category links filter correctly instead of silently no-opping.
+  const categoryFilter = parseCategoryParam(searchParams.category);
+
+  const where = {
+    status: BusinessStatus.ACTIVE,
+    ...(categoryFilter ? { category: categoryFilter } : {}),
+    ...(searchParams.city ? { city: { contains: searchParams.city, mode: "insensitive" as const } } : {}),
+    ...(searchParams.q
+      ? {
+          OR: [
+            { name: { contains: searchParams.q, mode: "insensitive" as const } },
+            { description: { contains: searchParams.q, mode: "insensitive" as const } },
+            { shortDescription: { contains: searchParams.q, mode: "insensitive" as const } },
+          ],
+        }
+      : {}),
+  };
 
   let businesses: BusinessWithServices[] = [];
   let totalCount = 0;
 
   try {
-    businesses = await prisma.business.findMany({
-    where: {
-      status: BusinessStatus.ACTIVE,
-      ...(categoryFilter ? { category: categoryFilter } : {}),
-      ...(searchParams.city ? { city: { contains: searchParams.city, mode: "insensitive" } } : {}),
-      ...(searchParams.q
-        ? {
-            OR: [
-              { name: { contains: searchParams.q, mode: "insensitive" } },
-              { description: { contains: searchParams.q, mode: "insensitive" } },
-              { shortDescription: { contains: searchParams.q, mode: "insensitive" } },
-            ],
-          }
-        : {}),
-    },
-    include: {
-      services: {
-        where: { isActive: true },
-        select: { price: true, discountedPrice: true },
-      },
-    },
-    orderBy: { averageRating: "desc" },
-    skip,
-    take: PAGE_SIZE,
-  });
-
-    totalCount = await prisma.business.count({
-      where: {
-        status: BusinessStatus.ACTIVE,
-        ...(categoryFilter ? { category: categoryFilter } : {}),
-        ...(searchParams.city ? { city: { contains: searchParams.city, mode: "insensitive" } } : {}),
-        ...(searchParams.q
-          ? {
-              OR: [
-                { name: { contains: searchParams.q, mode: "insensitive" } },
-                { description: { contains: searchParams.q, mode: "insensitive" } },
-                { shortDescription: { contains: searchParams.q, mode: "insensitive" } },
-              ],
-            }
-          : {}),
-      },
-    });
+    if (sort === "price") {
+      // Cheapest-first needs the min service price — computed here, so fetch
+      // the (capped) matching set and paginate after sorting.
+      const all = await prisma.business.findMany({
+        where,
+        include: {
+          services: { where: { isActive: true }, select: { price: true, discountedPrice: true } },
+        },
+        orderBy: { averageRating: "desc" },
+        take: PRICE_SORT_CAP,
+      });
+      all.sort((a, b) => (minServicePrice(a) ?? Infinity) - (minServicePrice(b) ?? Infinity));
+      totalCount = all.length;
+      businesses = all.slice(skip, skip + PAGE_SIZE);
+    } else {
+      businesses = await prisma.business.findMany({
+        where,
+        include: {
+          services: { where: { isActive: true }, select: { price: true, discountedPrice: true } },
+        },
+        orderBy: { averageRating: "desc" },
+        skip,
+        take: PAGE_SIZE,
+      });
+      totalCount = await prisma.business.count({ where });
+    }
   } catch {
     // DB not available — show empty state instead of crashing
   }
 
   const totalPages = Math.ceil(totalCount / PAGE_SIZE);
+  const hasFilters = Boolean(searchParams.q || searchParams.category || searchParams.city);
 
   if (businesses.length === 0) {
     return (
@@ -297,28 +288,73 @@ async function SearchResults({ searchParams }: { searchParams: SearchParams }) {
             boxShadow: "0 0 0 0.5px rgba(203,213,225,0.25), 0 4px 16px rgba(100,116,139,0.08), inset 0 1px 0 rgba(255,255,255,0.90)",
           }}
         >
-          <svg className="w-7 h-7" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} style={{ color: "#94A3B8" }}>
+          <svg className="w-7 h-7 text-slate-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} aria-hidden="true">
             <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
           </svg>
         </div>
-        <p className="text-slate-800 font-semibold">Nie znaleziono salonów</p>
-        <p className="text-slate-400 text-sm mt-1">Spróbuj zmienić filtry lub wyszukaj inną frazę.</p>
+        <p className="text-slate-900 font-semibold">Nie znaleziono salonów</p>
+        <p className="text-slate-500 text-sm mt-1 mb-5">
+          Spróbuj zmienić filtry lub wyszukaj inną frazę.
+        </p>
+        {hasFilters && (
+          <Link
+            href="/search"
+            className="btn-spring px-5 py-2.5 rounded-xl text-sm font-semibold"
+            style={{
+              background: INK,
+              border: "1px solid #0F172A",
+              color: "#F8FAFC",
+              boxShadow: "0 1px 2px rgba(0,0,0,0.20), 0 10px 24px rgba(15,23,42,0.28), inset 0 1px 0 rgba(255,255,255,0.15)",
+            }}
+          >
+            Wyczyść filtry
+          </Link>
+        )}
       </div>
     );
   }
 
-  const params = new URLSearchParams();
-  if (searchParams.q) params.set("q", searchParams.q);
-  if (searchParams.category) params.set("category", searchParams.category);
-  if (searchParams.city) params.set("city", searchParams.city);
-  if (searchParams.date) params.set("date", searchParams.date);
+  const sortOptions = [
+    { key: "rating", label: "Ocena" },
+    { key: "price", label: "Cena" },
+  ];
 
   return (
     <div>
-      <p className="text-sm text-slate-400 mb-4">
-        Znaleziono <span className="font-semibold text-slate-800">{totalCount}</span>{" "}
-        {totalCount === 1 ? "salon" : totalCount < 5 ? "salony" : "salonów"}
-      </p>
+      {/* Count + sort */}
+      <div className="flex items-center justify-between gap-3 mb-4">
+        <p className="text-sm text-slate-500 tabular-nums">
+          {totalCount} {totalCount === 1 ? "wynik" : totalCount < 5 ? "wyniki" : "wyników"}
+        </p>
+        <div
+          className="inline-flex items-center gap-0.5 p-0.5 rounded-xl"
+          style={{
+            background: "rgba(255,255,255,0.65)",
+            border: "1px solid rgba(203,213,225,0.45)",
+            boxShadow: "0 0 0 0.5px rgba(203,213,225,0.20), inset 0 1px 0 rgba(255,255,255,0.90)",
+          }}
+          role="group"
+          aria-label="Sortowanie wyników"
+        >
+          {sortOptions.map((opt) => {
+            const active = sort === opt.key;
+            return (
+              <Link
+                key={opt.key}
+                href={buildSearchUrl(searchParams, { sort: opt.key, page: "1" })}
+                aria-current={active ? "true" : undefined}
+                className={cn(
+                  "px-3.5 py-1.5 rounded-[10px] text-xs font-semibold transition-colors",
+                  active ? "text-white" : "text-slate-500 hover:text-slate-800"
+                )}
+                style={active ? { background: INK, boxShadow: "0 1px 2px rgba(0,0,0,0.15), inset 0 1px 0 rgba(255,255,255,0.15)" } : undefined}
+              >
+                {opt.label}
+              </Link>
+            );
+          })}
+        </div>
+      </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
         {businesses.map((business) => (
@@ -331,19 +367,19 @@ async function SearchResults({ searchParams }: { searchParams: SearchParams }) {
         <div className="flex items-center justify-center gap-2 mt-10">
           {page > 1 && (
             <Link
-              href={`/search?${params.toString()}&page=${page - 1}`}
-              className="px-4 py-2 text-sm font-medium rounded-xl transition-all"
+              href={buildSearchUrl(searchParams, { page: String(page - 1) })}
+              className="btn-spring px-4 py-2 text-sm font-medium rounded-xl"
               style={{ background: "rgba(255,255,255,0.78)", backdropFilter: "blur(20px) saturate(200%)", WebkitBackdropFilter: "blur(20px) saturate(200%)", border: "1px solid rgba(203,213,225,0.45)", color: "#475569", boxShadow: "0 0 0 0.5px rgba(203,213,225,0.25), inset 0 1px 0 rgba(255,255,255,0.90)" }}
             >
               Poprzednia
             </Link>
           )}
-          <span className="text-sm text-slate-400 px-2">Strona {page} z {totalPages}</span>
+          <span className="text-sm text-slate-500 px-2 tabular-nums">Strona {page} z {totalPages}</span>
           {page < totalPages && (
             <Link
-              href={`/search?${params.toString()}&page=${page + 1}`}
-              className="px-4 py-2 text-sm font-medium rounded-xl transition-all"
-              style={{ background: "rgba(203,213,225,0.20)", backdropFilter: "blur(20px) saturate(200%)", WebkitBackdropFilter: "blur(20px) saturate(200%)", border: "1px solid rgba(203,213,225,0.55)", color: "#334155", boxShadow: "0 0 0 0.5px rgba(203,213,225,0.25), inset 0 1px 0 rgba(255,255,255,0.80)" }}
+              href={buildSearchUrl(searchParams, { page: String(page + 1) })}
+              className="btn-spring px-4 py-2 text-sm font-semibold rounded-xl"
+              style={{ background: INK, border: "1px solid #0F172A", color: "#F8FAFC", boxShadow: "0 1px 2px rgba(0,0,0,0.20), 0 8px 20px rgba(15,23,42,0.24), inset 0 1px 0 rgba(255,255,255,0.15)" }}
             >
               Następna
             </Link>
@@ -362,6 +398,17 @@ export default async function SearchPage({
   searchParams: Promise<SearchParams>;
 }) {
   const params = await searchParams;
+  const categoryFilter = parseCategoryParam(params.category);
+
+  const title = params.q
+    ? `Wyniki dla „${params.q}"`
+    : categoryFilter
+    ? categoryLabel(categoryFilter)
+    : "Znajdź specjalistę";
+
+  const subtitle = params.city
+    ? `Salony i specjaliści w: ${params.city}`
+    : "Salony i specjaliści z rezerwacją online";
 
   return (
     <div
@@ -372,30 +419,36 @@ export default async function SearchPage({
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 pt-24 pb-16">
         {/* Header */}
-        <div className="mb-6">
-          <h1 className="text-2xl font-bold text-slate-900" style={{ letterSpacing: "-0.03em" }}>
-            {params.q ? `Wyniki dla „${params.q}"` : "Znajdź specjalistę"}
+        <div className="mb-6 fade-rise">
+          <h1 className="text-2xl sm:text-[1.75rem] font-bold text-slate-900" style={{ letterSpacing: "-0.03em" }}>
+            {title}
           </h1>
-          <p className="text-sm text-slate-400 mt-1">
-            Salony i specjaliści dostępni online
-          </p>
+          <p className="text-sm text-slate-500 mt-1">{subtitle}</p>
+        </div>
+
+        {/* Mobile filter bar */}
+        <div className="lg:hidden mb-5 fade-rise fade-rise-d1">
+          <MobileFilters
+            currentQ={params.q}
+            currentCategory={categoryFilter ?? params.category}
+            currentCity={params.city}
+          />
         </div>
 
         <div className="flex gap-8">
           {/* Sidebar */}
-          <aside className="hidden lg:block w-[280px] flex-shrink-0">
+          <aside className="hidden lg:block w-[280px] flex-shrink-0 fade-rise fade-rise-d1">
             <div className="sticky top-24">
-              <SearchFilters
+              <FilterPanel
                 currentQ={params.q}
-                currentCategory={params.category}
+                currentCategory={categoryFilter ?? params.category}
                 currentCity={params.city}
-                currentDate={params.date}
               />
             </div>
           </aside>
 
           {/* Results */}
-          <main className="flex-1 min-w-0">
+          <main className="flex-1 min-w-0 fade-rise fade-rise-d2">
             <Suspense fallback={<SkeletonGrid />}>
               <SearchResults searchParams={params} />
             </Suspense>
