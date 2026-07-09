@@ -91,33 +91,34 @@ const G = {
 // Glass elements need colored surfaces underneath to look physical.
 const BG = {
   hero: [
-    "radial-gradient(ellipse 100% 70% at 80% -10%, rgba(226,232,240,0.50) 0%, transparent 55%)",
-    "radial-gradient(ellipse 70% 60% at -5% 85%, rgba(203,213,225,0.30) 0%, transparent 55%)",
-    "radial-gradient(ellipse 50% 40% at 50% 50%, rgba(241,245,249,0.60) 0%, transparent 65%)",
-    "linear-gradient(168deg, #F4F7FB 0%, #F8FAFC 45%, #EEF4FB 100%)",
+    "radial-gradient(ellipse 120% 80% at 85% -20%, rgba(203,213,225,0.70) 0%, transparent 50%)",
+    "radial-gradient(ellipse 80% 70% at -8% 90%, rgba(148,163,184,0.28) 0%, transparent 55%)",
+    "radial-gradient(ellipse 60% 50% at 50% 55%, rgba(226,232,240,0.65) 0%, transparent 65%)",
+    "radial-gradient(ellipse 40% 35% at 20% 25%, rgba(203,213,225,0.35) 0%, transparent 60%)",
+    "linear-gradient(168deg, #E8EFF8 0%, #F1F6FB 40%, #E5EEF9 100%)",
   ].join(", "),
 
   steps: [
-    "radial-gradient(ellipse 80% 65% at 50% 60%, rgba(203,213,225,0.18) 0%, transparent 65%)",
-    "radial-gradient(ellipse 50% 40% at 90% 10%, rgba(226,232,240,0.20) 0%, transparent 55%)",
-    "#F3F7FB",
+    "radial-gradient(ellipse 90% 70% at 50% 60%, rgba(203,213,225,0.24) 0%, transparent 65%)",
+    "radial-gradient(ellipse 55% 45% at 90% 10%, rgba(148,163,184,0.16) 0%, transparent 55%)",
+    "#EEF3FA",
   ].join(", "),
 
   business: [
-    "radial-gradient(ellipse 90% 60% at 20% 50%, rgba(203,213,225,0.16) 0%, transparent 60%)",
-    "radial-gradient(ellipse 60% 50% at 80% 80%, rgba(226,232,240,0.14) 0%, transparent 55%)",
-    "#EFF4FA",
+    "radial-gradient(ellipse 100% 65% at 20% 50%, rgba(203,213,225,0.22) 0%, transparent 60%)",
+    "radial-gradient(ellipse 65% 55% at 85% 80%, rgba(148,163,184,0.16) 0%, transparent 55%)",
+    "#E9EFF8",
   ].join(", "),
 
   numbers: [
-    "radial-gradient(ellipse 70% 60% at 50% 50%, rgba(226,232,240,0.20) 0%, transparent 65%)",
-    "#F3F7FB",
+    "radial-gradient(ellipse 80% 65% at 50% 50%, rgba(203,213,225,0.26) 0%, transparent 65%)",
+    "#EEF3FA",
   ].join(", "),
 
   cta: [
-    "radial-gradient(ellipse 80% 65% at 50% 80%, rgba(203,213,225,0.18) 0%, transparent 60%)",
-    "radial-gradient(ellipse 60% 50% at 20% 20%, rgba(226,232,240,0.16) 0%, transparent 55%)",
-    "#F0F5FB",
+    "radial-gradient(ellipse 90% 70% at 50% 85%, rgba(203,213,225,0.24) 0%, transparent 60%)",
+    "radial-gradient(ellipse 65% 55% at 15% 15%, rgba(148,163,184,0.18) 0%, transparent 55%)",
+    "#EBF1F9",
   ].join(", "),
 };
 
@@ -491,6 +492,35 @@ export default function HomePage() {
           </motion.div>
         </motion.div>
       </section>
+
+      {/* ── MARQUEE TICKER ───────────────────────────────────────── */}
+      <div
+        className="py-4 marquee-wrap"
+        style={{ background: "rgba(203,213,225,0.14)", borderTop: "1px solid rgba(203,213,225,0.30)", borderBottom: "1px solid rgba(203,213,225,0.30)" }}
+      >
+        <div className="marquee-track gap-3 px-3">
+          {[
+            "Fryzjer", "Barber", "Masaż", "Manicure", "Kosmetyczka", "Tatuaż",
+            "Spa & wellness", "Fizjoterapia", "Joga", "Pilates", "Dermatolog",
+            "Stomatolog", "Trener personalny", "Makijaż", "Brwi & Rzęsy",
+            "Fryzjer", "Barber", "Masaż", "Manicure", "Kosmetyczka", "Tatuaż",
+            "Spa & wellness", "Fizjoterapia", "Joga", "Pilates", "Dermatolog",
+            "Stomatolog", "Trener personalny", "Makijaż", "Brwi & Rzęsy",
+          ].map((label, i) => (
+            <span
+              key={i}
+              className="flex-shrink-0 px-3.5 py-1.5 rounded-full text-xs font-medium text-slate-500"
+              style={{
+                background: "rgba(255,255,255,0.72)",
+                border: "1px solid rgba(203,213,225,0.45)",
+                boxShadow: "0 0 0 0.5px rgba(203,213,225,0.25), inset 0 1px 0 rgba(255,255,255,0.90)",
+              }}
+            >
+              {label}
+            </span>
+          ))}
+        </div>
+      </div>
 
       <div className="grad-sep" />
 
