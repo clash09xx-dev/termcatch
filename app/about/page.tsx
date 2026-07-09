@@ -33,11 +33,11 @@ const G = {
     borderRadius: "1.5rem",
   } as React.CSSProperties,
   btn: {
-    background: "linear-gradient(135deg, #CBD5E1 0%, #94A3B8 50%, #CBD5E1 100%)",
-    color: "#0F172A",
+    background: "linear-gradient(180deg, #1E293B 0%, #0F172A 100%)",
+    color: "#F8FAFC",
     boxShadow:
-      "0 0 0 0.5px rgba(148,163,184,0.45), 0 1px 2px rgba(0,0,0,0.10), inset 0 1px 0 rgba(255,255,255,0.40)",
-    border: "1px solid rgba(148,163,184,0.45)",
+      "0 1px 2px rgba(0,0,0,0.20), 0 10px 24px rgba(15,23,42,0.28), inset 0 1px 0 rgba(255,255,255,0.15)",
+    border: "1px solid #0F172A",
     borderRadius: "0.75rem",
     padding: "0.75rem 1.75rem",
     fontSize: "0.875rem",
@@ -104,7 +104,7 @@ export default function AboutPage() {
             <br />
             <span
               style={{
-                background: "linear-gradient(135deg, #94A3B8 0%, #64748B 50%, #94A3B8 100%)",
+                background: "linear-gradient(135deg, #1E293B 0%, #334155 50%, #1E293B 100%)",
                 WebkitBackgroundClip: "text",
                 WebkitTextFillColor: "transparent",
                 backgroundClip: "text",

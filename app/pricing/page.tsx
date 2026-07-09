@@ -38,12 +38,12 @@ const cardHighlight: React.CSSProperties = {
   transform: "scale(1.025)",
 };
 
-const silverBtn: React.CSSProperties = {
-  background: "linear-gradient(135deg, #CBD5E1 0%, #94A3B8 50%, #CBD5E1 100%)",
-  color: "#0F172A",
+const inkBtn: React.CSSProperties = {
+  background: "linear-gradient(180deg, #1E293B 0%, #0F172A 100%)",
+  color: "#F8FAFC",
   boxShadow:
-    "0 0 0 0.5px rgba(148,163,184,0.45), 0 1px 2px rgba(0,0,0,0.10), inset 0 1px 0 rgba(255,255,255,0.40)",
-  border: "1px solid rgba(148,163,184,0.45)",
+    "0 1px 2px rgba(0,0,0,0.20), 0 10px 24px rgba(15,23,42,0.28), inset 0 1px 0 rgba(255,255,255,0.15)",
+  border: "1px solid #0F172A",
   borderRadius: "0.75rem",
   padding: "0.75rem 0",
   width: "100%",
@@ -216,7 +216,7 @@ export default function PricingPage() {
               O połowę taniej niż{" "}
               <span
                 style={{
-                  background: "linear-gradient(135deg, #94A3B8 0%, #64748B 100%)",
+                  background: "linear-gradient(135deg, #1E293B 0%, #334155 50%, #1E293B 100%)",
                   WebkitBackgroundClip: "text",
                   WebkitTextFillColor: "transparent",
                   backgroundClip: "text",
@@ -265,11 +265,11 @@ export default function PricingPage() {
                 href="/register?role=business"
                 className="btn-spring glass-shimmer-wrap whitespace-nowrap px-5 py-2.5 text-sm font-semibold"
                 style={{
-                  background: "linear-gradient(135deg, #CBD5E1 0%, #94A3B8 50%, #CBD5E1 100%)",
-                  color: "#0F172A",
-                  border: "1px solid rgba(148,163,184,0.45)",
+                  background: "linear-gradient(180deg, #1E293B 0%, #0F172A 100%)",
+                  color: "#F8FAFC",
+                  border: "1px solid #0F172A",
                   borderRadius: "0.75rem",
-                  boxShadow: "0 1px 2px rgba(0,0,0,0.10), inset 0 1px 0 rgba(255,255,255,0.40)",
+                  boxShadow: "0 1px 2px rgba(0,0,0,0.20), 0 10px 24px rgba(15,23,42,0.28), inset 0 1px 0 rgba(255,255,255,0.15)",
                 }}
               >
                 Odbierz ofertę
@@ -350,7 +350,7 @@ export default function PricingPage() {
                 <Link
                   href={plan.href}
                   className="btn-spring glass-shimmer-wrap"
-                  style={plan.highlight ? silverBtn : ghostBtn}
+                  style={plan.highlight ? inkBtn : ghostBtn}
                 >
                   {plan.cta}
                 </Link>

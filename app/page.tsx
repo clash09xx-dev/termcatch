@@ -72,15 +72,13 @@ const G = {
     boxShadow: "0 0 0 0.5px rgba(203,213,225,0.20), inset 0 1px 0 rgba(255,255,255,0.85)",
   } as React.CSSProperties,
 
-  // Primary CTA button — chrome silver
-  silverBtn: {
-    background: "rgba(148,163,184,0.16)",
-    backdropFilter: "blur(16px) saturate(190%)",
-    WebkitBackdropFilter: "blur(16px) saturate(190%)",
-    border: "1px solid rgba(203,213,225,0.60)",
-    color: "#1E293B",
+  // Primary CTA button — machined graphite ink (the one primary-action color)
+  inkBtn: {
+    background: "linear-gradient(180deg, #1E293B 0%, #0F172A 100%)",
+    border: "1px solid #0F172A",
+    color: "#F8FAFC",
     boxShadow:
-      "0 0 0 0.5px rgba(203,213,225,0.35), 0 2px 8px rgba(148,163,184,0.12), 0 8px 24px rgba(148,163,184,0.08), inset 0 1px 0 rgba(255,255,255,0.80)",
+      "0 1px 2px rgba(0,0,0,0.20), 0 10px 24px rgba(15,23,42,0.28), 0 2px 6px rgba(15,23,42,0.18), inset 0 1px 0 rgba(255,255,255,0.15)",
   } as React.CSSProperties,
 
   divider: { borderBottom: "1px solid rgba(203,213,225,0.22)" } as React.CSSProperties,
@@ -238,7 +236,7 @@ function BookingWidget() {
             <Link
               href="/register"
               className="flex items-center justify-center w-full py-3 text-sm font-semibold rounded-xl"
-              style={G.silverBtn}
+              style={G.inkBtn}
             >
               {slot !== null ? `Zarezerwuj na ${SLOTS[slot]}` : "Wybierz godzinę"}
             </Link>
@@ -315,7 +313,7 @@ function HeroSearch() {
         whileTap={{ scale: 0.985 }}
         transition={{ type: "spring", stiffness: 400, damping: 25 }}
         className="px-6 py-3.5 text-sm font-semibold rounded-xl flex items-center justify-center gap-2 flex-shrink-0"
-        style={G.silverBtn}
+        style={G.inkBtn}
       >
         <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
           <circle cx="11" cy="11" r="8" /><path d="m21 21-4.35-4.35" />
@@ -327,27 +325,6 @@ function HeroSearch() {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-
-const CATEGORIES = [
-  { label: "Fryzjer", slug: "hair_salon" },
-  { label: "Barber", slug: "barbershop" },
-  { label: "Masaż", slug: "massage" },
-  { label: "Manicure", slug: "nail_salon" },
-  { label: "Kosmetyczka", slug: "beauty_salon" },
-  { label: "Tatuaż", slug: "tattoo" },
-  { label: "Spa & wellness", slug: "spa" },
-  { label: "Makijaż", slug: "makeup" },
-  { label: "Brwi & rzęsy", slug: "brows_lashes" },
-  { label: "Depilacja", slug: "hair_removal" },
-  { label: "Fizjoterapia", slug: "physiotherapy" },
-  { label: "Podolog", slug: "podology" },
-  { label: "Dietetyk", slug: "dietician" },
-  { label: "Trener personalny", slug: "personal_trainer" },
-  { label: "Pielęgnacja brody", slug: "beard_care" },
-  { label: "Medycyna estetyczna", slug: "aesthetic_medicine" },
-  { label: "Pedicure", slug: "pedicure" },
-  { label: "Solarium", slug: "tanning" },
-];
 
 const fade = {
   hidden: { opacity: 0, y: 24 },
@@ -369,7 +346,7 @@ export default function HomePage() {
       <LandingNav />
 
       {/* ── HERO ─────────────────────────────────────────────────── */}
-      <section className="relative min-h-screen flex items-center overflow-hidden px-6 pt-16">
+      <section className="relative min-h-screen flex items-start overflow-hidden px-6 pt-28 md:pt-32 pb-16">
         {/* Dot grid — chrome refined */}
         <div
           className="absolute inset-0 pointer-events-none"
@@ -381,7 +358,7 @@ export default function HomePage() {
           }}
         />
 
-        <div className="relative z-10 max-w-7xl mx-auto w-full grid lg:grid-cols-[1fr_480px] gap-14 xl:gap-20 items-center py-20">
+        <div className="relative z-10 max-w-7xl mx-auto w-full grid lg:grid-cols-[1fr_480px] gap-14 xl:gap-20 items-center pb-20">
           {/* Left */}
           <div>
             {/* Badge */}
@@ -400,7 +377,7 @@ export default function HomePage() {
                 />
                 <span className="relative inline-flex rounded-full h-2 w-2" style={{ background: "#CBD5E1" }} />
               </span>
-              Wersja testowa · platforma w budowie — możesz już testować
+              Wczesny dostęp · dołącz jako jeden z pierwszych salonów
             </motion.div>
 
             <motion.h1
@@ -415,7 +392,7 @@ export default function HomePage() {
               <span
                 className="italic font-bold"
                 style={{
-                  background: "linear-gradient(135deg, #94A3B8 0%, #CBD5E1 45%, #94A3B8 100%)",
+                  background: "linear-gradient(135deg, #1E293B 0%, #334155 50%, #1E293B 100%)",
                   WebkitBackgroundClip: "text",
                   WebkitTextFillColor: "transparent",
                   backgroundClip: "text",
@@ -434,42 +411,17 @@ export default function HomePage() {
               Jeden link do salonu. Klienci wybierają termin sami — Ty dostajesz powiadomienie i gotowe.
             </motion.p>
 
-            {/* Glass category pills */}
+            {/* Search */}
             <motion.div
               initial={{ opacity: 0, y: 16 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6, delay: 0.3 }}
-              className="flex flex-wrap gap-2 mt-8"
-            >
-              {CATEGORIES.map((c) => (
-                <motion.div
-                  key={c.slug}
-                  whileHover={{ scale: 1.06, y: -1 }}
-                  whileTap={{ scale: 0.96 }}
-                  transition={{ type: "spring", stiffness: 420, damping: 22 }}
-                >
-                  <Link
-                    href={`/search?category=${c.slug}`}
-                    className="px-3.5 py-1.5 rounded-full text-sm text-slate-600 block"
-                    style={G.pill}
-                  >
-                    {c.label}
-                  </Link>
-                </motion.div>
-              ))}
-            </motion.div>
-
-            {/* Search */}
-            <motion.div
-              initial={{ opacity: 0, y: 14 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6, delay: 0.4 }}
               className="mt-9"
             >
               <HeroSearch />
-              <p className="mt-3 text-xs text-slate-400">
+              <p className="mt-3 text-xs text-slate-500">
                 Lub{" "}
-                <Link href="/register?role=business" className="underline underline-offset-2 hover:text-slate-600 transition-colors">
+                <Link href="/register?role=business" className="underline underline-offset-2 hover:text-slate-700 transition-colors">
                   dodaj salon za darmo →
                 </Link>
               </p>
@@ -479,7 +431,7 @@ export default function HomePage() {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ delay: 0.7 }}
-              className="mt-6 text-xs text-slate-400"
+              className="mt-6 text-xs text-slate-500"
             >
               Bez karty kredytowej · Instalacja w 5 minut · Polskie wsparcie
             </motion.p>
@@ -561,12 +513,8 @@ export default function HomePage() {
               >
                 <div className="absolute inset-0 bg-gradient-to-br from-white/60 via-transparent to-transparent pointer-events-none" />
                 <div className="relative">
-                  <div className="w-11 h-11 rounded-2xl flex items-center justify-center text-xs font-bold mb-5 relative" style={G.chip}>
+                  <div className="w-11 h-11 rounded-2xl flex items-center justify-center text-xs font-bold mb-5" style={G.chip}>
                     <span className="text-slate-500">{step.n}</span>
-                    <span className="absolute -top-1.5 -right-1.5 w-4 h-4 rounded-full text-white text-[8px] font-bold flex items-center justify-center"
-                      style={{ background: "#94A3B8" }}>
-                      {i + 1}
-                    </span>
                   </div>
                   <h3 className="text-lg font-bold mb-2 text-slate-800">{step.title}</h3>
                   <p className="text-sm leading-relaxed text-slate-500">{step.desc}</p>
@@ -623,7 +571,7 @@ export default function HomePage() {
                   <Link
                     href="/register?role=business"
                     className="inline-flex items-center gap-2 px-6 py-3 text-sm font-semibold rounded-xl"
-                    style={G.silverBtn}
+                    style={G.inkBtn}
                   >
                     Zarejestruj salon — za darmo
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="m9 18 6-6-6-6" /></svg>
@@ -669,29 +617,29 @@ export default function HomePage() {
 
       <div className="grad-sep" />
 
-      {/* ── NUMBERS ──────────────────────────────────────────────── */}
-      <section className="py-20 px-6" style={{ background: BG.numbers }}>
-        <div className="max-w-4xl mx-auto grid grid-cols-2 md:grid-cols-4 gap-4">
-          {[
-            { num: "30s", label: "Średni czas rezerwacji" },
-            { num: "0 zł", label: "Koszt rejestracji" },
-            { num: "24/7", label: "Dostępność kalendarza" },
-            { num: "100%", label: "Polskie wsparcie" },
-          ].map((s, i) => (
-            <motion.div
-              key={s.label}
-              initial="hidden" whileInView="show" viewport={{ once: true }} custom={i} variants={fade}
-              whileHover={{ y: -4, scale: 1.012 }}
-              transition={{ type: "spring", stiffness: 380, damping: 26 }}
-              className="relative text-center p-6 rounded-2xl overflow-hidden glass-shimmer-wrap"
-              style={G.panel}
-            >
-              <div className="absolute inset-0 bg-gradient-to-b from-white/60 to-transparent pointer-events-none" />
-              <p className="relative text-3xl font-bold text-slate-800 tabular-nums">{s.num}</p>
-              <p className="relative mt-1.5 text-xs text-slate-400 leading-tight">{s.label}</p>
-            </motion.div>
-          ))}
-        </div>
+      {/* ── TRUST BAR ────────────────────────────────────────────── */}
+      <section className="py-16 px-6" style={{ background: BG.numbers }}>
+        <motion.div
+          initial="hidden" whileInView="show" viewport={{ once: true }} variants={fade}
+          className="max-w-3xl mx-auto relative rounded-2xl overflow-hidden glass-shimmer-wrap px-6 py-6 sm:px-10"
+          style={G.panel}
+        >
+          <div className="absolute inset-0 bg-gradient-to-b from-white/60 to-transparent pointer-events-none" />
+          <div className="relative flex flex-col sm:flex-row items-center justify-center gap-6 sm:gap-10 text-center">
+            {[
+              "Bez karty kredytowej",
+              "0% prowizji od wizyt",
+              "Wsparcie w języku polskim",
+            ].map((claim) => (
+              <div key={claim} className="flex items-center gap-2 text-sm font-semibold text-slate-700">
+                <svg className="w-4 h-4 flex-shrink-0 text-slate-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="m5 13 4 4L19 7" />
+                </svg>
+                {claim}
+              </div>
+            ))}
+          </div>
+        </motion.div>
       </section>
 
       <div className="grad-sep" />
@@ -747,7 +695,7 @@ export default function HomePage() {
                   <Link
                     href="/register?role=business"
                     className="inline-flex items-center justify-center px-7 py-3.5 font-semibold text-sm rounded-xl"
-                    style={G.silverBtn}
+                    style={G.inkBtn}
                   >
                     Zarejestruj salon →
                   </Link>

@@ -36,13 +36,11 @@ const G = {
     border: "1px solid rgba(203,213,225,0.40)",
     boxShadow: "0 0 0 0.5px rgba(203,213,225,0.25), 0 1px 4px rgba(100,116,139,0.06), inset 0 1px 0 rgba(255,255,255,0.90)",
   } as React.CSSProperties,
-  silverBtn: {
-    background: "rgba(148,163,184,0.16)",
-    backdropFilter: "blur(16px) saturate(190%)",
-    WebkitBackdropFilter: "blur(16px) saturate(190%)",
-    border: "1px solid rgba(203,213,225,0.60)",
-    color: "#1E293B",
-    boxShadow: "0 0 0 0.5px rgba(203,213,225,0.35), 0 2px 8px rgba(148,163,184,0.12), 0 8px 24px rgba(148,163,184,0.08), inset 0 1px 0 rgba(255,255,255,0.80)",
+  inkBtn: {
+    background: "linear-gradient(180deg, #1E293B 0%, #0F172A 100%)",
+    border: "1px solid #0F172A",
+    color: "#F8FAFC",
+    boxShadow: "0 1px 2px rgba(0,0,0,0.20), 0 10px 24px rgba(15,23,42,0.28), 0 2px 6px rgba(15,23,42,0.18), inset 0 1px 0 rgba(255,255,255,0.15)",
   } as React.CSSProperties,
   innerBtn: {
     background: "rgba(255,255,255,0.60)",
@@ -279,7 +277,7 @@ export function ForBusinessClient() {
       <LandingNav />
 
       {/* ── HERO ─────────────────────────────────────────────────── */}
-      <section className="relative min-h-screen flex items-center overflow-hidden px-6 pt-16">
+      <section className="relative min-h-screen flex items-start overflow-hidden px-6 pt-28 md:pt-32 pb-16">
         {/* Dot grid */}
         <div
           className="absolute inset-0 pointer-events-none"
@@ -291,7 +289,7 @@ export function ForBusinessClient() {
           }}
         />
 
-        <div className="relative z-10 max-w-7xl mx-auto w-full grid lg:grid-cols-[1fr_440px] gap-14 xl:gap-20 items-center py-20">
+        <div className="relative z-10 max-w-7xl mx-auto w-full grid lg:grid-cols-[1fr_440px] gap-14 xl:gap-20 items-center pb-20">
           {/* Left */}
           <div>
             <motion.div
@@ -319,7 +317,7 @@ export function ForBusinessClient() {
               Mniej<br />
               telefonów.<br />
               <span className="italic font-bold" style={{
-                background: "linear-gradient(135deg, #94A3B8 0%, #CBD5E1 45%, #94A3B8 100%)",
+                background: "linear-gradient(135deg, #1E293B 0%, #334155 50%, #1E293B 100%)",
                 WebkitBackgroundClip: "text",
                 WebkitTextFillColor: "transparent",
                 backgroundClip: "text",
@@ -351,7 +349,7 @@ export function ForBusinessClient() {
                 <Link
                   href="/register?role=business"
                   className="inline-flex items-center justify-center px-7 py-3.5 font-semibold text-sm rounded-xl"
-                  style={G.silverBtn}
+                  style={G.inkBtn}
                 >
                   Zarejestruj salon — za darmo
                   <svg className="ml-2 w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
@@ -378,7 +376,7 @@ export function ForBusinessClient() {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ delay: 0.6 }}
-              className="mt-5 text-xs text-slate-400"
+              className="mt-5 text-xs text-slate-500"
             >
               Bez karty kredytowej · Instalacja w 5 minut · Plan Starter bezpłatnie na zawsze
             </motion.p>
@@ -458,12 +456,8 @@ export function ForBusinessClient() {
               >
                 <div className="absolute inset-0 bg-gradient-to-br from-white/60 via-transparent to-transparent pointer-events-none" />
                 <div className="relative">
-                  <div className="w-11 h-11 rounded-2xl flex items-center justify-center text-xs font-bold mb-5 relative" style={G.chip}>
+                  <div className="w-11 h-11 rounded-2xl flex items-center justify-center text-xs font-bold mb-5" style={G.chip}>
                     <span className="text-slate-500">{step.n}</span>
-                    <span className="absolute -top-1.5 -right-1.5 w-4 h-4 rounded-full text-white text-[8px] font-bold flex items-center justify-center"
-                      style={{ background: "#94A3B8" }}>
-                      {i + 1}
-                    </span>
                   </div>
                   <h3 className="text-lg font-bold mb-2 text-slate-800">{step.title}</h3>
                   <p className="text-sm leading-relaxed text-slate-500">{step.desc}</p>
@@ -560,7 +554,7 @@ export function ForBusinessClient() {
                   <Link
                     href="/register?role=business"
                     className="inline-flex items-center justify-center px-7 py-3.5 font-semibold text-sm rounded-xl"
-                    style={G.silverBtn}
+                    style={G.inkBtn}
                   >
                     Zarejestruj salon — za darmo
                   </Link>

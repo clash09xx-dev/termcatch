@@ -14,7 +14,6 @@ const FOOTER_LINKS = {
   ],
   Firma: [
     { label: "O nas", href: "/about" },
-    { label: "Blog", href: "/blog" },
     { label: "Kontakt", href: "/contact" },
     { label: "Kariera", href: "/careers" },
   ],
@@ -25,40 +24,6 @@ const FOOTER_LINKS = {
     { label: "RODO", href: "/gdpr" },
   ],
 };
-
-const SOCIALS = [
-  {
-    label: "Instagram",
-    href: "#",
-    icon: (
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" className="w-4 h-4">
-        <rect x="2" y="2" width="20" height="20" rx="5" />
-        <circle cx="12" cy="12" r="4" />
-        <circle cx="17.5" cy="6.5" r="0.8" fill="currentColor" stroke="none" />
-      </svg>
-    ),
-  },
-  {
-    label: "Facebook",
-    href: "#",
-    icon: (
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" className="w-4 h-4">
-        <path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z" />
-      </svg>
-    ),
-  },
-  {
-    label: "LinkedIn",
-    href: "#",
-    icon: (
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" className="w-4 h-4">
-        <path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6z" />
-        <rect x="2" y="9" width="4" height="12" />
-        <circle cx="4" cy="4" r="2" />
-      </svg>
-    ),
-  },
-];
 
 export function LandingFooter() {
   return (
@@ -73,18 +38,6 @@ export function LandingFooter() {
             <p className="text-sm text-gray-500 leading-relaxed mb-6">
               Platforma rezerwacji online dla polskiego rynku beauty i wellness.
             </p>
-            <div className="flex items-center gap-2">
-              {SOCIALS.map((s) => (
-                <a
-                  key={s.label}
-                  href={s.href}
-                  aria-label={s.label}
-                  className="w-8 h-8 rounded-lg border border-gray-200 flex items-center justify-center text-gray-500 hover:text-gray-900 hover:border-gray-300 transition-colors"
-                >
-                  {s.icon}
-                </a>
-              ))}
-            </div>
           </div>
 
           {/* Link columns */}
