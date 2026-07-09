@@ -257,6 +257,35 @@
     animation: skeleton-shimmer 1.8s ease-in-out infinite;
   }
 
+  /* ── Search result card ──────────────────────────────────── */
+  /* Pure CSS hover — avoids serialization crash in RSC       */
+  .search-card {
+    background: rgba(255,255,255,0.72);
+    backdrop-filter: blur(36px) saturate(200%);
+    -webkit-backdrop-filter: blur(36px) saturate(200%);
+    border: 1px solid rgba(203,213,225,0.45);
+    box-shadow:
+      0 0 0 0.5px rgba(203,213,225,0.30),
+      0 1px 2px rgba(0,0,0,0.03),
+      0 6px 20px rgba(100,116,139,0.08),
+      inset 0 1px 0 rgba(255,255,255,0.95);
+    transform: translateY(0) scale(1);
+    transition:
+      transform 300ms cubic-bezier(0.34,1.56,0.64,1),
+      box-shadow 200ms ease,
+      background 200ms ease;
+  }
+  .search-card:hover {
+    background: rgba(255,255,255,0.85);
+    transform: translateY(-3px) scale(1.005);
+    box-shadow:
+      0 0 0 0.5px rgba(203,213,225,0.40),
+      0 2px 4px rgba(0,0,0,0.04),
+      0 12px 36px rgba(100,116,139,0.12),
+      0 32px 64px rgba(100,116,139,0.06),
+      inset 0 1px 0 rgba(255,255,255,1);
+  }
+
   /* ── Glass input ─────────────────────────────────────────── */
   .input-glass {
     background: rgba(255,255,255,0.82);

@@ -118,18 +118,7 @@ function BusinessCard({ business }: { business: BusinessWithServices }) {
   return (
     <Link
       href={`/b/${business.slug}`}
-      className="group overflow-hidden rounded-2xl glass-shimmer-wrap"
-      style={{
-        background: "rgba(255,255,255,0.72)",
-        backdropFilter: "blur(36px) saturate(200%)",
-        WebkitBackdropFilter: "blur(36px) saturate(200%)",
-        border: "1px solid rgba(203,213,225,0.45)",
-        boxShadow: "0 0 0 0.5px rgba(203,213,225,0.30), 0 1px 2px rgba(0,0,0,0.03), 0 6px 20px rgba(100,116,139,0.08), inset 0 1px 0 rgba(255,255,255,0.95)",
-        transform: "translateY(0)",
-        transition: "transform 300ms cubic-bezier(0.34,1.56,0.64,1), box-shadow 200ms ease",
-      }}
-      onMouseEnter={e => { (e.currentTarget as HTMLElement).style.transform = "translateY(-3px) scale(1.005)"; (e.currentTarget as HTMLElement).style.boxShadow = "0 0 0 0.5px rgba(203,213,225,0.40), 0 2px 4px rgba(0,0,0,0.04), 0 12px 36px rgba(100,116,139,0.12), 0 32px 64px rgba(100,116,139,0.06), inset 0 1px 0 rgba(255,255,255,1)"; }}
-      onMouseLeave={e => { (e.currentTarget as HTMLElement).style.transform = "translateY(0) scale(1)"; (e.currentTarget as HTMLElement).style.boxShadow = "0 0 0 0.5px rgba(203,213,225,0.30), 0 1px 2px rgba(0,0,0,0.03), 0 6px 20px rgba(100,116,139,0.08), inset 0 1px 0 rgba(255,255,255,0.95)"; }}
+      className="group overflow-hidden rounded-2xl glass-shimmer-wrap search-card"
     >
       {/* Cover image */}
       <div className="relative h-44 overflow-hidden">
