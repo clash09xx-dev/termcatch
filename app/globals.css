@@ -257,6 +257,18 @@
     animation: skeleton-shimmer 1.8s ease-in-out infinite;
   }
 
+  /* ── Glass input ─────────────────────────────────────────── */
+  .input-glass {
+    background: rgba(255,255,255,0.82);
+    border: 1px solid rgba(203,213,225,0.55);
+    box-shadow: 0 1px 2px rgba(0,0,0,0.04), inset 0 1.5px 3px rgba(0,0,0,0.03);
+  }
+  .input-glass:focus {
+    border-color: rgba(148,163,184,0.70);
+    box-shadow: 0 1px 2px rgba(0,0,0,0.04), inset 0 1.5px 3px rgba(0,0,0,0.03),
+                0 0 0 2px rgba(203,213,225,0.25);
+  }
+
   /* ── Premium button spring base ───────────────────────────── */
   .btn-spring {
     transition:

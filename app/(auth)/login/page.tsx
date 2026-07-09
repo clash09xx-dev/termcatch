@@ -13,7 +13,7 @@ const initialState: AuthState = {};
 const APPLE_SIGNIN_ENABLED = false;
 
 const inputCls =
-  "w-full px-3.5 py-2.5 border border-gray-200 rounded-xl text-sm text-gray-900 bg-white placeholder:text-gray-400 focus:outline-none focus:border-gray-400 transition-colors";
+  "w-full px-3.5 py-2.5 rounded-xl text-sm text-[#0F172A] placeholder:text-[#94A3B8] outline-none transition-all input-glass";
 
 export default function LoginPage() {
   return (
@@ -50,7 +50,13 @@ function LoginForm() {
         <form action={signInWithGoogleAction}>
           <button
             type="submit"
-            className="w-full flex items-center justify-center gap-3 px-4 py-2.5 border border-gray-200 rounded-xl text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 transition-colors"
+            className="w-full flex items-center justify-center gap-3 px-4 py-2.5 rounded-xl text-sm font-medium transition-colors btn-spring"
+            style={{
+              background: "rgba(255,255,255,0.80)",
+              border: "1px solid rgba(203,213,225,0.55)",
+              color: "#475569",
+              boxShadow: "0 1px 2px rgba(0,0,0,0.04), inset 0 1px 0 rgba(255,255,255,0.90)",
+            }}
           >
             <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
               <path d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844c-.209 1.125-.843 2.078-1.796 2.717v2.258h2.908c1.702-1.567 2.684-3.875 2.684-6.615z" fill="#4285F4"/>
@@ -80,9 +86,9 @@ function LoginForm() {
       </div>
 
       <div className="flex items-center gap-3 my-5">
-        <div className="flex-1 h-px bg-gray-200" />
-        <span className="text-xs text-gray-400">lub</span>
-        <div className="flex-1 h-px bg-gray-200" />
+        <div className="flex-1 h-px" style={{ background: "rgba(203,213,225,0.45)" }} />
+        <span className="text-xs" style={{ color: "#94A3B8" }}>lub</span>
+        <div className="flex-1 h-px" style={{ background: "rgba(203,213,225,0.45)" }} />
       </div>
 
       {(state.error || oauthError) && (
@@ -134,7 +140,13 @@ function LoginForm() {
         <button
           type="submit"
           disabled={isPending}
-          className="w-full py-2.5 px-4 bg-gray-900 hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed text-white font-medium text-sm rounded-xl transition-colors flex items-center justify-center gap-2"
+          className="w-full py-2.5 px-4 font-semibold text-sm rounded-xl flex items-center justify-center gap-2 btn-spring glass-shimmer-wrap disabled:opacity-50 disabled:cursor-not-allowed"
+          style={{
+            background: "linear-gradient(135deg, #CBD5E1 0%, #94A3B8 50%, #CBD5E1 100%)",
+            color: "#0F172A",
+            border: "1px solid rgba(148,163,184,0.45)",
+            boxShadow: "0 1px 2px rgba(0,0,0,0.10), inset 0 1px 0 rgba(255,255,255,0.40)",
+          }}
         >
           {isPending ? (
             <>

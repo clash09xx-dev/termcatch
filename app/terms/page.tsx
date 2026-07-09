@@ -2,7 +2,13 @@ import { LandingNav } from "@/components/layout/landing-nav";
 import { LandingFooter } from "@/components/layout/landing-footer";
 import type { Metadata } from "next";
 
-export const metadata: Metadata = { title: "Regulamin" };
+export const metadata: Metadata = { title: "Regulamin — Termcatch" };
+
+const BG = [
+  "radial-gradient(ellipse 100% 60% at 80% 0%, rgba(203,213,225,0.55) 0%, transparent 50%)",
+  "radial-gradient(ellipse 60% 50% at 10% 90%, rgba(148,163,184,0.20) 0%, transparent 55%)",
+  "linear-gradient(168deg, #EEF3F9 0%, #F4F8FC 40%, #ECF3F9 100%)",
+].join(", ");
 
 const sections = [
   {
@@ -37,21 +43,69 @@ const sections = [
 
 export default function TermsPage() {
   return (
-    <div className="min-h-screen bg-white text-gray-900">
+    <div className="min-h-screen" style={{ background: BG }}>
       <LandingNav />
       <div className="pt-32 pb-24 px-6">
         <div className="max-w-2xl mx-auto">
           <div className="mb-12">
-            <h1 className="text-4xl font-bold tracking-tight mb-3">Regulamin</h1>
-            <p className="text-sm text-gray-400">Ostatnia aktualizacja: 1 lipca 2025</p>
+            <div
+              className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full mb-6 text-xs font-semibold uppercase tracking-widest"
+              style={{
+                background: "rgba(203,213,225,0.28)",
+                border: "1px solid rgba(203,213,225,0.50)",
+                color: "#64748B",
+              }}
+            >
+              Regulamin
+            </div>
+            <h1
+              className="text-4xl font-bold mb-3"
+              style={{ letterSpacing: "-0.04em", color: "#0F172A" }}
+            >
+              Regulamin korzystania
+            </h1>
+            <p className="text-xs" style={{ color: "#94A3B8" }}>
+              Ostatnia aktualizacja: 1 lipca 2025
+            </p>
           </div>
-          <div className="space-y-8">
-            {sections.map((s) => (
-              <div key={s.title}>
-                <h2 className="text-base font-semibold text-gray-900 mb-3">{s.title}</h2>
-                <p className="text-sm text-gray-500 leading-relaxed">{s.body}</p>
-              </div>
-            ))}
+
+          <div
+            className="p-8"
+            style={{
+              background: "rgba(255,255,255,0.72)",
+              backdropFilter: "blur(40px) saturate(200%)",
+              WebkitBackdropFilter: "blur(40px) saturate(200%)",
+              border: "1px solid rgba(203,213,225,0.55)",
+              borderRadius: "1.25rem",
+              boxShadow:
+                "0 0 0 0.5px rgba(203,213,225,0.45), 0 1px 2px rgba(0,0,0,0.04), 0 6px 20px rgba(100,116,139,0.09), inset 0 1px 0 rgba(255,255,255,0.95)",
+            }}
+          >
+            <div className="space-y-8">
+              {sections.map((s, i) => (
+                <div key={s.title}>
+                  {i > 0 && (
+                    <div
+                      className="mb-8"
+                      style={{
+                        height: "1px",
+                        background:
+                          "linear-gradient(90deg, transparent 0%, rgba(203,213,225,0.45) 30%, rgba(203,213,225,0.45) 70%, transparent 100%)",
+                      }}
+                    />
+                  )}
+                  <h2
+                    className="text-sm font-semibold mb-3"
+                    style={{ color: "#0F172A", letterSpacing: "-0.01em" }}
+                  >
+                    {s.title}
+                  </h2>
+                  <p className="text-sm leading-relaxed" style={{ color: "#64748B" }}>
+                    {s.body}
+                  </p>
+                </div>
+              ))}
+            </div>
           </div>
         </div>
       </div>

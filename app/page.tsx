@@ -336,6 +336,17 @@ const CATEGORIES = [
   { label: "Kosmetyczka", slug: "beauty_salon" },
   { label: "Tatuaż", slug: "tattoo" },
   { label: "Spa & wellness", slug: "spa" },
+  { label: "Makijaż", slug: "makeup" },
+  { label: "Brwi & rzęsy", slug: "brows_lashes" },
+  { label: "Depilacja", slug: "hair_removal" },
+  { label: "Fizjoterapia", slug: "physiotherapy" },
+  { label: "Podolog", slug: "podology" },
+  { label: "Dietetyk", slug: "dietician" },
+  { label: "Trener personalny", slug: "personal_trainer" },
+  { label: "Pielęgnacja brody", slug: "beard_care" },
+  { label: "Medycyna estetyczna", slug: "aesthetic_medicine" },
+  { label: "Pedicure", slug: "pedicure" },
+  { label: "Solarium", slug: "tanning" },
 ];
 
 const fade = {
