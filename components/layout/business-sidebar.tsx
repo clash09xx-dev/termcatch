@@ -57,9 +57,25 @@ const NAV_SECTIONS: { label: string | null; items: NavItem[] }[] = [
   },
 ];
 
-export function BusinessSidebar() {
+const PLAN_LABELS: Record<string, string> = {
+  FREE: "Plan darmowy",
+  SOLO: "Plan Solo",
+  TEAM: "Plan Zespół",
+  PRO: "Plan Salon Pro",
+};
+
+export function BusinessSidebar({
+  businessName,
+  plan,
+}: {
+  businessName?: string;
+  plan?: string;
+} = {}) {
   const pathname = usePathname();
   const [isCollapsed, setIsCollapsed] = useState(false);
+  const displayName = businessName ?? "Twój salon";
+  const displayInitial = (businessName ?? "T").charAt(0).toUpperCase();
+  const displayPlan = (plan && PLAN_LABELS[plan]) || "Wczesny dostęp";
 
   return (
     <aside
@@ -80,7 +96,7 @@ export function BusinessSidebar() {
         {isCollapsed ? (
           <button
             onClick={() => setIsCollapsed(false)}
-            className="p-1.5 rounded-lg transition-colors"
+            className="p-1.5 rounded-lg icon-btn"
             style={{ color: "#94A3B8" }}
             aria-label="Rozwiń"
           >
@@ -93,7 +109,7 @@ export function BusinessSidebar() {
             <Wordmark className="text-[0.95rem]" variant="light" />
             <button
               onClick={() => setIsCollapsed(true)}
-              className="ml-auto p-1.5 rounded-lg transition-colors"
+              className="ml-auto p-1.5 rounded-lg icon-btn"
               style={{ color: "#CBD5E1" }}
               aria-label="Zwiń"
             >
@@ -143,6 +159,7 @@ export function BusinessSidebar() {
                       title={isCollapsed ? item.label : undefined}
                       className={cn(
                         "flex items-center gap-2.5 rounded-lg text-sm font-medium group",
+                        !isActive && "nav-item",
                         isCollapsed ? "px-2 py-2 justify-center" : "pl-3 pr-2.5 py-2"
                       )}
                       style={isActive ? {
@@ -152,26 +169,7 @@ export function BusinessSidebar() {
                         WebkitBackdropFilter: "blur(12px) saturate(180%)",
                         border: "1px solid rgba(203,213,225,0.50)",
                         boxShadow: "0 0 0 0.5px rgba(203,213,225,0.20), inset 0 1px 0 rgba(255,255,255,0.90)",
-                        transition: "none",
-                      } : {
-                        color: "#94A3B8",
-                        border: "1px solid transparent",
-                        transition: "background 150ms ease, color 150ms ease, border-color 150ms ease",
-                      }}
-                      onMouseEnter={e => {
-                        if (!isActive) {
-                          (e.currentTarget as HTMLElement).style.background = "rgba(203,213,225,0.14)";
-                          (e.currentTarget as HTMLElement).style.color = "#475569";
-                          (e.currentTarget as HTMLElement).style.borderColor = "rgba(203,213,225,0.30)";
-                        }
-                      }}
-                      onMouseLeave={e => {
-                        if (!isActive) {
-                          (e.currentTarget as HTMLElement).style.background = "";
-                          (e.currentTarget as HTMLElement).style.color = "#94A3B8";
-                          (e.currentTarget as HTMLElement).style.borderColor = "transparent";
-                        }
-                      }}
+                      } : undefined}
                     >
                       <item.icon
                         className="flex-shrink-0"
@@ -210,20 +208,18 @@ export function BusinessSidebar() {
         <div className="p-2.5 flex-shrink-0" style={{ borderTop: "1px solid rgba(203,213,225,0.28)" }}>
           <Link
             href="/business/settings"
-            className="flex items-center gap-2.5 p-2 rounded-lg transition-all group"
+            className="flex items-center gap-2.5 p-2 rounded-lg row-hover group"
             style={{ color: "#64748B" }}
-            onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = "rgba(148,163,184,0.10)"; }}
-            onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = ""; }}
           >
             <div
               className="w-7 h-7 rounded-lg flex items-center justify-center text-[10px] font-bold flex-shrink-0"
               style={{ background: "rgba(203,213,225,0.25)", border: "1px solid rgba(203,213,225,0.55)", color: "#475569", boxShadow: "inset 0 1px 0 rgba(255,255,255,0.70)" }}
             >
-              M
+              {displayInitial}
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-[12px] font-semibold truncate leading-tight text-slate-700">Mój Salon</p>
-              <p className="text-[10px] truncate leading-tight mt-px text-slate-400">Plan darmowy</p>
+              <p className="text-[12px] font-semibold truncate leading-tight text-slate-700">{displayName}</p>
+              <p className="text-[10px] truncate leading-tight mt-px text-slate-400">{displayPlan}</p>
             </div>
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ color: "#CBD5E1", flexShrink: 0 }}>
               <path d="m9 18 6-6-6-6" />
@@ -240,7 +236,7 @@ export function BusinessSidebar() {
             className="w-8 h-8 rounded-lg flex items-center justify-center text-[10px] font-bold transition-colors"
             style={{ background: "rgba(148,163,184,0.22)", border: "1px solid rgba(148,163,184,0.30)", color: "#475569" }}
           >
-            M
+            {displayInitial}
           </Link>
         </div>
       )}

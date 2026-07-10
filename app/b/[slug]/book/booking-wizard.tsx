@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
+import { stepSlide, stepFade } from "@/lib/motion";
 import { formatCurrency, formatDuration, formatDate, getInitials, cn } from "@/lib/utils";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
@@ -282,19 +283,10 @@ function dateToString(d: Date): string {
   return `${year}-${month}-${day}`;
 }
 
-// ─── Step transition variants ────────────────────────────────────────────────
+// ─── Step transition variants — shared vocabulary (lib/motion) ──────────────
 
-const stepVariants = {
-  enter: (dir: number) => ({ opacity: 0, x: dir * 36 }),
-  center: { opacity: 1, x: 0 },
-  exit: (dir: number) => ({ opacity: 0, x: dir * -28 }),
-};
-
-const stepVariantsReduced = {
-  enter: { opacity: 0, x: 0 },
-  center: { opacity: 1, x: 0 },
-  exit: { opacity: 0, x: 0 },
-};
+const stepVariants = stepSlide;
+const stepVariantsReduced = stepFade;
 
 // ─── Main wizard ─────────────────────────────────────────────────────────────
 

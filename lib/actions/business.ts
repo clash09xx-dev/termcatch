@@ -36,6 +36,10 @@ export interface OnboardingInput {
   serviceName: string;
   serviceDuration: number;
   servicePrice: number;
+  /** Create an Employee record for the owner so the salon isn't staff-less */
+  addSelfAsStaff?: boolean;
+  /** Optional role title, e.g. "Barber" */
+  staffTitle?: string;
 }
 
 function generateSlug(name: string): string {
@@ -54,6 +58,11 @@ function generateSlug(name: string): string {
 export async function createBusiness(data: OnboardingInput) {
   const authUser = await getServerUser();
   if (!authUser) throw new Error("Unauthorized");
+
+  // A named service must have a real price — 0 zł services were going public
+  if (data.serviceName.trim() && (!data.servicePrice || data.servicePrice <= 0)) {
+    throw new Error("Podaj cenę usługi większą niż 0 zł.");
+  }
 
   const slug = generateSlug(data.name);
 
@@ -110,6 +119,25 @@ export async function createBusiness(data: OnboardingInput) {
     });
   }
 
+  // Owner as first staff member — otherwise every new salon silently has
+  // zero bookable specialists
+  if (data.addSelfAsStaff) {
+    await prisma.employee.create({
+      data: {
+        businessId: business.id,
+        userId: dbUser.id,
+        firstName: dbUser.firstName,
+        lastName: dbUser.lastName,
+        title: data.staffTitle?.trim() || null,
+        color: "#64748B",
+        isActive: true,
+        isAccepting: true,
+        displayOrder: 0,
+      },
+    });
+  }
+
+  revalidatePath("/business/dashboard");
   return { success: true };
 }
 

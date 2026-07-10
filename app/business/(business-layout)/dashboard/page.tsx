@@ -116,7 +116,7 @@ export default async function BusinessDashboardPage() {
     <div className="space-y-6">
       <NotificationsPrompt configured={notifConfigured} />
       {/* Welcome */}
-      <div>
+      <div className="fade-rise">
         <h2 className="text-xl font-semibold text-gray-900">{business.name}</h2>
         <p className="text-sm text-gray-500 mt-1">
           {new Date().toLocaleDateString("pl-PL", {
@@ -130,7 +130,7 @@ export default async function BusinessDashboardPage() {
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="fade-rise fade-rise-d1 grid grid-cols-2 lg:grid-cols-4 gap-4">
         {stats.map((stat) => (
           <div key={stat.label} className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
             <p className="text-2xl font-bold text-gray-900">{stat.value}</p>
@@ -192,7 +192,7 @@ export default async function BusinessDashboardPage() {
       )}
 
       {/* Main grid */}
-      <div className="grid lg:grid-cols-3 gap-6">
+      <div className="fade-rise fade-rise-d2 grid lg:grid-cols-3 gap-6">
         {/* Today's appointments */}
         <div className="lg:col-span-2 bg-white rounded-2xl border border-gray-100 shadow-sm">
           <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">

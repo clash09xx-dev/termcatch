@@ -613,6 +613,189 @@ export async function markNoShow(appointmentId: string) {
   revalidatePath("/business/calendar");
 }
 
+// ─── Business: Search own clients (for manual booking / ⌘K) ──
+
+export async function searchClients(query: string) {
+  const businessId = await getOwnedBusinessId();
+  const q = query.trim();
+  if (q.length < 2) return [];
+
+  const clients = await prisma.user.findMany({
+    where: {
+      appointments: { some: { businessId } },
+      OR: [
+        { firstName: { contains: q, mode: "insensitive" } },
+        { lastName: { contains: q, mode: "insensitive" } },
+        { email: { contains: q, mode: "insensitive" } },
+        { phone: { contains: q } },
+      ],
+    },
+    select: { id: true, firstName: true, lastName: true, email: true, phone: true },
+    take: 8,
+    orderBy: { lastName: "asc" },
+  });
+  return clients;
+}
+
+// ─── Business: Create manual appointment (walk-in / phone) ───
+
+export type ManualAppointmentInput = {
+  serviceId: string;
+  employeeId?: string | null;
+  /** Warsaw-local date "YYYY-MM-DD" */
+  date: string;
+  /** Warsaw-local time "HH:MM" */
+  time: string;
+  client:
+    | { kind: "existing"; userId: string }
+    | { kind: "new"; firstName: string; lastName: string; phone?: string; email?: string };
+  note?: string;
+};
+
+export async function createManualAppointment(input: ManualAppointmentInput) {
+  const businessId = await getOwnedBusinessId();
+
+  const business = await prisma.business.findUnique({
+    where: { id: businessId },
+    select: { id: true, name: true, ownerId: true },
+  });
+  if (!business) throw new Error("Nie znaleziono salonu.");
+
+  const service = await prisma.service.findFirst({
+    where: { id: input.serviceId, businessId, isActive: true },
+  });
+  if (!service) throw new Error("Usługa jest niedostępna lub nie istnieje.");
+
+  if (input.employeeId) {
+    const employee = await prisma.employee.findFirst({
+      where: { id: input.employeeId, businessId, isActive: true },
+      select: { id: true },
+    });
+    if (!employee) throw new Error("Wybrany pracownik nie istnieje.");
+  }
+
+  const start = warsawDateTimeToUtc(input.date, input.time);
+  if (isNaN(start.getTime())) throw new Error("Nieprawidłowa data wizyty.");
+  // Walk-ins may be logged for "just now" — allow up to 60 min back
+  if (start.getTime() < Date.now() - 60 * 60_000)
+    throw new Error("Termin wizyty jest w przeszłości.");
+
+  const end = new Date(start.getTime() + service.duration * 60_000);
+
+  // Double-booking guard — same rule as customer bookings
+  const conflict = await prisma.appointment.findFirst({
+    where: {
+      businessId,
+      ...(input.employeeId ? { employeeId: input.employeeId } : {}),
+      status: {
+        notIn: [
+          AppointmentStatus.CANCELLED_CUSTOMER,
+          AppointmentStatus.CANCELLED_BUSINESS,
+        ],
+      },
+      startTime: { lt: end },
+      endTime: { gt: start },
+    },
+    select: { id: true },
+  });
+  if (conflict) throw new Error("Ten termin koliduje z inną wizytą.");
+
+  // Resolve the customer
+  let customerId: string;
+  let isPlatformCustomer = true;
+
+  if (input.client.kind === "existing") {
+    const existing = await prisma.user.findUnique({
+      where: { id: input.client.userId },
+      select: { id: true, supabaseId: true },
+    });
+    if (!existing) throw new Error("Nie znaleziono klienta.");
+    customerId = existing.id;
+    isPlatformCustomer = !existing.supabaseId.startsWith("walkin:");
+  } else {
+    const firstName = input.client.firstName.trim();
+    const lastName = input.client.lastName.trim();
+    if (!firstName || !lastName) throw new Error("Podaj imię i nazwisko klienta.");
+    const email = input.client.email?.trim() || null;
+    const phone = input.client.phone?.trim() || null;
+
+    // Reuse an existing account when the email/phone already exists
+    const matched =
+      (email && (await prisma.user.findUnique({ where: { email }, select: { id: true, supabaseId: true } }))) ||
+      (phone && (await prisma.user.findFirst({ where: { phone }, select: { id: true, supabaseId: true } }))) ||
+      null;
+
+    if (matched) {
+      customerId = matched.id;
+      isPlatformCustomer = !matched.supabaseId.startsWith("walkin:");
+    } else {
+      // Walk-in record — clearly namespaced, cannot log in, never blocks a
+      // future real registration (synthetic email only when none given)
+      const walkinId = `walkin:${crypto.randomUUID()}`;
+      const created = await prisma.user.create({
+        data: {
+          supabaseId: walkinId,
+          email: email ?? `${walkinId.replace(":", "+")}@termcatch.local`,
+          phone,
+          firstName,
+          lastName,
+          role: "CUSTOMER",
+          isVerified: false,
+        },
+        select: { id: true },
+      });
+      customerId = created.id;
+      isPlatformCustomer = false;
+    }
+  }
+
+  const appointment = await prisma.appointment.create({
+    data: {
+      businessId,
+      customerId,
+      serviceId: service.id,
+      employeeId: input.employeeId ?? null,
+      startTime: start,
+      endTime: end,
+      duration: service.duration,
+      // Owner created it — no approval round-trip needed
+      status: AppointmentStatus.CONFIRMED,
+      price: service.discountedPrice ?? service.price,
+      currency: service.currency,
+      businessNotes: input.note?.trim() || null,
+    },
+    include: { customer: { select: { id: true, email: true, firstName: true, lastName: true } } },
+  });
+
+  const slotLabel = describeSlot(start);
+
+  // Notify only real platform customers (walk-in records have no inbox)
+  if (isPlatformCustomer) {
+    await Promise.allSettled([
+      notify({
+        userId: appointment.customer.id,
+        businessId: business.id,
+        type: "APPOINTMENT_CONFIRMED",
+        title: "Wizyta umówiona",
+        body: `${service.name} w ${business.name}, ${slotLabel}.`,
+        data: { appointmentId: appointment.id },
+      }),
+      sendBookingConfirmationEmail({
+        to: appointment.customer.email,
+        businessName: business.name,
+        serviceName: service.name,
+        slotLabel,
+      }),
+    ]);
+  }
+
+  revalidatePath("/business/dashboard");
+  revalidatePath("/business/calendar");
+  revalidatePath("/business/crm");
+
+  return { id: appointment.id };
+}
+
 // ─── Customer: Get Appointments ───────────────────────────────
 
 export async function getCustomerAppointments() {

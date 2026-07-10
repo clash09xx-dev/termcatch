@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
+import { motion, AnimatePresence } from "framer-motion";
 import type { Appointment, Service, Employee, User } from "@prisma/client";
 import {
   confirmAppointment,
@@ -9,6 +10,9 @@ import {
   completeAppointment,
   markNoShow,
 } from "@/lib/actions/appointments";
+import { GlassModal, ModalInkButton, ModalGlassButton } from "@/components/ui/glass-modal";
+import { NewAppointmentSheet } from "@/components/business/new-appointment-sheet";
+import { weekSlide, useReducedMotion } from "@/lib/motion";
 
 type AppointmentWithRelations = Appointment & {
   service: Service;
@@ -16,23 +20,67 @@ type AppointmentWithRelations = Appointment & {
   customer: User;
 };
 
+type ServiceOption = {
+  id: string;
+  name: string;
+  duration: number;
+  price: number;
+  discountedPrice: number | null;
+};
+
+type EmployeeOption = {
+  id: string;
+  firstName: string;
+  lastName: string;
+  color: string;
+};
+
 type Props = {
   appointments: AppointmentWithRelations[];
   weekStart: string;
+  businessId: string;
+  services: ServiceOption[];
+  employees: EmployeeOption[];
+  openNewOnLoad?: boolean;
 };
 
 const DAYS_PL = ["Pon", "Wt", "Śr", "Czw", "Pt", "Sob", "Nie"];
 const HOURS = Array.from({ length: 13 }, (_, i) => i + 8); // 8..20
 
-const STATUS_LABELS: Record<string, { label: string; className: string }> = {
-  PENDING: { label: "Oczekuje", className: "bg-warning-50 text-warning-600" },
-  CONFIRMED: { label: "Potwierdzona", className: "bg-success-50 text-success-600" },
-  IN_PROGRESS: { label: "W trakcie", className: "bg-gray-50 text-gray-900" },
-  COMPLETED: { label: "Zakończona", className: "bg-gray-100 text-gray-700" },
-  CANCELLED_CUSTOMER: { label: "Odwołana", className: "bg-danger-50 text-danger-600" },
-  CANCELLED_BUSINESS: { label: "Odwołana", className: "bg-danger-50 text-danger-600" },
-  NO_SHOW: { label: "No-show", className: "bg-danger-50 text-danger-600" },
-  RESCHEDULED: { label: "Przełożona", className: "bg-gray-100 text-gray-700" },
+// Status — glass tints from the Machined Silver trio
+const STATUS_META: Record<string, { label: string; style: React.CSSProperties }> = {
+  PENDING: {
+    label: "Oczekuje",
+    style: { background: "rgba(251,191,36,0.10)", border: "1px solid rgba(217,119,6,0.25)", color: "#B45309" },
+  },
+  CONFIRMED: {
+    label: "Potwierdzona",
+    style: { background: "rgba(16,185,129,0.10)", border: "1px solid rgba(16,185,129,0.25)", color: "#047857" },
+  },
+  IN_PROGRESS: {
+    label: "W trakcie",
+    style: { background: "rgba(203,213,225,0.25)", border: "1px solid rgba(148,163,184,0.40)", color: "#334155" },
+  },
+  COMPLETED: {
+    label: "Zakończona",
+    style: { background: "rgba(203,213,225,0.18)", border: "1px solid rgba(203,213,225,0.45)", color: "#64748B" },
+  },
+  CANCELLED_CUSTOMER: {
+    label: "Odwołana",
+    style: { background: "rgba(244,63,94,0.08)", border: "1px solid rgba(244,63,94,0.22)", color: "#BE123C" },
+  },
+  CANCELLED_BUSINESS: {
+    label: "Odwołana",
+    style: { background: "rgba(244,63,94,0.08)", border: "1px solid rgba(244,63,94,0.22)", color: "#BE123C" },
+  },
+  NO_SHOW: {
+    label: "No-show",
+    style: { background: "rgba(244,63,94,0.08)", border: "1px solid rgba(244,63,94,0.22)", color: "#BE123C" },
+  },
+  RESCHEDULED: {
+    label: "Przełożona",
+    style: { background: "rgba(203,213,225,0.18)", border: "1px solid rgba(203,213,225,0.45)", color: "#64748B" },
+  },
 };
 
 function getWeekStart(date: Date): Date {
@@ -54,12 +102,29 @@ function formatWeekLabel(start: Date): string {
   return `${start.toLocaleDateString("pl-PL", opts)} – ${end.toLocaleDateString("pl-PL", opts)} ${end.getFullYear()}`;
 }
 
-export function CalendarClient({ appointments, weekStart: weekStartIso }: Props) {
+function toLocalDateString(d: Date): string {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+}
+
+export function CalendarClient({
+  appointments,
+  weekStart: weekStartIso,
+  businessId,
+  services,
+  employees,
+  openNewOnLoad = false,
+}: Props) {
   const router = useRouter();
+  const reduceMotion = useReducedMotion();
   const weekStart = new Date(weekStartIso);
   const [selectedAppointment, setSelectedAppointment] = useState<AppointmentWithRelations | null>(null);
   const [actionError, setActionError] = useState("");
   const [isPending, startTransition] = useTransition();
+  const [slideDir, setSlideDir] = useState(0);
+
+  // New-appointment sheet
+  const [sheetOpen, setSheetOpen] = useState(openNewOnLoad);
+  const [prefill, setPrefill] = useState<{ date?: string; time?: string }>({});
 
   function runAction(action: (id: string) => Promise<void>) {
     if (!selectedAppointment) return;
@@ -77,7 +142,6 @@ export function CalendarClient({ appointments, weekStart: weekStartIso }: Props)
     });
   }
 
-  // Build 7 day dates
   const days = Array.from({ length: 7 }, (_, i) => {
     const d = new Date(weekStart);
     d.setDate(d.getDate() + i);
@@ -85,13 +149,20 @@ export function CalendarClient({ appointments, weekStart: weekStartIso }: Props)
   });
 
   function navigateWeek(direction: -1 | 1) {
+    setSlideDir(direction);
     const newStart = new Date(weekStart);
     newStart.setDate(newStart.getDate() + direction * 7);
     router.push(`/business/calendar?week=${newStart.toISOString().split("T")[0]}`);
   }
 
   function goToToday() {
+    setSlideDir(0);
     router.push("/business/calendar");
+  }
+
+  function openNewAt(day: Date, hour: number) {
+    setPrefill({ date: toLocalDateString(day), time: `${String(hour).padStart(2, "0")}:00` });
+    setSheetOpen(true);
   }
 
   function getAppointmentsForDayHour(dayDate: Date, hour: number) {
@@ -108,7 +179,7 @@ export function CalendarClient({ appointments, weekStart: weekStartIso }: Props)
 
   function getTopOffset(apt: AppointmentWithRelations): number {
     const start = new Date(apt.startTime);
-    return (start.getMinutes() / 60) * 56; // 56px per hour row
+    return (start.getMinutes() / 60) * 56;
   }
 
   function getHeight(apt: AppointmentWithRelations): number {
@@ -118,252 +189,307 @@ export function CalendarClient({ appointments, weekStart: weekStartIso }: Props)
   const isCurrentWeek =
     getWeekStart(new Date()).toDateString() === weekStart.toDateString();
 
+  const statusMeta = selectedAppointment
+    ? STATUS_META[selectedAppointment.status] ?? STATUS_META.RESCHEDULED
+    : null;
+
   return (
-    <div className="space-y-4 animate-fade-up">
+    <div className="space-y-4">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-xl font-semibold text-gray-900">Kalendarz</h1>
-          <p className="text-sm text-gray-700 mt-0.5">{formatWeekLabel(weekStart)}</p>
+          <h1 className="text-xl font-semibold text-slate-900" style={{ letterSpacing: "-0.02em" }}>
+            Kalendarz
+          </h1>
+          <p className="text-sm text-slate-500 mt-0.5 tabular-nums">{formatWeekLabel(weekStart)}</p>
         </div>
         <div className="flex items-center gap-2">
           {!isCurrentWeek && (
             <button
               onClick={goToToday}
-              className="border border-gray-200 text-gray-900 hover:bg-gray-50 rounded-xl px-3 py-2 text-sm font-semibold transition-colors"
+              className="btn-spring rounded-xl px-3 py-2 text-sm font-semibold"
+              style={{
+                background: "rgba(255,255,255,0.75)",
+                border: "1px solid rgba(203,213,225,0.55)",
+                color: "#334155",
+                boxShadow: "0 0 0 0.5px rgba(203,213,225,0.20), inset 0 1px 0 rgba(255,255,255,0.90)",
+              }}
             >
               Dziś
             </button>
           )}
           <button
             onClick={() => navigateWeek(-1)}
-            className="p-2 border border-gray-200 hover:bg-gray-50 text-gray-900 rounded-xl transition-colors"
+            aria-label="Poprzedni tydzień"
+            className="btn-spring p-2 rounded-xl"
+            style={{
+              background: "rgba(255,255,255,0.75)",
+              border: "1px solid rgba(203,213,225,0.55)",
+              color: "#475569",
+              boxShadow: "inset 0 1px 0 rgba(255,255,255,0.90)",
+            }}
           >
             <ChevronLeftIcon className="w-4 h-4" />
           </button>
           <button
             onClick={() => navigateWeek(1)}
-            className="p-2 border border-gray-200 hover:bg-gray-50 text-gray-900 rounded-xl transition-colors"
+            aria-label="Następny tydzień"
+            className="btn-spring p-2 rounded-xl"
+            style={{
+              background: "rgba(255,255,255,0.75)",
+              border: "1px solid rgba(203,213,225,0.55)",
+              color: "#475569",
+              boxShadow: "inset 0 1px 0 rgba(255,255,255,0.90)",
+            }}
           >
             <ChevronRightIcon className="w-4 h-4" />
           </button>
         </div>
       </div>
 
-      {/* Calendar grid */}
-      <div className="bg-white border border-gray-100 rounded-2xl overflow-hidden overflow-x-auto">
-        <div className="min-w-[720px]">
-        {/* Day headers */}
-        <div className="grid border-b border-gray-100" style={{ gridTemplateColumns: "56px repeat(7, 1fr)" }}>
-          <div className="border-r border-gray-100" />
-          {days.map((day, i) => {
-            const isToday = day.toDateString() === new Date().toDateString();
-            return (
-              <div
-                key={i}
-                className={`py-3 text-center border-r border-gray-100 last:border-r-0 ${
-                  i >= 5 ? "bg-gray-50" : ""
-                }`}
-              >
-                <p className={`text-xs font-medium ${isToday ? "text-gray-900" : "text-gray-700"}`}>
-                  {DAYS_PL[i]}
-                </p>
-                <p
-                  className={`text-sm font-bold mt-0.5 ${
-                    isToday
-                      ? "w-7 h-7 bg-gray-900 text-white rounded-full flex items-center justify-center mx-auto"
-                      : "text-gray-900"
-                  }`}
-                >
-                  {day.getDate()}
-                </p>
-              </div>
-            );
-          })}
-        </div>
-
-        {/* Time grid */}
-        <div className="overflow-y-auto max-h-[calc(100vh-280px)]">
-          <div className="grid" style={{ gridTemplateColumns: "56px repeat(7, 1fr)" }}>
-            {/* Time column */}
-            <div>
-              {HOURS.map((hour) => (
-                <div
-                  key={hour}
-                  className="h-14 border-b border-gray-100 border-r border-gray-100 flex items-start justify-end pr-2 pt-1"
-                >
-                  <span className="text-2xs text-gray-700 font-mono">{hour}:00</span>
-                </div>
-              ))}
+      {/* Calendar grid — slides on week change */}
+      <div
+        className="rounded-2xl overflow-hidden overflow-x-auto"
+        style={{
+          background: "rgba(255,255,255,0.80)",
+          border: "1px solid rgba(203,213,225,0.45)",
+          boxShadow: "0 0 0 0.5px rgba(203,213,225,0.25), 0 1px 2px rgba(0,0,0,0.02), 0 6px 20px rgba(100,116,139,0.07), inset 0 1px 0 rgba(255,255,255,0.92)",
+        }}
+      >
+        <AnimatePresence mode="wait" custom={slideDir} initial={false}>
+          <motion.div
+            key={weekStartIso}
+            custom={slideDir}
+            variants={reduceMotion ? undefined : weekSlide}
+            initial="enter"
+            animate="center"
+            exit="exit"
+            className="min-w-[720px]"
+          >
+            {/* Day headers */}
+            <div className="grid" style={{ gridTemplateColumns: "56px repeat(7, 1fr)", borderBottom: "1px solid rgba(203,213,225,0.30)" }}>
+              <div style={{ borderRight: "1px solid rgba(203,213,225,0.25)" }} />
+              {days.map((day, i) => {
+                const isToday = day.toDateString() === new Date().toDateString();
+                return (
+                  <div
+                    key={i}
+                    className="py-3 text-center last:border-r-0"
+                    style={{
+                      borderRight: "1px solid rgba(203,213,225,0.25)",
+                      background: i >= 5 ? "rgba(203,213,225,0.10)" : undefined,
+                    }}
+                  >
+                    <p className={`text-xs font-medium ${isToday ? "text-slate-900" : "text-slate-500"}`}>
+                      {DAYS_PL[i]}
+                    </p>
+                    <p
+                      className={`text-sm font-bold mt-0.5 tabular-nums ${
+                        isToday
+                          ? "w-7 h-7 text-white rounded-full flex items-center justify-center mx-auto"
+                          : "text-slate-800"
+                      }`}
+                      style={isToday ? { background: "linear-gradient(180deg, #1E293B 0%, #0F172A 100%)", boxShadow: "inset 0 1px 0 rgba(255,255,255,0.15)" } : undefined}
+                    >
+                      {day.getDate()}
+                    </p>
+                  </div>
+                );
+              })}
             </div>
 
-            {/* Day columns */}
-            {days.map((day, dayIdx) => (
-              <div key={dayIdx} className={`border-r border-gray-100 last:border-r-0 relative ${dayIdx >= 5 ? "bg-gray-50/50" : ""}`}>
-                {HOURS.map((hour) => {
-                  const slotApts = getAppointmentsForDayHour(day, hour);
-                  return (
+            {/* Time grid */}
+            <div className="overflow-y-auto max-h-[calc(100vh-280px)]">
+              <div className="grid" style={{ gridTemplateColumns: "56px repeat(7, 1fr)" }}>
+                {/* Time column */}
+                <div>
+                  {HOURS.map((hour) => (
                     <div
                       key={hour}
-                      className="h-14 border-b border-gray-100 relative"
+                      className="h-14 flex items-start justify-end pr-2 pt-1"
+                      style={{ borderBottom: "1px solid rgba(203,213,225,0.22)", borderRight: "1px solid rgba(203,213,225,0.25)" }}
                     >
-                      {slotApts.map((apt) => (
-                        <button
-                          key={apt.id}
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setSelectedAppointment(apt);
-                          }}
-                          className="absolute inset-x-0.5 rounded-lg text-left overflow-hidden group hover:opacity-90 transition-opacity"
-                          style={{
-                            top: getTopOffset(apt),
-                            height: getHeight(apt),
-                            backgroundColor: apt.employee?.color ?? "#374151",
-                          }}
-                        >
-                          <div className="px-1.5 py-1 h-full overflow-hidden">
-                            <p className="text-2xs font-semibold text-white leading-tight truncate">
-                              {apt.customer.firstName} {apt.customer.lastName}
-                            </p>
-                            {getHeight(apt) > 40 && (
-                              <p className="text-2xs text-white/80 truncate leading-tight mt-0.5">
-                                {apt.service.name}
-                              </p>
-                            )}
-                          </div>
-                        </button>
-                      ))}
+                      <span className="text-[10px] text-slate-400 tabular-nums">{hour}:00</span>
                     </div>
-                  );
-                })}
+                  ))}
+                </div>
+
+                {/* Day columns */}
+                {days.map((day, dayIdx) => (
+                  <div
+                    key={dayIdx}
+                    className="relative last:border-r-0"
+                    style={{
+                      borderRight: "1px solid rgba(203,213,225,0.25)",
+                      background: dayIdx >= 5 ? "rgba(203,213,225,0.08)" : undefined,
+                    }}
+                  >
+                    {HOURS.map((hour) => {
+                      const slotApts = getAppointmentsForDayHour(day, hour);
+                      return (
+                        <div
+                          key={hour}
+                          className="h-14 relative group/slot cursor-pointer"
+                          style={{ borderBottom: "1px solid rgba(203,213,225,0.22)" }}
+                          onClick={() => openNewAt(day, hour)}
+                          title={`Nowa wizyta — ${DAYS_PL[dayIdx]} ${hour}:00`}
+                        >
+                          {/* Empty-slot affordance */}
+                          <span
+                            className="absolute inset-1 rounded-lg opacity-0 group-hover/slot:opacity-100 transition-opacity flex items-center justify-center pointer-events-none"
+                            style={{ background: "rgba(203,213,225,0.16)", border: "1px dashed rgba(148,163,184,0.40)" }}
+                            aria-hidden="true"
+                          >
+                            <svg className="w-3.5 h-3.5 text-slate-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5}>
+                              <path d="M12 5v14M5 12h14" />
+                            </svg>
+                          </span>
+
+                          {slotApts.map((apt) => (
+                            <button
+                              key={apt.id}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setActionError("");
+                                setSelectedAppointment(apt);
+                              }}
+                              className="absolute inset-x-0.5 rounded-lg text-left overflow-hidden hover:opacity-90 transition-opacity z-10"
+                              style={{
+                                top: getTopOffset(apt),
+                                height: getHeight(apt),
+                                backgroundColor: apt.employee?.color ?? "#334155",
+                              }}
+                            >
+                              <div className="px-1.5 py-1 h-full overflow-hidden">
+                                <p className="text-[10px] font-semibold text-white leading-tight truncate">
+                                  {apt.customer.firstName} {apt.customer.lastName}
+                                </p>
+                                {getHeight(apt) > 40 && (
+                                  <p className="text-[10px] text-white/80 truncate leading-tight mt-0.5">
+                                    {apt.service.name}
+                                  </p>
+                                )}
+                              </div>
+                            </button>
+                          ))}
+                        </div>
+                      );
+                    })}
+                  </div>
+                ))}
               </div>
-            ))}
-          </div>
-        </div>
-        </div>
+            </div>
+          </motion.div>
+        </AnimatePresence>
       </div>
 
-      {/* Appointment detail popover */}
-      {selectedAppointment && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          <div
-            className="absolute inset-0 bg-black/20"
-            onClick={() => setSelectedAppointment(null)}
-          />
-          <div className="relative bg-white rounded-2xl shadow-soft-xl w-full max-w-sm animate-scale-in">
-            <div
-              className="h-1.5 rounded-t-2xl"
-              style={{ backgroundColor: selectedAppointment.employee?.color ?? "#374151" }}
-            />
-            <div className="p-5">
-              <div className="flex items-start justify-between mb-4">
-                <div>
-                  <h3 className="text-base font-semibold text-gray-900">
-                    {selectedAppointment.customer.firstName} {selectedAppointment.customer.lastName}
-                  </h3>
-                  <p className="text-sm text-gray-700 mt-0.5">{selectedAppointment.service.name}</p>
-                </div>
-                <button
-                  onClick={() => setSelectedAppointment(null)}
-                  className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-700 transition-colors"
-                >
-                  <XIcon className="w-4 h-4" />
-                </button>
-              </div>
-
-              <div className="space-y-2.5">
-                <DetailRow label="Czas" value={`${new Date(selectedAppointment.startTime).toLocaleTimeString("pl-PL", { hour: "2-digit", minute: "2-digit" })} – ${new Date(selectedAppointment.endTime).toLocaleTimeString("pl-PL", { hour: "2-digit", minute: "2-digit" })} (${selectedAppointment.duration} min)`} />
-                <DetailRow label="Cena" value={`${selectedAppointment.price.toFixed(0)} PLN`} />
-                {selectedAppointment.employee && (
-                  <DetailRow label="Pracownik" value={`${selectedAppointment.employee.firstName} ${selectedAppointment.employee.lastName}`} />
-                )}
-                {selectedAppointment.customer.phone && (
-                  <DetailRow label="Telefon" value={selectedAppointment.customer.phone} />
-                )}
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-gray-700">Status</span>
-                  <span className={`text-xs px-2.5 py-1 rounded-full font-medium ${
-                    STATUS_LABELS[selectedAppointment.status]?.className ?? "bg-gray-100 text-gray-700"
-                  }`}>
-                    {STATUS_LABELS[selectedAppointment.status]?.label ?? selectedAppointment.status}
-                  </span>
-                </div>
-                {selectedAppointment.customerNotes && (
-                  <DetailRow label="Notatki" value={selectedAppointment.customerNotes} />
-                )}
-              </div>
-
-              {actionError && (
-                <div className="mt-4 px-3 py-2.5 bg-red-50 border border-red-100 rounded-xl">
-                  <p className="text-xs text-red-600">{actionError}</p>
-                </div>
+      {/* Appointment detail — GlassModal */}
+      <GlassModal
+        open={selectedAppointment !== null}
+        onOpenChange={(o) => { if (!o) setSelectedAppointment(null); }}
+        title={selectedAppointment ? `${selectedAppointment.customer.firstName} ${selectedAppointment.customer.lastName}` : ""}
+        description={selectedAppointment?.service.name}
+        accent={selectedAppointment?.employee?.color ?? "#334155"}
+      >
+        {selectedAppointment && (
+          <>
+            <div className="space-y-2.5 mt-2">
+              <DetailRow
+                label="Czas"
+                value={`${new Date(selectedAppointment.startTime).toLocaleTimeString("pl-PL", { hour: "2-digit", minute: "2-digit" })} – ${new Date(selectedAppointment.endTime).toLocaleTimeString("pl-PL", { hour: "2-digit", minute: "2-digit" })} (${selectedAppointment.duration} min)`}
+              />
+              <DetailRow label="Cena" value={`${selectedAppointment.price.toFixed(0)} zł`} />
+              {selectedAppointment.employee && (
+                <DetailRow
+                  label="Pracownik"
+                  value={`${selectedAppointment.employee.firstName} ${selectedAppointment.employee.lastName}`}
+                />
               )}
-
-              {/* Actions */}
-              {(selectedAppointment.status === "PENDING" ||
-                selectedAppointment.status === "CONFIRMED" ||
-                selectedAppointment.status === "IN_PROGRESS") && (
-                <div className="mt-5 pt-4 border-t border-gray-100 flex flex-wrap gap-2">
-                  {selectedAppointment.status === "PENDING" && (
-                    <button
-                      onClick={() => runAction(confirmAppointment)}
-                      disabled={isPending}
-                      className="flex-1 px-4 py-2.5 bg-gray-900 hover:bg-gray-800 disabled:opacity-60 text-white rounded-xl text-xs font-semibold transition-colors"
-                    >
-                      Potwierdź
-                    </button>
-                  )}
-                  {(selectedAppointment.status === "CONFIRMED" ||
-                    selectedAppointment.status === "IN_PROGRESS") && (
-                    <button
-                      onClick={() => runAction(completeAppointment)}
-                      disabled={isPending}
-                      className="flex-1 px-4 py-2.5 bg-gray-900 hover:bg-gray-800 disabled:opacity-60 text-white rounded-xl text-xs font-semibold transition-colors"
-                    >
-                      Zakończ
-                    </button>
-                  )}
-                  {(selectedAppointment.status === "PENDING" ||
-                    selectedAppointment.status === "CONFIRMED") && (
-                    <>
-                      <button
-                        onClick={() => runAction(markNoShow)}
-                        disabled={isPending}
-                        className="px-4 py-2.5 border border-gray-200 hover:bg-gray-50 disabled:opacity-60 text-gray-700 rounded-xl text-xs font-medium transition-colors"
-                      >
-                        No-show
-                      </button>
-                      <button
-                        onClick={() => runAction(declineAppointment)}
-                        disabled={isPending}
-                        className="px-4 py-2.5 border border-gray-200 hover:border-red-200 hover:text-red-600 disabled:opacity-60 text-gray-600 rounded-xl text-xs font-medium transition-colors"
-                      >
-                        Odwołaj
-                      </button>
-                    </>
-                  )}
-                </div>
+              {selectedAppointment.customer.phone && (
+                <DetailRow label="Telefon" value={selectedAppointment.customer.phone} />
+              )}
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-slate-500">Status</span>
+                <span
+                  className="text-xs px-2.5 py-1 rounded-full font-semibold"
+                  style={statusMeta?.style}
+                >
+                  {statusMeta?.label ?? selectedAppointment.status}
+                </span>
+              </div>
+              {selectedAppointment.customerNotes && (
+                <DetailRow label="Notatki" value={selectedAppointment.customerNotes} />
               )}
             </div>
-          </div>
-        </div>
-      )}
+
+            {actionError && (
+              <div
+                role="alert"
+                className="mt-4 px-3 py-2.5 rounded-xl"
+                style={{ background: "rgba(244,63,94,0.08)", border: "1px solid rgba(244,63,94,0.25)" }}
+              >
+                <p className="text-xs font-medium" style={{ color: "#BE123C" }}>{actionError}</p>
+              </div>
+            )}
+
+            {(selectedAppointment.status === "PENDING" ||
+              selectedAppointment.status === "CONFIRMED" ||
+              selectedAppointment.status === "IN_PROGRESS") && (
+              <div className="mt-5 pt-4 flex flex-wrap gap-2" style={{ borderTop: "1px solid rgba(203,213,225,0.30)" }}>
+                {selectedAppointment.status === "PENDING" && (
+                  <ModalInkButton onClick={() => runAction(confirmAppointment)} disabled={isPending}>
+                    Potwierdź
+                  </ModalInkButton>
+                )}
+                {(selectedAppointment.status === "CONFIRMED" ||
+                  selectedAppointment.status === "IN_PROGRESS") && (
+                  <ModalInkButton onClick={() => runAction(completeAppointment)} disabled={isPending}>
+                    Zakończ
+                  </ModalInkButton>
+                )}
+                {(selectedAppointment.status === "PENDING" ||
+                  selectedAppointment.status === "CONFIRMED") && (
+                  <>
+                    <ModalGlassButton onClick={() => runAction(markNoShow)} disabled={isPending}>
+                      No-show
+                    </ModalGlassButton>
+                    <ModalGlassButton onClick={() => runAction(declineAppointment)} disabled={isPending}>
+                      Odwołaj
+                    </ModalGlassButton>
+                  </>
+                )}
+              </div>
+            )}
+          </>
+        )}
+      </GlassModal>
+
+      {/* New appointment sheet */}
+      <NewAppointmentSheet
+        open={sheetOpen}
+        onOpenChange={setSheetOpen}
+        businessId={businessId}
+        services={services}
+        employees={employees}
+        prefillDate={prefill.date}
+        prefillTime={prefill.time}
+      />
     </div>
   );
 }
 
 function DetailRow({ label, value }: { label: string; value: string }) {
   return (
-    <div className="flex items-center justify-between">
-      <span className="text-sm text-gray-700">{label}</span>
-      <span className="text-sm font-medium text-gray-900 text-right max-w-[60%]">{value}</span>
+    <div className="flex items-center justify-between gap-3">
+      <span className="text-sm text-slate-500">{label}</span>
+      <span className="text-sm font-medium text-slate-900 text-right max-w-[60%] tabular-nums">{value}</span>
     </div>
   );
 }
 
 function ChevronLeftIcon({ className }: { className?: string }) {
   return (
-    <svg className={className} viewBox="0 0 20 20" fill="currentColor">
+    <svg className={className} viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
       <path fillRule="evenodd" d="M11.78 5.22a.75.75 0 0 1 0 1.06L8.06 10l3.72 3.72a.75.75 0 1 1-1.06 1.06l-4.25-4.25a.75.75 0 0 1 0-1.06l4.25-4.25a.75.75 0 0 1 1.06 0Z" clipRule="evenodd" />
     </svg>
   );
@@ -371,16 +497,8 @@ function ChevronLeftIcon({ className }: { className?: string }) {
 
 function ChevronRightIcon({ className }: { className?: string }) {
   return (
-    <svg className={className} viewBox="0 0 20 20" fill="currentColor">
+    <svg className={className} viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
       <path fillRule="evenodd" d="M8.22 5.22a.75.75 0 0 1 1.06 0l4.25 4.25a.75.75 0 0 1 0 1.06l-4.25 4.25a.75.75 0 0 1-1.06-1.06L11.94 10 8.22 6.28a.75.75 0 0 1 0-1.06Z" clipRule="evenodd" />
-    </svg>
-  );
-}
-
-function XIcon({ className }: { className?: string }) {
-  return (
-    <svg className={className} viewBox="0 0 20 20" fill="currentColor">
-      <path d="M6.28 5.22a.75.75 0 0 0-1.06 1.06L8.94 10l-3.72 3.72a.75.75 0 1 0 1.06 1.06L10 11.06l3.72 3.72a.75.75 0 1 0 1.06-1.06L11.06 10l3.72-3.72a.75.75 0 0 0-1.06-1.06L10 8.94 6.28 5.22Z" />
     </svg>
   );
 }

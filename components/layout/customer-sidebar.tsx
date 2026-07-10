@@ -126,20 +126,13 @@ export function CustomerSidebar() {
               >
                 <Link
                   href={item.href}
-                  className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium"
+                  className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium${isActive ? "" : " nav-item"}`}
                   style={isActive ? {
                     background: "rgba(203,213,225,0.22)",
                     color: "#1E293B",
                     border: "1px solid rgba(203,213,225,0.50)",
                     boxShadow: "0 0 0 0.5px rgba(203,213,225,0.20), inset 0 1px 0 rgba(255,255,255,0.90)",
-                    transition: "none",
-                  } : {
-                    color: "#94A3B8",
-                    border: "1px solid transparent",
-                    transition: "background 150ms ease, color 150ms ease, border-color 150ms ease",
-                  }}
-                  onMouseEnter={e => { if (!isActive) { (e.currentTarget as HTMLElement).style.background = "rgba(203,213,225,0.14)"; (e.currentTarget as HTMLElement).style.color = "#475569"; (e.currentTarget as HTMLElement).style.borderColor = "rgba(203,213,225,0.30)"; } }}
-                  onMouseLeave={e => { if (!isActive) { (e.currentTarget as HTMLElement).style.background = ""; (e.currentTarget as HTMLElement).style.color = "#94A3B8"; (e.currentTarget as HTMLElement).style.borderColor = "transparent"; } }}
+                  } : undefined}
                 >
                   <span className="flex-shrink-0" style={{ color: isActive ? "#64748B" : "inherit" }}>
                     {item.icon}
@@ -156,10 +149,8 @@ export function CustomerSidebar() {
       <div className="p-3" style={{ borderTop: "1px solid rgba(203,213,225,0.28)" }}>
         <Link
           href="/customer/profile"
-          className="flex items-center gap-3 px-3 py-2 rounded-lg transition-all"
+          className="flex items-center gap-3 px-3 py-2 rounded-lg row-hover"
           style={{ color: "#64748B" }}
-          onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = "rgba(148,163,184,0.10)"; }}
-          onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = ""; }}
         >
           <div
             className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-semibold flex-shrink-0"

@@ -298,6 +298,47 @@
                 0 0 0 2px rgba(203,213,225,0.25);
   }
 
+  /* ── Nav/row hover — CSS only, replaces JS style mutation ────
+     Hover and keyboard focus get identical feedback.            */
+  .nav-item {
+    color: #94A3B8;
+    border: 1px solid transparent;
+    transition: background 150ms ease, color 150ms ease, border-color 150ms ease;
+  }
+  .nav-item:hover,
+  .nav-item:focus-visible {
+    background: rgba(203, 213, 225, 0.14);
+    color: #475569;
+    border-color: rgba(203, 213, 225, 0.30);
+  }
+
+  .nav-link {
+    color: #64748B;
+    transition: background 150ms ease, color 150ms ease;
+  }
+  .nav-link:hover,
+  .nav-link:focus-visible {
+    background: rgba(203, 213, 225, 0.18);
+    color: #0F172A;
+  }
+
+  .icon-btn {
+    transition: background 150ms ease, color 150ms ease;
+  }
+  .icon-btn:hover,
+  .icon-btn:focus-visible {
+    background: rgba(148, 163, 184, 0.10);
+    color: #475569;
+  }
+
+  .row-hover {
+    transition: background 150ms ease;
+  }
+  .row-hover:hover,
+  .row-hover:focus-visible {
+    background: rgba(148, 163, 184, 0.10);
+  }
+
   /* ── Premium button spring base ───────────────────────────── */
   .btn-spring {
     transition:

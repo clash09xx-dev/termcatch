@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { formatCurrency, getInitials } from "@/lib/utils";
 import type { CustomerSummary } from "./page";
 
@@ -20,7 +21,8 @@ const STATUS_LABELS: Record<string, { label: string; className: string }> = {
 };
 
 export function CrmClient({ customers }: Props) {
-  const [search, setSearch] = useState("");
+  const searchParams = useSearchParams();
+  const [search, setSearch] = useState(searchParams.get("q") ?? "");
   const [selectedCustomer, setSelectedCustomer] = useState<CustomerSummary | null>(null);
 
   const filtered = customers.filter((c) => {

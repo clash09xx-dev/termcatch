@@ -22,6 +22,16 @@ async function getCalendarData(supabaseId: string, weekStart: Date) {
       ownedBusinesses: {
         take: 1,
         include: {
+          services: {
+            where: { isActive: true },
+            orderBy: { displayOrder: "asc" },
+            select: { id: true, name: true, duration: true, price: true, discountedPrice: true },
+          },
+          employees: {
+            where: { isActive: true },
+            orderBy: { displayOrder: "asc" },
+            select: { id: true, firstName: true, lastName: true, color: true },
+          },
           appointments: {
             where: {
               startTime: { gte: weekStart, lt: weekEnd },
@@ -55,7 +65,7 @@ function getWeekStart(date: Date): Date {
 export default async function CalendarPage({
   searchParams,
 }: {
-  searchParams: Promise<{ week?: string }>;
+  searchParams: Promise<{ week?: string; action?: string }>;
 }) {
   const user = await getServerUser();
   if (!user) redirect("/login");
@@ -72,6 +82,10 @@ export default async function CalendarPage({
     <CalendarClient
       appointments={business.appointments as AppointmentWithRelations[]}
       weekStart={weekStart.toISOString()}
+      businessId={business.id}
+      services={business.services}
+      employees={business.employees}
+      openNewOnLoad={params.action === "new"}
     />
   );
 }

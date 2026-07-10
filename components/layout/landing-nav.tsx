@@ -101,12 +101,10 @@ export function LandingNav() {
 
           {/* Mobile toggle */}
           <button
-            className="md:hidden p-2 rounded-xl transition-all duration-150"
-            style={{ color: "#64748B" }}
+            className="md:hidden p-2 rounded-xl nav-link"
             onClick={() => setIsMobileOpen(!isMobileOpen)}
-            onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = "rgba(203,213,225,0.18)"; }}
-            onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = ""; }}
             aria-label="Menu"
+            aria-expanded={isMobileOpen}
           >
             <motion.svg
               width="17" height="17" viewBox="0 0 24 24"
@@ -145,10 +143,7 @@ export function LandingNav() {
                     key={link.href}
                     href={link.href}
                     onClick={() => setIsMobileOpen(false)}
-                    className="block px-3.5 py-2.5 text-sm rounded-xl transition-all duration-150"
-                    style={{ color: "#475569" }}
-                    onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = "rgba(203,213,225,0.18)"; (e.currentTarget as HTMLElement).style.color = "#0F172A"; }}
-                    onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = ""; (e.currentTarget as HTMLElement).style.color = "#475569"; }}
+                    className="block px-3.5 py-2.5 text-sm rounded-xl nav-link"
                   >
                     {link.label}
                   </Link>
@@ -212,19 +207,7 @@ export function LandingNav() {
 
 function NavLink({ href, children }: { href: string; children: React.ReactNode }) {
   return (
-    <Link
-      href={href}
-      className="relative px-3.5 py-2 text-sm rounded-xl transition-all duration-150 group"
-      style={{ color: "#64748B" }}
-      onMouseEnter={e => {
-        (e.currentTarget as HTMLElement).style.color = "#0F172A";
-        (e.currentTarget as HTMLElement).style.background = "rgba(203,213,225,0.18)";
-      }}
-      onMouseLeave={e => {
-        (e.currentTarget as HTMLElement).style.color = "#64748B";
-        (e.currentTarget as HTMLElement).style.background = "";
-      }}
-    >
+    <Link href={href} className="relative px-3.5 py-2 text-sm rounded-xl nav-link">
       {children}
     </Link>
   );
