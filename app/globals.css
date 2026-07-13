@@ -339,6 +339,21 @@
     background: rgba(148, 163, 184, 0.10);
   }
 
+  /* ── Skeleton shimmer — silver sweep ──────────────────────── */
+  .tc-skeleton {
+    background: linear-gradient(
+      100deg,
+      rgba(203, 213, 225, 0.22) 30%,
+      rgba(226, 232, 240, 0.55) 50%,
+      rgba(203, 213, 225, 0.22) 70%
+    );
+    background-size: 220% 100%;
+    animation: tc-skeleton-sweep 1.4s ease-in-out infinite;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .tc-skeleton { animation: none; background: rgba(203, 213, 225, 0.28); }
+  }
+
   /* ── Premium button spring base ───────────────────────────── */
   .btn-spring {
     transition:
@@ -425,6 +440,12 @@
 @keyframes fade-rise {
   from { opacity: 0; transform: translateY(12px); }
   to   { opacity: 1; transform: none; }
+}
+
+/* Skeleton shimmer sweep */
+@keyframes tc-skeleton-sweep {
+  0%   { background-position: 180% 0; }
+  100% { background-position: -80% 0; }
 }
 
 /* Dot pulse — for status indicators */

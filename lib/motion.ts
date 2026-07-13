@@ -72,3 +72,10 @@ export const weekSlide: Variants = {
   center: { opacity: 1, x: 0, transition: { duration: 0.28, ease: EASE } },
   exit: (dir: number) => ({ opacity: 0, x: dir * -28, transition: { duration: 0.18, ease: EASE } }),
 };
+
+/** Right-side drawer — slides in horizontally (master-detail on mobile, entity panels). */
+export const drawerSlide: Variants = {
+  hidden: { opacity: 0, x: 40 },
+  show: { opacity: 1, x: 0, transition: SPRING_SOFT },
+  exit: { opacity: 0, x: 32, transition: { duration: 0.18, ease: EASE } },
+};

@@ -7,11 +7,13 @@ import Link from "next/link";
 import { cn } from "@/lib/utils";
 import {
   ELEV_RAISED,
+  ELEV_SURFACE,
   ROW,
   CHIP,
   HAIRLINE,
   INK_BTN,
   GLASS_BTN,
+  DANGER_BTN,
   STATUS_TINT,
   OVERLINE_CLS,
   type StatusKey,
@@ -254,6 +256,152 @@ export function GlassButton({
     >
       {children}
     </button>
+  );
+}
+
+export function DangerButton({
+  children,
+  size = "md",
+  className,
+  ...props
+}: React.ButtonHTMLAttributes<HTMLButtonElement> & {
+  size?: keyof typeof BTN_PAD;
+}) {
+  return (
+    <button
+      {...props}
+      className={cn(BTN_BASE, BTN_PAD[size], "disabled:opacity-50 disabled:cursor-not-allowed", className)}
+      style={DANGER_BTN}
+    >
+      {children}
+    </button>
+  );
+}
+
+// ── Skeleton — unified loading shimmer ────────────────────────
+
+export function Skeleton({ className, style }: { className?: string; style?: React.CSSProperties }) {
+  return (
+    <span
+      aria-hidden="true"
+      className={cn("block rounded-lg tc-skeleton", className)}
+      style={style}
+    />
+  );
+}
+
+// ── FormField — label + control + hint/error ──────────────────
+
+export function FormField({
+  label,
+  htmlFor,
+  hint,
+  error,
+  children,
+  className,
+}: {
+  label: string;
+  htmlFor?: string;
+  hint?: string;
+  error?: string;
+  children: React.ReactNode;
+  className?: string;
+}) {
+  return (
+    <div className={className}>
+      <label htmlFor={htmlFor} className="block text-sm font-medium text-slate-700 mb-1.5">
+        {label}
+      </label>
+      {hint && !error && <p className="text-xs text-slate-500 -mt-1 mb-2">{hint}</p>}
+      {children}
+      {error && (
+        <p className="mt-1.5 text-xs font-medium flex items-center gap-1.5" style={{ color: "#BE123C" }}>
+          <svg className="w-3.5 h-3.5 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} aria-hidden="true">
+            <circle cx="12" cy="12" r="10" /><path d="M12 8v4M12 16h.01" />
+          </svg>
+          {error}
+        </p>
+      )}
+    </div>
+  );
+}
+
+// ── Timeline — vertical spine with hairline connectors ────────
+
+export function Timeline({ children, className }: { children: React.ReactNode; className?: string }) {
+  return <div className={cn("relative", className)}>{children}</div>;
+}
+
+export function TimelineRow({
+  time,
+  sub,
+  dotColor = "#94A3B8",
+  connector = true,
+  muted = false,
+  children,
+}: {
+  time: string;
+  sub?: string;
+  dotColor?: string;
+  connector?: boolean;
+  muted?: boolean;
+  children: React.ReactNode;
+}) {
+  return (
+    <div className={cn("relative flex gap-4", muted && "opacity-60")}>
+      <div className="w-12 text-right flex-shrink-0 pt-0.5">
+        <p className={cn("text-sm font-semibold tabular-nums", muted ? "text-slate-400" : "text-slate-900")}>{time}</p>
+        {sub && <p className="text-[10px] text-slate-400 tabular-nums">{sub}</p>}
+      </div>
+      <div className="relative flex flex-col items-center">
+        <span
+          className="w-2.5 h-2.5 rounded-full mt-1.5 flex-shrink-0"
+          style={{ background: dotColor, boxShadow: "0 0 0 3px rgba(255,255,255,0.85)" }}
+        />
+        {connector && <span className="w-px flex-1 my-1" style={{ background: "rgba(203,213,225,0.5)" }} />}
+      </div>
+      <div className="flex-1 min-w-0 pb-2.5">{children}</div>
+    </div>
+  );
+}
+
+// ── SplitShell — master–detail two-pane (server-safe layout) ──
+// Selection state lives in the page; pass detailOpen to drive the
+// mobile single-pane swap (list ⇄ detail).
+
+export function SplitShell({
+  list,
+  detail,
+  detailOpen = false,
+  className,
+}: {
+  list: React.ReactNode;
+  detail: React.ReactNode;
+  detailOpen?: boolean;
+  className?: string;
+}) {
+  return (
+    <div className={cn("grid gap-4 lg:grid-cols-[minmax(300px,380px)_1fr] items-start", className)}>
+      <div className={cn("min-w-0", detailOpen ? "hidden lg:block" : "block")}>{list}</div>
+      <div className={cn("min-w-0", detailOpen ? "block" : "hidden lg:block")}>{detail}</div>
+    </div>
+  );
+}
+
+// ── DetailEmpty — placeholder for the empty detail pane ───────
+
+export function DetailEmpty({ icon, title, body }: { icon: React.ReactNode; title: string; body?: string }) {
+  return (
+    <div
+      className="hidden lg:flex flex-col items-center justify-center text-center rounded-[20px] min-h-[420px] px-8"
+      style={ELEV_SURFACE}
+    >
+      <div className="w-12 h-12 rounded-2xl flex items-center justify-center mb-4 text-slate-400" style={CHIP}>
+        {icon}
+      </div>
+      <p className="text-sm font-semibold text-slate-700">{title}</p>
+      {body && <p className="text-xs text-slate-500 mt-1 max-w-xs leading-relaxed">{body}</p>}
+    </div>
   );
 }
 

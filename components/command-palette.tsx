@@ -45,18 +45,20 @@ const paletteIn = {
 };
 
 const NAV_TARGETS: { label: string; href: string; keywords: string }[] = [
-  { label: "Pulpit", href: "/business/dashboard", keywords: "dashboard pulpit start" },
+  { label: "Dziś", href: "/business/dashboard", keywords: "dzis dashboard pulpit start dzisiaj" },
   { label: "Kalendarz", href: "/business/calendar", keywords: "kalendarz wizyty terminy calendar" },
-  { label: "Pracownicy", href: "/business/staff", keywords: "pracownicy zespol staff" },
-  { label: "Usługi", href: "/business/services", keywords: "uslugi cennik services" },
-  { label: "Godziny pracy", href: "/business/hours", keywords: "godziny otwarcia hours" },
-  { label: "CRM", href: "/business/crm", keywords: "crm klienci customers" },
-  { label: "Płatności", href: "/business/payments", keywords: "platnosci payments stripe" },
-  { label: "Kupony", href: "/business/coupons", keywords: "kupony promocje coupons" },
-  { label: "Analityka", href: "/business/analytics", keywords: "analityka raporty analytics" },
-  { label: "Opinie", href: "/business/reviews", keywords: "opinie recenzje reviews" },
-  { label: "Profil salonu", href: "/business/profile", keywords: "profil salon profile" },
-  { label: "Ustawienia", href: "/business/settings", keywords: "ustawienia settings konto" },
+  { label: "Klienci", href: "/business/crm", keywords: "klienci crm customers baza" },
+  { label: "Usługi", href: "/business/services", keywords: "uslugi cennik services oferta" },
+  { label: "Zespół", href: "/business/staff", keywords: "zespol pracownicy staff team" },
+  { label: "Godziny", href: "/business/hours", keywords: "godziny otwarcia hours praca" },
+  { label: "AI Asystent", href: "/business/ai", keywords: "ai asystent obserwacje insights" },
+  { label: "Marketing", href: "/business/marketing", keywords: "marketing kampanie sms email" },
+  { label: "Kupony", href: "/business/coupons", keywords: "kupony promocje coupons rabaty" },
+  { label: "Faktury", href: "/business/invoices", keywords: "faktury rozliczenia sprzedaz invoices" },
+  { label: "Analityka", href: "/business/analytics", keywords: "analityka raporty analytics statystyki" },
+  { label: "Opinie", href: "/business/reviews", keywords: "opinie recenzje reviews oceny" },
+  { label: "Płatności", href: "/business/payments", keywords: "platnosci payments stripe wyplaty" },
+  { label: "Ustawienia", href: "/business/settings", keywords: "ustawienia settings konto profil salonu" },
 ];
 
 export function CommandPalette({ businessSlug }: { businessSlug?: string }) {
