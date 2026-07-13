@@ -4,45 +4,41 @@ import { prisma } from "@/lib/prisma";
 import { getOrCreateDbUser } from "@/lib/auth-user";
 import { getBusinessNotificationSettings } from "@/lib/notification-settings";
 import { NotificationsPrompt } from "@/components/business/notifications-prompt";
-import { formatCurrency, formatDate, formatTime, formatRelativeTime } from "@/lib/utils";
-import { warsawDateString, warsawDayStartUtc, warsawDayEndUtc } from "@/lib/timezone";
+import { formatCurrency, formatTime, formatDate, formatRelativeTime } from "@/lib/utils";
+import { warsawDateString, warsawDayStartUtc, warsawDayEndUtc, warsawTimeString } from "@/lib/timezone";
 import { redirect } from "next/navigation";
 import Link from "next/link";
-import { AppointmentStatus } from "@prisma/client";
+import { AppointmentStatus, DayOfWeek } from "@prisma/client";
 import { confirmAppointment, declineAppointment } from "@/lib/actions/appointments";
 import {
-  GlassCard,
-  CardHeader,
-  StatCard,
-  StatusBadge,
-  EmptyState,
-  InkLink,
-  ChromeAvatar,
-  Overline,
-  HAIRLINE,
-  CHIP,
-  INK_BTN,
-  GLASS_BTN,
-  STATUS_TINT,
+  GlassCard, CardHeader, EmptyState, StatusBadge, InkLink, GlassLink,
+  ChromeAvatar, Overline, Timeline, TimelineRow, HAIRLINE, CHIP, INK_BTN, GLASS_BTN, STATUS_TINT,
   type StatusKey,
 } from "@/components/ui/glass";
+import { Sparkline } from "@/components/ui/chart";
+
+const DOW: DayOfWeek[] = ["SUNDAY", "MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY", "SATURDAY"];
 
 function greeting(): string {
-  const h = parseInt(
-    new Intl.DateTimeFormat("en-GB", { timeZone: "Europe/Warsaw", hour: "2-digit", hour12: false }).format(new Date()),
-    10
-  );
+  const h = parseInt(new Intl.DateTimeFormat("en-GB", { timeZone: "Europe/Warsaw", hour: "2-digit", hour12: false }).format(new Date()), 10);
   if (h < 5) return "Dobranoc";
   if (h < 12) return "Dzień dobry";
   if (h < 18) return "Miłego dnia";
   return "Dobry wieczór";
 }
 
+function hmToMin(hm: string): number {
+  const [h, m] = hm.split(":").map(Number);
+  return h * 60 + (m || 0);
+}
+
 export default async function BusinessDashboardPage() {
   const dbUser = await getOrCreateDbUser();
-  const business = (
-    await prisma.business.findMany({ where: { ownerId: dbUser.id }, take: 1 })
-  )[0];
+  const business = (await prisma.business.findMany({
+    where: { ownerId: dbUser.id },
+    take: 1,
+    include: { workingHours: true },
+  }))[0];
   if (!business) redirect("/business/onboarding");
 
   const now = new Date();
@@ -51,402 +47,280 @@ export default async function BusinessDashboardPage() {
   const todayEnd = warsawDayEndUtc(todayStr);
   const [yearStr, monthStr] = todayStr.split("-");
   const monthStart = warsawDayStartUtc(`${yearStr}-${monthStr}-01`);
+  const weekAgo = new Date(now.getTime() - 6 * 86400_000);
 
-  const [
-    todayAppointments,
-    pendingAppointments,
-    monthRevenueAgg,
-    monthCompletedCount,
-    monthNoShowCount,
-    recentReviews,
-  ] = await Promise.all([
+  const [todayAppointments, pendingAppointments, monthRevenueAgg, monthNoShowCount, unansweredReviews, recentReviews, weekAppts, serviceCount, staffCount] = await Promise.all([
     prisma.appointment.findMany({
-      where: {
-        businessId: business.id,
-        startTime: { gte: todayStart, lt: todayEnd },
-        status: { notIn: [AppointmentStatus.CANCELLED_CUSTOMER, AppointmentStatus.CANCELLED_BUSINESS] },
-      },
+      where: { businessId: business.id, startTime: { gte: todayStart, lt: todayEnd }, status: { notIn: [AppointmentStatus.CANCELLED_CUSTOMER, AppointmentStatus.CANCELLED_BUSINESS] } },
       orderBy: { startTime: "asc" },
       include: { customer: true, service: true, employee: true },
     }),
     prisma.appointment.findMany({
-      where: {
-        businessId: business.id,
-        status: AppointmentStatus.PENDING,
-        startTime: { gte: now },
-      },
-      orderBy: { startTime: "asc" },
-      take: 5,
+      where: { businessId: business.id, status: AppointmentStatus.PENDING, startTime: { gte: now } },
+      orderBy: { startTime: "asc" }, take: 6,
       include: { customer: true, service: true },
     }),
-    prisma.appointment.aggregate({
-      where: {
-        businessId: business.id,
-        status: AppointmentStatus.COMPLETED,
-        startTime: { gte: monthStart },
-      },
-      _sum: { price: true },
-    }),
-    prisma.appointment.count({
-      where: {
-        businessId: business.id,
-        status: AppointmentStatus.COMPLETED,
-        startTime: { gte: monthStart },
-      },
-    }),
-    prisma.appointment.count({
-      where: {
-        businessId: business.id,
-        status: AppointmentStatus.NO_SHOW,
-        startTime: { gte: monthStart },
-      },
-    }),
-    prisma.review.findMany({
-      where: { businessId: business.id, status: "PUBLISHED" },
-      orderBy: { createdAt: "desc" },
-      take: 3,
-      include: { customer: { select: { firstName: true, lastName: true } } },
-    }),
+    prisma.appointment.aggregate({ where: { businessId: business.id, status: AppointmentStatus.COMPLETED, startTime: { gte: monthStart } }, _sum: { price: true }, _count: true }),
+    prisma.appointment.count({ where: { businessId: business.id, status: AppointmentStatus.NO_SHOW, startTime: { gte: monthStart } } }),
+    prisma.review.count({ where: { businessId: business.id, status: "PUBLISHED", replyText: null } }),
+    prisma.review.findMany({ where: { businessId: business.id, status: "PUBLISHED" }, orderBy: { createdAt: "desc" }, take: 2, include: { customer: { select: { firstName: true, lastName: true } } } }),
+    prisma.appointment.findMany({ where: { businessId: business.id, status: AppointmentStatus.COMPLETED, startTime: { gte: warsawDayStartUtc(warsawDateString(weekAgo)) } }, select: { startTime: true, price: true } }),
+    prisma.service.count({ where: { businessId: business.id, isActive: true } }),
+    prisma.employee.count({ where: { businessId: business.id, isActive: true } }),
   ]);
 
   const monthRevenue = monthRevenueAgg._sum.price ?? 0;
-  const finishedThisMonth = monthCompletedCount + monthNoShowCount;
-  const noShowRate =
-    finishedThisMonth > 0 ? Math.round((monthNoShowCount / finishedThisMonth) * 100) : 0;
+  const monthCompleted = monthRevenueAgg._count;
+  const plannedToday = todayAppointments.reduce((s, a) => s + a.price, 0);
+  const nextAppt = todayAppointments.find((a) => a.startTime > now);
 
-  const nextToday = todayAppointments.find((a) => a.startTime > now);
+  // 7-day revenue sparkline (honest — completed only)
+  const dayRevenue: number[] = Array.from({ length: 7 }, (_, i) => {
+    const d = new Date(weekAgo.getTime() + i * 86400_000);
+    const ds = warsawDateString(d);
+    return weekAppts.filter((a) => warsawDateString(a.startTime) === ds).reduce((s, a) => s + a.price, 0);
+  });
+  const weekRevenue = dayRevenue.reduce((a, b) => a + b, 0);
+
+  // Setup completeness (real detection)
+  const setup = [
+    { label: "Godziny otwarcia", done: business.workingHours.some((w) => w.isOpen), href: "/business/hours" },
+    { label: "Pierwsza usługa", done: serviceCount > 0, href: "/business/services?action=new" },
+    { label: "Dodaj zespół", done: staffCount > 0, href: "/business/staff?action=new" },
+    { label: "Udostępnij link", done: false, href: `/b/${business.slug}` },
+  ];
+  const setupDone = setup.filter((s) => s.done).length;
+  // "New" = cannot take bookings yet (no active service or no open hours)
+  const isNew = serviceCount === 0 || !business.workingHours.some((w) => w.isOpen);
+
+  // Today's working window → gap-aware timeline (weekday in Warsaw)
+  const todayDowIdx = new Date(`${todayStr}T12:00:00Z`).getUTCDay(); // 0=Sun
+  const wh = business.workingHours.find((w) => w.dayOfWeek === DOW[todayDowIdx]);
+  const nowMin = hmToMin(warsawTimeString(now));
+
+  type Row =
+    | { kind: "appt"; apt: (typeof todayAppointments)[number] }
+    | { kind: "gap"; startMin: number; endMin: number };
+  const rows: Row[] = [];
+  if (wh?.isOpen) {
+    const openMin = hmToMin(wh.openTime);
+    const closeMin = hmToMin(wh.closeTime);
+    let cursor = openMin;
+    const sorted = [...todayAppointments].sort((a, b) => a.startTime.getTime() - b.startTime.getTime());
+    for (const apt of sorted) {
+      const s = hmToMin(warsawTimeString(apt.startTime));
+      const e = s + apt.duration;
+      if (s - cursor >= 30 && e > nowMin) rows.push({ kind: "gap", startMin: Math.max(cursor, nowMin - (nowMin % 30)), endMin: s });
+      rows.push({ kind: "appt", apt });
+      cursor = Math.max(cursor, e);
+    }
+    if (closeMin - cursor >= 30 && closeMin > nowMin) rows.push({ kind: "gap", startMin: Math.max(cursor, nowMin - (nowMin % 30)), endMin: closeMin });
+  } else {
+    for (const apt of todayAppointments) rows.push({ kind: "appt", apt });
+  }
 
   const { configured: notifConfigured } = await getBusinessNotificationSettings(business.id);
+  const decisionCount = pendingAppointments.length + unansweredReviews;
+
+  const gapHref = (startMin: number) => {
+    const hh = String(Math.floor(startMin / 60)).padStart(2, "0");
+    const mm = String(startMin % 60).padStart(2, "0");
+    return `/business/calendar?action=new&date=${todayStr}&time=${hh}:${mm}`;
+  };
 
   return (
     <div className="max-w-6xl mx-auto space-y-5">
       <NotificationsPrompt configured={notifConfigured} />
 
-      {/* ── Greeting — the focal point ── */}
-      <div className="fade-rise flex flex-wrap items-end justify-between gap-3">
-        <div>
-          <h1 className="text-2xl font-semibold text-slate-900" style={{ letterSpacing: "-0.025em" }}>
-            {greeting()}
-          </h1>
-          <p className="text-sm text-slate-500 mt-0.5">
-            {new Date().toLocaleDateString("pl-PL", {
-              timeZone: "Europe/Warsaw",
-              weekday: "long",
-              day: "numeric",
-              month: "long",
-            })}
-            {nextToday && (
-              <>
-                {" · "}
-                następna wizyta{" "}
-                <span className="font-semibold text-slate-800 tabular-nums">
-                  {formatTime(nextToday.startTime)}
-                </span>
-              </>
-            )}
-          </p>
-        </div>
-        <InkLink href="/business/calendar?action=new">
-          <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} aria-hidden="true">
-            <path d="M12 5v14M5 12h14" />
-          </svg>
-          Nowa wizyta
-        </InkLink>
+      {/* Greeting — a spoken sentence, not a stat grid */}
+      <div className="fade-rise">
+        <h1 className="text-2xl font-semibold text-slate-900" style={{ letterSpacing: "-0.025em" }}>
+          {greeting()}{dbUser.firstName ? `, ${dbUser.firstName}` : ""}
+        </h1>
+        <p className="text-sm text-slate-500 mt-1">
+          {new Date().toLocaleDateString("pl-PL", { timeZone: "Europe/Warsaw", weekday: "long", day: "numeric", month: "long" })}
+          {todayAppointments.length > 0 ? (
+            <>
+              {" · "}<span className="text-slate-700 font-medium tabular-nums">{todayAppointments.length}</span>{" "}
+              {todayAppointments.length === 1 ? "wizyta" : todayAppointments.length < 5 ? "wizyty" : "wizyt"}
+              {nextAppt && <> · najbliższa <span className="text-slate-700 font-medium tabular-nums">{formatTime(nextAppt.startTime)}</span></>}
+              {plannedToday > 0 && <> · planowany utarg <span className="text-slate-700 font-medium tabular-nums">{formatCurrency(plannedToday)}</span></>}
+            </>
+          ) : (
+            <> · brak wizyt na dziś</>
+          )}
+        </p>
       </div>
 
-      {/* ── Stats ── */}
-      <div className="fade-rise fade-rise-d1 grid grid-cols-2 lg:grid-cols-4 gap-3">
-        <StatCard
-          label="Wizyty dziś"
-          value={todayAppointments.length}
-          sub="zaplanowane"
-          icon={
-            <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} aria-hidden="true">
-              <rect width="18" height="18" x="3" y="4" rx="2" /><line x1="16" x2="16" y1="2" y2="6" /><line x1="8" x2="8" y1="2" y2="6" /><line x1="3" x2="21" y1="10" y2="10" />
-            </svg>
-          }
-        />
-        <StatCard
-          label="Przychód · miesiąc"
-          value={formatCurrency(monthRevenue)}
-          sub={`${monthCompletedCount} zakończonych wizyt`}
-          icon={
-            <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} aria-hidden="true">
-              <line x1="12" x2="12" y1="2" y2="22" /><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
-            </svg>
-          }
-        />
-        <StatCard
-          label="No-show · miesiąc"
-          value={monthNoShowCount}
-          sub={`${noShowRate}% wskaźnik`}
-          icon={
-            <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} aria-hidden="true">
-              <circle cx="12" cy="12" r="10" /><path d="m4.9 4.9 14.2 14.2" />
-            </svg>
-          }
-        />
-        <StatCard
-          label="Ocena salonu"
-          value={business.totalReviews > 0 ? business.averageRating.toFixed(1) : "—"}
-          sub={`${business.totalReviews} opinii`}
-          icon={
-            <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} aria-hidden="true">
-              <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
-            </svg>
-          }
-        />
-      </div>
-
-      {/* ── Pending inbox — needs action ── */}
-      {pendingAppointments.length > 0 && (
-        <GlassCard className="fade-rise fade-rise-d2 overflow-hidden">
-          <CardHeader
-            title={
-              <span className="inline-flex items-center gap-2">
-                <span className="w-1.5 h-1.5 rounded-full" style={{ background: STATUS_TINT.PENDING.rail }} />
-                Oczekujące rezerwacje
-                <span className="tabular-nums text-slate-400 font-medium">({pendingAppointments.length})</span>
-              </span>
-            }
-          />
-          <div>
-            {pendingAppointments.map((apt, i) => {
-              const confirmWithId = confirmAppointment.bind(null, apt.id);
-              const declineWithId = declineAppointment.bind(null, apt.id);
-              return (
-                <div
-                  key={apt.id}
-                  className="flex flex-col sm:flex-row sm:items-center gap-3 px-5 py-3.5"
-                  style={i > 0 ? { borderTop: HAIRLINE } : undefined}
-                >
-                  <ChromeAvatar initials={`${apt.customer.firstName[0]}${apt.customer.lastName[0]}`} />
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-semibold text-slate-900">
-                      {apt.customer.firstName} {apt.customer.lastName}
-                    </p>
-                    <p className="text-xs text-slate-500 mt-0.5 tabular-nums">
-                      {apt.service.name} · {formatDate(apt.startTime, { weekday: "short", day: "numeric", month: "short" })}, {formatTime(apt.startTime)} · {formatCurrency(apt.price)}
-                    </p>
-                    {apt.customerNotes && (
-                      <p className="text-xs text-slate-400 mt-1 italic">„{apt.customerNotes}"</p>
-                    )}
+      <div className="grid lg:grid-cols-3 gap-5 items-start">
+        {/* ── Focal: today (or setup for a new salon) ── */}
+        <div className="lg:col-span-2 fade-rise fade-rise-d1">
+          {isNew ? (
+            <GlassCard className="overflow-hidden">
+              <CardHeader title="Zacznij tutaj" action={<span className="text-xs text-slate-400 tabular-nums">{setupDone}/{setup.length}</span>} />
+              <div className="p-5">
+                <div className="flex items-center gap-4 mb-5">
+                  <div className="relative w-14 h-14 flex-shrink-0">
+                    <svg viewBox="0 0 36 36" className="w-14 h-14 -rotate-90">
+                      <circle cx="18" cy="18" r="15" fill="none" stroke="rgba(203,213,225,0.4)" strokeWidth="3" />
+                      <circle cx="18" cy="18" r="15" fill="none" stroke="#0F172A" strokeWidth="3" strokeLinecap="round" strokeDasharray={`${(setupDone / setup.length) * 94.2} 94.2`} />
+                    </svg>
+                    <span className="absolute inset-0 flex items-center justify-center text-xs font-bold text-slate-900 tabular-nums">{setupDone}/{setup.length}</span>
                   </div>
-                  <div className="flex items-center gap-2 flex-shrink-0">
-                    <form action={confirmWithId}>
-                      <button type="submit" className="btn-spring px-4 py-2 rounded-xl text-xs font-semibold" style={INK_BTN}>
-                        Potwierdź
-                      </button>
-                    </form>
-                    <form action={declineWithId}>
-                      <button type="submit" className="btn-spring px-4 py-2 rounded-xl text-xs font-medium" style={GLASS_BTN}>
-                        Odwołaj
-                      </button>
-                    </form>
+                  <div>
+                    <p className="text-[15px] font-semibold text-slate-900">Twój salon jest prawie gotowy</p>
+                    <p className="text-xs text-slate-500 mt-0.5">Dokończ konfigurację, żeby klienci mogli rezerwować online.</p>
                   </div>
                 </div>
-              );
-            })}
-          </div>
-        </GlassCard>
-      )}
-
-      {/* ── Main grid ── */}
-      <div className="fade-rise fade-rise-d3 grid lg:grid-cols-3 gap-5 items-start">
-        {/* Today — vertical timeline */}
-        <GlassCard className="lg:col-span-2 overflow-hidden">
-          <CardHeader
-            title="Dziś"
-            action={
-              <Link href="/business/calendar" className="text-xs font-semibold text-slate-500 hover:text-slate-900 transition-colors">
-                Pełny kalendarz →
-              </Link>
-            }
-          />
-
-          {todayAppointments.length === 0 ? (
-            <EmptyState
-              icon={
-                <svg className="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} aria-hidden="true">
-                  <rect width="18" height="18" x="3" y="4" rx="2" /><line x1="16" x2="16" y1="2" y2="6" /><line x1="8" x2="8" y1="2" y2="6" /><line x1="3" x2="21" y1="10" y2="10" />
-                </svg>
-              }
-              title="Brak wizyt na dziś"
-              body="Zapisz klienta ręcznie albo udostępnij link do rezerwacji."
-              action={<InkLink href="/business/calendar?action=new" size="sm">Dodaj wizytę</InkLink>}
-            />
-          ) : (
-            <div className="px-5 py-4">
-              {todayAppointments.map((apt, i) => {
-                const isPast = apt.endTime < now;
-                const rail = STATUS_TINT[apt.status as StatusKey]?.rail ?? "#94A3B8";
-                return (
-                  <div key={apt.id} className="relative flex gap-4">
-                    {/* time rail */}
-                    <div className="w-11 text-right flex-shrink-0 pt-0.5">
-                      <p className={`text-sm font-semibold tabular-nums ${isPast ? "text-slate-400" : "text-slate-900"}`}>
-                        {formatTime(apt.startTime)}
-                      </p>
-                      <p className="text-[10px] text-slate-400 tabular-nums">{apt.duration} min</p>
-                    </div>
-                    {/* spine */}
-                    <div className="relative flex flex-col items-center">
-                      <span
-                        className="w-2.5 h-2.5 rounded-full mt-1.5 flex-shrink-0"
-                        style={{ background: apt.employee?.color ?? "#94A3B8", boxShadow: "0 0 0 3px rgba(255,255,255,0.85)" }}
-                      />
-                      {i < todayAppointments.length - 1 && (
-                        <span className="w-px flex-1 my-1" style={{ background: "rgba(203,213,225,0.50)" }} />
-                      )}
-                    </div>
-                    {/* card */}
-                    <div
-                      className={`flex-1 min-w-0 mb-2.5 rounded-2xl px-4 py-3 flex items-center gap-3 ${isPast ? "opacity-60" : ""}`}
-                      style={{
-                        background: "rgba(255,255,255,0.80)",
-                        border: "1px solid rgba(203,213,225,0.45)",
-                        borderLeft: `3px solid ${rail}`,
-                        boxShadow: "0 0 0 0.5px rgba(203,213,225,0.20), 0 1px 2px rgba(0,0,0,0.02), inset 0 1px 0 rgba(255,255,255,0.92)",
-                      }}
-                    >
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-semibold text-slate-900 truncate">
-                          {apt.customer.firstName} {apt.customer.lastName}
-                        </p>
-                        <p className="text-xs text-slate-500 mt-0.5 truncate">
-                          {apt.service.name}
-                          {apt.employee && ` · ${apt.employee.firstName}`}
-                        </p>
-                      </div>
-                      <div className="text-right flex-shrink-0">
-                        <p className="text-sm font-bold text-slate-900 tabular-nums">{formatCurrency(apt.price)}</p>
-                        <StatusBadge status={apt.status} className="mt-1" />
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          )}
-        </GlassCard>
-
-        {/* Right column */}
-        <div className="space-y-4">
-          {/* Quick actions */}
-          <GlassCard className="p-4">
-            <Overline className="mb-3 px-1">Szybkie akcje</Overline>
-            <div className="space-y-1">
-              {[
-                {
-                  label: "Nowa wizyta",
-                  href: "/business/calendar?action=new",
-                  icon: <path d="M12 5v14M5 12h14" />,
-                },
-                {
-                  label: "Dodaj usługę",
-                  href: "/business/services",
-                  icon: <><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z" /><polyline points="14 2 14 8 20 8" /></>,
-                },
-                {
-                  label: "Dodaj pracownika",
-                  href: "/business/staff",
-                  icon: <><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" /><line x1="19" x2="19" y1="8" y2="14" /><line x1="22" x2="16" y1="11" y2="11" /></>,
-                },
-                {
-                  label: "Analityka",
-                  href: "/business/analytics",
-                  icon: <><line x1="18" x2="18" y1="20" y2="10" /><line x1="12" x2="12" y1="20" y2="4" /><line x1="6" x2="6" y1="20" y2="14" /></>,
-                },
-              ].map((action) => (
-                <Link
-                  key={action.label}
-                  href={action.href}
-                  className="row-hover flex items-center gap-3 px-3 py-2.5 rounded-xl"
-                >
-                  <span className="w-7 h-7 rounded-lg flex items-center justify-center text-slate-500 flex-shrink-0" style={CHIP}>
-                    <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} aria-hidden="true">
-                      {action.icon}
-                    </svg>
-                  </span>
-                  <span className="text-sm font-medium text-slate-700">{action.label}</span>
-                  <svg className="w-3.5 h-3.5 text-slate-300 ml-auto" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} aria-hidden="true">
-                    <path d="m9 18 6-6-6-6" />
-                  </svg>
-                </Link>
-              ))}
-            </div>
-          </GlassCard>
-
-          {/* Reviews digest */}
-          <GlassCard className="p-4">
-            <div className="flex items-center justify-between mb-3 px-1">
-              <Overline>Ostatnie opinie</Overline>
-              {business.totalReviews > 0 && (
-                <span className="inline-flex items-center gap-1">
-                  <svg className="w-3 h-3 text-amber-400" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-                    <path d="M11.48 3.499a.562.562 0 0 1 1.04 0l2.125 5.111a.563.563 0 0 0 .475.345l5.518.442c.499.04.701.663.321.988l-4.204 3.602a.563.563 0 0 0-.182.557l1.285 5.385a.562.562 0 0 1-.84.61l-4.725-2.885a.562.562 0 0 0-.586 0L6.982 20.54a.562.562 0 0 1-.84-.61l1.285-5.386a.562.562 0 0 0-.182-.557l-4.204-3.602a.562.562 0 0 1 .321-.988l5.518-.442a.563.563 0 0 0 .475-.345L11.48 3.5Z" />
-                  </svg>
-                  <span className="text-xs font-bold text-slate-900 tabular-nums">
-                    {business.averageRating.toFixed(1)}
-                  </span>
-                </span>
-              )}
-            </div>
-            {recentReviews.length === 0 ? (
-              <p className="text-xs text-slate-500 text-center py-5">
-                Opinie pojawią się po pierwszych zakończonych wizytach.
-              </p>
-            ) : (
-              <div className="space-y-1">
-                {recentReviews.map((review) => (
-                  <Link
-                    key={review.id}
-                    href="/business/reviews"
-                    className="row-hover block px-3 py-2.5 rounded-xl"
-                  >
-                    <div className="flex items-center justify-between gap-2">
-                      <p className="text-xs font-semibold text-slate-900 truncate">
-                        {review.customer.firstName} {review.customer.lastName[0]}.
-                      </p>
-                      <span className="inline-flex items-center gap-1 flex-shrink-0">
-                        <svg className="w-3 h-3 text-amber-400" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-                          <path d="M11.48 3.499a.562.562 0 0 1 1.04 0l2.125 5.111a.563.563 0 0 0 .475.345l5.518.442c.499.04.701.663.321.988l-4.204 3.602a.563.563 0 0 0-.182.557l1.285 5.385a.562.562 0 0 1-.84.61l-4.725-2.885a.562.562 0 0 0-.586 0L6.982 20.54a.562.562 0 0 1-.84-.61l1.285-5.386a.562.562 0 0 0-.182-.557l-4.204-3.602a.562.562 0 0 1 .321-.988l5.518-.442a.563.563 0 0 0 .475-.345L11.48 3.5Z" />
-                        </svg>
-                        <span className="text-xs font-semibold text-slate-700 tabular-nums">{review.rating}</span>
+                <div className="space-y-1.5">
+                  {setup.map((s) => (
+                    <Link key={s.label} href={s.href} className="row-hover flex items-center gap-3 px-3 py-2.5 rounded-xl">
+                      <span className="w-5 h-5 rounded-md flex items-center justify-center flex-shrink-0" style={s.done ? { background: "rgba(16,185,129,0.12)", border: "1px solid rgba(16,185,129,0.3)" } : { background: "rgba(255,255,255,0.7)", border: "1px solid rgba(148,163,184,0.5)" }}>
+                        {s.done && <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="#047857" strokeWidth={3}><path strokeLinecap="round" strokeLinejoin="round" d="m5 13 4 4L19 7" /></svg>}
                       </span>
+                      <span className={s.done ? "text-sm text-slate-400 line-through" : "text-sm font-medium text-slate-800"}>{s.label}</span>
+                      {!s.done && <svg className="w-3.5 h-3.5 text-slate-300 ml-auto" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}><path d="m9 18 6-6-6-6" /></svg>}
+                    </Link>
+                  ))}
+                </div>
+              </div>
+            </GlassCard>
+          ) : (
+            <GlassCard className="overflow-hidden">
+              <CardHeader title="Dziś" action={<Link href="/business/calendar" className="text-xs font-semibold text-slate-500 hover:text-slate-900 transition-colors">Pełny kalendarz →</Link>} />
+              {todayAppointments.length === 0 ? (
+                <EmptyState
+                  icon={<svg className="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5}><rect x="3" y="4" width="18" height="18" rx="2" /><path d="M3 10h18M8 2v4M16 2v4" /></svg>}
+                  title="Wolny dzień"
+                  body="Brak wizyt na dziś. Zapisz kogoś ręcznie albo udostępnij link do rezerwacji."
+                  action={<InkLink href="/business/calendar?action=new" size="sm">Dodaj wizytę</InkLink>}
+                />
+              ) : (
+                <div className="p-5">
+                  <Timeline>
+                    {rows.map((row, i) => {
+                      if (row.kind === "gap") {
+                        const gh = String(Math.floor(row.startMin / 60)).padStart(2, "0") + ":" + String(row.startMin % 60).padStart(2, "0");
+                        const mins = row.endMin - row.startMin;
+                        const label = mins >= 60 ? `${Math.floor(mins / 60)}h${mins % 60 ? ` ${mins % 60}m` : ""}` : `${mins}m`;
+                        return (
+                          <TimelineRow key={`gap-${i}`} time={gh} dotColor="rgba(148,163,184,0.5)" connector={i < rows.length - 1}>
+                            <Link href={gapHref(row.startMin)} className="row-hover flex items-center gap-2 rounded-xl px-3 py-2 -ml-1 group" style={{ border: "1px dashed rgba(148,163,184,0.45)" }}>
+                              <svg className="w-3.5 h-3.5 text-slate-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}><path d="M12 5v14M5 12h14" /></svg>
+                              <span className="text-xs text-slate-500">Wolne {label} — dodaj wizytę</span>
+                            </Link>
+                          </TimelineRow>
+                        );
+                      }
+                      const apt = row.apt;
+                      const past = apt.endTime < now;
+                      const rail = STATUS_TINT[apt.status as StatusKey]?.rail ?? "#94A3B8";
+                      return (
+                        <TimelineRow key={apt.id} time={formatTime(apt.startTime)} sub={`${apt.duration} min`} dotColor={apt.employee?.color ?? "#94A3B8"} connector={i < rows.length - 1} muted={past}>
+                          <div className="rounded-2xl px-4 py-3 flex items-center gap-3" style={{ background: "rgba(255,255,255,0.8)", border: "1px solid rgba(203,213,225,0.45)", borderLeft: `3px solid ${rail}`, boxShadow: "0 0 0 0.5px rgba(203,213,225,0.2), inset 0 1px 0 rgba(255,255,255,0.92)" }}>
+                            <div className="flex-1 min-w-0">
+                              <p className="text-sm font-semibold text-slate-900 truncate">{apt.customer.firstName} {apt.customer.lastName}</p>
+                              <p className="text-xs text-slate-500 mt-0.5 truncate">{apt.service.name}{apt.employee && ` · ${apt.employee.firstName}`}</p>
+                            </div>
+                            <div className="text-right flex-shrink-0">
+                              <p className="text-sm font-bold text-slate-900 tabular-nums">{formatCurrency(apt.price)}</p>
+                              <StatusBadge status={apt.status} className="mt-1" />
+                            </div>
+                          </div>
+                        </TimelineRow>
+                      );
+                    })}
+                  </Timeline>
+                </div>
+              )}
+            </GlassCard>
+          )}
+        </div>
+
+        {/* ── Right column ── */}
+        <div className="space-y-4 fade-rise fade-rise-d2">
+          {/* Decision queue */}
+          <GlassCard className="overflow-hidden">
+            <CardHeader
+              title={<span className="inline-flex items-center gap-2">Do decyzji {decisionCount > 0 && <span className="text-[11px] font-bold text-white px-1.5 py-0.5 rounded-full tabular-nums" style={{ background: STATUS_TINT.PENDING.rail }}>{decisionCount}</span>}</span>}
+            />
+            {decisionCount === 0 ? (
+              <p className="px-5 py-6 text-center text-xs text-slate-500">Nic nie czeka — wszystko ogarnięte. ✓</p>
+            ) : (
+              <div>
+                {pendingAppointments.map((apt, i) => {
+                  const confirmWith = confirmAppointment.bind(null, apt.id);
+                  const declineWith = declineAppointment.bind(null, apt.id);
+                  return (
+                    <div key={apt.id} className="px-4 py-3" style={i > 0 ? { borderTop: HAIRLINE } : undefined}>
+                      <div className="flex items-center gap-2.5">
+                        <ChromeAvatar size="sm" initials={`${apt.customer.firstName[0]}${apt.customer.lastName[0]}`} />
+                        <div className="flex-1 min-w-0">
+                          <p className="text-[13px] font-semibold text-slate-900 truncate">{apt.customer.firstName} {apt.customer.lastName}</p>
+                          <p className="text-[11px] text-slate-500 truncate tabular-nums">{apt.service.name} · {formatDate(apt.startTime, { day: "numeric", month: "short" })}, {formatTime(apt.startTime)}</p>
+                        </div>
+                      </div>
+                      <div className="flex gap-1.5 mt-2">
+                        <form action={confirmWith} className="flex-1"><button className="btn-spring w-full py-1.5 rounded-lg text-[11px] font-semibold" style={INK_BTN}>Potwierdź</button></form>
+                        <form action={declineWith}><button className="btn-spring px-3 py-1.5 rounded-lg text-[11px] font-medium" style={GLASS_BTN}>Odmów</button></form>
+                      </div>
                     </div>
-                    {review.comment && (
-                      <p className="text-xs text-slate-500 mt-1 line-clamp-2">{review.comment}</p>
-                    )}
-                    <p className="text-[10px] text-slate-400 mt-1">{formatRelativeTime(review.createdAt)}</p>
+                  );
+                })}
+                {unansweredReviews > 0 && (
+                  <Link href="/business/reviews" className="row-hover flex items-center gap-2.5 px-4 py-3" style={pendingAppointments.length > 0 ? { borderTop: HAIRLINE } : undefined}>
+                    <span className="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0" style={CHIP}>
+                      <svg className="w-3.5 h-3.5 text-amber-400" viewBox="0 0 24 24" fill="currentColor"><path d="M11.48 3.5a.56.56 0 0 1 1.04 0l2.12 5.11a.56.56 0 0 0 .48.35l5.52.44c.5.04.7.66.32.99l-4.2 3.6a.56.56 0 0 0-.18.56l1.28 5.38a.56.56 0 0 1-.84.61l-4.72-2.88a.56.56 0 0 0-.6 0l-4.72 2.88a.56.56 0 0 1-.84-.61l1.28-5.38a.56.56 0 0 0-.18-.56l-4.2-3.6a.56.56 0 0 1 .32-.99l5.52-.44a.56.56 0 0 0 .48-.35Z" /></svg>
+                    </span>
+                    <span className="flex-1 text-[13px] text-slate-700"><span className="font-semibold text-slate-900 tabular-nums">{unansweredReviews}</span> {unansweredReviews === 1 ? "opinia bez odpowiedzi" : "opinii bez odpowiedzi"}</span>
+                    <svg className="w-3.5 h-3.5 text-slate-300" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}><path d="m9 18 6-6-6-6" /></svg>
                   </Link>
-                ))}
+                )}
               </div>
             )}
           </GlassCard>
 
+          {/* Weekly pulse */}
+          <GlassCard className="p-4">
+            <div className="flex items-center justify-between mb-2">
+              <Overline>Ostatnie 7 dni</Overline>
+              <Sparkline data={dayRevenue} />
+            </div>
+            <p className="text-[22px] font-bold text-slate-900 tabular-nums leading-7" style={{ letterSpacing: "-0.02em" }}>{formatCurrency(weekRevenue)}</p>
+            <div className="flex items-center gap-4 mt-1.5 text-xs text-slate-500">
+              <span className="tabular-nums"><span className="font-semibold text-slate-700">{monthCompleted}</span> wizyt / mies.</span>
+              <span className="tabular-nums"><span className="font-semibold text-slate-700">{monthNoShowCount}</span> no-show</span>
+            </div>
+          </GlassCard>
+
+          {/* Reviews digest */}
+          {recentReviews.length > 0 && (
+            <GlassCard className="p-4">
+              <div className="flex items-center justify-between mb-2.5">
+                <Overline>Ostatnie opinie</Overline>
+                {business.totalReviews > 0 && (
+                  <span className="inline-flex items-center gap-1 text-xs font-bold text-slate-900 tabular-nums">
+                    <svg className="w-3 h-3 text-amber-400" viewBox="0 0 24 24" fill="currentColor"><path d="M11.48 3.5a.56.56 0 0 1 1.04 0l2.12 5.11a.56.56 0 0 0 .48.35l5.52.44c.5.04.7.66.32.99l-4.2 3.6a.56.56 0 0 0-.18.56l1.28 5.38a.56.56 0 0 1-.84.61l-4.72-2.88a.56.56 0 0 0-.6 0l-4.72 2.88a.56.56 0 0 1-.84-.61l1.28-5.38a.56.56 0 0 0-.18-.56l-4.2-3.6a.56.56 0 0 1 .32-.99l5.52-.44a.56.56 0 0 0 .48-.35Z" /></svg>
+                    {business.averageRating.toFixed(1)}
+                  </span>
+                )}
+              </div>
+              <div className="space-y-1">
+                {recentReviews.map((r) => (
+                  <Link key={r.id} href="/business/reviews" className="row-hover block px-2 py-1.5 rounded-lg -mx-1">
+                    <p className="text-xs font-semibold text-slate-800 truncate">{r.customer.firstName} {r.customer.lastName[0]}. · <span className="text-amber-500 tabular-nums">{r.rating}★</span></p>
+                    {r.comment && <p className="text-[11px] text-slate-500 line-clamp-1 mt-0.5">{r.comment}</p>}
+                  </Link>
+                ))}
+              </div>
+            </GlassCard>
+          )}
+
           {/* Booking link */}
           <GlassCard className="p-4">
-            <Overline className="mb-2 px-1">Twój link do rezerwacji</Overline>
-            <p className="px-1 text-xs text-slate-500 leading-relaxed mb-3">
-              Wyślij klientom lub wklej do bio — rezerwują sami, 24/7.
-            </p>
-            <div
-              className="px-3 py-2 rounded-xl text-xs text-slate-600 truncate tabular-nums"
-              style={CHIP}
-            >
-              /b/{business.slug}
-            </div>
-            <div className="flex gap-2 mt-2.5">
-              <Link
-                href={`/b/${business.slug}`}
-                target="_blank"
-                className="btn-spring flex-1 text-center px-3 py-2 rounded-xl text-xs font-semibold"
-                style={GLASS_BTN}
-              >
-                Podgląd profilu
-              </Link>
-            </div>
+            <Overline className="mb-2">Link do rezerwacji</Overline>
+            <div className="px-3 py-2 rounded-xl text-xs text-slate-600 truncate tabular-nums mb-2.5" style={CHIP}>/b/{business.slug}</div>
+            <GlassLink href={`/b/${business.slug}`} size="sm" className="w-full">Podgląd profilu</GlassLink>
           </GlassCard>
         </div>
       </div>
