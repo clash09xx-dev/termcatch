@@ -1,430 +1,186 @@
 "use client";
 
-import { useState, useTransition } from "react";
-import { formatCurrency, formatDuration } from "@/lib/utils";
+import { useState, useEffect, useTransition } from "react";
+import { useSearchParams } from "next/navigation";
+import { formatCurrency, formatDuration, cn } from "@/lib/utils";
 import { createService, updateService, deleteService } from "@/lib/actions/services";
 import type { Service } from "@prisma/client";
-import {
-  PageHeader,
-  GlassCard,
-  CardHeader,
-  StatCard,
-  EmptyState,
-  InkButton,
-  GlassButton,
-  HAIRLINE,
-  CHIP,
-} from "@/components/ui/glass";
-import { GlassModal } from "@/components/ui/glass-modal";
+import { PageHeader, GlassCard, EmptyState, InkButton, GlassButton, FormField, Overline, HAIRLINE, CHIP } from "@/components/ui/glass";
 
-type Props = {
-  services: Service[];
-  businessId: string;
-};
+type Props = { services: Service[]; businessId: string };
+type Form = { name: string; description: string; duration: string; price: string; discountedPrice: string; isActive: boolean };
+const EMPTY: Form = { name: "", description: "", duration: "60", price: "", discountedPrice: "", isActive: true };
+const toForm = (s: Service): Form => ({ name: s.name, description: s.description ?? "", duration: String(s.duration), price: String(s.price), discountedPrice: s.discountedPrice ? String(s.discountedPrice) : "", isActive: s.isActive });
+const INPUT = "input-glass w-full px-3.5 py-2.5 text-sm rounded-xl outline-none text-slate-800 placeholder:text-slate-400";
 
-type ServiceForm = {
-  name: string;
-  description: string;
-  duration: string;
-  price: string;
-  discountedPrice: string;
-  requiresDeposit: boolean;
-  depositAmount: string;
-  isActive: boolean;
-};
+export function ServicesClient({ services: initial }: Props) {
+  const searchParams = useSearchParams();
+  const [services, setServices] = useState(initial);
+  const [editingId, setEditingId] = useState<string | null>(null); // service id
+  const [creating, setCreating] = useState(false);
+  const [form, setForm] = useState<Form>(EMPTY);
+  const [err, setErr] = useState("");
+  const [isPending, start] = useTransition();
+  const [previewId, setPreviewId] = useState<string | null>(null);
 
-const EMPTY_FORM: ServiceForm = {
-  name: "",
-  description: "",
-  duration: "60",
-  price: "",
-  discountedPrice: "",
-  requiresDeposit: false,
-  depositAmount: "",
-  isActive: true,
-};
+  useEffect(() => { if (searchParams.get("action") === "new") openCreate(); /* eslint-disable-next-line */ }, [searchParams]);
 
-function serviceToForm(s: Service): ServiceForm {
-  return {
-    name: s.name,
-    description: s.description ?? "",
-    duration: String(s.duration),
-    price: String(s.price),
-    discountedPrice: s.discountedPrice ? String(s.discountedPrice) : "",
-    requiresDeposit: s.requiresDeposit,
-    depositAmount: s.depositAmount ? String(s.depositAmount) : "",
-    isActive: s.isActive,
-  };
-}
+  function openCreate() { setEditingId(null); setForm(EMPTY); setCreating(true); setErr(""); }
+  function openEdit(s: Service) { setCreating(false); setEditingId(s.id); setForm(toForm(s)); setErr(""); }
+  function close() { setEditingId(null); setCreating(false); setForm(EMPTY); setErr(""); }
+  const set = (k: keyof Form, v: string | boolean) => setForm((p) => ({ ...p, [k]: v }));
 
-const INPUT_CLS =
-  "input-glass w-full px-3.5 py-2.5 text-sm rounded-xl outline-none text-slate-800 placeholder:text-slate-400";
-const LABEL_CLS = "block text-sm font-medium text-slate-700 mb-1.5";
-
-export function ServicesClient({ services: initialServices, businessId }: Props) {
-  const [services, setServices] = useState<Service[]>(initialServices);
-  const [showModal, setShowModal] = useState(false);
-  const [editingId, setEditingId] = useState<string | null>(null);
-  const [form, setForm] = useState<ServiceForm>(EMPTY_FORM);
-  const [isPending, startTransition] = useTransition();
-  const [deletingId, setDeletingId] = useState<string | null>(null);
-
-  function openAdd() {
-    setEditingId(null);
-    setForm(EMPTY_FORM);
-    setShowModal(true);
-  }
-
-  function openEdit(service: Service) {
-    setEditingId(service.id);
-    setForm(serviceToForm(service));
-    setShowModal(true);
-  }
-
-  function closeModal() {
-    setShowModal(false);
-    setEditingId(null);
-    setForm(EMPTY_FORM);
-  }
-
-  function handleFormChange(field: keyof ServiceForm, value: string | boolean) {
-    setForm((prev) => ({ ...prev, [field]: value }));
-  }
-
-  function handleSubmit(e: React.FormEvent) {
+  function save(e: React.FormEvent) {
     e.preventDefault();
+    if (!form.name.trim()) return setErr("Podaj nazwę usługi.");
+    if (!(parseFloat(form.price) > 0)) return setErr("Cena musi być większa niż 0 zł.");
     const data = {
-      name: form.name,
-      description: form.description || undefined,
-      duration: parseInt(form.duration, 10),
-      price: parseFloat(form.price),
+      name: form.name.trim(), description: form.description || undefined,
+      duration: parseInt(form.duration, 10), price: parseFloat(form.price),
       discountedPrice: form.discountedPrice ? parseFloat(form.discountedPrice) : undefined,
-      requiresDeposit: form.requiresDeposit,
-      depositAmount: form.depositAmount ? parseFloat(form.depositAmount) : undefined,
       isActive: form.isActive,
     };
-
-    startTransition(async () => {
+    start(async () => {
       if (editingId) {
         await updateService(editingId, data);
-        setServices((prev) =>
-          prev.map((s) =>
-            s.id === editingId
-              ? {
-                  ...s,
-                  name: data.name ?? s.name,
-                  description: data.description ?? null,
-                  duration: data.duration ?? s.duration,
-                  price: data.price ?? s.price,
-                  discountedPrice: data.discountedPrice ?? null,
-                  requiresDeposit: data.requiresDeposit ?? s.requiresDeposit,
-                  depositAmount: data.depositAmount ?? null,
-                  isActive: data.isActive ?? s.isActive,
-                }
-              : s
-          )
-        );
+        setServices((prev) => prev.map((s) => s.id === editingId ? { ...s, ...data, description: data.description ?? null, discountedPrice: data.discountedPrice ?? null } : s));
+        close();
       } else {
         await createService(data);
-        // Refresh by navigation — server component will re-render
-        window.location.reload();
+        window.location.href = "/business/services"; // refresh to get new id
       }
-      closeModal();
     });
+  }
+  function remove(id: string) {
+    if (!confirm("Usunąć tę usługę?")) return;
+    start(async () => { await deleteService(id); setServices((prev) => prev.filter((s) => s.id !== id)); if (editingId === id) close(); });
+  }
+  function toggle(s: Service) {
+    start(async () => { await updateService(s.id, { isActive: !s.isActive }); setServices((prev) => prev.map((x) => x.id === s.id ? { ...x, isActive: !x.isActive } : x)); });
   }
 
-  function handleDelete(id: string) {
-    if (!confirm("Czy na pewno chcesz usunąć tę usługę?")) return;
-    setDeletingId(id);
-    startTransition(async () => {
-      await deleteService(id);
-      setServices((prev) => prev.filter((s) => s.id !== id));
-      setDeletingId(null);
-    });
-  }
+  const active = services.filter((s) => s.isActive);
+  const preview = services.find((s) => s.id === previewId);
 
-  function handleToggleActive(service: Service) {
-    startTransition(async () => {
-      await updateService(service.id, { isActive: !service.isActive });
-      setServices((prev) =>
-        prev.map((s) => (s.id === service.id ? { ...s, isActive: !s.isActive } : s))
-      );
-    });
-  }
+  const editor = (isCreate: boolean) => (
+    <form onSubmit={save} className="rounded-2xl p-4 space-y-3" style={{ background: "rgba(255,255,255,0.7)", border: "1px solid rgba(148,163,184,0.5)", boxShadow: "0 6px 20px rgba(100,116,139,0.1), inset 0 1px 0 rgba(255,255,255,0.9)" }}>
+      <FormField label="Nazwa usługi" htmlFor="svc-name">
+        <input id="svc-name" value={form.name} onChange={(e) => set("name", e.target.value)} placeholder="np. Strzyżenie damskie" className={INPUT} autoFocus />
+      </FormField>
+      <FormField label="Opis" htmlFor="svc-desc">
+        <input id="svc-desc" value={form.description} onChange={(e) => set("description", e.target.value)} placeholder="Krótki opis — opcjonalnie" className={INPUT} />
+      </FormField>
+      <div className="grid grid-cols-3 gap-2.5">
+        <FormField label="Czas (min)" htmlFor="svc-dur">
+          <input id="svc-dur" type="number" min={5} step={5} value={form.duration} onChange={(e) => set("duration", e.target.value)} className={cn(INPUT, "tabular-nums")} />
+        </FormField>
+        <FormField label="Cena (zł)" htmlFor="svc-price">
+          <input id="svc-price" type="number" min={1} step={1} value={form.price} onChange={(e) => set("price", e.target.value)} placeholder="120" className={cn(INPUT, "tabular-nums")} />
+        </FormField>
+        <FormField label="Promo (zł)" htmlFor="svc-promo">
+          <input id="svc-promo" type="number" min={0} step={1} value={form.discountedPrice} onChange={(e) => set("discountedPrice", e.target.value)} placeholder="—" className={cn(INPUT, "tabular-nums")} />
+        </FormField>
+      </div>
+      <label className="flex items-center gap-2.5 py-1 cursor-pointer">
+        <button type="button" role="switch" aria-checked={form.isActive} onClick={() => set("isActive", !form.isActive)} className="relative inline-flex h-5 w-9 items-center rounded-full transition-colors flex-shrink-0" style={{ background: form.isActive ? "#0F172A" : "rgba(148,163,184,0.45)" }}>
+          <span className={cn("inline-block h-3.5 w-3.5 mx-0.5 rounded-full bg-white shadow transition-transform", form.isActive ? "translate-x-4" : "translate-x-0")} />
+        </button>
+        <span className="text-sm text-slate-700">Aktywna — widoczna dla klientów</span>
+      </label>
+      {err && <p className="text-xs font-medium" style={{ color: "#BE123C" }}>{err}</p>}
+      <div className="flex gap-2 pt-1">
+        <GlassButton size="sm" onClick={close}>Anuluj</GlassButton>
+        <InkButton size="sm" type="submit" disabled={isPending}>{isPending ? "Zapisywanie…" : isCreate ? "Dodaj usługę" : "Zapisz"}</InkButton>
+      </div>
+    </form>
+  );
 
   return (
-    <div className="max-w-5xl mx-auto space-y-5">
+    <div className="max-w-6xl mx-auto space-y-5">
       <PageHeader
         title="Usługi"
-        subtitle="Zarządzaj ofertą swojego salonu"
-        actions={
-          <InkButton onClick={openAdd}>
-            <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} aria-hidden="true">
-              <path d="M12 5v14M5 12h14" />
-            </svg>
-            Dodaj usługę
-          </InkButton>
-        }
+        subtitle={<span className="tabular-nums">{services.length} {services.length === 1 ? "usługa" : "usług"} · {active.length} aktywnych</span>}
+        actions={<InkButton onClick={openCreate}><svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5}><path d="M12 5v14M5 12h14" /></svg>Dodaj usługę</InkButton>}
       />
 
-      {/* Stats */}
-      {services.length > 0 && (
-        <div className="fade-rise fade-rise-d1 grid grid-cols-3 gap-3">
-          <StatCard label="Wszystkie" value={services.length} />
-          <StatCard label="Aktywne" value={services.filter((s) => s.isActive).length} />
-          <StatCard label="Nieaktywne" value={services.filter((s) => !s.isActive).length} />
-        </div>
-      )}
-
-      {/* List */}
-      {services.length === 0 ? (
-        <GlassCard className="fade-rise fade-rise-d2">
+      {services.length === 0 && !creating ? (
+        <GlassCard className="fade-rise fade-rise-d1">
           <EmptyState
-            icon={
-              <svg className="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} aria-hidden="true">
-                <path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z" /><polyline points="14 2 14 8 20 8" />
-              </svg>
-            }
+            icon={<svg className="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5}><path d="M4 6h16M4 12h16M4 18h10" /></svg>}
             title="Brak usług"
             body="Dodaj pierwszą usługę, żeby klienci mogli rezerwować wizyty online."
-            action={<InkButton size="sm" onClick={openAdd}>Dodaj pierwszą usługę</InkButton>}
+            action={<InkButton size="sm" onClick={openCreate}>Dodaj pierwszą usługę</InkButton>}
           />
         </GlassCard>
       ) : (
-        <GlassCard className="fade-rise fade-rise-d2 overflow-hidden">
-          <CardHeader title={<span>Lista usług <span className="text-slate-400 font-medium tabular-nums">({services.length})</span></span>} />
-          <div>
-            {services.map((service, i) => (
-              <div
-                key={service.id}
-                className="row-hover flex items-center gap-4 px-5 py-3.5"
-                style={i > 0 ? { borderTop: HAIRLINE } : undefined}
-              >
-                {/* Activity rail */}
+        <div className="fade-rise fade-rise-d1 grid lg:grid-cols-[1fr_340px] gap-5 items-start">
+          {/* List with inline editing */}
+          <div className="space-y-2">
+            {creating && editor(true)}
+            {services.map((s) => (
+              editingId === s.id ? (
+                <div key={s.id}>{editor(false)}</div>
+              ) : (
                 <div
-                  className="w-[3px] h-10 rounded-full flex-shrink-0"
-                  style={{
-                    background: service.isActive
-                      ? "linear-gradient(180deg, #1E293B 0%, #0F172A 100%)"
-                      : "rgba(203,213,225,0.60)",
-                  }}
-                />
-
-                {/* Info */}
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2">
-                    <p className="text-sm font-semibold text-slate-900 truncate">{service.name}</p>
-                    <span
-                      className="inline-flex text-[10px] px-2 py-0.5 rounded-full font-semibold flex-shrink-0"
-                      style={service.isActive
-                        ? { background: "rgba(16,185,129,0.10)", border: "1px solid rgba(16,185,129,0.25)", color: "#047857" }
-                        : { background: "rgba(203,213,225,0.18)", border: "1px solid rgba(203,213,225,0.45)", color: "#64748B" }}
-                    >
-                      {service.isActive ? "Aktywna" : "Nieaktywna"}
-                    </span>
+                  key={s.id}
+                  onMouseEnter={() => setPreviewId(s.id)}
+                  className="card-hover-lift rounded-2xl px-4 py-3.5 flex items-center gap-4"
+                  style={{ background: "rgba(255,255,255,0.8)", border: "1px solid rgba(203,213,225,0.45)", boxShadow: "0 0 0 0.5px rgba(203,213,225,0.2), inset 0 1px 0 rgba(255,255,255,0.92)" }}
+                >
+                  <div className="w-[3px] h-10 rounded-full flex-shrink-0" style={{ background: s.isActive ? "linear-gradient(180deg,#1E293B,#0F172A)" : "rgba(203,213,225,0.6)" }} />
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2">
+                      <p className="text-[15px] font-semibold text-slate-900 truncate">{s.name}</p>
+                      {!s.isActive && <span className="text-[10px] px-2 py-0.5 rounded-full font-semibold text-slate-500" style={CHIP}>Ukryta</span>}
+                    </div>
+                    <p className="text-xs text-slate-500 mt-0.5 tabular-nums">{formatDuration(s.duration)}{s.description && ` · ${s.description.slice(0, 48)}${s.description.length > 48 ? "…" : ""}`}</p>
                   </div>
-                  <p className="text-xs text-slate-500 mt-0.5 truncate">
-                    {formatDuration(service.duration)}
-                    {service.description && ` · ${service.description.slice(0, 60)}${service.description.length > 60 ? "…" : ""}`}
-                  </p>
+                  <div className="text-right flex-shrink-0">
+                    {s.discountedPrice ? (
+                      <div className="flex items-baseline gap-1.5">
+                        <span className="text-xs text-slate-400 line-through tabular-nums">{formatCurrency(s.price)}</span>
+                        <span className="text-base font-bold text-slate-900 tabular-nums">{formatCurrency(s.discountedPrice)}</span>
+                      </div>
+                    ) : <span className="text-base font-bold text-slate-900 tabular-nums">{formatCurrency(s.price)}</span>}
+                  </div>
+                  <div className="flex items-center gap-0.5 flex-shrink-0">
+                    <button onClick={() => toggle(s)} disabled={isPending} className="icon-btn p-2 rounded-lg" style={{ color: "#94A3B8" }} aria-label={s.isActive ? "Ukryj" : "Pokaż"} title={s.isActive ? "Ukryj przed klientami" : "Pokaż klientom"}>
+                      {s.isActive
+                        ? <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8}><path d="M9.9 9.9a3 3 0 0 0 4.2 4.2" /><path d="M10.7 5.1A10.4 10.4 0 0 1 12 5c7 0 10 7 10 7a13 13 0 0 1-1.7 2.7M6.6 6.6A13.5 13.5 0 0 0 2 12s3 7 10 7a9.7 9.7 0 0 0 5.4-1.6" /><path d="m2 2 20 20" /></svg>
+                        : <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8}><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z" /><circle cx="12" cy="12" r="3" /></svg>}
+                    </button>
+                    <button onClick={() => openEdit(s)} className="icon-btn p-2 rounded-lg" style={{ color: "#94A3B8" }} aria-label="Edytuj"><svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8}><path d="M12 20h9" /><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z" /></svg></button>
+                    <button onClick={() => remove(s.id)} disabled={isPending} className="p-2 rounded-lg transition-colors" style={{ color: "#94A3B8" }} onMouseOver={(e) => (e.currentTarget.style.color = "#BE123C")} onMouseOut={(e) => (e.currentTarget.style.color = "#94A3B8")} aria-label="Usuń"><svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8}><path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" /></svg></button>
+                  </div>
                 </div>
-
-                {/* Price */}
-                <div className="text-right flex-shrink-0 min-w-[80px]">
-                  <p className="text-sm font-bold text-slate-900 tabular-nums">
-                    {formatCurrency(service.discountedPrice ?? service.price)}
-                  </p>
-                  {service.discountedPrice && (
-                    <p className="text-xs text-slate-400 line-through tabular-nums">
-                      {formatCurrency(service.price)}
-                    </p>
-                  )}
-                </div>
-
-                {/* Actions */}
-                <div className="flex items-center gap-0.5 flex-shrink-0">
-                  <button
-                    onClick={() => handleToggleActive(service)}
-                    disabled={isPending}
-                    title={service.isActive ? "Dezaktywuj" : "Aktywuj"}
-                    aria-label={service.isActive ? "Dezaktywuj usługę" : "Aktywuj usługę"}
-                    className="icon-btn p-2 rounded-lg"
-                    style={{ color: "#94A3B8" }}
-                  >
-                    {service.isActive ? (
-                      <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} aria-hidden="true">
-                        <path d="M9.88 9.88a3 3 0 1 0 4.24 4.24" /><path d="M10.73 5.08A10.43 10.43 0 0 1 12 5c7 0 10 7 10 7a13.16 13.16 0 0 1-1.67 2.68" /><path d="M6.61 6.61A13.526 13.526 0 0 0 2 12s3 7 10 7a9.74 9.74 0 0 0 5.39-1.61" /><line x1="2" x2="22" y1="2" y2="22" />
-                      </svg>
-                    ) : (
-                      <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} aria-hidden="true">
-                        <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z" /><circle cx="12" cy="12" r="3" />
-                      </svg>
-                    )}
-                  </button>
-                  <button
-                    onClick={() => openEdit(service)}
-                    aria-label="Edytuj usługę"
-                    className="icon-btn p-2 rounded-lg"
-                    style={{ color: "#94A3B8" }}
-                  >
-                    <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} aria-hidden="true">
-                      <path d="M12 20h9" /><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z" />
-                    </svg>
-                  </button>
-                  <button
-                    onClick={() => handleDelete(service.id)}
-                    disabled={deletingId === service.id}
-                    aria-label="Usuń usługę"
-                    className="p-2 rounded-lg transition-colors"
-                    style={{ color: "#94A3B8" }}
-                    onFocus={(e) => (e.currentTarget.style.color = "#BE123C")}
-                    onBlur={(e) => (e.currentTarget.style.color = "#94A3B8")}
-                    onMouseOver={(e) => (e.currentTarget.style.color = "#BE123C")}
-                    onMouseOut={(e) => (e.currentTarget.style.color = "#94A3B8")}
-                  >
-                    <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} aria-hidden="true">
-                      <path d="M3 6h18" /><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6" /><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
-                    </svg>
-                  </button>
-                </div>
-              </div>
+              )
             ))}
           </div>
-        </GlassCard>
+
+          {/* Public preview */}
+          <div className="lg:sticky lg:top-20">
+            <GlassCard className="overflow-hidden">
+              <div className="px-4 py-3" style={{ borderBottom: HAIRLINE }}>
+                <Overline>Podgląd — tak widzi to klient</Overline>
+              </div>
+              <div className="p-4 space-y-2">
+                {active.length === 0 ? (
+                  <p className="text-xs text-slate-500 text-center py-6">Brak aktywnych usług do pokazania.</p>
+                ) : active.map((s) => (
+                  <div key={s.id} className={cn("rounded-xl p-3 flex items-center gap-3 transition-all", preview?.id === s.id && "ring-2 ring-slate-300")} style={{ background: "rgba(255,255,255,0.85)", border: "1px solid rgba(203,213,225,0.45)" }}>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-[13px] font-semibold text-slate-900 truncate">{s.name}</p>
+                      <p className="text-[11px] text-slate-500 tabular-nums">{formatDuration(s.duration)}</p>
+                    </div>
+                    <span className="text-[13px] font-bold text-slate-900 tabular-nums">{formatCurrency(s.discountedPrice ?? s.price)}</span>
+                    <span className="text-[11px] font-semibold px-2.5 py-1 rounded-lg text-slate-500" style={CHIP}>Umów</span>
+                  </div>
+                ))}
+              </div>
+            </GlassCard>
+          </div>
+        </div>
       )}
-
-      {/* Add / edit modal */}
-      <GlassModal
-        open={showModal}
-        onOpenChange={(o) => { if (!o) closeModal(); }}
-        title={editingId ? "Edytuj usługę" : "Nowa usługa"}
-        className="max-w-lg"
-      >
-        <form onSubmit={handleSubmit} className="space-y-4 mt-2 max-h-[65vh] overflow-y-auto pr-1 -mr-1">
-          <div>
-            <label htmlFor="svc-name" className={LABEL_CLS}>Nazwa usługi *</label>
-            <input
-              id="svc-name"
-              type="text"
-              required
-              value={form.name}
-              onChange={(e) => handleFormChange("name", e.target.value)}
-              placeholder="np. Strzyżenie damskie"
-              className={INPUT_CLS}
-            />
-          </div>
-
-          <div>
-            <label htmlFor="svc-desc" className={LABEL_CLS}>Opis (opcjonalnie)</label>
-            <textarea
-              id="svc-desc"
-              rows={2}
-              value={form.description}
-              onChange={(e) => handleFormChange("description", e.target.value)}
-              placeholder="Krótki opis usługi…"
-              className={`${INPUT_CLS} resize-none`}
-            />
-          </div>
-
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label htmlFor="svc-duration" className={LABEL_CLS}>Czas trwania (min) *</label>
-              <input
-                id="svc-duration"
-                type="number"
-                required
-                min="5"
-                step="5"
-                value={form.duration}
-                onChange={(e) => handleFormChange("duration", e.target.value)}
-                className={`${INPUT_CLS} tabular-nums`}
-              />
-            </div>
-            <div>
-              <label htmlFor="svc-price" className={LABEL_CLS}>Cena (PLN) *</label>
-              <input
-                id="svc-price"
-                type="number"
-                required
-                min="0"
-                step="0.01"
-                value={form.price}
-                onChange={(e) => handleFormChange("price", e.target.value)}
-                placeholder="120"
-                className={`${INPUT_CLS} tabular-nums`}
-              />
-            </div>
-          </div>
-
-          <div>
-            <label htmlFor="svc-promo" className={LABEL_CLS}>Cena promocyjna (opcjonalnie)</label>
-            <input
-              id="svc-promo"
-              type="number"
-              min="0"
-              step="0.01"
-              value={form.discountedPrice}
-              onChange={(e) => handleFormChange("discountedPrice", e.target.value)}
-              placeholder="99"
-              className={`${INPUT_CLS} tabular-nums`}
-            />
-          </div>
-
-          {/* Deposit */}
-          <div className="flex items-start gap-3 p-3.5 rounded-xl" style={CHIP}>
-            <input
-              type="checkbox"
-              id="requiresDeposit"
-              checked={form.requiresDeposit}
-              onChange={(e) => handleFormChange("requiresDeposit", e.target.checked)}
-              className="mt-0.5 w-4 h-4 accent-slate-900"
-            />
-            <div className="flex-1">
-              <label htmlFor="requiresDeposit" className="text-sm font-medium text-slate-800">
-                Wymagana zaliczka
-              </label>
-              {form.requiresDeposit && (
-                <input
-                  type="number"
-                  min="0"
-                  step="0.01"
-                  value={form.depositAmount}
-                  onChange={(e) => handleFormChange("depositAmount", e.target.value)}
-                  placeholder="Kwota zaliczki (PLN)"
-                  aria-label="Kwota zaliczki"
-                  className={`${INPUT_CLS} tabular-nums mt-2`}
-                />
-              )}
-            </div>
-          </div>
-
-          {/* Active toggle */}
-          <div className="flex items-center justify-between p-3.5 rounded-xl" style={CHIP}>
-            <span className="text-sm font-medium text-slate-800">Usługa aktywna</span>
-            <button
-              type="button"
-              onClick={() => handleFormChange("isActive", !form.isActive)}
-              role="switch"
-              aria-checked={form.isActive}
-              className="relative inline-flex h-6 w-11 items-center rounded-full transition-colors"
-              style={{ background: form.isActive ? "#0F172A" : "rgba(148,163,184,0.45)" }}
-            >
-              <span
-                className={`inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform ${form.isActive ? "translate-x-6" : "translate-x-1"}`}
-              />
-            </button>
-          </div>
-
-          <div className="flex gap-3 pt-1">
-            <GlassButton onClick={closeModal} className="flex-1">
-              Anuluj
-            </GlassButton>
-            <InkButton type="submit" disabled={isPending} className="flex-1">
-              {isPending ? "Zapisywanie…" : editingId ? "Zapisz zmiany" : "Dodaj usługę"}
-            </InkButton>
-          </div>
-        </form>
-      </GlassModal>
     </div>
   );
 }

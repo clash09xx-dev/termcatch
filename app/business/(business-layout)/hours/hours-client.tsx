@@ -1,199 +1,118 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useState, useMemo, useTransition } from "react";
 import { updateWorkingHours } from "@/lib/actions/business";
 import type { DayOfWeek } from "@prisma/client";
-import {
-  PageHeader,
-  GlassCard,
-  CardHeader,
-  InkButton,
-  HAIRLINE,
-  CHIP,
-} from "@/components/ui/glass";
+import { PageHeader, GlassCard, InkButton, GlassButton, CHIP, HAIRLINE, INK_GRADIENT } from "@/components/ui/glass";
+import { cn } from "@/lib/utils";
+import { motion, AnimatePresence } from "framer-motion";
+import { useReducedMotion } from "@/lib/motion";
 
-type DayHours = {
-  dayOfWeek: DayOfWeek;
-  isOpen: boolean;
-  openTime: string;
-  closeTime: string;
-};
+type DayHours = { dayOfWeek: DayOfWeek; isOpen: boolean; openTime: string; closeTime: string };
+type Props = { initialHours: DayHours[] };
 
-type Props = {
-  initialHours: DayHours[];
-};
+const ORDER: DayOfWeek[] = ["MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY", "SATURDAY", "SUNDAY"];
+const FULL: Record<DayOfWeek, string> = { MONDAY: "Poniedziałek", TUESDAY: "Wtorek", WEDNESDAY: "Środa", THURSDAY: "Czwartek", FRIDAY: "Piątek", SATURDAY: "Sobota", SUNDAY: "Niedziela" };
+const SHORT: Record<DayOfWeek, string> = { MONDAY: "pon", TUESDAY: "wt", WEDNESDAY: "śr", THURSDAY: "czw", FRIDAY: "pt", SATURDAY: "sob", SUNDAY: "ndz" };
 
-const DAY_LABELS: Record<DayOfWeek, string> = {
-  MONDAY: "Poniedziałek",
-  TUESDAY: "Wtorek",
-  WEDNESDAY: "Środa",
-  THURSDAY: "Czwartek",
-  FRIDAY: "Piątek",
-  SATURDAY: "Sobota",
-  SUNDAY: "Niedziela",
-};
+const TIMES: string[] = [];
+for (let h = 0; h < 24; h++) for (let m = 0; m < 60; m += 30) TIMES.push(`${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`);
 
-const TIME_OPTIONS: string[] = [];
-for (let h = 0; h < 24; h++) {
-  for (let m = 0; m < 60; m += 30) {
-    TIME_OPTIONS.push(`${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`);
+function dur(open: string, close: string): string {
+  const [oh, om] = open.split(":").map(Number), [ch, cm] = close.split(":").map(Number);
+  const d = (ch * 60 + cm) - (oh * 60 + om);
+  if (d <= 0) return "0 h";
+  return `${Math.floor(d / 60)}${d % 60 ? `:${String(d % 60).padStart(2, "0")}` : ""} h`;
+}
+
+// Group consecutive same-hours days into a human summary
+function summarize(hours: DayHours[]): string {
+  const sorted = ORDER.map((d) => hours.find((h) => h.dayOfWeek === d)).filter(Boolean) as DayHours[];
+  const parts: string[] = [];
+  let i = 0;
+  while (i < sorted.length) {
+    const cur = sorted[i];
+    let j = i;
+    while (j + 1 < sorted.length && sorted[j + 1].isOpen === cur.isOpen && sorted[j + 1].openTime === cur.openTime && sorted[j + 1].closeTime === cur.closeTime) j++;
+    const range = i === j ? SHORT[cur.dayOfWeek] : `${SHORT[cur.dayOfWeek]}–${SHORT[sorted[j].dayOfWeek]}`;
+    parts.push(cur.isOpen ? `${range} ${cur.openTime}–${cur.closeTime}` : `${range} nieczynne`);
+    i = j + 1;
   }
+  return parts.join(" · ");
 }
 
 export function HoursClient({ initialHours }: Props) {
-  const [hours, setHours] = useState<DayHours[]>(initialHours);
-  const [isPending, startTransition] = useTransition();
+  const ordered = useMemo(() => ORDER.map((d) => initialHours.find((h) => h.dayOfWeek === d) ?? { dayOfWeek: d, isOpen: false, openTime: "09:00", closeTime: "18:00" }), [initialHours]);
+  const [hours, setHours] = useState<DayHours[]>(ordered);
+  const [isPending, start] = useTransition();
   const [saved, setSaved] = useState(false);
+  const reduce = useReducedMotion();
 
-  function toggleDay(dayOfWeek: DayOfWeek) {
-    setHours((prev) =>
-      prev.map((h) =>
-        h.dayOfWeek === dayOfWeek ? { ...h, isOpen: !h.isOpen } : h
-      )
-    );
-  }
+  const dirty = useMemo(() => JSON.stringify(hours) !== JSON.stringify(ordered), [hours, ordered]);
 
-  function updateTime(dayOfWeek: DayOfWeek, field: "openTime" | "closeTime", value: string) {
-    setHours((prev) =>
-      prev.map((h) =>
-        h.dayOfWeek === dayOfWeek ? { ...h, [field]: value } : h
-      )
-    );
+  const upd = (d: DayOfWeek, patch: Partial<DayHours>) => setHours((prev) => prev.map((h) => h.dayOfWeek === d ? { ...h, ...patch } : h));
+  function copyToAll() {
+    const src = hours.find((h) => h.isOpen);
+    if (!src) return;
+    setHours((prev) => prev.map((h) => h.dayOfWeek === "SUNDAY" ? h : { ...h, isOpen: true, openTime: src.openTime, closeTime: src.closeTime }));
   }
-
-  function handleSave() {
-    startTransition(async () => {
-      await updateWorkingHours(hours);
-      setSaved(true);
-      setTimeout(() => setSaved(false), 2000);
-    });
-  }
+  function save() { start(async () => { await updateWorkingHours(hours); setSaved(true); setTimeout(() => setSaved(false), 2000); }); }
 
   return (
-    <div className="max-w-4xl mx-auto space-y-5">
+    <div className="max-w-4xl mx-auto space-y-5 pb-20">
       <PageHeader
-        title="Godziny pracy"
-        subtitle="Ustaw godziny otwarcia dla każdego dnia tygodnia"
-        actions={
-          <InkButton onClick={handleSave} disabled={isPending}>
-            {isPending ? (
-              <>
-                <svg className="w-4 h-4 animate-spin" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} aria-hidden="true">
-                  <path strokeLinecap="round" d="M4 12a8 8 0 0 1 8-8" />
-                </svg>
-                Zapisywanie…
-              </>
-            ) : saved ? (
-              <>
-                <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} aria-hidden="true">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="m5 13 4 4L19 7" />
-                </svg>
-                Zapisano
-              </>
-            ) : (
-              "Zapisz zmiany"
-            )}
-          </InkButton>
-        }
+        title="Godziny"
+        subtitle="Ustaw rytm tygodnia — klienci rezerwują tylko w godzinach otwarcia"
+        actions={<GlassButton size="sm" onClick={copyToAll}>Kopiuj pon→sob</GlassButton>}
       />
 
-      {/* Hours grid */}
-      <GlassCard className="fade-rise fade-rise-d1 overflow-hidden">
-        <CardHeader title="Godziny otwarcia" />
-        <div>
-          {hours.map((day, i) => (
-            <div
-              key={day.dayOfWeek}
-              className={`flex items-center gap-4 px-5 py-3.5 ${!day.isOpen ? "opacity-55" : ""}`}
-              style={i > 0 ? { borderTop: HAIRLINE } : undefined}
-            >
-              {/* Toggle */}
-              <button
-                type="button"
-                onClick={() => toggleDay(day.dayOfWeek)}
-                role="switch"
-                aria-checked={day.isOpen}
-                aria-label={`${DAY_LABELS[day.dayOfWeek]} — ${day.isOpen ? "otwarte" : "zamknięte"}`}
-                className="relative inline-flex h-6 w-11 items-center rounded-full transition-colors flex-shrink-0"
-                style={{ background: day.isOpen ? "#0F172A" : "rgba(148,163,184,0.45)" }}
-              >
-                <span
-                  className={`inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform ${day.isOpen ? "translate-x-6" : "translate-x-1"}`}
-                />
+      {/* Customer-facing summary */}
+      <div className="fade-rise fade-rise-d1 rounded-2xl px-4 py-3 flex items-start gap-3" style={CHIP}>
+        <svg className="w-4 h-4 text-slate-400 flex-shrink-0 mt-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8}><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z" /><circle cx="12" cy="12" r="3" /></svg>
+        <p className="text-[13px] text-slate-600 leading-relaxed"><span className="font-semibold text-slate-800">Klienci zobaczą:</span> {summarize(hours)}</p>
+      </div>
+
+      {/* Week as day cards */}
+      <div className="fade-rise fade-rise-d2 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5">
+        {hours.map((h) => (
+          <div key={h.dayOfWeek} className={cn("rounded-2xl p-4 transition-opacity", !h.isOpen && "opacity-70")} style={{ background: h.isOpen ? "rgba(255,255,255,0.8)" : "rgba(203,213,225,0.12)", border: "1px solid rgba(203,213,225,0.45)", boxShadow: h.isOpen ? "inset 0 1px 0 rgba(255,255,255,0.9)" : "none" }}>
+            <div className="flex items-center justify-between mb-3">
+              <span className="text-sm font-semibold text-slate-800">{FULL[h.dayOfWeek]}</span>
+              <button type="button" role="switch" aria-checked={h.isOpen} aria-label={`${FULL[h.dayOfWeek]} — ${h.isOpen ? "otwarte" : "zamknięte"}`} onClick={() => upd(h.dayOfWeek, { isOpen: !h.isOpen })} className="relative inline-flex h-5 w-9 items-center rounded-full transition-colors flex-shrink-0" style={{ background: h.isOpen ? "#0F172A" : "rgba(148,163,184,0.45)" }}>
+                <span className={cn("inline-block h-3.5 w-3.5 mx-0.5 rounded-full bg-white shadow transition-transform", h.isOpen ? "translate-x-4" : "translate-x-0")} />
               </button>
-
-              {/* Day name */}
-              <span className="w-28 sm:w-32 text-sm font-medium text-slate-800 flex-shrink-0">
-                {DAY_LABELS[day.dayOfWeek]}
-              </span>
-
-              {/* Time inputs */}
-              {day.isOpen ? (
-                <div className="flex items-center gap-2.5 flex-1 flex-wrap">
-                  <select
-                    value={day.openTime}
-                    onChange={(e) => updateTime(day.dayOfWeek, "openTime", e.target.value)}
-                    aria-label={`${DAY_LABELS[day.dayOfWeek]} — otwarcie`}
-                    className="input-glass rounded-xl px-3 py-2 text-sm outline-none text-slate-800 tabular-nums"
-                  >
-                    {TIME_OPTIONS.map((t) => (
-                      <option key={t} value={t}>{t}</option>
-                    ))}
-                  </select>
-                  <span className="text-slate-400 text-sm">–</span>
-                  <select
-                    value={day.closeTime}
-                    onChange={(e) => updateTime(day.dayOfWeek, "closeTime", e.target.value)}
-                    aria-label={`${DAY_LABELS[day.dayOfWeek]} — zamknięcie`}
-                    className="input-glass rounded-xl px-3 py-2 text-sm outline-none text-slate-800 tabular-nums"
-                  >
-                    {TIME_OPTIONS.map((t) => (
-                      <option key={t} value={t}>{t}</option>
-                    ))}
-                  </select>
-                  <span
-                    className="text-[11px] font-medium text-slate-500 px-2 py-0.5 rounded-full tabular-nums"
-                    style={CHIP}
-                  >
-                    {calculateHours(day.openTime, day.closeTime)} godz.
-                  </span>
-                </div>
-              ) : (
-                <span className="text-sm text-slate-400 italic">Zamknięte</span>
-              )}
             </div>
-          ))}
-        </div>
-      </GlassCard>
-
-      {/* Special days placeholder */}
-      <GlassCard className="fade-rise fade-rise-d2 overflow-hidden">
-        <CardHeader title="Dni specjalne" />
-        <div className="px-6 py-8 text-center">
-          <div
-            className="w-10 h-10 rounded-xl flex items-center justify-center mx-auto mb-3 text-slate-400"
-            style={CHIP}
-          >
-            <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} aria-hidden="true">
-              <rect width="18" height="18" x="3" y="4" rx="2" /><line x1="16" x2="16" y1="2" y2="6" /><line x1="8" x2="8" y1="2" y2="6" /><line x1="3" x2="21" y1="10" y2="10" />
-            </svg>
+            {h.isOpen ? (
+              <div className="space-y-2">
+                <div className="flex items-center gap-1.5">
+                  <select value={h.openTime} onChange={(e) => upd(h.dayOfWeek, { openTime: e.target.value })} aria-label="Otwarcie" className="input-glass flex-1 rounded-lg px-2 py-1.5 text-sm outline-none text-slate-800 tabular-nums">{TIMES.map((t) => <option key={t} value={t}>{t}</option>)}</select>
+                  <span className="text-slate-400 text-xs">–</span>
+                  <select value={h.closeTime} onChange={(e) => upd(h.dayOfWeek, { closeTime: e.target.value })} aria-label="Zamknięcie" className="input-glass flex-1 rounded-lg px-2 py-1.5 text-sm outline-none text-slate-800 tabular-nums">{TIMES.map((t) => <option key={t} value={t}>{t}</option>)}</select>
+                </div>
+                <p className="text-[11px] text-slate-400 tabular-nums text-center">{dur(h.openTime, h.closeTime)} otwarte</p>
+              </div>
+            ) : (
+              <p className="text-sm text-slate-400 italic py-2">Nieczynne</p>
+            )}
           </div>
-          <p className="text-sm font-semibold text-slate-800">Urlopy i święta</p>
-          <p className="text-xs text-slate-500 mt-1 max-w-xs mx-auto leading-relaxed">
-            Możliwość ustawiania dni wolnych i godzin wyjątkowych pojawi się wkrótce.
-          </p>
-        </div>
-      </GlassCard>
+        ))}
+      </div>
+
+      {/* Sticky dirty-state save bar */}
+      <AnimatePresence>
+        {(dirty || saved) && (
+          <motion.div
+            initial={reduce ? { opacity: 0 } : { opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={reduce ? { opacity: 0 } : { opacity: 0, y: 20 }}
+            className="fixed bottom-4 lg:bottom-6 left-1/2 -translate-x-1/2 z-40 flex items-center gap-3 pl-5 pr-2 py-2 rounded-2xl"
+            style={{ background: "rgba(255,255,255,0.92)", backdropFilter: "blur(24px) saturate(200%)", WebkitBackdropFilter: "blur(24px) saturate(200%)", border: "1px solid rgba(203,213,225,0.5)", boxShadow: "0 8px 32px rgba(15,23,42,0.14), inset 0 1px 0 rgba(255,255,255,0.95)" }}
+          >
+            <span className="text-[13px] font-medium text-slate-700">{saved ? "Zapisano zmiany ✓" : "Masz niezapisane zmiany"}</span>
+            {!saved && <InkButton size="sm" onClick={save} disabled={isPending}>{isPending ? "Zapisywanie…" : "Zapisz"}</InkButton>}
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
-}
-
-function calculateHours(open: string, close: string): string {
-  const [oh, om] = open.split(":").map(Number);
-  const [ch, cm] = close.split(":").map(Number);
-  const diff = ((ch ?? 0) * 60 + (cm ?? 0)) - ((oh ?? 0) * 60 + (om ?? 0));
-  if (diff <= 0) return "0";
-  const h = Math.floor(diff / 60);
-  const m = diff % 60;
-  return m > 0 ? `${h}:${String(m).padStart(2, "0")}` : String(h);
 }
