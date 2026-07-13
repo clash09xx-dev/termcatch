@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
+import { INK_BTN, GLASS_BTN, CHIP, ELEV_OVERLAY } from "@/components/ui/glass/tokens";
 
 export type CookieConsent = {
   essential: true;
@@ -80,13 +81,13 @@ export function CookieConsentBanner() {
       aria-label="Ustawienia plików cookie"
       className="fixed bottom-0 inset-x-0 z-[60] p-4 sm:p-6"
     >
-      <div className="max-w-xl mx-auto bg-white border border-gray-200 rounded-2xl shadow-xl p-5 sm:p-6">
-        <h2 className="text-sm font-semibold text-gray-900 mb-1.5">Pliki cookie</h2>
-        <p className="text-xs text-gray-500 leading-relaxed mb-4">
+      <div className="max-w-xl mx-auto rounded-[20px] p-5 sm:p-6" style={ELEV_OVERLAY}>
+        <h2 className="text-sm font-semibold text-slate-900 mb-1.5">Pliki cookie</h2>
+        <p className="text-xs text-slate-500 leading-relaxed mb-4">
           Używamy niezbędnych plików cookie, aby Termcatch działał (logowanie, sesja).
           Za Twoją zgodą użyjemy też cookie analitycznych, żeby rozumieć ruch na stronie.
           Szczegóły w{" "}
-          <Link href="/cookies" className="underline underline-offset-2 hover:text-gray-700">
+          <Link href="/cookies" className="underline underline-offset-2 hover:text-slate-700">
             polityce cookies
           </Link>
           .
@@ -94,39 +95,39 @@ export function CookieConsentBanner() {
 
         {showDetails && (
           <div className="space-y-2.5 mb-4">
-            <label className="flex items-start gap-3 p-3 bg-gray-50 rounded-xl cursor-not-allowed">
-              <input type="checkbox" checked disabled className="mt-0.5 accent-gray-900" />
+            <label className="flex items-start gap-3 p-3 rounded-xl cursor-not-allowed" style={CHIP}>
+              <input type="checkbox" checked disabled className="mt-0.5 accent-slate-900" />
               <span>
-                <span className="block text-xs font-semibold text-gray-900">Niezbędne</span>
-                <span className="block text-xs text-gray-500">
+                <span className="block text-xs font-semibold text-slate-900">Niezbędne</span>
+                <span className="block text-xs text-slate-500">
                   Logowanie, sesja, bezpieczeństwo. Zawsze aktywne.
                 </span>
               </span>
             </label>
-            <label className="flex items-start gap-3 p-3 bg-gray-50 rounded-xl cursor-pointer">
+            <label className="flex items-start gap-3 p-3 rounded-xl cursor-pointer" style={CHIP}>
               <input
                 type="checkbox"
                 checked={analytics}
                 onChange={(e) => setAnalytics(e.target.checked)}
-                className="mt-0.5 accent-gray-900"
+                className="mt-0.5 accent-slate-900"
               />
               <span>
-                <span className="block text-xs font-semibold text-gray-900">Analityczne</span>
-                <span className="block text-xs text-gray-500">
+                <span className="block text-xs font-semibold text-slate-900">Analityczne</span>
+                <span className="block text-xs text-slate-500">
                   Anonimowe statystyki odwiedzin — pomagają nam ulepszać Termcatch.
                 </span>
               </span>
             </label>
-            <label className="flex items-start gap-3 p-3 bg-gray-50 rounded-xl cursor-pointer">
+            <label className="flex items-start gap-3 p-3 rounded-xl cursor-pointer" style={CHIP}>
               <input
                 type="checkbox"
                 checked={marketing}
                 onChange={(e) => setMarketing(e.target.checked)}
-                className="mt-0.5 accent-gray-900"
+                className="mt-0.5 accent-slate-900"
               />
               <span>
-                <span className="block text-xs font-semibold text-gray-900">Marketingowe</span>
-                <span className="block text-xs text-gray-500">
+                <span className="block text-xs font-semibold text-slate-900">Marketingowe</span>
+                <span className="block text-xs text-slate-500">
                   Obecnie nie używamy cookie marketingowych. Ustawienie na przyszłość.
                 </span>
               </span>
@@ -139,7 +140,8 @@ export function CookieConsentBanner() {
             <button
               type="button"
               onClick={() => save(analytics, marketing)}
-              className="flex-1 py-2.5 bg-gray-900 hover:bg-gray-800 text-white rounded-xl text-sm font-semibold transition-colors"
+              className="btn-spring flex-1 py-2.5 rounded-xl text-sm font-semibold"
+              style={INK_BTN}
             >
               Zapisz wybór
             </button>
@@ -148,21 +150,23 @@ export function CookieConsentBanner() {
               <button
                 type="button"
                 onClick={() => save(true, false)}
-                className="flex-1 py-2.5 bg-gray-900 hover:bg-gray-800 text-white rounded-xl text-sm font-semibold transition-colors"
+                className="btn-spring flex-1 py-2.5 rounded-xl text-sm font-semibold"
+                style={INK_BTN}
               >
                 Akceptuję
               </button>
               <button
                 type="button"
                 onClick={() => save(false, false)}
-                className="flex-1 py-2.5 border border-gray-200 hover:bg-gray-50 text-gray-700 rounded-xl text-sm font-medium transition-colors"
+                className="btn-spring flex-1 py-2.5 rounded-xl text-sm font-medium"
+                style={GLASS_BTN}
               >
                 Tylko niezbędne
               </button>
               <button
                 type="button"
                 onClick={() => setShowDetails(true)}
-                className="py-2.5 px-4 text-gray-500 hover:text-gray-700 rounded-xl text-sm font-medium transition-colors"
+                className="py-2.5 px-4 text-slate-500 hover:text-slate-700 rounded-xl text-sm font-medium transition-colors"
               >
                 Ustawienia
               </button>

@@ -63,7 +63,10 @@ export function CustomerTopbar() {
             <path d="M13.73 21a2 2 0 0 1-3.46 0" />
           </svg>
           {unreadCount > 0 && (
-            <span className="absolute top-1 right-1 min-w-[16px] h-4 px-1 rounded-full bg-red-500 text-white text-[10px] font-bold flex items-center justify-center">
+            <span
+              className="absolute top-1 right-1 min-w-[16px] h-4 px-1 rounded-full text-white text-[10px] font-bold flex items-center justify-center tabular-nums"
+              style={{ background: "#E11D48", boxShadow: "0 0 0 2px rgba(255,255,255,0.90)" }}
+            >
               {unreadCount > 9 ? "9+" : unreadCount}
             </span>
           )}

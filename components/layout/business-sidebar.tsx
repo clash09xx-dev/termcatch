@@ -43,7 +43,7 @@ const NAV_SECTIONS: { label: string | null; items: NavItem[] }[] = [
     label: "Wzrost",
     items: [
       { href: "/business/analytics", icon: AnalyticsIcon, label: "Analityka" },
-      { href: "/business/ai", icon: AiIcon, label: "AI Asystent", badge: "Nowe" },
+      { href: "/business/ai", icon: AiIcon, label: "AI Asystent" },
       { href: "/business/marketing", icon: MarketingIcon, label: "Marketing" },
       { href: "/business/reviews", icon: ReviewIcon, label: "Opinie" },
     ],
@@ -78,8 +78,10 @@ export function BusinessSidebar({
   const displayPlan = (plan && PLAN_LABELS[plan]) || "Wczesny dostęp";
 
   return (
-    <aside
-      className={cn("hidden lg:flex flex-col h-screen shrink-0 transition-all duration-300", isCollapsed ? "w-[58px]" : "w-[228px]")}
+    <motion.aside
+      animate={{ width: isCollapsed ? 58 : 228 }}
+      transition={{ type: "spring", stiffness: 320, damping: 32 }}
+      className="hidden lg:flex flex-col h-screen shrink-0 overflow-hidden"
       style={{
         background: "rgba(255,255,255,0.78)",
         backdropFilter: "blur(40px) saturate(200%)",
@@ -240,7 +242,7 @@ export function BusinessSidebar({
           </Link>
         </div>
       )}
-    </aside>
+    </motion.aside>
   );
 }
 

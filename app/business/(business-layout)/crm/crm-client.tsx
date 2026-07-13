@@ -2,26 +2,36 @@
 
 import { useState } from "react";
 import { useSearchParams } from "next/navigation";
+import { motion } from "framer-motion";
 import { formatCurrency, getInitials } from "@/lib/utils";
 import type { CustomerSummary } from "./page";
+import {
+  PageHeader,
+  GlassCard,
+  EmptyState,
+  StatusBadge,
+  ChromeAvatar,
+  InkLink,
+  Overline,
+  HAIRLINE,
+  CHIP,
+  ELEV_OVERLAY,
+} from "@/components/ui/glass";
+import { overlayFade, useReducedMotion } from "@/lib/motion";
 
 type Props = {
   customers: CustomerSummary[];
 };
 
-const STATUS_LABELS: Record<string, { label: string; className: string }> = {
-  PENDING: { label: "Oczekuje", className: "bg-warning-50 text-warning-600" },
-  CONFIRMED: { label: "Potwierdzona", className: "bg-success-50 text-success-600" },
-  COMPLETED: { label: "Zakończona", className: "bg-gray-100 text-gray-700" },
-  CANCELLED_CUSTOMER: { label: "Odwołana", className: "bg-danger-50 text-danger-600" },
-  CANCELLED_BUSINESS: { label: "Odwołana", className: "bg-danger-50 text-danger-600" },
-  NO_SHOW: { label: "No-show", className: "bg-danger-50 text-danger-600" },
-  IN_PROGRESS: { label: "W trakcie", className: "bg-gray-50 text-gray-900" },
-  RESCHEDULED: { label: "Przełożona", className: "bg-gray-100 text-gray-700" },
-};
+// Walk-in records carry a synthetic @termcatch.local address — never show it
+function displayContact(c: { email: string; phone: string | null }): string {
+  if (c.email.endsWith("@termcatch.local")) return c.phone ?? "dodano ręcznie";
+  return c.email;
+}
 
 export function CrmClient({ customers }: Props) {
   const searchParams = useSearchParams();
+  const reduceMotion = useReducedMotion();
   const [search, setSearch] = useState(searchParams.get("q") ?? "");
   const [selectedCustomer, setSelectedCustomer] = useState<CustomerSummary | null>(null);
 
@@ -37,234 +47,218 @@ export function CrmClient({ customers }: Props) {
   });
 
   return (
-    <div className="space-y-6 animate-fade-up">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-xl font-semibold text-gray-900">CRM — Klienci</h1>
-          <p className="text-sm text-gray-700 mt-0.5">
-            {customers.length} klientów w bazie
-          </p>
-        </div>
-      </div>
+    <div className="max-w-6xl mx-auto space-y-5">
+      <PageHeader
+        title="Klienci"
+        subtitle={<span className="tabular-nums">{customers.length} {customers.length === 1 ? "klient" : customers.length < 5 ? "klientów" : "klientów"} w bazie</span>}
+        actions={<InkLink href="/business/calendar?action=new" size="md">Nowa wizyta</InkLink>}
+      />
 
       {/* Search */}
-      <div className="relative">
-        <SearchIcon className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-700" />
+      <div className="fade-rise fade-rise-d1 relative max-w-md">
+        <svg className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} aria-hidden="true">
+          <circle cx="11" cy="11" r="8" /><path d="m21 21-4.35-4.35" />
+        </svg>
         <input
           type="text"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          placeholder="Szukaj klientów po nazwie, e-mailu lub telefonie..."
-          className="w-full pl-10 border border-gray-200 rounded-xl px-3.5 py-2.5 text-sm focus:outline-none focus:border-gray-400"
+          placeholder="Szukaj po nazwisku, e-mailu, telefonie…"
+          aria-label="Szukaj klientów"
+          className="input-glass w-full pl-10 pr-3.5 py-2.5 text-sm rounded-xl outline-none placeholder:text-slate-400 text-slate-800"
         />
       </div>
 
       {customers.length === 0 ? (
-        <div className="bg-white border border-gray-100 rounded-2xl flex flex-col items-center justify-center py-20 text-center px-6">
-          <div className="w-12 h-12 rounded-full bg-gray-100 flex items-center justify-center mb-4">
-            <UsersIcon className="w-6 h-6 text-gray-700" />
-          </div>
-          <p className="text-sm font-medium text-gray-900">Brak klientów</p>
-          <p className="text-sm text-gray-700 mt-1 max-w-sm">
-            Gdy klienci zarezerwują wizytę, pojawią się tutaj.
-          </p>
-        </div>
+        <GlassCard className="fade-rise fade-rise-d2">
+          <EmptyState
+            icon={
+              <svg className="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} aria-hidden="true">
+                <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" /><path d="M22 21v-2a4 4 0 0 0-3-3.87" /><path d="M16 3.13a4 4 0 0 1 0 7.75" />
+              </svg>
+            }
+            title="Brak klientów"
+            body="Klienci pojawią się tu po pierwszej rezerwacji — online albo dodanej ręcznie."
+            action={<InkLink href="/business/calendar?action=new" size="sm">Zapisz pierwszego klienta</InkLink>}
+          />
+        </GlassCard>
       ) : (
-        <div className="bg-white border border-gray-100 rounded-2xl overflow-hidden">
+        <GlassCard className="fade-rise fade-rise-d2 overflow-hidden">
           {/* Table header */}
-          <div className="grid grid-cols-[2fr_2fr_1fr_1fr_1fr] gap-4 px-6 py-3 border-b border-gray-100 bg-gray-50">
-            <span className="text-xs font-semibold text-gray-700 uppercase tracking-wider">Klient</span>
-            <span className="text-xs font-semibold text-gray-700 uppercase tracking-wider">Kontakt</span>
-            <span className="text-xs font-semibold text-gray-700 uppercase tracking-wider text-right">Wizyty</span>
-            <span className="text-xs font-semibold text-gray-700 uppercase tracking-wider text-right">Wydano</span>
-            <span className="text-xs font-semibold text-gray-700 uppercase tracking-wider text-right">Ostatnia wizyta</span>
+          <div
+            className="hidden sm:grid grid-cols-[2fr_2fr_1fr_1fr_1fr] gap-4 px-5 py-3"
+            style={{ borderBottom: HAIRLINE, background: "rgba(203,213,225,0.10)" }}
+          >
+            <Overline>Klient</Overline>
+            <Overline>Kontakt</Overline>
+            <Overline className="text-right">Wizyty</Overline>
+            <Overline className="text-right">Wydano</Overline>
+            <Overline className="text-right">Ostatnia</Overline>
           </div>
 
-          {/* Rows */}
           {filtered.length === 0 ? (
             <div className="px-6 py-10 text-center">
-              <p className="text-sm text-gray-700">Brak wyników dla &quot;{search}&quot;</p>
+              <p className="text-sm text-slate-500">Brak wyników dla „{search}"</p>
             </div>
           ) : (
-            <div className="divide-y divide-gray-100">
-              {filtered.map((customer) => (
+            <div>
+              {filtered.map((customer, i) => (
                 <button
                   key={customer.id}
                   onClick={() => setSelectedCustomer(customer)}
-                  className="w-full grid grid-cols-[2fr_2fr_1fr_1fr_1fr] gap-4 px-6 py-4 hover:bg-gray-50 transition-colors text-left"
+                  className="row-hover w-full grid grid-cols-[1fr_auto] sm:grid-cols-[2fr_2fr_1fr_1fr_1fr] gap-2 sm:gap-4 px-5 py-3.5 text-left items-center"
+                  style={i > 0 ? { borderTop: HAIRLINE } : undefined}
                 >
-                  {/* Name */}
-                  <div className="flex items-center gap-3">
-                    <div className="w-9 h-9 rounded-full bg-gray-100 text-gray-900 flex items-center justify-center text-xs font-semibold flex-shrink-0">
-                      {getInitials(customer.firstName, customer.lastName)}
-                    </div>
-                    <div>
-                      <p className="text-sm font-medium text-gray-900">
-                        {customer.firstName} {customer.lastName}
-                      </p>
-                    </div>
+                  <div className="flex items-center gap-3 min-w-0">
+                    <ChromeAvatar initials={getInitials(customer.firstName, customer.lastName)} />
+                    <p className="text-sm font-semibold text-slate-900 truncate">
+                      {customer.firstName} {customer.lastName}
+                    </p>
                   </div>
 
-                  {/* Contact */}
-                  <div>
-                    <p className="text-sm text-gray-900 truncate">{customer.email}</p>
+                  <div className="hidden sm:block min-w-0">
+                    <p className="text-sm text-slate-700 truncate">{displayContact(customer)}</p>
                     {customer.phone && (
-                      <p className="text-xs text-gray-700 mt-0.5">{customer.phone}</p>
+                      <p className="text-xs text-slate-500 mt-0.5 tabular-nums">{customer.phone}</p>
                     )}
                   </div>
 
-                  {/* Appointments */}
-                  <div className="text-right">
-                    <p className="text-sm font-semibold text-gray-900">{customer.totalAppointments}</p>
-                  </div>
+                  <p className="hidden sm:block text-sm font-semibold text-slate-900 text-right tabular-nums">
+                    {customer.totalAppointments}
+                  </p>
 
-                  {/* Spent */}
-                  <div className="text-right">
-                    <p className="text-sm font-semibold text-gray-900">
-                      {formatCurrency(customer.totalSpent)}
-                    </p>
-                  </div>
+                  <p className="text-sm font-bold text-slate-900 text-right tabular-nums">
+                    {formatCurrency(customer.totalSpent)}
+                  </p>
 
-                  {/* Last visit */}
-                  <div className="text-right">
-                    <p className="text-sm text-gray-900">
-                      {customer.lastVisit
-                        ? new Date(customer.lastVisit).toLocaleDateString("pl-PL", {
-                            day: "numeric",
-                            month: "short",
-                          })
-                        : "—"}
-                    </p>
-                  </div>
+                  <p className="hidden sm:block text-sm text-slate-500 text-right tabular-nums">
+                    {customer.lastVisit
+                      ? new Date(customer.lastVisit).toLocaleDateString("pl-PL", { day: "numeric", month: "short" })
+                      : "—"}
+                  </p>
                 </button>
               ))}
             </div>
           )}
-        </div>
+        </GlassCard>
       )}
 
-      {/* Customer detail slide-in */}
+      {/* Client drawer — glass, slides from the right */}
       {selectedCustomer && (
-        <div className="fixed inset-0 z-50 flex">
-          <div
-            className="flex-1 bg-black/20"
+        <div className="fixed inset-0 z-50 flex justify-end">
+          <motion.div
+            variants={overlayFade}
+            initial="hidden"
+            animate="show"
+            className="absolute inset-0"
+            style={{ background: "rgba(15,23,42,0.30)", backdropFilter: "blur(6px)", WebkitBackdropFilter: "blur(6px)" }}
             onClick={() => setSelectedCustomer(null)}
           />
-          <div className="w-full max-w-md bg-white shadow-soft-xl h-full overflow-y-auto animate-slide-in-right">
+          <motion.div
+            initial={reduceMotion ? { opacity: 0 } : { x: 56, opacity: 0 }}
+            animate={reduceMotion ? { opacity: 1 } : { x: 0, opacity: 1, transition: { type: "spring", stiffness: 380, damping: 34 } }}
+            className="relative w-full max-w-md h-full overflow-y-auto"
+            style={{ ...ELEV_OVERLAY, borderRadius: 0, borderRight: "none", borderTop: "none", borderBottom: "none" }}
+            role="dialog"
+            aria-modal="true"
+            aria-label={`Klient: ${selectedCustomer.firstName} ${selectedCustomer.lastName}`}
+          >
             {/* Header */}
-            <div className="flex items-start justify-between p-6 border-b border-gray-100">
+            <div className="flex items-start justify-between p-6" style={{ borderBottom: HAIRLINE }}>
               <div className="flex items-center gap-4">
-                <div className="w-12 h-12 rounded-full bg-gray-100 text-gray-900 flex items-center justify-center text-sm font-semibold">
-                  {getInitials(selectedCustomer.firstName, selectedCustomer.lastName)}
-                </div>
+                <ChromeAvatar
+                  size="lg"
+                  initials={getInitials(selectedCustomer.firstName, selectedCustomer.lastName)}
+                />
                 <div>
-                  <h3 className="text-base font-semibold text-gray-900">
+                  <h3 className="text-base font-bold text-slate-900" style={{ letterSpacing: "-0.01em" }}>
                     {selectedCustomer.firstName} {selectedCustomer.lastName}
                   </h3>
-                  <p className="text-sm text-gray-700">{selectedCustomer.email}</p>
+                  <p className="text-sm text-slate-500">{displayContact(selectedCustomer)}</p>
                   {selectedCustomer.phone && (
-                    <p className="text-sm text-gray-700">{selectedCustomer.phone}</p>
+                    <p className="text-sm text-slate-500 tabular-nums">{selectedCustomer.phone}</p>
                   )}
                 </div>
               </div>
               <button
                 onClick={() => setSelectedCustomer(null)}
-                className="p-2 rounded-lg hover:bg-gray-100 text-gray-700 transition-colors mt-1"
+                aria-label="Zamknij"
+                className="icon-btn p-2 rounded-lg mt-1"
+                style={{ color: "#94A3B8" }}
               >
-                <XIcon className="w-4 h-4" />
+                <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} aria-hidden="true">
+                  <path d="M6 18 18 6M6 6l12 12" />
+                </svg>
               </button>
             </div>
 
             {/* Stats */}
-            <div className="grid grid-cols-2 gap-3 p-6 border-b border-gray-100">
-              <div className="bg-gray-50 rounded-xl p-3.5">
-                <p className="text-xl font-bold text-gray-900">
+            <div className="grid grid-cols-2 gap-3 p-6" style={{ borderBottom: HAIRLINE }}>
+              <div className="rounded-2xl p-3.5" style={CHIP}>
+                <p className="text-xl font-bold text-slate-900 tabular-nums">
                   {selectedCustomer.totalAppointments}
                 </p>
-                <p className="text-xs text-gray-700 mt-0.5">Wszystkich wizyt</p>
+                <p className="text-xs text-slate-500 mt-0.5">Wszystkich wizyt</p>
               </div>
-              <div className="bg-gray-50 rounded-xl p-3.5">
-                <p className="text-xl font-bold text-gray-900">
+              <div className="rounded-2xl p-3.5" style={CHIP}>
+                <p className="text-xl font-bold text-slate-900 tabular-nums">
                   {formatCurrency(selectedCustomer.totalSpent)}
                 </p>
-                <p className="text-xs text-gray-700 mt-0.5">Łączna wartość</p>
+                <p className="text-xs text-slate-500 mt-0.5">Łączna wartość</p>
               </div>
+            </div>
+
+            {/* CTA */}
+            <div className="px-6 pt-5">
+              <InkLink href="/business/calendar?action=new" className="w-full">
+                Umów wizytę
+              </InkLink>
             </div>
 
             {/* Appointments list */}
             <div className="p-6">
-              <h4 className="text-sm font-semibold text-gray-900 mb-4">Historia wizyt</h4>
+              <Overline className="mb-3">Historia wizyt</Overline>
               {selectedCustomer.appointments.length === 0 ? (
-                <p className="text-sm text-gray-700">Brak wizyt</p>
+                <p className="text-sm text-slate-500">Brak wizyt</p>
               ) : (
-                <div className="space-y-3">
-                  {selectedCustomer.appointments.map((apt) => {
-                    const statusInfo = STATUS_LABELS[apt.status] ?? {
-                      label: apt.status,
-                      className: "bg-gray-100 text-gray-700",
-                    };
-                    return (
-                      <div
-                        key={apt.id}
-                        className="flex items-center justify-between p-3.5 bg-gray-50 rounded-xl"
-                      >
-                        <div>
-                          <p className="text-sm font-medium text-gray-900">
-                            {apt.service.name}
-                          </p>
-                          <p className="text-xs text-gray-700 mt-0.5">
-                            {new Date(apt.startTime).toLocaleDateString("pl-PL", {
-                              weekday: "short",
-                              day: "numeric",
-                              month: "short",
-                              year: "numeric",
-                            })}
-                          </p>
-                        </div>
-                        <div className="text-right">
-                          <p className="text-sm font-semibold text-gray-900">
-                            {formatCurrency(apt.price)}
-                          </p>
-                          <span
-                            className={`text-2xs px-2 py-0.5 rounded-full font-medium mt-1 inline-block ${statusInfo.className}`}
-                          >
-                            {statusInfo.label}
-                          </span>
-                        </div>
+                <div className="space-y-2">
+                  {selectedCustomer.appointments.map((apt) => (
+                    <div
+                      key={apt.id}
+                      className="flex items-center justify-between gap-3 p-3.5 rounded-2xl"
+                      style={{
+                        background: "rgba(255,255,255,0.75)",
+                        border: "1px solid rgba(203,213,225,0.45)",
+                        boxShadow: "inset 0 1px 0 rgba(255,255,255,0.90)",
+                      }}
+                    >
+                      <div className="min-w-0">
+                        <p className="text-sm font-semibold text-slate-900 truncate">
+                          {apt.service.name}
+                        </p>
+                        <p className="text-xs text-slate-500 mt-0.5 tabular-nums">
+                          {new Date(apt.startTime).toLocaleDateString("pl-PL", {
+                            weekday: "short",
+                            day: "numeric",
+                            month: "short",
+                            year: "numeric",
+                          })}
+                        </p>
                       </div>
-                    );
-                  })}
+                      <div className="text-right flex-shrink-0">
+                        <p className="text-sm font-bold text-slate-900 tabular-nums">
+                          {formatCurrency(apt.price)}
+                        </p>
+                        <StatusBadge status={apt.status} className="mt-1" />
+                      </div>
+                    </div>
+                  ))}
                 </div>
               )}
             </div>
-          </div>
+          </motion.div>
         </div>
       )}
     </div>
-  );
-}
-
-function SearchIcon({ className }: { className?: string }) {
-  return (
-    <svg className={className} viewBox="0 0 20 20" fill="currentColor">
-      <path fillRule="evenodd" d="M9 3.5a5.5 5.5 0 1 0 0 11 5.5 5.5 0 0 0 0-11ZM2 9a7 7 0 1 1 12.452 4.391l3.328 3.329a.75.75 0 1 1-1.06 1.06l-3.329-3.328A7 7 0 0 1 2 9Z" clipRule="evenodd" />
-    </svg>
-  );
-}
-
-function UsersIcon({ className }: { className?: string }) {
-  return (
-    <svg className={className} viewBox="0 0 20 20" fill="currentColor">
-      <path d="M7 8a3 3 0 1 0 0-6 3 3 0 0 0 0 6ZM14.5 9a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5ZM1.615 16.428a1.224 1.224 0 0 1-.569-1.175 6.002 6.002 0 0 1 11.908 0c.058.467-.172.92-.57 1.174A9.953 9.953 0 0 1 7 18a9.953 9.953 0 0 1-5.385-1.572ZM14.5 16h-.106c.07-.297.088-.611.048-.933a7.47 7.47 0 0 0-1.588-3.755 4.502 4.502 0 0 1 5.874 2.636.818.818 0 0 1-.36.98A7.465 7.465 0 0 1 14.5 16Z" />
-    </svg>
-  );
-}
-
-function XIcon({ className }: { className?: string }) {
-  return (
-    <svg className={className} viewBox="0 0 20 20" fill="currentColor">
-      <path d="M6.28 5.22a.75.75 0 0 0-1.06 1.06L8.94 10l-3.72 3.72a.75.75 0 1 0 1.06 1.06L10 11.06l3.72 3.72a.75.75 0 1 0 1.06-1.06L11.06 10l3.72-3.72a.75.75 0 0 0-1.06-1.06L10 8.94 6.28 5.22Z" />
-    </svg>
   );
 }

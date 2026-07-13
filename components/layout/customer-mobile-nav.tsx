@@ -64,7 +64,16 @@ export function CustomerMobileNav() {
   const unreadCount = useUnreadCount();
 
   return (
-    <nav className="md:hidden fixed bottom-0 inset-x-0 z-40 bg-white border-t border-gray-100 pb-[env(safe-area-inset-bottom)]">
+    <nav
+      className="md:hidden fixed bottom-0 inset-x-0 z-40 pb-[env(safe-area-inset-bottom)]"
+      style={{
+        background: "rgba(255,255,255,0.90)",
+        backdropFilter: "blur(32px) saturate(200%)",
+        WebkitBackdropFilter: "blur(32px) saturate(200%)",
+        borderTop: "1px solid rgba(203,213,225,0.40)",
+        boxShadow: "0 -4px 20px rgba(100,116,139,0.08), inset 0 1px 0 rgba(255,255,255,0.90)",
+      }}
+    >
       <div className="flex items-stretch">
         {ITEMS.map((item) => {
           const isActive = pathname === item.href || pathname.startsWith(item.href + "/");
@@ -75,13 +84,16 @@ export function CustomerMobileNav() {
               href={item.href}
               className={cn(
                 "flex-1 flex flex-col items-center gap-0.5 py-2.5 text-[10px] font-medium transition-colors relative",
-                isActive ? "text-gray-900" : "text-gray-400 hover:text-gray-600"
+                isActive ? "text-slate-900" : "text-slate-400 hover:text-slate-600"
               )}
             >
               <span className="relative">
                 {item.icon}
                 {showBadge && (
-                  <span className="absolute -top-1 -right-1 min-w-[14px] h-3.5 px-0.5 rounded-full bg-red-500 text-white text-[9px] font-bold flex items-center justify-center">
+                  <span
+                    className="absolute -top-1 -right-1 min-w-[14px] h-3.5 px-0.5 rounded-full text-white text-[9px] font-bold flex items-center justify-center tabular-nums"
+                    style={{ background: "#E11D48", boxShadow: "0 0 0 2px rgba(255,255,255,0.90)" }}
+                  >
                     {unreadCount > 9 ? "9+" : unreadCount}
                   </span>
                 )}

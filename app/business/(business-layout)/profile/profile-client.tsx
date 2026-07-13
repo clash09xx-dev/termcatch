@@ -5,6 +5,11 @@ import { updateBusinessProfile } from "@/lib/actions/business";
 import { uploadBusinessImage } from "@/lib/actions/upload";
 import { cn } from "@/lib/utils";
 import type { Business } from "@prisma/client";
+import { PageHeader, GlassCard, InkButton, HAIRLINE, CHIP } from "@/components/ui/glass";
+
+const INPUT_CLS =
+  "input-glass w-full rounded-xl px-3.5 py-2.5 text-sm outline-none text-slate-800 placeholder:text-slate-400";
+const LABEL_CLS = "block text-sm font-medium text-slate-800 mb-1.5";
 
 type Props = {
   business: Business;
@@ -62,50 +67,51 @@ export function ProfileClient({ business }: Props) {
   }
 
   return (
-    <div className="space-y-6 animate-fade-up">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-xl font-semibold text-gray-900">Profil salonu</h1>
-          <p className="text-sm text-gray-700 mt-0.5">
-            Informacje widoczne dla klientów
-          </p>
-        </div>
-        <button
-          onClick={handleSave}
-          disabled={isPending}
-          className="bg-gray-900 hover:bg-gray-800 text-white rounded-xl px-4 py-2 text-sm font-semibold transition-colors disabled:opacity-60 flex items-center gap-2"
-        >
-          {isPending ? (
-            <>
-              <SpinnerIcon className="w-4 h-4 animate-spin" />
-              Zapisywanie...
-            </>
-          ) : savedTab === activeTab ? (
-            <>
-              <CheckIcon className="w-4 h-4" />
-              Zapisano
-            </>
-          ) : (
-            "Zapisz"
-          )}
-        </button>
-      </div>
+    <div className="max-w-4xl mx-auto space-y-5">
+      <PageHeader
+        title="Profil salonu"
+        subtitle="Informacje widoczne dla klientów"
+        actions={
+          <InkButton onClick={handleSave} disabled={isPending}>
+            {isPending ? (
+              <>
+                <SpinnerIcon className="w-4 h-4 animate-spin" />
+                Zapisywanie…
+              </>
+            ) : savedTab === activeTab ? (
+              <>
+                <CheckIcon className="w-4 h-4" />
+                Zapisano
+              </>
+            ) : (
+              "Zapisz"
+            )}
+          </InkButton>
+        }
+      />
 
       {/* Tabs */}
-      <div className="bg-white border border-gray-100 rounded-2xl overflow-hidden">
-        <div className="flex border-b border-gray-100">
+      <GlassCard className="fade-rise fade-rise-d1 overflow-hidden">
+        <div className="flex" style={{ borderBottom: HAIRLINE }}>
           {TABS.map((tab) => (
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
-              className={`flex-1 py-3.5 text-sm font-medium transition-colors ${
+              aria-current={activeTab === tab.id ? "true" : undefined}
+              className={`flex-1 py-3.5 text-sm font-medium transition-colors relative ${
                 activeTab === tab.id
-                  ? "text-gray-900 border-b-2 border-gray-900"
-                  : "text-gray-700 hover:text-gray-900"
+                  ? "text-slate-900 font-semibold"
+                  : "text-slate-500 hover:text-slate-800"
               }`}
             >
               {tab.label}
+              {activeTab === tab.id && (
+                <span
+                  className="absolute bottom-0 left-1/4 right-1/4 h-[2.5px] rounded-full"
+                  style={{ background: "linear-gradient(90deg, #1E293B, #0F172A)" }}
+                  aria-hidden="true"
+                />
+              )}
             </button>
           ))}
         </div>
@@ -115,18 +121,18 @@ export function ProfileClient({ business }: Props) {
           {activeTab === "podstawowe" && (
             <>
               <div>
-                <label className="block text-sm font-medium text-gray-900 mb-1.5">
+                <label className={LABEL_CLS}>
                   Nazwa salonu *
                 </label>
                 <input
                   type="text"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
-                  className="w-full border border-gray-200 rounded-xl px-3.5 py-2.5 text-sm focus:outline-none focus:border-gray-400"
+                  className={INPUT_CLS}
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-900 mb-1.5">
+                <label className={LABEL_CLS}>
                   Krótki opis (do 160 znaków)
                 </label>
                 <input
@@ -135,12 +141,12 @@ export function ProfileClient({ business }: Props) {
                   value={shortDescription}
                   onChange={(e) => setShortDescription(e.target.value)}
                   placeholder="Jedno zdanie opisujące Twój salon..."
-                  className="w-full border border-gray-200 rounded-xl px-3.5 py-2.5 text-sm focus:outline-none focus:border-gray-400"
+                  className={INPUT_CLS}
                 />
-                <p className="text-xs text-gray-700 mt-1 text-right">{shortDescription.length}/160</p>
+                <p className="text-xs text-slate-400 mt-1 text-right tabular-nums">{shortDescription.length}/160</p>
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-900 mb-1.5">
+                <label className={LABEL_CLS}>
                   Pełny opis
                 </label>
                 <textarea
@@ -148,25 +154,25 @@ export function ProfileClient({ business }: Props) {
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
                   placeholder="Opisz swój salon, ofertę i wyróżniki..."
-                  className="w-full border border-gray-200 rounded-xl px-3.5 py-2.5 text-sm focus:outline-none focus:border-gray-400 resize-none"
+                  className={cn(INPUT_CLS, "resize-none")}
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-900 mb-1.5">
+                <label className={LABEL_CLS}>
                   Kategoria
                 </label>
                 <input
                   type="text"
                   value={business.category}
                   disabled
-                  className="w-full border border-gray-100 rounded-xl px-3.5 py-2.5 text-sm bg-gray-50 text-gray-700 cursor-not-allowed"
+                  className={cn(INPUT_CLS, "opacity-60 cursor-not-allowed")}
                 />
-                <p className="text-xs text-gray-700 mt-1">
+                <p className="text-xs text-slate-500 mt-1">
                   Kategoria nie może być zmieniona po rejestracji. Skontaktuj się z pomocą techniczną.
                 </p>
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-900 mb-1.5">
+                <label className={LABEL_CLS}>
                   Podkategoria (opcjonalnie)
                 </label>
                 <input
@@ -174,7 +180,7 @@ export function ProfileClient({ business }: Props) {
                   value={subcategory}
                   onChange={(e) => setSubcategory(e.target.value)}
                   placeholder="np. Kosmetologia, Makijaż permanentny..."
-                  className="w-full border border-gray-200 rounded-xl px-3.5 py-2.5 text-sm focus:outline-none focus:border-gray-400"
+                  className={INPUT_CLS}
                 />
               </div>
             </>
@@ -185,7 +191,7 @@ export function ProfileClient({ business }: Props) {
             <>
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-900 mb-1.5">
+                  <label className={LABEL_CLS}>
                     Telefon
                   </label>
                   <input
@@ -193,11 +199,11 @@ export function ProfileClient({ business }: Props) {
                     value={phone}
                     onChange={(e) => setPhone(e.target.value)}
                     placeholder="+48 000 000 000"
-                    className="w-full border border-gray-200 rounded-xl px-3.5 py-2.5 text-sm focus:outline-none focus:border-gray-400"
+                    className={INPUT_CLS}
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-900 mb-1.5">
+                  <label className={LABEL_CLS}>
                     E-mail
                   </label>
                   <input
@@ -205,12 +211,12 @@ export function ProfileClient({ business }: Props) {
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     placeholder="salon@example.com"
-                    className="w-full border border-gray-200 rounded-xl px-3.5 py-2.5 text-sm focus:outline-none focus:border-gray-400"
+                    className={INPUT_CLS}
                   />
                 </div>
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-900 mb-1.5">
+                <label className={LABEL_CLS}>
                   Strona internetowa
                 </label>
                 <input
@@ -218,11 +224,11 @@ export function ProfileClient({ business }: Props) {
                   value={website}
                   onChange={(e) => setWebsite(e.target.value)}
                   placeholder="https://www.twojastrona.pl"
-                  className="w-full border border-gray-200 rounded-xl px-3.5 py-2.5 text-sm focus:outline-none focus:border-gray-400"
+                  className={INPUT_CLS}
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-900 mb-1.5">
+                <label className={LABEL_CLS}>
                   Adres
                 </label>
                 <input
@@ -230,23 +236,23 @@ export function ProfileClient({ business }: Props) {
                   value={address}
                   onChange={(e) => setAddress(e.target.value)}
                   placeholder="ul. Kwiatowa 5/3"
-                  className="w-full border border-gray-200 rounded-xl px-3.5 py-2.5 text-sm focus:outline-none focus:border-gray-400"
+                  className={INPUT_CLS}
                 />
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-900 mb-1.5">
+                  <label className={LABEL_CLS}>
                     Miasto
                   </label>
                   <input
                     type="text"
                     value={city}
                     onChange={(e) => setCity(e.target.value)}
-                    className="w-full border border-gray-200 rounded-xl px-3.5 py-2.5 text-sm focus:outline-none focus:border-gray-400"
+                    className={INPUT_CLS}
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-900 mb-1.5">
+                  <label className={LABEL_CLS}>
                     Kod pocztowy
                   </label>
                   <input
@@ -254,7 +260,7 @@ export function ProfileClient({ business }: Props) {
                     value={postalCode}
                     onChange={(e) => setPostalCode(e.target.value)}
                     placeholder="00-000"
-                    className="w-full border border-gray-200 rounded-xl px-3.5 py-2.5 text-sm focus:outline-none focus:border-gray-400"
+                    className={INPUT_CLS}
                   />
                 </div>
               </div>
@@ -285,11 +291,11 @@ export function ProfileClient({ business }: Props) {
           {activeTab === "social" && (
             <>
               <div>
-                <label className="block text-sm font-medium text-gray-900 mb-1.5">
+                <label className={LABEL_CLS}>
                   Instagram
                 </label>
                 <div className="relative">
-                  <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-700 text-sm">
+                  <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500 text-sm">
                     instagram.com/
                   </span>
                   <input
@@ -297,16 +303,16 @@ export function ProfileClient({ business }: Props) {
                     value={instagramUrl}
                     onChange={(e) => setInstagramUrl(e.target.value)}
                     placeholder="twojsalon"
-                    className="w-full border border-gray-200 rounded-xl pl-[120px] pr-3.5 py-2.5 text-sm focus:outline-none focus:border-gray-400"
+                    className={cn(INPUT_CLS, "pl-[120px]")}
                   />
                 </div>
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-900 mb-1.5">
+                <label className={LABEL_CLS}>
                   Facebook
                 </label>
                 <div className="relative">
-                  <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-700 text-sm">
+                  <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500 text-sm">
                     facebook.com/
                   </span>
                   <input
@@ -314,19 +320,19 @@ export function ProfileClient({ business }: Props) {
                     value={facebookUrl}
                     onChange={(e) => setFacebookUrl(e.target.value)}
                     placeholder="twojsalon"
-                    className="w-full border border-gray-200 rounded-xl pl-[112px] pr-3.5 py-2.5 text-sm focus:outline-none focus:border-gray-400"
+                    className={cn(INPUT_CLS, "pl-[112px]")}
                   />
                 </div>
               </div>
-              <div className="p-4 bg-gray-50 rounded-xl">
-                <p className="text-xs text-gray-700">
+              <div className="p-4 rounded-xl" style={CHIP}>
+                <p className="text-xs text-slate-600">
                   Linki do social media są wyświetlane na Twojej stronie profilu, którą widzą klienci.
                 </p>
               </div>
             </>
           )}
         </div>
-      </div>
+      </GlassCard>
     </div>
   );
 }
@@ -379,8 +385,8 @@ function ImageUploadField({
 
   return (
     <div>
-      <label className="block text-sm font-medium text-gray-900 mb-1">{label}</label>
-      {hint && <p className="text-xs text-gray-500 mb-2">{hint}</p>}
+      <label className={LABEL_CLS.replace("mb-1.5", "mb-1")}>{label}</label>
+      {hint && <p className="text-xs text-slate-500 mb-2">{hint}</p>}
 
       <div
         onDragOver={(e) => { e.preventDefault(); setDragging(true); }}
@@ -388,11 +394,11 @@ function ImageUploadField({
         onDrop={onDrop}
         onClick={() => !uploading && inputRef.current?.click()}
         className={cn(
-          "relative rounded-xl border-2 border-dashed cursor-pointer transition-all overflow-hidden",
+          "relative rounded-xl border-2 border-dashed cursor-pointer transition-all overflow-hidden bg-white/50",
           heightClass,
           dragging
-            ? "border-gray-400 bg-gray-100"
-            : "border-gray-200 hover:border-gray-400 bg-gray-50",
+            ? "border-slate-400"
+            : "border-slate-300 hover:border-slate-400",
           uploading && "pointer-events-none"
         )}
       >
@@ -411,27 +417,27 @@ function ImageUploadField({
             </div>
           </>
         ) : (
-          <div className="flex flex-col items-center justify-center h-full gap-2 text-gray-400">
+          <div className="flex flex-col items-center justify-center h-full gap-2 text-slate-400">
             <UploadIcon className="w-8 h-8" />
             <p className="text-sm font-medium">Przeciągnij zdjęcie lub kliknij</p>
-            <p className="text-xs text-gray-400">JPG, PNG, WebP · maks. 5 MB</p>
+            <p className="text-xs text-slate-400">JPG, PNG, WebP · maks. 5 MB</p>
           </div>
         )}
 
         {uploading && (
-          <div className="absolute inset-0 flex items-center justify-center bg-white/75 rounded-xl">
-            <SpinnerIcon className="w-6 h-6 animate-spin text-gray-500" />
+          <div className="absolute inset-0 flex items-center justify-center bg-white/80 rounded-xl">
+            <SpinnerIcon className="w-6 h-6 animate-spin text-slate-500" />
           </div>
         )}
       </div>
 
-      {error && <p className="mt-1.5 text-xs text-red-500">{error}</p>}
+      {error && <p className="mt-1.5 text-xs font-medium" style={{ color: "#BE123C" }}>{error}</p>}
 
       {value && !uploading && (
         <button
           type="button"
           onClick={() => onChange("")}
-          className="mt-1.5 text-xs text-gray-400 hover:text-red-500 transition-colors"
+          className="mt-1.5 text-xs text-slate-400 hover:text-rose-600 transition-colors"
         >
           Usuń zdjęcie
         </button>

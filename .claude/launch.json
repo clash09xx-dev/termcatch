@@ -1,0 +1,17 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "termcatch-dev",
+      "runtimeExecutable": "pnpm",
+      "runtimeArgs": ["dev"],
+      "port": 3000
+    },
+    {
+      "name": "termcatch-preview-phase1",
+      "runtimeExecutable": "pnpm",
+      "runtimeArgs": ["start", "--port", "3010"],
+      "port": 3010
+    }
+  ]
+}

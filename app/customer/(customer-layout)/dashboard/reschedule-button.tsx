@@ -4,6 +4,8 @@ import { useState, useEffect, useCallback, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { rescheduleAppointment } from "@/lib/actions/appointments";
 import { cn } from "@/lib/utils";
+import { GlassModal, ModalInkButton, ModalGlassButton } from "@/components/ui/glass-modal";
+import { INK_GRADIENT, OVERLINE_CLS } from "@/components/ui/glass/tokens";
 
 interface RescheduleButtonProps {
   appointmentId: string;
@@ -118,136 +120,122 @@ export default function RescheduleButton({
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="text-xs font-medium text-gray-700 hover:text-gray-900 border border-gray-200 hover:border-gray-300 px-3 py-1.5 rounded-lg transition-colors"
+        className="btn-spring text-xs font-semibold px-3 py-1.5 rounded-lg"
+        style={{
+          background: "rgba(255,255,255,0.72)",
+          border: "1px solid rgba(203,213,225,0.55)",
+          color: "#334155",
+          boxShadow: "inset 0 1px 0 rgba(255,255,255,0.88)",
+        }}
       >
         Przełóż wizytę
       </button>
 
-      {open && (
-        <div
-          className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/40 p-0 sm:p-4"
-          onClick={close}
-          role="dialog"
-          aria-modal="true"
-        >
-          <div
-            className="w-full sm:max-w-md bg-white rounded-t-3xl sm:rounded-2xl p-6 shadow-xl max-h-[85vh] overflow-y-auto"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="flex items-start justify-between mb-1">
-              <h2 className="text-lg font-bold text-gray-900">Przełóż wizytę</h2>
+      <GlassModal
+        open={open}
+        onOpenChange={(o) => { if (!o) close(); }}
+        title="Przełóż wizytę"
+        description={`${serviceName} — ${businessName}`}
+      >
+        {/* Date rail */}
+        <p className={cn(OVERLINE_CLS, "mb-2")}>Nowa data</p>
+        <div className="flex gap-2 overflow-x-auto pb-2 -mx-1 px-1 no-scrollbar snap-x">
+          {days.map((day) => {
+            const dateStr = dateToString(day);
+            const isSelected = selectedDate === dateStr;
+            return (
               <button
+                key={dateStr}
                 type="button"
-                onClick={close}
-                aria-label="Zamknij"
-                className="w-8 h-8 -mr-2 -mt-1 flex items-center justify-center rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-50 transition-colors"
-              >
-                <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 18 18 6M6 6l12 12" />
-                </svg>
-              </button>
-            </div>
-            <p className="text-sm text-gray-500 mb-5">
-              {serviceName} — {businessName}
-            </p>
-
-            {/* Date chips */}
-            <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">
-              Nowa data
-            </p>
-            <div className="flex gap-2 overflow-x-auto pb-2 -mx-1 px-1">
-              {days.map((day) => {
-                const dateStr = dateToString(day);
-                const isSelected = selectedDate === dateStr;
-                return (
-                  <button
-                    key={dateStr}
-                    type="button"
-                    onClick={() => setSelectedDate(dateStr)}
-                    className={cn(
-                      "flex-shrink-0 flex flex-col items-center px-3.5 py-2.5 rounded-xl border text-center transition-all min-w-[56px]",
-                      isSelected
-                        ? "border-gray-900 bg-gray-900 text-white"
-                        : "border-gray-200 text-gray-700 hover:border-gray-300 hover:bg-gray-50"
-                    )}
-                  >
-                    <span className="text-[10px] font-medium">{DAY_SHORT[day.getDay()]}</span>
-                    <span className="text-sm font-bold mt-0.5">{day.getDate()}</span>
-                    <span className="text-[10px]">{MONTH_SHORT[day.getMonth()]}</span>
-                  </button>
-                );
-              })}
-            </div>
-
-            {/* Time slots */}
-            {selectedDate && (
-              <div className="mt-4">
-                <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">
-                  Godzina
-                </p>
-                {loadingSlots ? (
-                  <div className="grid grid-cols-4 gap-2">
-                    {Array.from({ length: 8 }).map((_, i) => (
-                      <div key={i} className="h-10 bg-gray-100 rounded-xl animate-pulse" />
-                    ))}
-                  </div>
-                ) : slots.length === 0 ? (
-                  <div className="text-center py-6 border border-dashed border-gray-200 rounded-xl">
-                    <p className="text-sm text-gray-500">Brak dostępnych terminów na ten dzień</p>
-                  </div>
-                ) : (
-                  <div className="grid grid-cols-4 gap-2">
-                    {slots.map((slot) => (
-                      <button
-                        key={slot}
-                        type="button"
-                        onClick={() => setSelectedTime(slot)}
-                        className={cn(
-                          "py-2.5 rounded-xl border text-sm font-medium transition-all",
-                          selectedTime === slot
-                            ? "border-gray-900 bg-gray-900 text-white"
-                            : "border-gray-200 text-gray-700 hover:border-gray-300 hover:bg-gray-50"
-                        )}
-                      >
-                        {slot}
-                      </button>
-                    ))}
-                  </div>
+                onClick={() => setSelectedDate(dateStr)}
+                aria-pressed={isSelected}
+                aria-label={`${DAY_SHORT[day.getDay()]} ${day.getDate()} ${MONTH_SHORT[day.getMonth()]}`}
+                className={cn(
+                  "flex-shrink-0 flex flex-col items-center px-3.5 py-2.5 rounded-xl text-center transition-all min-w-[56px] snap-start",
+                  isSelected ? "text-white" : "text-slate-600"
                 )}
-              </div>
-            )}
-
-            {error && (
-              <div className="mt-4 px-4 py-3 bg-red-50 border border-red-100 rounded-xl">
-                <p className="text-sm text-red-600">{error}</p>
-              </div>
-            )}
-
-            <div className="mt-5 flex gap-3">
-              <button
-                type="button"
-                onClick={close}
-                disabled={isPending}
-                className="px-4 py-3 border border-gray-200 text-gray-700 rounded-xl text-sm font-medium hover:bg-gray-50 transition-colors disabled:opacity-40"
+                style={isSelected
+                  ? { background: INK_GRADIENT, border: "1px solid #0F172A", boxShadow: "0 1px 2px rgba(0,0,0,0.15), inset 0 1px 0 rgba(255,255,255,0.15)" }
+                  : { background: "rgba(255,255,255,0.75)", border: "1px solid rgba(203,213,225,0.50)", boxShadow: "inset 0 1px 0 rgba(255,255,255,0.90)" }}
               >
-                Anuluj
+                <span className="text-[10px] font-medium">{DAY_SHORT[day.getDay()]}</span>
+                <span className="text-sm font-bold mt-0.5 tabular-nums">{day.getDate()}</span>
+                <span className="text-[10px]">{MONTH_SHORT[day.getMonth()]}</span>
               </button>
-              <button
-                type="button"
-                onClick={submit}
-                disabled={!selectedDate || !selectedTime || isPending}
-                className="flex-1 py-3 bg-gray-900 hover:bg-gray-800 disabled:opacity-40 disabled:cursor-not-allowed text-white rounded-xl text-sm font-semibold transition-colors"
-              >
-                {isPending ? "Przekładanie..." : "Potwierdź nowy termin"}
-              </button>
-            </div>
-
-            <p className="mt-3 text-center text-xs text-gray-400">
-              Salon otrzyma powiadomienie i potwierdzi nowy termin
-            </p>
-          </div>
+            );
+          })}
         </div>
-      )}
+
+        {/* Time slots */}
+        {selectedDate && (
+          <div className="mt-4" aria-live="polite" aria-busy={loadingSlots}>
+            <p className={cn(OVERLINE_CLS, "mb-2")}>Godzina</p>
+            {loadingSlots ? (
+              <div className="grid grid-cols-4 gap-2">
+                {Array.from({ length: 8 }).map((_, i) => (
+                  <div key={i} className="h-10 rounded-xl animate-pulse" style={{ background: "rgba(203,213,225,0.25)" }} />
+                ))}
+              </div>
+            ) : slots.length === 0 ? (
+              <div
+                className="text-center py-6 rounded-xl"
+                style={{ background: "rgba(203,213,225,0.14)", border: "1px dashed rgba(203,213,225,0.55)" }}
+              >
+                <p className="text-sm text-slate-500">Brak dostępnych terminów na ten dzień</p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-4 gap-2">
+                {slots.map((slot) => {
+                  const active = selectedTime === slot;
+                  return (
+                    <button
+                      key={slot}
+                      type="button"
+                      onClick={() => setSelectedTime(slot)}
+                      aria-pressed={active}
+                      className={cn(
+                        "py-2.5 rounded-xl text-sm font-semibold tabular-nums transition-all",
+                        active ? "text-white" : "text-slate-600"
+                      )}
+                      style={active
+                        ? { background: INK_GRADIENT, border: "1px solid #0F172A", boxShadow: "0 1px 2px rgba(0,0,0,0.15), inset 0 1px 0 rgba(255,255,255,0.15)" }
+                        : { background: "rgba(255,255,255,0.75)", border: "1px solid rgba(203,213,225,0.50)", boxShadow: "inset 0 1px 0 rgba(255,255,255,0.90)" }}
+                    >
+                      {slot}
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        )}
+
+        {error && (
+          <div
+            role="alert"
+            className="mt-4 px-4 py-3 rounded-xl"
+            style={{ background: "rgba(244,63,94,0.08)", border: "1px solid rgba(244,63,94,0.25)" }}
+          >
+            <p className="text-sm font-medium" style={{ color: "#BE123C" }}>{error}</p>
+          </div>
+        )}
+
+        <div className="mt-5 flex gap-3">
+          <ModalGlassButton onClick={close} disabled={isPending}>
+            Anuluj
+          </ModalGlassButton>
+          <ModalInkButton
+            onClick={submit}
+            disabled={!selectedDate || !selectedTime || isPending}
+          >
+            {isPending ? "Przekładanie…" : "Potwierdź nowy termin"}
+          </ModalInkButton>
+        </div>
+
+        <p className="mt-3 text-center text-xs text-slate-400">
+          Salon otrzyma powiadomienie i potwierdzi nowy termin
+        </p>
+      </GlassModal>
     </>
   );
 }

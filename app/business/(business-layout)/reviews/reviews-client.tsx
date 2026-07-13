@@ -2,6 +2,15 @@
 
 import { useState, useTransition } from "react";
 import { replyToReview } from "@/lib/actions/reviews";
+import {
+  PageHeader,
+  GlassCard,
+  EmptyState,
+  InkButton,
+  GlassButton,
+  ChromeAvatar,
+  INK_GRADIENT,
+} from "@/components/ui/glass";
 
 type ReviewData = {
   id: string;
@@ -22,27 +31,25 @@ type Props = {
   starDistribution: StarDist[];
 };
 
-function Stars({ rating, size = "sm" }: { rating: number; size?: "sm" | "md" }) {
-  const sizes = size === "md" ? "w-5 h-5" : "w-3.5 h-3.5";
+const STAR_PATH =
+  "M11.48 3.499a.562.562 0 0 1 1.04 0l2.125 5.111a.563.563 0 0 0 .475.345l5.518.442c.499.04.701.663.321.988l-4.204 3.602a.563.563 0 0 0-.182.557l1.285 5.385a.562.562 0 0 1-.84.61l-4.725-2.885a.562.562 0 0 0-.586 0L6.982 20.54a.562.562 0 0 1-.84-.61l1.285-5.386a.562.562 0 0 0-.182-.557l-4.204-3.602a.562.562 0 0 1 .321-.988l5.518-.442a.563.563 0 0 0 .475-.345L11.48 3.5Z";
+
+// Five-star row filled to the rating — amber reserved for stars only
+function Stars({ rating, sizeClass = "w-3.5 h-3.5" }: { rating: number; sizeClass?: string }) {
   return (
-    <div className="flex items-center gap-0.5">
+    <span className="inline-flex items-center gap-0.5" role="img" aria-label={`Ocena ${rating} na 5`}>
       {[1, 2, 3, 4, 5].map((star) => (
         <svg
           key={star}
-          className={`${sizes} ${
-            star <= rating ? "text-warning-500" : "text-gray-200"
-          }`}
-          viewBox="0 0 20 20"
+          className={`${sizeClass} ${star <= rating ? "text-amber-400" : "text-slate-300"}`}
+          viewBox="0 0 24 24"
           fill="currentColor"
+          aria-hidden="true"
         >
-          <path
-            fillRule="evenodd"
-            d="M10.868 2.884c-.321-.772-1.415-.772-1.736 0l-1.83 4.401-4.753.381c-.833.067-1.171 1.107-.536 1.651l3.62 3.102-1.106 4.637c-.194.813.691 1.456 1.405 1.02L10 15.591l4.069 2.485c.713.436 1.598-.207 1.404-1.02l-1.106-4.637 3.62-3.102c.635-.544.297-1.584-.536-1.65l-4.752-.382-1.831-4.401Z"
-            clipRule="evenodd"
-          />
+          <path d={STAR_PATH} />
         </svg>
       ))}
-    </div>
+    </span>
   );
 }
 
@@ -74,77 +81,81 @@ export function ReviewsClient({ reviews: initialReviews, avgRating, totalCount, 
   }
 
   return (
-    <div className="space-y-6 animate-fade-up">
-      {/* Header */}
-      <div>
-        <h1 className="text-xl font-semibold text-gray-900">Opinie</h1>
-        <p className="text-sm text-gray-700 mt-0.5">
-          Zarządzaj opiniami swoich klientów
-        </p>
-      </div>
+    <div className="max-w-4xl mx-auto space-y-5">
+      <PageHeader title="Opinie" subtitle="Zarządzaj opiniami swoich klientów" />
 
-      {/* Stats */}
+      {/* Summary + distribution */}
       {totalCount > 0 && (
-        <div className="bg-white border border-gray-100 rounded-2xl p-6">
-          <div className="flex items-start gap-8">
-            {/* Average */}
+        <GlassCard className="fade-rise fade-rise-d1 p-6">
+          <div className="flex flex-col sm:flex-row items-center sm:items-start gap-6 sm:gap-10">
             <div className="text-center flex-shrink-0">
-              <p className="text-5xl font-bold text-gray-900">{avgRating.toFixed(1)}</p>
-              <Stars rating={Math.round(avgRating)} size="md" />
-              <p className="text-xs text-gray-700 mt-1">{totalCount} opinii</p>
+              <p className="text-5xl font-bold text-slate-900 tabular-nums" style={{ letterSpacing: "-0.03em" }}>
+                {avgRating.toFixed(1)}
+              </p>
+              <div className="mt-2 flex justify-center">
+                <Stars rating={Math.round(avgRating)} sizeClass="w-4 h-4" />
+              </div>
+              <p className="text-xs text-slate-500 mt-1.5 tabular-nums">{totalCount} opinii</p>
             </div>
 
-            {/* Distribution */}
-            <div className="flex-1 space-y-2">
+            <div className="flex-1 w-full space-y-2">
               {starDistribution.map(({ star, count, pct }) => (
                 <div key={star} className="flex items-center gap-3">
-                  <div className="flex items-center gap-1 w-12 flex-shrink-0">
-                    <span className="text-xs text-gray-700">{star}</span>
-                    <svg className="w-3 h-3 text-warning-500" viewBox="0 0 20 20" fill="currentColor">
-                      <path fillRule="evenodd" d="M10.868 2.884c-.321-.772-1.415-.772-1.736 0l-1.83 4.401-4.753.381c-.833.067-1.171 1.107-.536 1.651l3.62 3.102-1.106 4.637c-.194.813.691 1.456 1.405 1.02L10 15.591l4.069 2.485c.713.436 1.598-.207 1.404-1.02l-1.106-4.637 3.62-3.102c.635-.544.297-1.584-.536-1.65l-4.752-.382-1.831-4.401Z" clipRule="evenodd" />
+                  <div className="flex items-center gap-1 w-10 flex-shrink-0">
+                    <span className="text-xs font-medium text-slate-500 tabular-nums">{star}</span>
+                    <svg className="w-3 h-3 text-amber-400" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                      <path d={STAR_PATH} />
                     </svg>
                   </div>
-                  <div className="flex-1 bg-gray-100 rounded-full h-2">
+                  <div className="flex-1 h-1.5 rounded-full overflow-hidden" style={{ background: "rgba(203,213,225,0.35)" }}>
                     <div
-                      className="h-2 rounded-full bg-warning-500 transition-all"
-                      style={{ width: `${pct}%` }}
+                      className="h-full rounded-full transition-all"
+                      style={{ width: `${pct}%`, background: INK_GRADIENT }}
                     />
                   </div>
-                  <span className="text-xs text-gray-700 w-6 text-right">{count}</span>
+                  <span className="text-xs text-slate-500 w-6 text-right tabular-nums">{count}</span>
                 </div>
               ))}
             </div>
           </div>
-        </div>
+        </GlassCard>
       )}
 
       {/* Reviews list */}
       {reviews.length === 0 ? (
-        <div className="bg-white border border-gray-100 rounded-2xl flex flex-col items-center justify-center py-20 text-center px-6">
-          <div className="w-12 h-12 rounded-full bg-gray-100 flex items-center justify-center mb-4">
-            <StarIcon className="w-6 h-6 text-gray-700" />
-          </div>
-          <p className="text-sm font-medium text-gray-900">Brak opinii</p>
-          <p className="text-sm text-gray-700 mt-1 max-w-sm">
-            Opinie pojawią się po zakończonych wizytach.
-          </p>
-        </div>
+        <GlassCard className="fade-rise fade-rise-d2">
+          <EmptyState
+            icon={
+              <svg className="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} aria-hidden="true">
+                <path strokeLinecap="round" strokeLinejoin="round" d={STAR_PATH} />
+              </svg>
+            }
+            title="Brak opinii"
+            body="Opinie mogą wystawiać klienci po zakończonej wizycie — oznacz wizyty jako zakończone w kalendarzu, a prośba o ocenę wyśle się sama."
+          />
+        </GlassCard>
       ) : (
-        <div className="space-y-4">
+        <div className="fade-rise fade-rise-d2 space-y-3">
           {reviews.map((review) => (
             <div
               key={review.id}
-              className="bg-white border border-gray-100 rounded-2xl p-5"
+              className="rounded-[20px] p-5"
+              style={{
+                background: "rgba(255,255,255,0.80)",
+                border: "1px solid rgba(203,213,225,0.45)",
+                boxShadow: "0 0 0 0.5px rgba(203,213,225,0.22), 0 1px 2px rgba(0,0,0,0.02), 0 4px 14px rgba(100,116,139,0.06), inset 0 1px 0 rgba(255,255,255,0.92)",
+              }}
             >
-              <div className="flex items-start justify-between">
-                <div>
-                  <div className="flex items-center gap-3 mb-1">
-                    <p className="text-sm font-semibold text-gray-900">
-                      {review.customerName}
-                    </p>
+              <div className="flex items-start gap-3">
+                <ChromeAvatar
+                  initials={review.customerName.split(" ").map((s) => s[0]).join("").slice(0, 2).toUpperCase()}
+                />
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-3 flex-wrap">
+                    <p className="text-sm font-semibold text-slate-900">{review.customerName}</p>
                     <Stars rating={review.rating} />
                   </div>
-                  <p className="text-xs text-gray-700">
+                  <p className="text-xs text-slate-400 mt-0.5 tabular-nums">
                     {new Date(review.createdAt).toLocaleDateString("pl-PL", {
                       day: "numeric",
                       month: "long",
@@ -155,16 +166,19 @@ export function ReviewsClient({ reviews: initialReviews, avgRating, totalCount, 
               </div>
 
               {review.comment && (
-                <p className="text-sm text-gray-900 mt-3 leading-relaxed">{review.comment}</p>
+                <p className="text-sm text-slate-700 mt-3 leading-relaxed">{review.comment}</p>
               )}
 
-              {/* Reply */}
+              {/* Existing reply */}
               {review.replyText && replyingTo !== review.id && (
-                <div className="mt-4 pl-4 border-l-2 border-gray-200">
-                  <p className="text-xs font-semibold text-gray-900 mb-1">Odpowiedź salonu</p>
-                  <p className="text-sm text-gray-900">{review.replyText}</p>
+                <div
+                  className="mt-4 pl-4 py-2"
+                  style={{ borderLeft: "3px solid rgba(148,163,184,0.45)" }}
+                >
+                  <p className="text-xs font-semibold text-slate-700 mb-1">Odpowiedź salonu</p>
+                  <p className="text-sm text-slate-600 leading-relaxed">{review.replyText}</p>
                   {review.repliedAt && (
-                    <p className="text-xs text-gray-700 mt-1">
+                    <p className="text-xs text-slate-400 mt-1 tabular-nums">
                       {new Date(review.repliedAt).toLocaleDateString("pl-PL", {
                         day: "numeric",
                         month: "short",
@@ -174,42 +188,43 @@ export function ReviewsClient({ reviews: initialReviews, avgRating, totalCount, 
                 </div>
               )}
 
-              {/* Reply input */}
+              {/* Reply editor */}
               {replyingTo === review.id ? (
-                <div className="mt-4 space-y-2">
+                <div className="mt-4 space-y-2.5">
                   <textarea
                     autoFocus
                     rows={3}
                     value={replyText}
                     onChange={(e) => setReplyText(e.target.value)}
-                    placeholder="Napisz odpowiedź na opinię..."
-                    className="w-full border border-gray-200 rounded-xl px-3.5 py-2.5 text-sm focus:outline-none focus:border-gray-400 resize-none"
+                    placeholder="Napisz odpowiedź na opinię…"
+                    aria-label="Odpowiedź na opinię"
+                    className="input-glass w-full rounded-xl px-3.5 py-2.5 text-sm outline-none text-slate-800 placeholder:text-slate-400 resize-none"
                   />
                   <div className="flex gap-2">
-                    <button
+                    <GlassButton
+                      size="sm"
                       onClick={() => {
                         setReplyingTo(null);
                         setReplyText("");
                       }}
-                      className="text-sm px-3 py-2 border border-gray-200 text-gray-900 hover:bg-gray-50 rounded-xl transition-colors font-medium"
                     >
                       Anuluj
-                    </button>
-                    <button
+                    </GlassButton>
+                    <InkButton
+                      size="sm"
                       onClick={() => handleReply(review.id)}
                       disabled={isPending || !replyText.trim()}
-                      className="text-sm px-3 py-2 bg-gray-900 hover:bg-gray-800 text-white rounded-xl transition-colors font-medium disabled:opacity-60"
                     >
-                      {isPending ? "Wysyłanie..." : "Wyślij odpowiedź"}
-                    </button>
+                      {isPending ? "Wysyłanie…" : "Wyślij odpowiedź"}
+                    </InkButton>
                   </div>
                 </div>
               ) : (
                 <button
                   onClick={() => startReply(review.id, review.replyText)}
-                  className="mt-3 text-xs font-medium text-gray-900 hover:text-gray-800 transition-colors"
+                  className="mt-3 text-xs font-semibold text-slate-500 hover:text-slate-900 transition-colors"
                 >
-                  {review.replyText ? "Edytuj odpowiedź" : "Odpowiedz"}
+                  {review.replyText ? "Edytuj odpowiedź" : "Odpowiedz →"}
                 </button>
               )}
             </div>
@@ -217,13 +232,5 @@ export function ReviewsClient({ reviews: initialReviews, avgRating, totalCount, 
         </div>
       )}
     </div>
-  );
-}
-
-function StarIcon({ className }: { className?: string }) {
-  return (
-    <svg className={className} viewBox="0 0 20 20" fill="currentColor">
-      <path fillRule="evenodd" d="M10.868 2.884c-.321-.772-1.415-.772-1.736 0l-1.83 4.401-4.753.381c-.833.067-1.171 1.107-.536 1.651l3.62 3.102-1.106 4.637c-.194.813.691 1.456 1.405 1.02L10 15.591l4.069 2.485c.713.436 1.598-.207 1.404-1.02l-1.106-4.637 3.62-3.102c.635-.544.297-1.584-.536-1.65l-4.752-.382-1.831-4.401Z" clipRule="evenodd" />
-    </svg>
   );
 }

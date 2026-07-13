@@ -4,6 +4,13 @@ import { useActionState } from "react";
 import { updateProfileAction, type ProfileState } from "@/lib/actions/profile";
 import { logoutAction } from "@/actions/auth";
 import { getInitials } from "@/lib/utils";
+import {
+  PageHeader,
+  GlassCard,
+  InkButton,
+  GlassButton,
+  ChromeAvatar,
+} from "@/components/ui/glass";
 
 interface ProfileFormProps {
   firstName: string;
@@ -14,107 +21,106 @@ interface ProfileFormProps {
 
 const initialState: ProfileState = {};
 
+const INPUT_CLS =
+  "input-glass w-full px-3.5 py-2.5 rounded-xl text-sm outline-none text-slate-800 placeholder:text-slate-400";
+const LABEL_CLS = "block text-sm font-medium text-slate-700 mb-1.5";
+
 export default function ProfileForm({ firstName, lastName, phone, email }: ProfileFormProps) {
   const [state, formAction, isPending] = useActionState(updateProfileAction, initialState);
 
-  const inputCls =
-    "w-full px-3.5 py-2.5 border border-gray-200 rounded-xl text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:border-gray-400 transition-colors";
-
   return (
-    <div className="space-y-6 max-w-xl">
-      <div>
-        <h2 className="text-xl font-semibold text-gray-900">Mój profil</h2>
-        <p className="text-sm text-gray-500 mt-1">Twoje dane osobowe i preferencje</p>
-      </div>
+    <div className="space-y-5 max-w-xl">
+      <PageHeader title="Mój profil" subtitle="Twoje dane osobowe i preferencje" />
 
       {/* Avatar */}
-      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
+      <GlassCard className="fade-rise fade-rise-d1 p-6">
         <div className="flex items-center gap-5">
-          <div className="w-16 h-16 rounded-full bg-gray-900 flex items-center justify-center text-xl font-bold text-white">
-            {getInitials(firstName, lastName) || "U"}
-          </div>
+          <ChromeAvatar size="lg" initials={getInitials(firstName, lastName) || "U"} className="w-16 h-16 text-xl rounded-2xl" />
           <div>
-            <p className="text-sm font-semibold text-gray-900">
+            <p className="text-sm font-semibold text-slate-900">
               {firstName} {lastName}
             </p>
-            <p className="text-xs text-gray-400 mt-0.5">{email}</p>
+            <p className="text-xs text-slate-500 mt-0.5">{email}</p>
           </div>
         </div>
-      </div>
+      </GlassCard>
 
       {/* Form */}
-      <form action={formAction} className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
-        <h3 className="text-sm font-semibold text-gray-900 mb-5">Dane osobowe</h3>
-        <div className="space-y-4">
-          <div className="grid grid-cols-2 gap-3">
+      <GlassCard className="fade-rise fade-rise-d2 p-6">
+        <form action={formAction}>
+          <h3 className="text-sm font-semibold text-slate-900 mb-5">Dane osobowe</h3>
+          <div className="space-y-4">
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label htmlFor="pf-first" className={LABEL_CLS}>Imię</label>
+                <input
+                  id="pf-first"
+                  type="text"
+                  name="firstName"
+                  defaultValue={firstName}
+                  placeholder="Jan"
+                  required
+                  className={INPUT_CLS}
+                />
+              </div>
+              <div>
+                <label htmlFor="pf-last" className={LABEL_CLS}>Nazwisko</label>
+                <input
+                  id="pf-last"
+                  type="text"
+                  name="lastName"
+                  defaultValue={lastName}
+                  placeholder="Kowalski"
+                  required
+                  className={INPUT_CLS}
+                />
+              </div>
+            </div>
+
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1.5">Imię</label>
+              <label htmlFor="pf-phone" className={LABEL_CLS}>Numer telefonu</label>
               <input
-                type="text"
-                name="firstName"
-                defaultValue={firstName}
-                placeholder="Jan"
-                required
-                className={inputCls}
+                id="pf-phone"
+                type="tel"
+                name="phone"
+                defaultValue={phone}
+                placeholder="+48 000 000 000"
+                className={`${INPUT_CLS} tabular-nums`}
               />
             </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1.5">Nazwisko</label>
-              <input
-                type="text"
-                name="lastName"
-                defaultValue={lastName}
-                placeholder="Kowalski"
-                required
-                className={inputCls}
-              />
-            </div>
+
+            {state.error && (
+              <div
+                role="alert"
+                className="px-4 py-3 rounded-xl"
+                style={{ background: "rgba(244,63,94,0.08)", border: "1px solid rgba(244,63,94,0.25)" }}
+              >
+                <p className="text-sm font-medium" style={{ color: "#BE123C" }}>{state.error}</p>
+              </div>
+            )}
+            {state.success && (
+              <div
+                className="px-4 py-3 rounded-xl"
+                style={{ background: "rgba(16,185,129,0.10)", border: "1px solid rgba(16,185,129,0.25)" }}
+              >
+                <p className="text-sm font-medium" style={{ color: "#047857" }}>{state.success}</p>
+              </div>
+            )}
+
+            <InkButton type="submit" disabled={isPending}>
+              {isPending ? "Zapisywanie…" : "Zapisz zmiany"}
+            </InkButton>
           </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1.5">Numer telefonu</label>
-            <input
-              type="tel"
-              name="phone"
-              defaultValue={phone}
-              placeholder="+48 000 000 000"
-              className={inputCls}
-            />
-          </div>
-
-          {state.error && (
-            <div className="px-4 py-3 bg-red-50 border border-red-100 rounded-xl">
-              <p className="text-sm text-red-600">{state.error}</p>
-            </div>
-          )}
-          {state.success && (
-            <div className="px-4 py-3 bg-emerald-50 border border-emerald-100 rounded-xl">
-              <p className="text-sm text-emerald-700">{state.success}</p>
-            </div>
-          )}
-
-          <button
-            type="submit"
-            disabled={isPending}
-            className="px-5 py-2.5 bg-gray-900 hover:bg-gray-800 disabled:opacity-60 text-white text-sm font-semibold rounded-xl transition-colors"
-          >
-            {isPending ? "Zapisywanie..." : "Zapisz zmiany"}
-          </button>
-        </div>
-      </form>
+        </form>
+      </GlassCard>
 
       {/* Account */}
-      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
-        <h3 className="text-sm font-semibold text-gray-900 mb-4">Konto</h3>
+      <GlassCard className="fade-rise fade-rise-d3 p-6">
+        <h3 className="text-sm font-semibold text-slate-900 mb-4">Konto</h3>
         <form action={logoutAction}>
-          <button
-            type="submit"
-            className="px-4 py-2 text-sm font-medium text-gray-600 border border-gray-200 rounded-xl hover:bg-gray-50 transition-colors"
-          >
-            Wyloguj się
-          </button>
+          <GlassButton type="submit">Wyloguj się</GlassButton>
         </form>
-      </div>
+      </GlassCard>
     </div>
   );
 }

@@ -4,6 +4,16 @@ import { useState, useTransition } from "react";
 import { getInitials } from "@/lib/utils";
 import { createEmployee, updateEmployee, deleteEmployee } from "@/lib/actions/staff";
 import type { Employee, EmployeeService, Service } from "@prisma/client";
+import {
+  PageHeader,
+  GlassCard,
+  EmptyState,
+  InkButton,
+  GlassButton,
+  HAIRLINE,
+  CHIP,
+} from "@/components/ui/glass";
+import { GlassModal } from "@/components/ui/glass-modal";
 
 type EmployeeWithServices = Employee & {
   services: (EmployeeService & { service: Service })[];
@@ -26,9 +36,9 @@ type EmployeeForm = {
 };
 
 const COLOR_PALETTE = [
-  "#111827", "#2563eb", "#16a34a", "#dc2626",
+  "#334155", "#2563eb", "#16a34a", "#dc2626",
   "#d97706", "#0891b2", "#db2777", "#65a30d",
-  "#374151", "#0f766e", "#b45309", "#1d4ed8",
+  "#64748B", "#0f766e", "#b45309", "#1d4ed8",
 ];
 
 const EMPTY_FORM: EmployeeForm = {
@@ -54,6 +64,10 @@ function employeeToForm(e: EmployeeWithServices): EmployeeForm {
     serviceIds: e.services.map((s) => s.serviceId),
   };
 }
+
+const INPUT_CLS =
+  "input-glass w-full px-3.5 py-2.5 text-sm rounded-xl outline-none text-slate-800 placeholder:text-slate-400";
+const LABEL_CLS = "block text-sm font-medium text-slate-700 mb-1.5";
 
 export function StaffClient({ employees: initialEmployees, availableServices }: Props) {
   const [employees, setEmployees] = useState<EmployeeWithServices[]>(initialEmployees);
@@ -135,107 +149,99 @@ export function StaffClient({ employees: initialEmployees, availableServices }: 
   }
 
   return (
-    <div className="space-y-6 animate-fade-up">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-xl font-semibold text-gray-900">Pracownicy</h1>
-          <p className="text-sm text-gray-700 mt-0.5">
-            Zarządzaj zespołem swojego salonu
-          </p>
-        </div>
-        <button
-          onClick={openAdd}
-          className="bg-gray-900 hover:bg-gray-800 text-white rounded-xl px-4 py-2 text-sm font-semibold transition-colors flex items-center gap-2"
-        >
-          <PlusIcon className="w-4 h-4" />
-          Dodaj pracownika
-        </button>
-      </div>
+    <div className="max-w-5xl mx-auto space-y-5">
+      <PageHeader
+        title="Pracownicy"
+        subtitle="Zarządzaj zespołem swojego salonu"
+        actions={
+          <InkButton onClick={openAdd}>
+            <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} aria-hidden="true">
+              <path d="M12 5v14M5 12h14" />
+            </svg>
+            Dodaj pracownika
+          </InkButton>
+        }
+      />
 
-      {/* Info o planach */}
+      {/* Plan info */}
       {employees.length >= 1 && (
-        <div className="bg-gray-50 border border-gray-200 rounded-2xl px-5 py-4 flex items-start gap-3">
-          <svg className="w-4 h-4 text-gray-500 flex-shrink-0 mt-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8}>
+        <div className="fade-rise fade-rise-d1 rounded-2xl px-5 py-4 flex items-start gap-3" style={CHIP}>
+          <svg className="w-4 h-4 text-slate-400 flex-shrink-0 mt-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} aria-hidden="true">
             <circle cx="12" cy="12" r="10" />
             <path d="M12 16v-4M12 8h.01" />
           </svg>
-          <p className="text-xs text-gray-600 leading-relaxed">
+          <p className="text-xs text-slate-600 leading-relaxed">
             {employees.length <= 1 ? (
-              <>Masz <strong>{employees.length}</strong> specjalistę — mieścisz się w planie <strong>Solo (39 zł/mies.)</strong>. Dodanie kolejnych osób będzie wymagało planu Zespół (89 zł/mies., do 5 osób).</>
+              <>Masz <strong className="tabular-nums">{employees.length}</strong> specjalistę — mieścisz się w planie <strong>Solo (39 zł/mies.)</strong>. Dodanie kolejnych osób będzie wymagało planu Zespół (89 zł/mies., do 5 osób).</>
             ) : employees.length <= 5 ? (
-              <>Masz <strong>{employees.length}</strong> specjalistów — to plan <strong>Zespół (89 zł/mies., do 5 osób)</strong>. Powyżej 5 osób obowiązuje plan Salon Pro (149 zł/mies., bez limitu).</>
+              <>Masz <strong className="tabular-nums">{employees.length}</strong> specjalistów — to plan <strong>Zespół (89 zł/mies., do 5 osób)</strong>. Powyżej 5 osób obowiązuje plan Salon Pro (149 zł/mies., bez limitu).</>
             ) : (
-              <>Masz <strong>{employees.length}</strong> specjalistów — to plan <strong>Salon Pro (149 zł/mies., bez limitu osób)</strong>.</>
+              <>Masz <strong className="tabular-nums">{employees.length}</strong> specjalistów — to plan <strong>Salon Pro (149 zł/mies., bez limitu osób)</strong>.</>
             )}{" "}
             W okresie oferty startowej nie pobieramy żadnych opłat.
           </p>
         </div>
       )}
 
-      {/* Empty state */}
+      {/* Empty state / cards */}
       {employees.length === 0 ? (
-        <div className="bg-white border border-gray-100 rounded-2xl flex flex-col items-center justify-center py-20 text-center px-6">
-          <div className="w-12 h-12 rounded-full bg-gray-100 flex items-center justify-center mb-4">
-            <UsersIcon className="w-6 h-6 text-gray-700" />
-          </div>
-          <p className="text-sm font-medium text-gray-900">Brak pracowników</p>
-          <p className="text-sm text-gray-700 mt-1 max-w-sm">
-            Dodaj pracowników aby przypisywać ich do wizyt.
-          </p>
-          <button
-            onClick={openAdd}
-            className="mt-5 bg-gray-900 hover:bg-gray-800 text-white rounded-xl px-4 py-2 text-sm font-semibold transition-colors"
-          >
-            Dodaj pierwszego pracownika
-          </button>
-        </div>
+        <GlassCard className="fade-rise fade-rise-d2">
+          <EmptyState
+            icon={
+              <svg className="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} aria-hidden="true">
+                <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" /><path d="M22 21v-2a4 4 0 0 0-3-3.87" /><path d="M16 3.13a4 4 0 0 1 0 7.75" />
+              </svg>
+            }
+            title="Brak pracowników"
+            body="Dodaj specjalistów, żeby klienci mogli wybrać konkretną osobę przy rezerwacji."
+            action={<InkButton size="sm" onClick={openAdd}>Dodaj pierwszego pracownika</InkButton>}
+          />
+        </GlassCard>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="fade-rise fade-rise-d2 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
           {employees.map((emp) => (
-            <div
-              key={emp.id}
-              className="bg-white border border-gray-100 rounded-2xl p-5 hover:shadow-soft transition-shadow"
-            >
+            <div key={emp.id} className="card-hover-lift rounded-[20px] p-5" style={{
+              background: "rgba(255,255,255,0.80)",
+              border: "1px solid rgba(203,213,225,0.45)",
+              boxShadow: "0 0 0 0.5px rgba(203,213,225,0.22), 0 1px 2px rgba(0,0,0,0.02), 0 4px 14px rgba(100,116,139,0.06), inset 0 1px 0 rgba(255,255,255,0.92)",
+            }}>
               <div className="flex items-start gap-4">
-                {/* Avatar */}
+                {/* Avatar — employee identity color */}
                 <div
-                  className="w-12 h-12 rounded-full flex items-center justify-center text-white font-semibold text-sm flex-shrink-0"
-                  style={{ backgroundColor: emp.color }}
+                  className="w-12 h-12 rounded-xl flex items-center justify-center text-white font-semibold text-sm flex-shrink-0 overflow-hidden"
+                  style={{ backgroundColor: emp.color, boxShadow: "inset 0 1px 0 rgba(255,255,255,0.25)" }}
                 >
                   {emp.avatarUrl ? (
                     // eslint-disable-next-line @next/next/no-img-element
                     <img
                       src={emp.avatarUrl}
                       alt={`${emp.firstName} ${emp.lastName}`}
-                      className="w-12 h-12 rounded-full object-cover"
+                      className="w-12 h-12 object-cover"
                     />
                   ) : (
                     getInitials(emp.firstName, emp.lastName)
                   )}
                 </div>
 
-                {/* Info */}
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2">
-                    <p className="text-sm font-semibold text-gray-900 truncate">
+                    <p className="text-sm font-semibold text-slate-900 truncate">
                       {emp.firstName} {emp.lastName}
                     </p>
                     <span
-                      className={`text-2xs px-2 py-0.5 rounded-full font-medium flex-shrink-0 ${
-                        emp.isActive
-                          ? "bg-success-50 text-success-600"
-                          : "bg-gray-100 text-gray-700"
-                      }`}
+                      className="text-[10px] px-2 py-0.5 rounded-full font-semibold flex-shrink-0"
+                      style={emp.isActive
+                        ? { background: "rgba(16,185,129,0.10)", border: "1px solid rgba(16,185,129,0.25)", color: "#047857" }
+                        : { background: "rgba(203,213,225,0.18)", border: "1px solid rgba(203,213,225,0.45)", color: "#64748B" }}
                     >
                       {emp.isActive ? "Aktywny" : "Nieaktywny"}
                     </span>
                   </div>
                   {emp.email && (
-                    <p className="text-xs text-gray-700 mt-0.5 truncate">{emp.email}</p>
+                    <p className="text-xs text-slate-500 mt-0.5 truncate">{emp.email}</p>
                   )}
                   {emp.phone && (
-                    <p className="text-xs text-gray-700">{emp.phone}</p>
+                    <p className="text-xs text-slate-500 tabular-nums">{emp.phone}</p>
                   )}
                 </div>
               </div>
@@ -243,18 +249,18 @@ export function StaffClient({ employees: initialEmployees, availableServices }: 
               {/* Services */}
               {emp.services.length > 0 && (
                 <div className="mt-4">
-                  <p className="text-xs font-medium text-gray-700 mb-2">Usługi:</p>
                   <div className="flex flex-wrap gap-1.5">
                     {emp.services.slice(0, 3).map((es) => (
                       <span
                         key={es.serviceId}
-                        className="text-2xs px-2 py-0.5 bg-gray-50 text-gray-800 rounded-full"
+                        className="text-[10px] font-medium px-2 py-0.5 rounded-full text-slate-600"
+                        style={CHIP}
                       >
                         {es.service.name}
                       </span>
                     ))}
                     {emp.services.length > 3 && (
-                      <span className="text-2xs px-2 py-0.5 bg-gray-100 text-gray-700 rounded-full">
+                      <span className="text-[10px] font-medium px-2 py-0.5 rounded-full text-slate-500 tabular-nums" style={CHIP}>
                         +{emp.services.length - 3}
                       </span>
                     )}
@@ -263,26 +269,39 @@ export function StaffClient({ employees: initialEmployees, availableServices }: 
               )}
 
               {/* Actions */}
-              <div className="flex items-center gap-2 mt-4 pt-4 border-t border-gray-100">
-                <button
+              <div className="flex items-center gap-2 mt-4 pt-4" style={{ borderTop: HAIRLINE }}>
+                <GlassButton
+                  size="sm"
+                  className="flex-1"
                   onClick={() => handleToggleActive(emp)}
                   disabled={isPending}
-                  className="flex-1 text-xs py-1.5 border border-gray-200 hover:bg-gray-50 text-gray-900 rounded-lg transition-colors font-medium"
                 >
                   {emp.isActive ? "Dezaktywuj" : "Aktywuj"}
-                </button>
+                </GlassButton>
                 <button
                   onClick={() => openEdit(emp)}
-                  className="p-2 rounded-lg hover:bg-gray-100 text-gray-700 transition-colors"
+                  aria-label="Edytuj pracownika"
+                  className="icon-btn p-2 rounded-lg"
+                  style={{ color: "#94A3B8" }}
                 >
-                  <EditIcon className="w-4 h-4" />
+                  <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} aria-hidden="true">
+                    <path d="M12 20h9" /><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z" />
+                  </svg>
                 </button>
                 <button
                   onClick={() => handleDelete(emp.id)}
                   disabled={deletingId === emp.id}
-                  className="p-2 rounded-lg hover:bg-danger-50 text-gray-700 hover:text-danger-600 transition-colors"
+                  aria-label="Usuń pracownika"
+                  className="p-2 rounded-lg transition-colors"
+                  style={{ color: "#94A3B8" }}
+                  onMouseOver={(e) => (e.currentTarget.style.color = "#BE123C")}
+                  onMouseOut={(e) => (e.currentTarget.style.color = "#94A3B8")}
+                  onFocus={(e) => (e.currentTarget.style.color = "#BE123C")}
+                  onBlur={(e) => (e.currentTarget.style.color = "#94A3B8")}
                 >
-                  <TrashIcon className="w-4 h-4" />
+                  <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} aria-hidden="true">
+                    <path d="M3 6h18" /><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6" /><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+                  </svg>
                 </button>
               </div>
             </div>
@@ -290,229 +309,151 @@ export function StaffClient({ employees: initialEmployees, availableServices }: 
         </div>
       )}
 
-      {/* Modal */}
-      {showModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          <div
-            className="absolute inset-0 bg-black/30 backdrop-blur-sm"
-            onClick={closeModal}
-          />
-          <div className="relative bg-white rounded-2xl shadow-soft-xl w-full max-w-lg max-h-[90vh] overflow-y-auto animate-scale-in">
-            <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
-              <h2 className="text-base font-semibold text-gray-900">
-                {editingId ? "Edytuj pracownika" : "Nowy pracownik"}
-              </h2>
-              <button
-                onClick={closeModal}
-                className="p-2 rounded-lg hover:bg-gray-100 text-gray-700 transition-colors"
-              >
-                <XIcon className="w-4 h-4" />
-              </button>
+      {/* Add / edit modal */}
+      <GlassModal
+        open={showModal}
+        onOpenChange={(o) => { if (!o) closeModal(); }}
+        title={editingId ? "Edytuj pracownika" : "Nowy pracownik"}
+        className="max-w-lg"
+      >
+        <form onSubmit={handleSubmit} className="space-y-4 mt-2 max-h-[65vh] overflow-y-auto pr-1 -mr-1">
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label htmlFor="emp-first" className={LABEL_CLS}>Imię *</label>
+              <input
+                id="emp-first"
+                type="text"
+                required
+                value={form.firstName}
+                onChange={(e) => setForm((p) => ({ ...p, firstName: e.target.value }))}
+                className={INPUT_CLS}
+              />
             </div>
-
-            <form onSubmit={handleSubmit} className="p-6 space-y-4">
-              {/* Name row */}
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-sm font-medium text-gray-900 mb-1.5">
-                    Imię *
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    value={form.firstName}
-                    onChange={(e) => setForm((p) => ({ ...p, firstName: e.target.value }))}
-                    className="w-full border border-gray-200 rounded-xl px-3.5 py-2.5 text-sm focus:outline-none focus:border-gray-400"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-900 mb-1.5">
-                    Nazwisko *
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    value={form.lastName}
-                    onChange={(e) => setForm((p) => ({ ...p, lastName: e.target.value }))}
-                    className="w-full border border-gray-200 rounded-xl px-3.5 py-2.5 text-sm focus:outline-none focus:border-gray-400"
-                  />
-                </div>
-              </div>
-
-              {/* Email + Phone */}
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-sm font-medium text-gray-900 mb-1.5">
-                    E-mail
-                  </label>
-                  <input
-                    type="email"
-                    value={form.email}
-                    onChange={(e) => setForm((p) => ({ ...p, email: e.target.value }))}
-                    className="w-full border border-gray-200 rounded-xl px-3.5 py-2.5 text-sm focus:outline-none focus:border-gray-400"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-900 mb-1.5">
-                    Telefon
-                  </label>
-                  <input
-                    type="tel"
-                    value={form.phone}
-                    onChange={(e) => setForm((p) => ({ ...p, phone: e.target.value }))}
-                    className="w-full border border-gray-200 rounded-xl px-3.5 py-2.5 text-sm focus:outline-none focus:border-gray-400"
-                  />
-                </div>
-              </div>
-
-              {/* Bio */}
-              <div>
-                <label className="block text-sm font-medium text-gray-900 mb-1.5">
-                  Bio (opcjonalnie)
-                </label>
-                <textarea
-                  rows={2}
-                  value={form.bio}
-                  onChange={(e) => setForm((p) => ({ ...p, bio: e.target.value }))}
-                  placeholder="Kilka słów o pracowniku..."
-                  className="w-full border border-gray-200 rounded-xl px-3.5 py-2.5 text-sm focus:outline-none focus:border-gray-400 resize-none"
-                />
-              </div>
-
-              {/* Color picker */}
-              <div>
-                <label className="block text-sm font-medium text-gray-900 mb-2">
-                  Kolor w kalendarzu
-                </label>
-                <div className="flex flex-wrap gap-2">
-                  {COLOR_PALETTE.map((color) => (
-                    <button
-                      key={color}
-                      type="button"
-                      onClick={() => setForm((p) => ({ ...p, color }))}
-                      className="w-8 h-8 rounded-full border-2 transition-all"
-                      style={{
-                        backgroundColor: color,
-                        borderColor: form.color === color ? "#111827" : "transparent",
-                      }}
-                    />
-                  ))}
-                </div>
-              </div>
-
-              {/* Services */}
-              {availableServices.length > 0 && (
-                <div>
-                  <label className="block text-sm font-medium text-gray-900 mb-2">
-                    Przypisane usługi
-                  </label>
-                  <div className="space-y-1.5 max-h-40 overflow-y-auto">
-                    {availableServices.map((service) => (
-                      <label
-                        key={service.id}
-                        className="flex items-center gap-2.5 p-2.5 rounded-xl hover:bg-gray-50 cursor-pointer"
-                      >
-                        <input
-                          type="checkbox"
-                          checked={form.serviceIds.includes(service.id)}
-                          onChange={() => toggleService(service.id)}
-                          className="w-4 h-4 accent-gray-900"
-                        />
-                        <span className="text-sm text-gray-900">{service.name}</span>
-                        <span className="text-xs text-gray-700 ml-auto">
-                          {service.duration} min
-                        </span>
-                      </label>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {/* Active toggle */}
-              <div className="flex items-center justify-between p-3.5 bg-gray-50 rounded-xl">
-                <span className="text-sm font-medium text-gray-900">Pracownik aktywny</span>
-                <button
-                  type="button"
-                  onClick={() => setForm((p) => ({ ...p, isActive: !p.isActive }))}
-                  className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                    form.isActive ? "bg-gray-900" : "bg-gray-300"
-                  }`}
-                >
-                  <span
-                    className={`inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform ${
-                      form.isActive ? "translate-x-6" : "translate-x-1"
-                    }`}
-                  />
-                </button>
-              </div>
-
-              {/* Actions */}
-              <div className="flex gap-3 pt-2">
-                <button
-                  type="button"
-                  onClick={closeModal}
-                  className="flex-1 border border-gray-200 text-gray-900 hover:bg-gray-50 rounded-xl px-4 py-2.5 text-sm font-semibold transition-colors"
-                >
-                  Anuluj
-                </button>
-                <button
-                  type="submit"
-                  disabled={isPending}
-                  className="flex-1 bg-gray-900 hover:bg-gray-800 text-white rounded-xl px-4 py-2.5 text-sm font-semibold transition-colors disabled:opacity-60"
-                >
-                  {isPending
-                    ? "Zapisywanie..."
-                    : editingId
-                    ? "Zapisz zmiany"
-                    : "Dodaj pracownika"}
-                </button>
-              </div>
-            </form>
+            <div>
+              <label htmlFor="emp-last" className={LABEL_CLS}>Nazwisko *</label>
+              <input
+                id="emp-last"
+                type="text"
+                required
+                value={form.lastName}
+                onChange={(e) => setForm((p) => ({ ...p, lastName: e.target.value }))}
+                className={INPUT_CLS}
+              />
+            </div>
           </div>
-        </div>
-      )}
+
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label htmlFor="emp-email" className={LABEL_CLS}>E-mail</label>
+              <input
+                id="emp-email"
+                type="email"
+                value={form.email}
+                onChange={(e) => setForm((p) => ({ ...p, email: e.target.value }))}
+                className={INPUT_CLS}
+              />
+            </div>
+            <div>
+              <label htmlFor="emp-phone" className={LABEL_CLS}>Telefon</label>
+              <input
+                id="emp-phone"
+                type="tel"
+                value={form.phone}
+                onChange={(e) => setForm((p) => ({ ...p, phone: e.target.value }))}
+                className={`${INPUT_CLS} tabular-nums`}
+              />
+            </div>
+          </div>
+
+          <div>
+            <label htmlFor="emp-bio" className={LABEL_CLS}>Bio (opcjonalnie)</label>
+            <textarea
+              id="emp-bio"
+              rows={2}
+              value={form.bio}
+              onChange={(e) => setForm((p) => ({ ...p, bio: e.target.value }))}
+              placeholder="Kilka słów o pracowniku…"
+              className={`${INPUT_CLS} resize-none`}
+            />
+          </div>
+
+          {/* Color picker */}
+          <div>
+            <span className={LABEL_CLS}>Kolor w kalendarzu</span>
+            <div className="flex flex-wrap gap-2" role="group" aria-label="Kolor pracownika">
+              {COLOR_PALETTE.map((color) => (
+                <button
+                  key={color}
+                  type="button"
+                  onClick={() => setForm((p) => ({ ...p, color }))}
+                  aria-label={`Kolor ${color}`}
+                  aria-pressed={form.color === color}
+                  className="w-8 h-8 rounded-full transition-transform hover:scale-110"
+                  style={{
+                    backgroundColor: color,
+                    boxShadow: form.color === color
+                      ? "0 0 0 2px rgba(255,255,255,0.95), 0 0 0 4px #0F172A"
+                      : "inset 0 1px 0 rgba(255,255,255,0.25)",
+                  }}
+                />
+              ))}
+            </div>
+          </div>
+
+          {/* Services */}
+          {availableServices.length > 0 && (
+            <div>
+              <span className={LABEL_CLS}>Przypisane usługi</span>
+              <div className="space-y-1.5 max-h-40 overflow-y-auto pr-1">
+                {availableServices.map((service) => (
+                  <label
+                    key={service.id}
+                    className="row-hover flex items-center gap-2.5 p-2.5 rounded-xl cursor-pointer"
+                    style={{ border: "1px solid rgba(203,213,225,0.35)" }}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={form.serviceIds.includes(service.id)}
+                      onChange={() => toggleService(service.id)}
+                      className="w-4 h-4 accent-slate-900"
+                    />
+                    <span className="text-sm text-slate-800">{service.name}</span>
+                    <span className="text-xs text-slate-500 ml-auto tabular-nums">
+                      {service.duration} min
+                    </span>
+                  </label>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Active toggle */}
+          <div className="flex items-center justify-between p-3.5 rounded-xl" style={CHIP}>
+            <span className="text-sm font-medium text-slate-800">Pracownik aktywny</span>
+            <button
+              type="button"
+              onClick={() => setForm((p) => ({ ...p, isActive: !p.isActive }))}
+              role="switch"
+              aria-checked={form.isActive}
+              className="relative inline-flex h-6 w-11 items-center rounded-full transition-colors"
+              style={{ background: form.isActive ? "#0F172A" : "rgba(148,163,184,0.45)" }}
+            >
+              <span
+                className={`inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform ${form.isActive ? "translate-x-6" : "translate-x-1"}`}
+              />
+            </button>
+          </div>
+
+          <div className="flex gap-3 pt-1">
+            <GlassButton onClick={closeModal} className="flex-1">
+              Anuluj
+            </GlassButton>
+            <InkButton type="submit" disabled={isPending} className="flex-1">
+              {isPending ? "Zapisywanie…" : editingId ? "Zapisz zmiany" : "Dodaj pracownika"}
+            </InkButton>
+          </div>
+        </form>
+      </GlassModal>
     </div>
-  );
-}
-
-// ─── Icons ──────────────────────────────────────────────────────
-function PlusIcon({ className }: { className?: string }) {
-  return (
-    <svg className={className} viewBox="0 0 20 20" fill="currentColor">
-      <path d="M10.75 4.75a.75.75 0 0 0-1.5 0v4.5h-4.5a.75.75 0 0 0 0 1.5h4.5v4.5a.75.75 0 0 0 1.5 0v-4.5h4.5a.75.75 0 0 0 0-1.5h-4.5v-4.5Z" />
-    </svg>
-  );
-}
-
-function UsersIcon({ className }: { className?: string }) {
-  return (
-    <svg className={className} viewBox="0 0 20 20" fill="currentColor">
-      <path d="M7 8a3 3 0 1 0 0-6 3 3 0 0 0 0 6ZM14.5 9a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5ZM1.615 16.428a1.224 1.224 0 0 1-.569-1.175 6.002 6.002 0 0 1 11.908 0c.058.467-.172.92-.57 1.174A9.953 9.953 0 0 1 7 18a9.953 9.953 0 0 1-5.385-1.572ZM14.5 16h-.106c.07-.297.088-.611.048-.933a7.47 7.47 0 0 0-1.588-3.755 4.502 4.502 0 0 1 5.874 2.636.818.818 0 0 1-.36.98A7.465 7.465 0 0 1 14.5 16Z" />
-    </svg>
-  );
-}
-
-function EditIcon({ className }: { className?: string }) {
-  return (
-    <svg className={className} viewBox="0 0 20 20" fill="currentColor">
-      <path d="m5.433 13.917 1.262-3.155A4 4 0 0 1 7.58 9.42l6.92-6.918a2.121 2.121 0 0 1 3 3l-6.92 6.918c-.383.383-.84.685-1.343.886l-3.154 1.262a.5.5 0 0 1-.65-.65Z" />
-      <path d="M3.5 5.75c0-.69.56-1.25 1.25-1.25H10A.75.75 0 0 0 10 3H4.75A2.75 2.75 0 0 0 2 5.75v9.5A2.75 2.75 0 0 0 4.75 18h9.5A2.75 2.75 0 0 0 17 15.25V10a.75.75 0 0 0-1.5 0v5.25c0 .69-.56 1.25-1.25 1.25h-9.5c-.69 0-1.25-.56-1.25-1.25v-9.5Z" />
-    </svg>
-  );
-}
-
-function TrashIcon({ className }: { className?: string }) {
-  return (
-    <svg className={className} viewBox="0 0 20 20" fill="currentColor">
-      <path fillRule="evenodd" d="M8.75 1A2.75 2.75 0 0 0 6 3.75v.443c-.795.077-1.584.176-2.365.298a.75.75 0 1 0 .23 1.482l.149-.022.841 10.518A2.75 2.75 0 0 0 7.596 19h4.807a2.75 2.75 0 0 0 2.742-2.53l.841-10.52.149.023a.75.75 0 0 0 .23-1.482A41.03 41.03 0 0 0 14 4.193V3.75A2.75 2.75 0 0 0 11.25 1h-2.5ZM10 4c.84 0 1.673.025 2.5.075V3.75c0-.69-.56-1.25-1.25-1.25h-2.5c-.69 0-1.25.56-1.25 1.25v.325C8.327 4.025 9.16 4 10 4ZM8.58 7.72a.75.75 0 0 0-1.5.06l.3 7.5a.75.75 0 1 0 1.5-.06l-.3-7.5Zm4.34.06a.75.75 0 1 0-1.5-.06l-.3 7.5a.75.75 0 1 0 1.5.06l.3-7.5Z" clipRule="evenodd" />
-    </svg>
-  );
-}
-
-function XIcon({ className }: { className?: string }) {
-  return (
-    <svg className={className} viewBox="0 0 20 20" fill="currentColor">
-      <path d="M6.28 5.22a.75.75 0 0 0-1.06 1.06L8.94 10l-3.72 3.72a.75.75 0 1 0 1.06 1.06L10 11.06l3.72 3.72a.75.75 0 1 0 1.06-1.06L11.06 10l3.72-3.72a.75.75 0 0 0-1.06-1.06L10 8.94 6.28 5.22Z" />
-    </svg>
   );
 }

@@ -6,6 +6,7 @@ import { getOrCreateDbUser } from "@/lib/auth-user";
 import { markAllNotificationsRead } from "@/lib/actions/notifications";
 import { formatRelativeTime, cn } from "@/lib/utils";
 import { NotificationType } from "@prisma/client";
+import { PageHeader, GlassCard, EmptyState, GlassButton, ChromeAvatar, HAIRLINE, CHIP } from "@/components/ui/glass";
 
 function TypeIcon({ type }: { type: NotificationType }) {
   const base = "w-5 h-5";
@@ -18,7 +19,7 @@ function TypeIcon({ type }: { type: NotificationType }) {
       );
     case "APPOINTMENT_CANCELLED":
       return (
-        <svg className={cn(base, "text-red-500")} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8}>
+        <svg className={cn(base, "text-rose-600")} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8}>
           <path strokeLinecap="round" strokeLinejoin="round" d="m9.75 9.75 4.5 4.5m0-4.5-4.5 4.5M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
         </svg>
       );
@@ -31,7 +32,7 @@ function TypeIcon({ type }: { type: NotificationType }) {
       );
     default:
       return (
-        <svg className={cn(base, "text-gray-500")} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8}>
+        <svg className={cn(base, "text-slate-500")} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8}>
           <rect width="18" height="18" x="3" y="4" rx="2" />
           <line x1="16" x2="16" y1="2" y2="6" />
           <line x1="8" x2="8" y1="2" y2="6" />
@@ -53,46 +54,39 @@ export default async function NotificationsPage() {
   const unreadCount = notifications.filter((n) => !n.isRead).length;
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-start justify-between gap-4">
-        <div>
-          <h2 className="text-xl font-semibold text-gray-900">Powiadomienia</h2>
-          <p className="text-sm text-gray-500 mt-1">
-            {unreadCount > 0
-              ? `Masz ${unreadCount} ${unreadCount === 1 ? "nieprzeczytane powiadomienie" : "nieprzeczytanych powiadomień"}`
-              : "Potwierdzenia rezerwacji i przypomnienia"}
-          </p>
-        </div>
-        {unreadCount > 0 && (
-          <form action={markAllNotificationsRead}>
-            <button
-              type="submit"
-              className="text-xs font-medium text-gray-600 hover:text-gray-900 border border-gray-200 hover:border-gray-300 px-3 py-2 rounded-xl transition-colors whitespace-nowrap"
-            >
-              Oznacz jako przeczytane
-            </button>
-          </form>
-        )}
-      </div>
+    <div className="space-y-5 max-w-3xl">
+      <PageHeader
+        title="Powiadomienia"
+        subtitle={
+          unreadCount > 0
+            ? `Masz ${unreadCount} ${unreadCount === 1 ? "nieprzeczytane powiadomienie" : "nieprzeczytanych powiadomień"}`
+            : "Potwierdzenia rezerwacji i przypomnienia"
+        }
+        actions={
+          unreadCount > 0 ? (
+            <form action={markAllNotificationsRead}>
+              <GlassButton type="submit" size="sm">Oznacz jako przeczytane</GlassButton>
+            </form>
+          ) : undefined
+        }
+      />
 
       {notifications.length === 0 ? (
-        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm">
-          <div className="flex flex-col items-center justify-center py-20 text-center px-6">
-            <div className="w-12 h-12 rounded-2xl bg-gray-100 flex items-center justify-center mb-4">
-              <svg className="w-6 h-6 text-gray-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
+        <GlassCard className="fade-rise fade-rise-d1">
+          <EmptyState
+            icon={
+              <svg className="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" aria-hidden="true">
                 <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
                 <path d="M13.73 21a2 2 0 0 1-3.46 0" />
               </svg>
-            </div>
-            <p className="text-sm font-medium text-gray-700 mb-1">Brak powiadomień</p>
-            <p className="text-xs text-gray-400 max-w-xs">
-              Potwierdzenia rezerwacji, przypomnienia przed wizytami i zmiany terminów pojawią się tutaj.
-            </p>
-          </div>
-        </div>
+            }
+            title="Brak powiadomień"
+            body="Potwierdzenia rezerwacji, przypomnienia przed wizytami i zmiany terminów pojawią się tutaj."
+          />
+        </GlassCard>
       ) : (
-        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm divide-y divide-gray-100">
-          {notifications.map((n) => {
+        <GlassCard className="fade-rise fade-rise-d1 overflow-hidden">
+          {notifications.map((n, i) => {
             const data = (n.data ?? {}) as { businessSlug?: string; appointmentId?: string };
             const href =
               n.type === "REVIEW_REQUEST" && data.businessSlug && data.appointmentId
@@ -102,30 +96,37 @@ export default async function NotificationsPage() {
               <Link
                 key={n.id}
                 href={href}
-                className={cn(
-                  "flex gap-3.5 px-5 py-4 hover:bg-gray-50 transition-colors",
-                  !n.isRead && "bg-gray-50/70"
-                )}
+                className="row-hover flex gap-3.5 px-5 py-4"
+                style={{
+                  ...(i > 0 ? { borderTop: HAIRLINE } : {}),
+                  ...(!n.isRead ? { background: "rgba(203,213,225,0.10)" } : {}),
+                }}
               >
-                <div className="w-10 h-10 rounded-xl bg-gray-100 flex items-center justify-center flex-shrink-0">
+                <span className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0" style={CHIP}>
                   <TypeIcon type={n.type} />
-                </div>
+                </span>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-start justify-between gap-2">
-                    <p className={cn("text-sm text-gray-900", !n.isRead ? "font-semibold" : "font-medium")}>
+                    <p className={cn("text-sm text-slate-900", !n.isRead ? "font-semibold" : "font-medium")}>
                       {n.title}
                     </p>
                     <div className="flex items-center gap-2 flex-shrink-0">
-                      {!n.isRead && <span className="w-2 h-2 rounded-full bg-gray-900" />}
-                      <span className="text-xs text-gray-400">{formatRelativeTime(n.createdAt)}</span>
+                      {!n.isRead && (
+                        <span
+                          className="w-2 h-2 rounded-full"
+                          style={{ background: "linear-gradient(180deg, #1E293B, #0F172A)" }}
+                          aria-label="Nieprzeczytane"
+                        />
+                      )}
+                      <span className="text-xs text-slate-400">{formatRelativeTime(n.createdAt)}</span>
                     </div>
                   </div>
-                  <p className="text-xs text-gray-500 mt-0.5 leading-relaxed">{n.body}</p>
+                  <p className="text-xs text-slate-500 mt-0.5 leading-relaxed">{n.body}</p>
                 </div>
               </Link>
             );
           })}
-        </div>
+        </GlassCard>
       )}
     </div>
   );

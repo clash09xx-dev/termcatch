@@ -13,6 +13,7 @@ import {
 import { GlassModal, ModalInkButton, ModalGlassButton } from "@/components/ui/glass-modal";
 import { NewAppointmentSheet } from "@/components/business/new-appointment-sheet";
 import { weekSlide, useReducedMotion } from "@/lib/motion";
+import { STATUS_TINT } from "@/components/ui/glass/tokens";
 
 type AppointmentWithRelations = Appointment & {
   service: Service;
@@ -47,41 +48,8 @@ type Props = {
 const DAYS_PL = ["Pon", "Wt", "Śr", "Czw", "Pt", "Sob", "Nie"];
 const HOURS = Array.from({ length: 13 }, (_, i) => i + 8); // 8..20
 
-// Status — glass tints from the Machined Silver trio
-const STATUS_META: Record<string, { label: string; style: React.CSSProperties }> = {
-  PENDING: {
-    label: "Oczekuje",
-    style: { background: "rgba(251,191,36,0.10)", border: "1px solid rgba(217,119,6,0.25)", color: "#B45309" },
-  },
-  CONFIRMED: {
-    label: "Potwierdzona",
-    style: { background: "rgba(16,185,129,0.10)", border: "1px solid rgba(16,185,129,0.25)", color: "#047857" },
-  },
-  IN_PROGRESS: {
-    label: "W trakcie",
-    style: { background: "rgba(203,213,225,0.25)", border: "1px solid rgba(148,163,184,0.40)", color: "#334155" },
-  },
-  COMPLETED: {
-    label: "Zakończona",
-    style: { background: "rgba(203,213,225,0.18)", border: "1px solid rgba(203,213,225,0.45)", color: "#64748B" },
-  },
-  CANCELLED_CUSTOMER: {
-    label: "Odwołana",
-    style: { background: "rgba(244,63,94,0.08)", border: "1px solid rgba(244,63,94,0.22)", color: "#BE123C" },
-  },
-  CANCELLED_BUSINESS: {
-    label: "Odwołana",
-    style: { background: "rgba(244,63,94,0.08)", border: "1px solid rgba(244,63,94,0.22)", color: "#BE123C" },
-  },
-  NO_SHOW: {
-    label: "No-show",
-    style: { background: "rgba(244,63,94,0.08)", border: "1px solid rgba(244,63,94,0.22)", color: "#BE123C" },
-  },
-  RESCHEDULED: {
-    label: "Przełożona",
-    style: { background: "rgba(203,213,225,0.18)", border: "1px solid rgba(203,213,225,0.45)", color: "#64748B" },
-  },
-};
+// Status — glass tints from the shared Machined Silver system
+const STATUS_META = STATUS_TINT as Record<string, { label: string; style: React.CSSProperties; rail: string }>;
 
 function getWeekStart(date: Date): Date {
   const d = new Date(date);
@@ -315,7 +283,11 @@ export function CalendarClient({
                 </div>
 
                 {/* Day columns */}
-                {days.map((day, dayIdx) => (
+                {days.map((day, dayIdx) => {
+                  const isTodayCol = day.toDateString() === new Date().toDateString();
+                  const nowMin = new Date().getHours() * 60 + new Date().getMinutes();
+                  const showNowLine = isTodayCol && nowMin >= 8 * 60 && nowMin <= 21 * 60;
+                  return (
                   <div
                     key={dayIdx}
                     className="relative last:border-r-0"
@@ -324,6 +296,21 @@ export function CalendarClient({
                       background: dayIdx >= 5 ? "rgba(203,213,225,0.08)" : undefined,
                     }}
                   >
+                    {/* Now line — chrome */}
+                    {showNowLine && (
+                      <div
+                        className="absolute inset-x-0 z-20 pointer-events-none"
+                        style={{ top: ((nowMin - 8 * 60) / 60) * 56 }}
+                        aria-hidden="true"
+                      >
+                        <div className="relative h-px" style={{ background: "linear-gradient(90deg, #64748B, rgba(100,116,139,0.35))" }}>
+                          <span
+                            className="absolute -left-1 -top-[3px] w-[7px] h-[7px] rounded-full"
+                            style={{ background: "#475569", boxShadow: "0 0 0 2px rgba(255,255,255,0.90)" }}
+                          />
+                        </div>
+                      </div>
+                    )}
                     {HOURS.map((hour) => {
                       const slotApts = getAppointmentsForDayHour(day, hour);
                       return (
@@ -345,38 +332,53 @@ export function CalendarClient({
                             </svg>
                           </span>
 
-                          {slotApts.map((apt) => (
-                            <button
-                              key={apt.id}
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setActionError("");
-                                setSelectedAppointment(apt);
-                              }}
-                              className="absolute inset-x-0.5 rounded-lg text-left overflow-hidden hover:opacity-90 transition-opacity z-10"
-                              style={{
-                                top: getTopOffset(apt),
-                                height: getHeight(apt),
-                                backgroundColor: apt.employee?.color ?? "#334155",
-                              }}
-                            >
-                              <div className="px-1.5 py-1 h-full overflow-hidden">
-                                <p className="text-[10px] font-semibold text-white leading-tight truncate">
-                                  {apt.customer.firstName} {apt.customer.lastName}
-                                </p>
-                                {getHeight(apt) > 40 && (
-                                  <p className="text-[10px] text-white/80 truncate leading-tight mt-0.5">
-                                    {apt.service.name}
-                                  </p>
-                                )}
-                              </div>
-                            </button>
-                          ))}
+                          {slotApts.map((apt) => {
+                            const meta = STATUS_META[apt.status] ?? STATUS_META.RESCHEDULED;
+                            const isMuted = ["COMPLETED", "NO_SHOW", "CANCELLED_BUSINESS", "CANCELLED_CUSTOMER"].includes(apt.status);
+                            return (
+                              <button
+                                key={apt.id}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setActionError("");
+                                  setSelectedAppointment(apt);
+                                }}
+                                className={`card-hover-lift absolute inset-x-1 rounded-lg text-left overflow-hidden z-10 ${isMuted ? "opacity-65" : ""}`}
+                                style={{
+                                  top: getTopOffset(apt),
+                                  height: getHeight(apt),
+                                  background: "rgba(255,255,255,0.92)",
+                                  border: "1px solid rgba(203,213,225,0.55)",
+                                  borderLeft: `3px solid ${apt.employee?.color ?? "#64748B"}`,
+                                  boxShadow: "0 0 0 0.5px rgba(203,213,225,0.25), 0 1px 2px rgba(0,0,0,0.04), 0 3px 10px rgba(100,116,139,0.10), inset 0 1px 0 rgba(255,255,255,0.95)",
+                                }}
+                              >
+                                <div className="px-1.5 py-1 h-full overflow-hidden">
+                                  <div className="flex items-center gap-1">
+                                    <span
+                                      className="w-1.5 h-1.5 rounded-full flex-shrink-0"
+                                      style={{ background: meta.rail }}
+                                      aria-hidden="true"
+                                    />
+                                    <p className="text-[10px] font-semibold text-slate-900 leading-tight truncate">
+                                      {apt.customer.firstName} {apt.customer.lastName}
+                                    </p>
+                                  </div>
+                                  {getHeight(apt) > 40 && (
+                                    <p className="text-[10px] text-slate-500 truncate leading-tight mt-0.5 pl-2.5">
+                                      {apt.service.name}
+                                    </p>
+                                  )}
+                                </div>
+                              </button>
+                            );
+                          })}
                         </div>
                       );
                     })}
                   </div>
-                ))}
+                  );
+                })}
               </div>
             </div>
           </motion.div>

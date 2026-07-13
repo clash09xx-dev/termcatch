@@ -97,10 +97,18 @@ export default function RootLayout({
               position="bottom-right"
               toastOptions={{
                 duration: 4000,
+                style: {
+                  background: "rgba(255,255,255,0.92)",
+                  backdropFilter: "blur(24px) saturate(200%)",
+                  WebkitBackdropFilter: "blur(24px) saturate(200%)",
+                  border: "1px solid rgba(203,213,225,0.50)",
+                  borderRadius: "14px",
+                  boxShadow:
+                    "0 0 0 0.5px rgba(203,213,225,0.35), 0 4px 16px rgba(100,116,139,0.12), 0 12px 32px rgba(15,23,42,0.08), inset 0 1px 0 rgba(255,255,255,0.95)",
+                  color: "#0F172A",
+                },
                 classNames: {
-                  toast: "font-sans text-sm bg-white border border-gray-200 shadow-lg rounded-xl",
-                  success: "border-green-200",
-                  error: "border-red-200",
+                  toast: "font-sans text-sm",
                 },
               }}
             />

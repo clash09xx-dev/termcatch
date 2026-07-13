@@ -7,25 +7,16 @@ import { formatDate, formatTime, formatCurrency, formatDuration } from "@/lib/ut
 import { AppointmentStatus } from "@prisma/client";
 import { cancelAppointment } from "@/lib/actions/appointments";
 import RescheduleButton from "./reschedule-button";
-
-function StatusBadge({ status }: { status: AppointmentStatus }) {
-  const map: Record<AppointmentStatus, { label: string; className: string }> = {
-    PENDING: { label: "Oczekuje", className: "bg-amber-50 text-amber-700 border border-amber-200" },
-    CONFIRMED: { label: "Potwierdzona", className: "bg-green-50 text-green-700 border border-green-200" },
-    IN_PROGRESS: { label: "W trakcie", className: "bg-blue-50 text-blue-700 border border-blue-200" },
-    COMPLETED: { label: "Zakończona", className: "bg-gray-100 text-gray-600 border border-gray-200" },
-    CANCELLED_CUSTOMER: { label: "Anulowana", className: "bg-red-50 text-red-600 border border-red-200" },
-    CANCELLED_BUSINESS: { label: "Anulowana przez salon", className: "bg-red-50 text-red-600 border border-red-200" },
-    NO_SHOW: { label: "Nieobecność", className: "bg-gray-100 text-gray-500 border border-gray-200" },
-    RESCHEDULED: { label: "Przełożona", className: "bg-gray-100 text-gray-600 border border-gray-200" },
-  };
-  const { label, className } = map[status] ?? { label: status, className: "bg-gray-100 text-gray-600" };
-  return (
-    <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${className}`}>
-      {label}
-    </span>
-  );
-}
+import {
+  PageHeader,
+  GlassCard,
+  EmptyState,
+  StatusBadge,
+  InkLink,
+  ChromeAvatar,
+  INK_GRADIENT,
+} from "@/components/ui/glass";
+import { cn } from "@/lib/utils";
 
 function CancelButton({ appointmentId }: { appointmentId: string }) {
   async function handleCancel() {
@@ -34,7 +25,16 @@ function CancelButton({ appointmentId }: { appointmentId: string }) {
   }
   return (
     <form action={handleCancel}>
-      <button type="submit" className="text-xs font-medium text-red-600 hover:text-red-700 border border-red-200 hover:border-red-300 px-3 py-1.5 rounded-lg transition-colors">
+      <button
+        type="submit"
+        className="btn-spring text-xs font-semibold px-3 py-1.5 rounded-lg"
+        style={{
+          background: "rgba(244,63,94,0.08)",
+          border: "1px solid rgba(244,63,94,0.28)",
+          color: "#BE123C",
+          boxShadow: "inset 0 1px 0 rgba(255,255,255,0.60)",
+        }}
+      >
         Anuluj
       </button>
     </form>
@@ -81,77 +81,116 @@ export default async function CustomerDashboardPage({ searchParams }: { searchPa
   ] as const;
 
   return (
-    <div className="space-y-6 max-w-3xl">
-      <div>
-        <h1 className="text-xl font-semibold text-gray-900">Moje rezerwacje</h1>
-        <p className="text-sm text-gray-500 mt-1">Cześć, {dbUser.firstName}. Zarządzaj swoimi wizytami.</p>
-      </div>
+    <div className="space-y-5 max-w-3xl">
+      <PageHeader
+        title="Moje rezerwacje"
+        subtitle={<>Cześć, {dbUser.firstName}. Zarządzaj swoimi wizytami.</>}
+      />
 
-      <div className="flex gap-1 p-1 bg-gray-100 rounded-xl w-fit">
-        {tabs.map(({ key, label }) => (
-          <Link
-            key={key}
-            href={`/customer/dashboard?tab=${key}`}
-            className={activeTab === key
-              ? "px-4 py-1.5 text-sm font-medium rounded-lg bg-white text-gray-900 shadow-sm transition-all"
-              : "px-4 py-1.5 text-sm font-medium rounded-lg text-gray-500 hover:text-gray-700 transition-all"}
-          >
-            {label}
-          </Link>
-        ))}
+      {/* Tabs — glass segmented, ink active */}
+      <div
+        className="fade-rise fade-rise-d1 inline-flex items-center gap-0.5 p-0.5 rounded-xl"
+        style={{
+          background: "rgba(255,255,255,0.65)",
+          border: "1px solid rgba(203,213,225,0.45)",
+          boxShadow: "0 0 0 0.5px rgba(203,213,225,0.20), inset 0 1px 0 rgba(255,255,255,0.90)",
+        }}
+        role="group"
+        aria-label="Widok rezerwacji"
+      >
+        {tabs.map(({ key, label }) => {
+          const active = activeTab === key;
+          return (
+            <Link
+              key={key}
+              href={`/customer/dashboard?tab=${key}`}
+              aria-current={active ? "true" : undefined}
+              className={cn(
+                "px-4 py-1.5 rounded-[10px] text-sm font-semibold transition-colors",
+                active ? "text-white" : "text-slate-500 hover:text-slate-800"
+              )}
+              style={active ? { background: INK_GRADIENT, boxShadow: "0 1px 2px rgba(0,0,0,0.15), inset 0 1px 0 rgba(255,255,255,0.15)" } : undefined}
+            >
+              {label}
+            </Link>
+          );
+        })}
       </div>
 
       {appointments.length === 0 ? (
-        <div className="bg-white border border-gray-200 rounded-2xl p-10 text-center">
-          <div className="w-12 h-12 rounded-2xl bg-gray-100 flex items-center justify-center mx-auto mb-4">
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="text-gray-400">
-              <rect width="18" height="18" x="3" y="4" rx="2" ry="2" /><line x1="16" x2="16" y1="2" y2="6" /><line x1="8" x2="8" y1="2" y2="6" /><line x1="3" x2="21" y1="10" y2="10" />
-            </svg>
-          </div>
+        <GlassCard className="fade-rise fade-rise-d2">
           {activeTab === "upcoming" ? (
-            <>
-              <p className="text-sm font-medium text-gray-700 mb-1">Brak nadchodzących wizyt</p>
-              <p className="text-xs text-gray-400 mb-5">Znajdź salon i zarezerwuj wizytę.</p>
-              <Link href="/search" className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium bg-gray-900 hover:bg-gray-800 text-white rounded-xl transition-colors">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="11" cy="11" r="8" /><path d="m21 21-4.35-4.35" /></svg>
-                Szukaj salonu
-              </Link>
-            </>
+            <EmptyState
+              icon={
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" aria-hidden="true">
+                  <rect width="18" height="18" x="3" y="4" rx="2" ry="2" /><line x1="16" x2="16" y1="2" y2="6" /><line x1="8" x2="8" y1="2" y2="6" /><line x1="3" x2="21" y1="10" y2="10" />
+                </svg>
+              }
+              title="Brak nadchodzących wizyt"
+              body="Znajdź salon i zarezerwuj wizytę — potwierdzenie przyjdzie e-mailem."
+              action={
+                <InkLink href="/search" size="md">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
+                    <circle cx="11" cy="11" r="8" /><path d="m21 21-4.35-4.35" />
+                  </svg>
+                  Szukaj salonu
+                </InkLink>
+              }
+            />
           ) : (
-            <p className="text-sm text-gray-500">Brak historii wizyt.</p>
+            <EmptyState
+              icon={
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" aria-hidden="true">
+                  <circle cx="12" cy="12" r="10" /><polyline points="12 6 12 12 16 14" />
+                </svg>
+              }
+              title="Brak historii wizyt"
+              body="Zakończone i anulowane wizyty pojawią się tutaj."
+            />
           )}
-        </div>
+        </GlassCard>
       ) : (
-        <div className="space-y-3">
+        <div className="fade-rise fade-rise-d2 space-y-2.5">
           {appointments.map((apt) => {
             const isUpcoming = activeTab === "upcoming";
             const canCancel = apt.status === AppointmentStatus.PENDING || apt.status === AppointmentStatus.CONFIRMED;
             const canReview = apt.status === AppointmentStatus.COMPLETED && !apt.review;
 
             return (
-              <div key={apt.id} className="bg-white border border-gray-200 rounded-2xl p-4 flex gap-4">
-                <div className="w-11 h-11 rounded-xl bg-gray-100 flex items-center justify-center text-base font-semibold text-gray-600 flex-shrink-0 overflow-hidden">
-                  {apt.business.logoUrl
-                    ? <img src={apt.business.logoUrl} alt="" className="w-full h-full object-cover" />
-                    : apt.business.name[0]}
-                </div>
+              <div
+                key={apt.id}
+                className="rounded-[20px] p-4 flex gap-4"
+                style={{
+                  background: "rgba(255,255,255,0.80)",
+                  border: "1px solid rgba(203,213,225,0.45)",
+                  boxShadow: "0 0 0 0.5px rgba(203,213,225,0.22), 0 1px 2px rgba(0,0,0,0.02), 0 4px 14px rgba(100,116,139,0.06), inset 0 1px 0 rgba(255,255,255,0.92)",
+                }}
+              >
+                {apt.business.logoUrl ? (
+                  <span className="w-11 h-11 rounded-xl overflow-hidden flex-shrink-0" style={{ border: "1px solid rgba(203,213,225,0.45)" }}>
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src={apt.business.logoUrl} alt="" className="w-full h-full object-cover" />
+                  </span>
+                ) : (
+                  <ChromeAvatar size="lg" initials={apt.business.name[0] ?? "S"} />
+                )}
                 <div className="flex-1 min-w-0">
                   <div className="flex items-start justify-between gap-2">
                     <div className="min-w-0">
-                      <p className="text-sm font-semibold text-gray-900 truncate">{apt.service.name}</p>
-                      <p className="text-xs text-gray-500 mt-0.5 truncate">
+                      <p className="text-sm font-semibold text-slate-900 truncate">{apt.service.name}</p>
+                      <p className="text-xs text-slate-500 mt-0.5 truncate">
                         {apt.business.name}
                         {apt.employee && ` · ${apt.employee.firstName} ${apt.employee.lastName}`}
                       </p>
                     </div>
                     <StatusBadge status={apt.status} />
                   </div>
-                  <div className="flex items-center gap-3 mt-2 text-xs text-gray-500">
+                  <div className="flex items-center gap-3 mt-2 text-xs text-slate-500 tabular-nums">
                     <span>{formatDate(apt.startTime, { weekday: "short", day: "numeric", month: "short" })}, {formatTime(apt.startTime)}</span>
-                    <span>·</span>
+                    <span aria-hidden="true">·</span>
                     <span>{formatDuration(apt.duration)}</span>
-                    <span>·</span>
-                    <span className="font-medium text-gray-700">{formatCurrency(apt.price)}</span>
+                    <span aria-hidden="true">·</span>
+                    <span className="font-bold text-slate-900">{formatCurrency(apt.price)}</span>
                   </div>
                   {((isUpcoming && canCancel) || canReview) && (
                     <div className="flex flex-wrap items-center gap-2 mt-3">
@@ -167,7 +206,16 @@ export default async function CustomerDashboardPage({ searchParams }: { searchPa
                       )}
                       {isUpcoming && canCancel && <CancelButton appointmentId={apt.id} />}
                       {canReview && (
-                        <Link href={`/b/${apt.business.slug}?review=${apt.id}`} className="text-xs font-medium text-gray-700 hover:text-gray-900 border border-gray-200 hover:border-gray-300 px-3 py-1.5 rounded-lg transition-colors">
+                        <Link
+                          href={`/b/${apt.business.slug}?review=${apt.id}`}
+                          className="btn-spring text-xs font-semibold px-3 py-1.5 rounded-lg"
+                          style={{
+                            background: "rgba(255,255,255,0.72)",
+                            border: "1px solid rgba(203,213,225,0.55)",
+                            color: "#334155",
+                            boxShadow: "inset 0 1px 0 rgba(255,255,255,0.88)",
+                          }}
+                        >
                           Napisz opinię
                         </Link>
                       )}
