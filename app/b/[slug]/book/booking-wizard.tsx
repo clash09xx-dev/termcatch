@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
@@ -9,6 +9,18 @@ import { formatCurrency, formatDuration, formatDate, getInitials, cn } from "@/l
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
+interface AddonView {
+  id: string;
+  name: string;
+  description: string | null;
+  priceIncrease: number;
+  durationIncrease: number;
+  hasQuantity: boolean;
+  minQuantity: number;
+  maxQuantity: number;
+  defaultQuantity: number;
+}
+
 interface Service {
   id: string;
   name: string;
@@ -16,6 +28,7 @@ interface Service {
   duration: number;
   price: number;
   discountedPrice: number | null;
+  addons: AddonView[];
 }
 
 interface Employee {
@@ -314,10 +327,54 @@ export default function BookingWizard({
   const [notes, setNotes] = useState<string>("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string>("");
+  // addonId → quantity. Empty by default — never preselect paid add-ons.
+  const [selectedAddons, setSelectedAddons] = useState<Record<string, number>>({});
 
   const days = getNext14Days();
 
   const selectedService = services.find((s) => s.id === selectedServiceId);
+
+  // Add-ons are service-specific: clear the selection whenever the service changes.
+  useEffect(() => {
+    setSelectedAddons({});
+  }, [selectedServiceId]);
+
+  const serviceAddons = selectedService?.addons ?? [];
+
+  // Client-side view of the selected add-ons (display only — the server
+  // recomputes authoritatively and ignores these values).
+  const addonLines = useMemo(
+    () =>
+      serviceAddons
+        .filter((a) => (selectedAddons[a.id] ?? 0) > 0)
+        .map((a) => {
+          const quantity = selectedAddons[a.id];
+          return {
+            id: a.id,
+            name: a.name,
+            quantity,
+            totalPrice: a.priceIncrease * quantity,
+            totalDuration: a.durationIncrease * quantity,
+          };
+        }),
+    [serviceAddons, selectedAddons]
+  );
+
+  const basePrice = selectedService ? selectedService.discountedPrice ?? selectedService.price : 0;
+  const addonsTotalPrice = addonLines.reduce((s, l) => s + l.totalPrice, 0);
+  const addonsTotalDuration = addonLines.reduce((s, l) => s + l.totalDuration, 0);
+  const subtotal = basePrice + addonsTotalPrice;
+  const finalDuration = (selectedService?.duration ?? 0) + addonsTotalDuration;
+
+  // Serialized add-on selection for the availability query (id:qty,id:qty).
+  const addonParam = useMemo(
+    () =>
+      Object.entries(selectedAddons)
+        .filter(([, q]) => q > 0)
+        .map(([id, q]) => `${id}:${q}`)
+        .join(","),
+    [selectedAddons]
+  );
   const selectedEmployee =
     selectedEmployeeId
       ? employees.find((e) => e.id === selectedEmployeeId) ?? null
@@ -335,6 +392,7 @@ export default function BookingWizard({
           serviceId: selectedServiceId,
           date,
           ...(selectedEmployeeId ? { employeeId: selectedEmployeeId } : {}),
+          ...(addonParam ? { addons: addonParam } : {}),
         });
         const res = await fetch(`/api/availability?${params.toString()}`);
         const data = (await res.json()) as { slots?: string[] };
@@ -345,7 +403,7 @@ export default function BookingWizard({
         setLoadingSlots(false);
       }
     },
-    [business.id, selectedServiceId, selectedEmployeeId]
+    [business.id, selectedServiceId, selectedEmployeeId, addonParam]
   );
 
   useEffect(() => {
@@ -393,6 +451,9 @@ export default function BookingWizard({
         date: selectedDate,
         time: selectedTime,
         customerNote: notes || undefined,
+        addons: Object.entries(selectedAddons)
+          .filter(([, q]) => q > 0)
+          .map(([addonId, quantity]) => ({ addonId, quantity })),
       });
 
       setDirection(1);
@@ -415,13 +476,11 @@ export default function BookingWizard({
   const nextDisabled =
     step === 1 ? !selectedServiceId : step === 3 ? !selectedDate || !selectedTime : false;
 
-  const price = selectedService
-    ? formatCurrency(selectedService.discountedPrice ?? selectedService.price)
-    : "";
+  const price = selectedService ? formatCurrency(subtotal) : "";
 
   const summaryMeta = selectedService
     ? [
-        formatDuration(selectedService.duration),
+        formatDuration(finalDuration),
         selectedEmployee ? `${selectedEmployee.firstName} ${selectedEmployee.lastName.charAt(0)}.` : null,
         selectedDate && selectedTime
           ? `${formatDate(selectedDate, { day: "numeric", month: "short" })} · ${selectedTime}`
@@ -545,6 +604,107 @@ export default function BookingWizard({
                           </button>
                         );
                       })}
+                    </div>
+                  )}
+
+                  {/* Add-ons — shown once a service is chosen, before date/time
+                      (they change duration → availability). Never preselected. */}
+                  {selectedService && serviceAddons.length > 0 && (
+                    <div className="mt-6">
+                      <h3 className="text-sm font-bold text-slate-900" style={{ letterSpacing: "-0.015em" }}>
+                        Dodatki <span className="font-normal text-slate-400">(opcjonalnie)</span>
+                      </h3>
+                      <p className="text-xs text-slate-500 mt-0.5 mb-3">Rozszerz wizytę — wpływają na czas i cenę.</p>
+                      <div className="space-y-2" role="group" aria-label="Dodatki do usługi">
+                        {serviceAddons.map((a) => {
+                          const qty = selectedAddons[a.id] ?? 0;
+                          const on = qty > 0;
+                          return (
+                            <div
+                              key={a.id}
+                              className="p-3.5 rounded-xl flex items-center gap-3 transition-all duration-150"
+                              style={{
+                                ...S.row,
+                                ...(on ? { borderColor: "#0F172A", boxShadow: "0 0 0 1.5px rgba(15,23,42,0.85)" } : {}),
+                              }}
+                            >
+                              <button
+                                type="button"
+                                role="checkbox"
+                                aria-checked={on}
+                                aria-label={`${a.name}, +${a.priceIncrease} zł${a.durationIncrease > 0 ? `, +${a.durationIncrease} minut` : ""}`}
+                                onClick={() =>
+                                  setSelectedAddons((prev) => {
+                                    const next = { ...prev };
+                                    if (a.id in next) delete next[a.id];
+                                    else next[a.id] = a.hasQuantity ? a.defaultQuantity : 1;
+                                    return next;
+                                  })
+                                }
+                                className="flex items-center gap-3 flex-1 min-w-0 text-left"
+                              >
+                                <span
+                                  aria-hidden="true"
+                                  className="w-5 h-5 rounded-md flex items-center justify-center flex-shrink-0"
+                                  style={
+                                    on
+                                      ? { background: INK, border: "1px solid #0F172A" }
+                                      : { background: "rgba(255,255,255,0.8)", border: "1.5px solid rgba(148,163,184,0.6)" }
+                                  }
+                                >
+                                  {on && (
+                                    <svg className="w-3 h-3 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={3}>
+                                      <path strokeLinecap="round" strokeLinejoin="round" d="m5 13 4 4L19 7" />
+                                    </svg>
+                                  )}
+                                </span>
+                                <span className="flex-1 min-w-0">
+                                  <span className="block text-sm font-semibold text-slate-900 truncate">{a.name}</span>
+                                  {a.description && <span className="block text-xs text-slate-500 truncate">{a.description}</span>}
+                                  <span className="block text-xs text-slate-600 tabular-nums mt-0.5">
+                                    +{formatCurrency(a.priceIncrease)}
+                                    {a.durationIncrease > 0 && ` · +${a.durationIncrease} min`}
+                                    {a.hasQuantity && " / szt."}
+                                  </span>
+                                </span>
+                              </button>
+
+                              {on && a.hasQuantity && (
+                                <div className="flex items-center gap-2 flex-shrink-0" role="group" aria-label={`Ilość — ${a.name}`}>
+                                  <button
+                                    type="button"
+                                    aria-label="Mniej"
+                                    disabled={qty <= a.minQuantity}
+                                    onClick={() => setSelectedAddons((p) => ({ ...p, [a.id]: Math.max(a.minQuantity, (p[a.id] ?? a.defaultQuantity) - 1) }))}
+                                    className="w-7 h-7 rounded-lg flex items-center justify-center text-slate-700 disabled:opacity-30"
+                                    style={{ background: "rgba(255,255,255,0.8)", border: "1px solid rgba(203,213,225,0.6)" }}
+                                  >
+                                    <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5}><path d="M5 12h14" /></svg>
+                                  </button>
+                                  <span className="text-sm font-bold text-slate-900 tabular-nums w-5 text-center" aria-live="polite">{qty}</span>
+                                  <button
+                                    type="button"
+                                    aria-label="Więcej"
+                                    disabled={qty >= a.maxQuantity}
+                                    onClick={() => setSelectedAddons((p) => ({ ...p, [a.id]: Math.min(a.maxQuantity, (p[a.id] ?? a.defaultQuantity) + 1) }))}
+                                    className="w-7 h-7 rounded-lg flex items-center justify-center text-slate-700 disabled:opacity-30"
+                                    style={{ background: "rgba(255,255,255,0.8)", border: "1px solid rgba(203,213,225,0.6)" }}
+                                  >
+                                    <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5}><path d="M12 5v14M5 12h14" /></svg>
+                                  </button>
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
+
+                      <div className="mt-3 flex items-center justify-between px-1 text-sm">
+                        <span className="text-slate-500">Razem z dodatkami</span>
+                        <span className="font-bold text-slate-900 tabular-nums">
+                          {formatCurrency(subtotal)} · {formatDuration(finalDuration)}
+                        </span>
+                      </div>
                     </div>
                   )}
                 </div>
@@ -759,10 +919,16 @@ export default function BookingWizard({
 
                   {/* Summary */}
                   <dl className="rounded-2xl p-4 space-y-3 mb-5" style={S.panel}>
-                    {[
+                    {([
                       { label: "Usługa", value: selectedService.name, bold: true },
-                      { label: "Czas trwania", value: formatDuration(selectedService.duration) },
-                      { label: "Cena", value: price, bold: true, nums: true },
+                      ...addonLines.map((l) => ({
+                        label: l.quantity > 1 ? `+ ${l.name} ×${l.quantity}` : `+ ${l.name}`,
+                        value: `+${formatCurrency(l.totalPrice)}`,
+                        bold: false,
+                        nums: true,
+                      })),
+                      { label: "Czas trwania", value: formatDuration(finalDuration) },
+                      { label: addonLines.length > 0 ? "Razem" : "Cena", value: price, bold: true, nums: true },
                       {
                         label: "Specjalista",
                         value: selectedEmployee
@@ -774,7 +940,7 @@ export default function BookingWizard({
                         value: formatDate(selectedDate, { weekday: "long", day: "numeric", month: "long" }),
                       },
                       { label: "Godzina", value: selectedTime, bold: true, nums: true },
-                    ].map((row, i, arr) => (
+                    ] as { label: string; value: string; bold?: boolean; nums?: boolean }[]).map((row, i, arr) => (
                       <div key={row.label}>
                         <div className="flex items-start justify-between gap-2">
                           <dt className="text-sm text-slate-500">{row.label}</dt>
@@ -875,6 +1041,20 @@ export default function BookingWizard({
                     <div className="flex items-center justify-between text-sm">
                       <span className="text-slate-500">Usługa</span>
                       <span className="font-medium text-slate-900">{selectedService.name}</span>
+                    </div>
+                    <div className="h-px" style={{ background: "rgba(203,213,225,0.40)" }} />
+                    {addonLines.map((l) => (
+                      <div key={l.id}>
+                        <div className="flex items-center justify-between text-sm">
+                          <span className="text-slate-500 truncate pr-2">+ {l.name}{l.quantity > 1 ? ` ×${l.quantity}` : ""}</span>
+                          <span className="font-medium text-slate-900 tabular-nums">+{formatCurrency(l.totalPrice)}</span>
+                        </div>
+                        <div className="h-px mt-2.5" style={{ background: "rgba(203,213,225,0.40)" }} />
+                      </div>
+                    ))}
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="text-slate-500">Czas trwania</span>
+                      <span className="font-medium text-slate-900 tabular-nums">{formatDuration(finalDuration)}</span>
                     </div>
                     <div className="h-px" style={{ background: "rgba(203,213,225,0.40)" }} />
                     <div className="flex items-center justify-between text-sm">

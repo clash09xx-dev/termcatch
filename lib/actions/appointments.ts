@@ -15,6 +15,8 @@ import {
 } from "@/lib/email";
 import { sendSms, sendWhatsApp } from "@/lib/messaging";
 import { getBusinessNotificationSettings } from "@/lib/notification-settings";
+import { resolveBookingAddons, type AddonSelection } from "@/lib/booking-addons";
+import { computeBookingTotals } from "@/lib/booking-pricing";
 
 /** SMS/WhatsApp do salonu zgodnie z jego preferencjami — nigdy nie rzuca. */
 async function notifySalonChannels(businessId: string, message: string) {
@@ -97,6 +99,8 @@ export type CreateAppointmentInput = {
   /** Warsaw-local time "HH:MM" */
   time: string;
   customerNote?: string;
+  /** Optional service add-ons (validated + priced server-side; client values ignored). */
+  addons?: AddonSelection[];
 };
 
 // ─── Customer: Create ─────────────────────────────────────────
@@ -128,47 +132,60 @@ export async function createAppointment(data: CreateAppointmentInput) {
   });
   if (!service) throw new Error("Usługa jest niedostępna lub nie istnieje.");
 
-  const end = new Date(start.getTime() + service.duration * 60_000);
+  // Resolve + validate add-ons server-side (business + service + active + quantity).
+  // Client-submitted prices/durations are never trusted — recomputed from the DB.
+  const addonLines = await resolveBookingAddons(data.businessId, data.serviceId, data.addons);
+  const basePrice = service.discountedPrice ?? service.price;
+  const totals = computeBookingTotals({ basePrice, baseDuration: service.duration, addonLines });
+  const end = new Date(start.getTime() + totals.totalDuration * 60_000);
 
-  // Double-booking guard: reject if the slot overlaps an existing appointment
-  const conflict = await prisma.appointment.findFirst({
-    where: {
-      businessId: data.businessId,
-      ...(data.employeeId ? { employeeId: data.employeeId } : {}),
-      status: {
-        notIn: [
-          AppointmentStatus.CANCELLED_CUSTOMER,
-          AppointmentStatus.CANCELLED_BUSINESS,
-        ],
+  // Conflict guard + create in one transaction to shrink the double-booking race.
+  const appointment = await prisma.$transaction(async (tx) => {
+    const conflict = await tx.appointment.findFirst({
+      where: {
+        businessId: data.businessId,
+        ...(data.employeeId ? { employeeId: data.employeeId } : {}),
+        status: {
+          notIn: [AppointmentStatus.CANCELLED_CUSTOMER, AppointmentStatus.CANCELLED_BUSINESS],
+        },
+        startTime: { lt: end },
+        endTime: { gt: start },
       },
-      startTime: { lt: end },
-      endTime: { gt: start },
-    },
-    select: { id: true },
-  });
-  if (conflict) {
-    throw new Error("Ten termin został właśnie zajęty. Wybierz inną godzinę.");
-  }
-
-  const appointment = await prisma.appointment.create({
-    data: {
-      businessId: data.businessId,
-      customerId: customer.id,
-      serviceId: data.serviceId,
-      employeeId: data.employeeId ?? null,
-      startTime: start,
-      endTime: end,
-      duration: service.duration,
-      status: AppointmentStatus.PENDING,
-      price: service.discountedPrice ?? service.price,
-      currency: service.currency,
-      customerNotes: data.customerNote ?? null,
-    },
-    include: {
-      business: true,
-      service: true,
-      employee: true,
-    },
+      select: { id: true },
+    });
+    if (conflict) {
+      throw new Error("Ten termin został właśnie zajęty. Wybierz inną godzinę.");
+    }
+    return tx.appointment.create({
+      data: {
+        businessId: data.businessId,
+        customerId: customer.id,
+        serviceId: data.serviceId,
+        employeeId: data.employeeId ?? null,
+        startTime: start,
+        endTime: end,
+        duration: totals.totalDuration,
+        status: AppointmentStatus.PENDING,
+        price: totals.finalTotal,
+        basePrice: totals.basePrice,
+        addonsTotal: totals.addonsTotal,
+        subtotal: totals.subtotal,
+        currency: service.currency,
+        customerNotes: data.customerNote ?? null,
+        addons: {
+          create: addonLines.map((l) => ({
+            addonId: l.addonId,
+            name: l.name,
+            unitPrice: l.unitPrice,
+            quantity: l.quantity,
+            totalPrice: l.totalPrice,
+            unitDuration: l.unitDuration,
+            totalDuration: l.totalDuration,
+          })),
+        },
+      },
+      include: { business: true, service: true, employee: true, addons: true },
+    });
   });
 
   const slotLabel = describeSlot(start);

@@ -100,6 +100,7 @@ export default async function CustomerDashboardPage() {
         },
         service: { select: { name: true } },
         employee: { select: { firstName: true, lastName: true } },
+        addons: { select: { name: true, quantity: true, totalPrice: true }, orderBy: { createdAt: "asc" } },
       },
       orderBy: { startTime: "asc" },
     }),
@@ -178,6 +179,11 @@ export default async function CustomerDashboardPage() {
                   {ticket.business.name}
                   {ticket.employee && ` · ${ticket.employee.firstName} ${ticket.employee.lastName}`}
                 </p>
+                {ticket.addons.length > 0 && (
+                  <p className="text-xs text-slate-500 mt-1 truncate">
+                    {ticket.addons.map((a) => `+ ${a.name}${a.quantity > 1 ? ` ×${a.quantity}` : ""}`).join(" · ")}
+                  </p>
+                )}
                 <div className="mt-2.5 flex flex-wrap items-center gap-1.5">
                   <span className="inline-flex items-center px-2.5 py-1 rounded-lg text-[13px] font-semibold text-slate-800 tabular-nums" style={CHIP}>
                     {formatDate(ticket.startTime, { weekday: "long" })}, {formatTime(ticket.startTime)}

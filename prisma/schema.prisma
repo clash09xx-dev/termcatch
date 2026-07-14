@@ -387,6 +387,7 @@ model Business {
   owner               User                 @relation("BusinessOwner", fields: [ownerId], references: [id])
   employees           Employee[]
   services            Service[]
+  serviceAddons       ServiceAddon[]
   workingHours        WorkingHours[]
   specialDays         SpecialDay[]
   appointments        Appointment[]
@@ -487,10 +488,39 @@ model Service {
   serviceCategory ServiceCategoryModel? @relation(fields: [categoryId], references: [id])
   employees      EmployeeService[]
   appointments   Appointment[]
+  addons         ServiceAddon[]    @relation("ServiceAddons")
 
   @@index([businessId])
   @@index([isActive])
   @@map("services")
+}
+
+// Optional paid extension a customer can add to a service at booking time
+// (e.g. nail extension +40 zł / +30 min). Business-scoped; assignable to many
+// services (m-n). Editing/deleting one NEVER changes historical appointments —
+// each booking snapshots its add-ons into AppointmentAddon.
+model ServiceAddon {
+  id               String   @id @default(cuid())
+  businessId       String   @map("business_id")
+  name             String
+  description      String?  @db.Text
+  priceIncrease    Float    @default(0) @map("price_increase")
+  durationIncrease Int      @default(0) @map("duration_increase") // minutes
+  isActive         Boolean  @default(true) @map("is_active")
+  sortOrder        Int      @default(0) @map("sort_order")
+  hasQuantity      Boolean  @default(false) @map("has_quantity")
+  minQuantity      Int      @default(1) @map("min_quantity")
+  maxQuantity      Int      @default(1) @map("max_quantity")
+  defaultQuantity  Int      @default(1) @map("default_quantity")
+  createdAt        DateTime @default(now()) @map("created_at")
+  updatedAt        DateTime @updatedAt @map("updated_at")
+
+  business          Business           @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  services          Service[]          @relation("ServiceAddons")
+  appointmentAddons AppointmentAddon[]
+
+  @@index([businessId])
+  @@map("service_addons")
 }
 
 model ServiceCategoryModel {
@@ -588,10 +618,16 @@ model Appointment {
   duration      Int      // minutes (snapshot at booking time)
   timezone      String   @default("Europe/Warsaw")
 
-  // Pricing (snapshot at booking time)
+  // Pricing (snapshot at booking time). `price` is the FINAL total the customer
+  // owes: basePrice + addonsTotal − couponDiscount. The breakdown columns below
+  // are snapshots so edits/deletes of services, add-ons or coupons never alter
+  // historical totals.
   price         Float
   currency      String  @default("PLN")
   depositAmount Float?  @map("deposit_amount")
+  basePrice     Float?  @map("base_price")     // service base at booking time
+  addonsTotal   Float?  @map("addons_total")   // Σ add-on totals at booking time
+  subtotal      Float?  @map("subtotal")       // basePrice + addonsTotal (pre-discount)
 
   // Payment
   paymentStatus PaymentStatus @default(PENDING) @map("payment_status")
@@ -614,9 +650,13 @@ model Appointment {
   // Recurring
   recurringGroupId String? @map("recurring_group_id")
 
-  // Coupons/promotions applied
+  // Coupons/promotions applied. couponCode/Type/Value are snapshots so a later
+  // change or deletion of the coupon never alters this appointment's totals.
   couponId        String? @map("coupon_id")
-  couponDiscount  Float?  @map("coupon_discount")
+  couponCode      String? @map("coupon_code")
+  couponType      String? @map("coupon_type")   // PERCENTAGE | FIXED_AMOUNT
+  couponValue     Float?  @map("coupon_value")   // the coupon's configured value
+  couponDiscount  Float?  @map("coupon_discount") // computed discount amount applied
   giftCardId      String? @map("gift_card_id")
   giftCardAmount  Float?  @map("gift_card_amount")
   membershipId    String? @map("membership_id")
@@ -638,6 +678,7 @@ model Appointment {
   giftCard  GiftCard? @relation(fields: [giftCardId], references: [id])
   membership Membership? @relation(fields: [membershipId], references: [id])
   reminders AppointmentReminder[]
+  addons    AppointmentAddon[]
 
   @@index([businessId, startTime])
   @@index([customerId, startTime])
@@ -646,6 +687,27 @@ model Appointment {
   @@index([startTime])
   @@index([businessId, status])
   @@map("appointments")
+}
+
+// Immutable snapshot of an add-on as booked. Survives edits/deletes of the
+// source ServiceAddon (addonId is nullable + SetNull) so history stays accurate.
+model AppointmentAddon {
+  id            String   @id @default(cuid())
+  appointmentId String   @map("appointment_id")
+  addonId       String?  @map("addon_id")
+  name          String
+  unitPrice     Float    @map("unit_price")
+  quantity      Int      @default(1)
+  totalPrice    Float    @map("total_price")
+  unitDuration  Int      @default(0) @map("unit_duration")
+  totalDuration Int      @default(0) @map("total_duration")
+  createdAt     DateTime @default(now()) @map("created_at")
+
+  appointment Appointment   @relation(fields: [appointmentId], references: [id], onDelete: Cascade)
+  addon       ServiceAddon? @relation(fields: [addonId], references: [id], onDelete: SetNull)
+
+  @@index([appointmentId])
+  @@map("appointment_addons")
 }
 
 model AppointmentReminder {

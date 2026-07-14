@@ -38,11 +38,37 @@ export default async function BookPage({
       workingHours: {
         orderBy: { dayOfWeek: "asc" },
       },
+      serviceAddons: {
+        where: { isActive: true },
+        orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }],
+        include: { services: { select: { id: true } } },
+      },
     },
   });
 
   if (!business || business.status !== BusinessStatus.ACTIVE) {
     notFound();
+  }
+
+  // Group active add-ons by the service(s) they're assigned to.
+  const addonsByService = new Map<string, { id: string; name: string; description: string | null; priceIncrease: number; durationIncrease: number; hasQuantity: boolean; minQuantity: number; maxQuantity: number; defaultQuantity: number }[]>();
+  for (const a of business.serviceAddons) {
+    const view = {
+      id: a.id,
+      name: a.name,
+      description: a.description,
+      priceIncrease: a.priceIncrease,
+      durationIncrease: a.durationIncrease,
+      hasQuantity: a.hasQuantity,
+      minQuantity: a.minQuantity,
+      maxQuantity: a.maxQuantity,
+      defaultQuantity: a.defaultQuantity,
+    };
+    for (const s of a.services) {
+      const list = addonsByService.get(s.id) ?? [];
+      list.push(view);
+      addonsByService.set(s.id, list);
+    }
   }
 
   return (
@@ -74,6 +100,7 @@ export default async function BookPage({
             duration: s.duration,
             price: s.price,
             discountedPrice: s.discountedPrice,
+            addons: addonsByService.get(s.id) ?? [],
           }))}
           employees={business.employees.map((e) => ({
             id: e.id,

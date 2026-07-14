@@ -65,6 +65,36 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: "Service not found" }, { status: 404 });
   }
 
+  // Add-on duration must be reserved so a slot fits base service + selected
+  // add-ons. Format: ?addons=addonId:qty,addonId:qty. Durations come from the DB
+  // (never the client); the booking action does the authoritative throw-on-invalid
+  // validation, so here we resolve best-effort (ignore unknown ids, clamp qty).
+  let addonsDuration = 0;
+  const addonsParam = searchParams.get("addons");
+  if (addonsParam) {
+    const sels = addonsParam
+      .split(",")
+      .map((p) => {
+        const [id, q] = p.split(":");
+        return { id: id?.trim(), qty: Math.max(1, parseInt(q ?? "1", 10) || 1) };
+      })
+      .filter((s) => s.id);
+    if (sels.length > 0) {
+      const ids = [...new Set(sels.map((s) => s.id))];
+      const addons = await prisma.serviceAddon.findMany({
+        where: { businessId, id: { in: ids }, isActive: true, services: { some: { id: serviceId } } },
+        select: { id: true, durationIncrease: true, hasQuantity: true, minQuantity: true, maxQuantity: true },
+      });
+      const byId = new Map(addons.map((a) => [a.id, a]));
+      for (const s of sels) {
+        const a = byId.get(s.id);
+        if (!a) continue;
+        const qty = a.hasQuantity ? Math.min(a.maxQuantity, Math.max(a.minQuantity, s.qty)) : 1;
+        addonsDuration += a.durationIncrease * qty;
+      }
+    }
+  }
+
   // Fetch existing appointments for that day (Warsaw-local day, excluding cancelled)
   const dayStart = warsawDayStartUtc(date);
   const dayEnd = warsawDayEndUtc(date);

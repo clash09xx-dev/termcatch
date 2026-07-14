@@ -1,5 +1,53 @@
 # TermCatch — Experience Redesign · Cowork Handoff
 
+---
+
+## 🚀 LAUNCH FEATURES (post-redesign work — IN PROGRESS)
+
+> Making the visible launch features genuinely functional/secure/honest.
+> **Rollback checkpoint: tag `LAUNCH_FEATURES_BEFORE` → `16ab378`** (state right
+> after the redesign + QA, before any launch-feature work). Full rollback:
+> `git reset --hard LAUNCH_FEATURES_BEFORE`.
+>
+> **Test runner:** `pnpm test` (Node's built-in `node:test` via `tsx` — zero new
+> deps). **Schema changes applied via `pnpm db:push`** (no migrations dir).
+
+**Implementation order & status:**
+1. **Service add-ons + booking-duration integration — ✅ DONE** (commit below)
+2. Coupon redemption — ⏳ next
+3. "Caught one." success moment — pending
+4. Marketing persistence — pending
+5. DB hardening + logged-out auth QA — pending
+6. AI Assistant architecture — pending
+7. Invoices (safe prep; ask legal Qs) — pending
+8. Cancellation fees (safe prep; ask Qs) — pending
+9. Final QA — pending
+
+### Area 1 — Service Add-ons ✅
+- **Schema (db push applied):** new `ServiceAddon` (business-scoped, m-n to
+  `Service`), `AppointmentAddon` (immutable per-booking snapshot). New nullable
+  `Appointment` columns: `basePrice, addonsTotal, subtotal, couponCode, couponType,
+  couponValue` (+ existing `couponId/couponDiscount`). `price` now = FINAL total
+  (base + add-ons − discount); breakdown in snapshot cols. Additive/non-destructive.
+- **Server (authoritative):** `lib/booking-pricing.ts` (pure math), `lib/booking-addons.ts`
+  (resolve+validate against DB), `lib/actions/addons.ts` (owner-scoped CRUD +
+  reorder + service assignment). `createAppointment` extended: validates add-ons
+  (business/service/active/quantity), ignores client price/duration, computes
+  duration = base + Σ add-ons, writes snapshot rows, wrapped in `$transaction`.
+  Availability API reserves base + add-on duration (`?addons=id:qty`).
+- **UI:** add-ons sub-section inside Usługi (`services/addons-section.tsx`, no new
+  nav item); booking wizard shows add-ons in step 1 (after service, before
+  date/time) with qty steppers + live subtotal/duration; confirm + success +
+  customer ticket show add-on line items + final duration.
+- **Tests:** `tests/booking-pricing.test.ts` — 21 pass (add-on validation, qty
+  range, price/duration manipulation ignored, coupon math, clamps, totals).
+- **Displays still TODO** (add-on line items): business calendar detail modal,
+  business dashboard detail, CRM visit history, customer history list, e-mail
+  confirmation. (Customer ticket + booking confirm/success DONE.)
+- `createManualAppointment` (walk-in) intentionally add-on-free for now.
+
+---
+
 > **STATUS: ALL FIVE WAVES COMPLETE AND COMMITTED.** The experience redesign is
 > finished. Production build green (19/19), `tsc --noEmit` clean, all 20 business
 > + customer routes return HTTP 200, and the materially changed screens were
