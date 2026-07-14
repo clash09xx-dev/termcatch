@@ -13,6 +13,9 @@ const LABEL_CLS = "block text-sm font-medium text-slate-800 mb-1.5";
 
 type Props = {
   business: Business;
+  /** When embedded inside Ustawienia, hide the standalone page header
+   * (the section already provides context) but keep the per-tab save. */
+  embedded?: boolean;
 };
 
 type Tab = "podstawowe" | "kontakt" | "media" | "social";
@@ -24,7 +27,7 @@ const TABS: { id: Tab; label: string }[] = [
   { id: "social", label: "Social media" },
 ];
 
-export function ProfileClient({ business }: Props) {
+export function ProfileClient({ business, embedded = false }: Props) {
   const [activeTab, setActiveTab] = useState<Tab>("podstawowe");
   const [isPending, startTransition] = useTransition();
   const [savedTab, setSavedTab] = useState<Tab | null>(null);
@@ -66,29 +69,38 @@ export function ProfileClient({ business }: Props) {
     });
   }
 
+  const saveButton = (
+    <InkButton onClick={handleSave} disabled={isPending}>
+      {isPending ? (
+        <>
+          <SpinnerIcon className="w-4 h-4 animate-spin" />
+          Zapisywanie…
+        </>
+      ) : savedTab === activeTab ? (
+        <>
+          <CheckIcon className="w-4 h-4" />
+          Zapisano
+        </>
+      ) : (
+        "Zapisz"
+      )}
+    </InkButton>
+  );
+
   return (
-    <div className="max-w-4xl mx-auto space-y-5">
-      <PageHeader
-        title="Profil salonu"
-        subtitle="Informacje widoczne dla klientów"
-        actions={
-          <InkButton onClick={handleSave} disabled={isPending}>
-            {isPending ? (
-              <>
-                <SpinnerIcon className="w-4 h-4 animate-spin" />
-                Zapisywanie…
-              </>
-            ) : savedTab === activeTab ? (
-              <>
-                <CheckIcon className="w-4 h-4" />
-                Zapisano
-              </>
-            ) : (
-              "Zapisz"
-            )}
-          </InkButton>
-        }
-      />
+    <div className={cn(embedded ? "space-y-5" : "max-w-4xl mx-auto space-y-5")}>
+      {embedded ? (
+        <div className="flex items-center justify-between gap-3 flex-wrap">
+          <p className="text-sm text-slate-500">Te informacje widzą klienci w Twoim profilu publicznym.</p>
+          {saveButton}
+        </div>
+      ) : (
+        <PageHeader
+          title="Profil salonu"
+          subtitle="Informacje widoczne dla klientów"
+          actions={saveButton}
+        />
+      )}
 
       {/* Tabs */}
       <GlassCard className="fade-rise fade-rise-d1 overflow-hidden">

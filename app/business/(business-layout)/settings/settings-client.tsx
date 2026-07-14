@@ -1,19 +1,22 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useState, useMemo, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { updateBusinessSettings } from "@/lib/actions/business";
 import { NotificationSettingsForm } from "@/components/business/notification-settings-form";
 import { requestDangerCode, confirmBusinessDeletion, confirmSalonDeletion } from "@/lib/actions/danger";
 import { sendInvite } from "@/actions/invite";
 import type { BusinessNotificationSettings } from "@/lib/notification-settings";
+import type { Business } from "@prisma/client";
+import { ProfileClient } from "../profile/profile-client";
 import {
   PageHeader,
   GlassCard,
   InkButton,
   GlassButton,
-  CHIP,
+  Overline,
   INK_GRADIENT,
+  ELEV_OVERLAY,
 } from "@/components/ui/glass";
 import { GlassModal } from "@/components/ui/glass-modal";
 import { cn } from "@/lib/utils";
@@ -32,29 +35,39 @@ type Settings = {
 type Props = {
   settings: Settings;
   notificationSettings: BusinessNotificationSettings;
+  business: Business;
 };
 
-type Section = "rezerwacje" | "anulowanie" | "powiadomienia" | "strefa";
+type Section = "rezerwacje" | "odwolania" | "powiadomienia" | "profil" | "strefa";
 
-const SECTIONS: { id: Section; label: string }[] = [
+const SECTIONS: { id: Section; label: string; danger?: boolean }[] = [
   { id: "rezerwacje", label: "Rezerwacje" },
-  { id: "anulowanie", label: "Anulowanie" },
+  { id: "odwolania", label: "Odwołania" },
   { id: "powiadomienia", label: "Powiadomienia" },
-  { id: "strefa", label: "Niebezpieczna strefa" },
+  { id: "profil", label: "Profil publiczny" },
+  { id: "strefa", label: "Bezpieczeństwo", danger: true },
 ];
 
 const TIME_SLOT_OPTIONS = [15, 30, 45, 60];
-const CANCELLATION_HOURS_OPTIONS = [
-  { value: 12, label: "12 godzin" },
-  { value: 24, label: "24 godziny" },
-  { value: 48, label: "48 godzin" },
-  { value: 72, label: "72 godziny" },
+const CANCELLATION_HOURS_OPTIONS = [12, 24, 48, 72];
+const FEE_OPTIONS = [
+  { value: "", label: "Brak" },
+  { value: "percentage", label: "Procentowa" },
+  { value: "fixed", label: "Stała kwota" },
+];
+
+// The six fields persisted by updateBusinessSettings — the dirty-tracked set.
+const TRACKED: (keyof Settings)[] = [
+  "advanceBookingDays",
+  "minAdvanceHours",
+  "timeSlotDuration",
+  "cancellationHours",
+  "cancellationFeeType",
+  "cancellationFeeValue",
 ];
 
 const INPUT_CLS =
   "input-glass rounded-xl px-3.5 py-2.5 text-sm outline-none text-slate-800 placeholder:text-slate-400 tabular-nums";
-const LABEL_CLS = "block text-sm font-medium text-slate-800 mb-1";
-const HINT_CLS = "text-xs text-slate-500 mb-2.5";
 
 // Solid rose — the one destructive primary
 const DANGER_SOLID: React.CSSProperties = {
@@ -70,6 +83,12 @@ const DANGER_GHOST: React.CSSProperties = {
   color: "#BE123C",
   boxShadow: "inset 0 1px 0 rgba(255,255,255,0.60)",
 };
+
+function clampInt(raw: string, min: number, max: number, fallback: number): number {
+  const n = parseInt(raw, 10);
+  if (Number.isNaN(n)) return fallback;
+  return Math.min(max, Math.max(min, n));
+}
 
 function SegmentedOption({
   active,
@@ -98,10 +117,32 @@ function SegmentedOption({
   );
 }
 
-export function SettingsClient({ settings: initialSettings, notificationSettings }: Props) {
+// A single business decision: question → control → consequence.
+function DecisionCard({
+  question,
+  consequence,
+  children,
+}: {
+  question: string;
+  consequence: React.ReactNode;
+  children: React.ReactNode;
+}) {
+  return (
+    <GlassCard className="p-5">
+      <h3 className="text-[15px] font-semibold text-slate-900" style={{ letterSpacing: "-0.01em" }}>
+        {question}
+      </h3>
+      <div className="mt-3">{children}</div>
+      <p className="text-xs text-slate-500 mt-3 leading-relaxed">{consequence}</p>
+    </GlassCard>
+  );
+}
+
+export function SettingsClient({ settings: initialSettings, notificationSettings, business }: Props) {
   const router = useRouter();
   const [activeSection, setActiveSection] = useState<Section>("rezerwacje");
   const [settings, setSettings] = useState<Settings>(initialSettings);
+  const [baseline, setBaseline] = useState<Settings>(initialSettings);
   const [isPending, startTransition] = useTransition();
   const [saved, setSaved] = useState(false);
 
@@ -118,6 +159,11 @@ export function SettingsClient({ settings: initialSettings, notificationSettings
   const [inviteState, setInviteState] = useState<"idle" | "loading" | "sent" | "error">("idle");
   const [inviteError, setInviteError] = useState("");
 
+  const dirty = useMemo(
+    () => TRACKED.some((k) => settings[k] !== baseline[k]),
+    [settings, baseline]
+  );
+
   function handleSave() {
     startTransition(async () => {
       await updateBusinessSettings({
@@ -128,9 +174,14 @@ export function SettingsClient({ settings: initialSettings, notificationSettings
         cancellationFeeType: settings.cancellationFeeType || undefined,
         cancellationFeeValue: settings.cancellationFeeValue || undefined,
       });
+      setBaseline(settings);
       setSaved(true);
       setTimeout(() => setSaved(false), 2000);
     });
+  }
+
+  function resetChanges() {
+    setSettings(baseline);
   }
 
   function update<K extends keyof Settings>(key: K, value: Settings[K]) {
@@ -211,51 +262,30 @@ export function SettingsClient({ settings: initialSettings, notificationSettings
     </p>
   );
 
+  const feeUnit = settings.cancellationFeeType === "percentage" ? "%" : "PLN";
+
   return (
-    <div className="max-w-5xl mx-auto space-y-5">
+    <div className="max-w-5xl mx-auto space-y-5 pb-4">
       <PageHeader
         title="Ustawienia"
-        subtitle="Konfiguracja systemu rezerwacji"
+        subtitle="Decyzje, które kształtują sposób działania Twojego salonu"
         actions={
-          <>
-            <GlassButton onClick={() => setShowInvite(true)}>
-              <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} aria-hidden="true">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M12 8.25v-1.5m0 1.5c-1.355 0-2.697.056-4.024.166C6.845 8.51 6 9.473 6 10.608v2.513m6-4.871c1.355 0 2.697.056 4.024.166C17.155 8.51 18 9.473 18 10.608v2.513M15 8.25a3 3 0 1 1-6 0 3 3 0 0 1 6 0Zm-9 4.875v4.905c0 .92.672 1.715 1.625 1.71H16.5c.903 0 1.5-.81 1.5-1.71v-4.905M12 12v8.25" />
-              </svg>
-              Zaproś znajomego
-            </GlassButton>
-            {activeSection !== "strefa" && (
-              <InkButton onClick={handleSave} disabled={isPending}>
-                {isPending ? (
-                  <>
-                    <svg className="w-4 h-4 animate-spin" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} aria-hidden="true">
-                      <path strokeLinecap="round" d="M4 12a8 8 0 0 1 8-8" />
-                    </svg>
-                    Zapisywanie…
-                  </>
-                ) : saved ? (
-                  <>
-                    <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} aria-hidden="true">
-                      <path strokeLinecap="round" strokeLinejoin="round" d="m5 13 4 4L19 7" />
-                    </svg>
-                    Zapisano
-                  </>
-                ) : (
-                  "Zapisz zmiany"
-                )}
-              </InkButton>
-            )}
-          </>
+          <GlassButton onClick={() => setShowInvite(true)}>
+            <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} aria-hidden="true">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M12 8.25v-1.5m0 1.5c-1.355 0-2.697.056-4.024.166C6.845 8.51 6 9.473 6 10.608v2.513m6-4.871c1.355 0 2.697.056 4.024.166C17.155 8.51 18 9.473 18 10.608v2.513M15 8.25a3 3 0 1 1-6 0 3 3 0 0 1 6 0Zm-9 4.875v4.905c0 .92.672 1.715 1.625 1.71H16.5c.903 0 1.5-.81 1.5-1.71v-4.905M12 12v8.25" />
+            </svg>
+            Zaproś znajomego
+          </GlassButton>
         }
       />
 
       <div className="fade-rise fade-rise-d1 flex flex-col md:flex-row gap-5">
         {/* Section nav */}
-        <nav className="md:w-48 flex-shrink-0">
+        <nav className="md:w-52 flex-shrink-0">
           <div className="flex md:flex-col gap-1 overflow-x-auto no-scrollbar">
             {SECTIONS.map((section) => {
               const active = activeSection === section.id;
-              const danger = section.id === "strefa";
+              const danger = section.danger;
               return (
                 <button
                   key={section.id}
@@ -282,121 +312,165 @@ export function SettingsClient({ settings: initialSettings, notificationSettings
         </nav>
 
         {/* Content */}
-        <div className="flex-1 min-w-0">
+        <div className="flex-1 min-w-0 space-y-4">
           {/* Rezerwacje */}
           {activeSection === "rezerwacje" && (
-            <GlassCard className="p-6 space-y-6">
-              <h3 className="text-sm font-semibold text-slate-900">Ustawienia rezerwacji</h3>
-              <div className="space-y-5">
-                <div>
-                  <label htmlFor="set-advance" className={LABEL_CLS}>Wyprzedzenie rezerwacji (dni)</label>
-                  <p className={HINT_CLS}>Klienci mogą rezerwować z wyprzedzeniem maksymalnie tylu dni.</p>
+            <>
+              <DecisionCard
+                question="Jak daleko w przód klienci mogą rezerwować?"
+                consequence={
+                  <>
+                    Klienci zobaczą wolne terminy na maksymalnie{" "}
+                    <span className="font-medium text-slate-700 tabular-nums">{settings.advanceBookingDays}</span> dni w przód.
+                    Krótszy okres daje pełniejszą kontrolę nad grafikiem; dłuższy — więcej rezerwacji z wyprzedzeniem.
+                  </>
+                }
+              >
+                <div className="flex items-center gap-2">
                   <input
                     id="set-advance"
-                    type="number" min="1" max="365"
+                    type="number"
+                    min={1}
+                    max={365}
                     value={settings.advanceBookingDays}
-                    onChange={(e) => update("advanceBookingDays", parseInt(e.target.value, 10))}
-                    className={cn(INPUT_CLS, "w-40")}
+                    onChange={(e) => update("advanceBookingDays", clampInt(e.target.value, 1, 365, settings.advanceBookingDays))}
+                    className={cn(INPUT_CLS, "w-28")}
+                    aria-label="Wyprzedzenie rezerwacji w dniach"
                   />
+                  <span className="text-sm text-slate-500">dni</span>
                 </div>
-                <div>
-                  <label htmlFor="set-min" className={LABEL_CLS}>Minimalne wyprzedzenie (godziny)</label>
-                  <p className={HINT_CLS}>Minimalny czas od teraz do zarezerwowanej wizyty.</p>
+              </DecisionCard>
+
+              <DecisionCard
+                question="Jak późno przed wizytą można ją jeszcze zarezerwować?"
+                consequence={
+                  settings.minAdvanceHours === 0 ? (
+                    "Klienci mogą rezerwować na ostatnią chwilę — nawet tuż przed wizytą."
+                  ) : (
+                    <>
+                      Ostatnia rezerwacja możliwa na{" "}
+                      <span className="font-medium text-slate-700 tabular-nums">{settings.minAdvanceHours}</span> godz. przed
+                      wizytą. Większy zapas ogranicza rezerwacje last-minute i daje czas na przygotowanie.
+                    </>
+                  )
+                }
+              >
+                <div className="flex items-center gap-2">
                   <input
                     id="set-min"
-                    type="number" min="0" max="72"
+                    type="number"
+                    min={0}
+                    max={72}
                     value={settings.minAdvanceHours}
-                    onChange={(e) => update("minAdvanceHours", parseInt(e.target.value, 10))}
-                    className={cn(INPUT_CLS, "w-40")}
+                    onChange={(e) => update("minAdvanceHours", clampInt(e.target.value, 0, 72, settings.minAdvanceHours))}
+                    className={cn(INPUT_CLS, "w-28")}
+                    aria-label="Minimalne wyprzedzenie w godzinach"
                   />
+                  <span className="text-sm text-slate-500">godz.</span>
                 </div>
-                <div>
-                  <span className={LABEL_CLS}>Długość slotów czasowych</span>
-                  <p className={HINT_CLS}>Co ile minut pokazywane są dostępne terminy.</p>
-                  <div className="flex gap-2 flex-wrap">
-                    {TIME_SLOT_OPTIONS.map((opt) => (
-                      <SegmentedOption
-                        key={opt}
-                        active={settings.timeSlotDuration === opt}
-                        onClick={() => update("timeSlotDuration", opt)}
-                      >
-                        {opt} min
-                      </SegmentedOption>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            </GlassCard>
-          )}
+              </DecisionCard>
 
-          {/* Anulowanie */}
-          {activeSection === "anulowanie" && (
-            <GlassCard className="p-6 space-y-6">
-              <h3 className="text-sm font-semibold text-slate-900">Polityka anulowania</h3>
-              <div>
-                <span className={LABEL_CLS}>Limit anulowania</span>
-                <p className={HINT_CLS}>Klient może anulować wizytę najpóźniej na tyle godzin przed jej rozpoczęciem.</p>
+              <DecisionCard
+                question="Co ile pokazywać wolne terminy?"
+                consequence={
+                  <>
+                    Terminy w kalendarzu klienta pojawiają się co{" "}
+                    <span className="font-medium text-slate-700 tabular-nums">{settings.timeSlotDuration}</span> minut.
+                  </>
+                }
+              >
                 <div className="flex gap-2 flex-wrap">
-                  {CANCELLATION_HOURS_OPTIONS.map((opt) => (
-                    <SegmentedOption
-                      key={opt.value}
-                      active={settings.cancellationHours === opt.value}
-                      onClick={() => update("cancellationHours", opt.value)}
-                    >
-                      {opt.label}
+                  {TIME_SLOT_OPTIONS.map((opt) => (
+                    <SegmentedOption key={opt} active={settings.timeSlotDuration === opt} onClick={() => update("timeSlotDuration", opt)}>
+                      {opt} min
                     </SegmentedOption>
                   ))}
                 </div>
-              </div>
-              <div>
-                <span className={LABEL_CLS}>Opłata za anulowanie</span>
-                <div className="flex gap-2 flex-wrap mb-3 mt-2">
-                  {[
-                    { value: "", label: "Brak" },
-                    { value: "percentage", label: "Procentowa" },
-                    { value: "fixed", label: "Stała kwota" },
-                  ].map((opt) => (
-                    <SegmentedOption
-                      key={opt.value}
-                      active={settings.cancellationFeeType === opt.value}
-                      onClick={() => update("cancellationFeeType", opt.value)}
-                    >
+              </DecisionCard>
+            </>
+          )}
+
+          {/* Odwołania */}
+          {activeSection === "odwolania" && (
+            <>
+              <DecisionCard
+                question="Do kiedy klient może odwołać lub przełożyć wizytę?"
+                consequence={
+                  <>
+                    Klient odwoła lub przełoży wizytę najpóźniej{" "}
+                    <span className="font-medium text-slate-700 tabular-nums">{settings.cancellationHours}</span> godz. przed
+                    terminem — później musi skontaktować się z salonem. Ta zasada działa w panelu klienta.
+                  </>
+                }
+              >
+                <div className="flex gap-2 flex-wrap">
+                  {CANCELLATION_HOURS_OPTIONS.map((opt) => (
+                    <SegmentedOption key={opt} active={settings.cancellationHours === opt} onClick={() => update("cancellationHours", opt)}>
+                      {opt} godz.
+                    </SegmentedOption>
+                  ))}
+                </div>
+              </DecisionCard>
+
+              <DecisionCard
+                question="Czy stosujesz opłatę za późne odwołanie?"
+                consequence={
+                  settings.cancellationFeeType === "" ? (
+                    "Późne odwołania są bezpłatne."
+                  ) : (
+                    <>
+                      Deklarujesz opłatę{" "}
+                      <span className="font-medium text-slate-700 tabular-nums">
+                        {settings.cancellationFeeValue || 0}
+                        {feeUnit === "%" ? "%" : " PLN"}
+                      </span>{" "}
+                      za późne odwołanie. To Twoja polityka informacyjna — system nie pobiera jej automatycznie.
+                    </>
+                  )
+                }
+              >
+                <div className="flex gap-2 flex-wrap">
+                  {FEE_OPTIONS.map((opt) => (
+                    <SegmentedOption key={opt.value} active={settings.cancellationFeeType === opt.value} onClick={() => update("cancellationFeeType", opt.value)}>
                       {opt.label}
                     </SegmentedOption>
                   ))}
                 </div>
                 {settings.cancellationFeeType && (
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 mt-3">
                     <input
-                      type="number" min="0" step="1"
+                      type="number"
+                      min={0}
+                      step={1}
                       value={settings.cancellationFeeValue}
-                      onChange={(e) => update("cancellationFeeValue", parseFloat(e.target.value))}
+                      onChange={(e) => update("cancellationFeeValue", Math.max(0, parseFloat(e.target.value) || 0))}
                       aria-label="Wysokość opłaty za anulowanie"
                       className={cn(INPUT_CLS, "w-32")}
                     />
-                    <span className="text-sm text-slate-500">
-                      {settings.cancellationFeeType === "percentage" ? "%" : "PLN"}
-                    </span>
+                    <span className="text-sm text-slate-500">{feeUnit}</span>
                   </div>
                 )}
-              </div>
-            </GlassCard>
+              </DecisionCard>
+            </>
           )}
 
           {/* Powiadomienia */}
-          {activeSection === "powiadomienia" && (
-            <NotificationSettingsForm initial={notificationSettings} />
+          {activeSection === "powiadomienia" && <NotificationSettingsForm initial={notificationSettings} />}
+
+          {/* Profil publiczny */}
+          {activeSection === "profil" && (
+            <GlassCard className="p-5 sm:p-6">
+              <Overline className="mb-4">Profil publiczny</Overline>
+              <ProfileClient business={business} embedded />
+            </GlassCard>
           )}
 
-          {/* Niebezpieczna strefa */}
+          {/* Bezpieczeństwo / Niebezpieczna strefa */}
           {activeSection === "strefa" && (
             <GlassCard className="p-6 space-y-4">
               <div className="flex items-start gap-3">
-                <div
-                  className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0"
-                  style={DANGER_GHOST}
-                >
-                  <svg className="w-4.5 h-4.5 w-[18px] h-[18px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} aria-hidden="true">
+                <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0" style={DANGER_GHOST}>
+                  <svg className="w-[18px] h-[18px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} aria-hidden="true">
                     <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z" /><path d="M12 9v4" /><path d="M12 17h.01" />
                   </svg>
                 </div>
@@ -422,11 +496,7 @@ export function SettingsClient({ settings: initialSettings, notificationSettings
                   cta: "Usuń konto",
                 },
               ].map((item) => (
-                <div
-                  key={item.key}
-                  className="rounded-2xl p-4"
-                  style={{ background: "rgba(244,63,94,0.04)", border: "1px solid rgba(244,63,94,0.18)" }}
-                >
+                <div key={item.key} className="rounded-2xl p-4" style={{ background: "rgba(244,63,94,0.04)", border: "1px solid rgba(244,63,94,0.18)" }}>
                   <div className="flex items-start justify-between gap-4">
                     <div>
                       <p className="text-sm font-semibold text-slate-900">{item.title}</p>
@@ -446,6 +516,39 @@ export function SettingsClient({ settings: initialSettings, notificationSettings
           )}
         </div>
       </div>
+
+      {/* ── Sticky save bar — only when there are unsaved setting changes ── */}
+      {dirty && (
+        <div className="sticky bottom-4 z-30 flex justify-center fade-rise pointer-events-none">
+          <div
+            className="flex items-center gap-3 rounded-2xl pl-4 pr-2 py-2 pointer-events-auto"
+            style={ELEV_OVERLAY}
+            role="status"
+          >
+            <span className="text-sm text-slate-600">Masz niezapisane zmiany</span>
+            <GlassButton size="sm" onClick={resetChanges} disabled={isPending}>Odrzuć</GlassButton>
+            <InkButton size="sm" onClick={handleSave} disabled={isPending}>
+              {isPending ? "Zapisywanie…" : "Zapisz zmiany"}
+            </InkButton>
+          </div>
+        </div>
+      )}
+
+      {/* Transient saved confirmation (when nothing is dirty anymore) */}
+      {saved && !dirty && (
+        <div className="sticky bottom-4 z-30 flex justify-center pointer-events-none">
+          <div
+            className="flex items-center gap-2 rounded-2xl px-4 py-2 text-sm font-medium pointer-events-auto"
+            style={{ background: "rgba(16,185,129,0.12)", border: "1px solid rgba(16,185,129,0.30)", color: "#047857" }}
+            role="status"
+          >
+            <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} aria-hidden="true">
+              <path strokeLinecap="round" strokeLinejoin="round" d="m5 13 4 4L19 7" />
+            </svg>
+            Zapisano zmiany
+          </div>
+        </div>
+      )}
 
       {/* ── Danger modal ── */}
       <GlassModal

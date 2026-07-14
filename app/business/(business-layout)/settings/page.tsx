@@ -28,6 +28,7 @@ export default async function SettingsPage() {
 
   return (
     <SettingsClient
+      business={business}
       notificationSettings={notificationSettings}
       settings={{
         advanceBookingDays: business.advanceBookingDays,
