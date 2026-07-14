@@ -1,8 +1,20 @@
 # TermCatch — Experience Redesign · Cowork Handoff
 
-> Handoff for a fresh session. Implementation was stopped mid-Wave-5 at a usage
-> limit. **Everything through Wave 4 is committed; Wave 5 is ~60% done and
-> UNCOMMITTED but present in the working tree.** The production build is green.
+> **STATUS: ALL FIVE WAVES COMPLETE AND COMMITTED.** The experience redesign is
+> finished. Production build green (19/19), `tsc --noEmit` clean, all 20 business
+> + customer routes return HTTP 200, and the materially changed screens were
+> visually verified live (owner session, real DB). Rollback tag
+> `EXPERIENCE_REDESIGN_BEFORE` → `2b17878` still points at the pre-redesign baseline.
+>
+> **Wave 5 commits (this session):** `9a4eaa2` partial checkpoint (AI/Faktury/
+> Płatności/Kupony/Analityka) · `c8aa1c0` Marketing · `9378ec2` Ustawienia +
+> Salon Profile · `7eb3a5a` Customer Panel.
+>
+> Remaining is optional polish + two items that need manual eyes (see
+> "Verification State" and "Known Problems"): the **populated** customer focal
+> ticket (no upcoming appointment existed on the available account, and the
+> separate customer login was not used — password policy) and a full
+> tablet/desktop-width pass (the in-app preview pane caps at ~800px).
 
 ---
 
@@ -58,7 +70,7 @@ Naming rules (hard):
 | 2 | Dziś + Kalendarz | **COMPLETE** | `d0dee01` |
 | 3 | Klienci + Opinie | **COMPLETE** | `596bd98` |
 | 4 | Usługi + Zespół + Godziny | **COMPLETE** | `9622d7b` |
-| 5 | Tools/Company/Customer | **PARTIALLY COMPLETE — UNCOMMITTED** | — |
+| 5 | Tools/Company/Customer | **COMPLETE** | `9a4eaa2`·`c8aa1c0`·`9378ec2`·`7eb3a5a` |
 
 ### Wave 1 — COMPLETE (`be586c7`)
 Four-group nav config (`business-nav.tsx`), redesigned sidebar (identity anchor,
@@ -104,10 +116,32 @@ count); add-person ghost card; editor modal preserved.
 **Godziny** = visible week (7 day cards, open/closed + range), customer-facing
 summary sentence, copy-to-week, **sticky save bar only on dirty state**.
 
-### Wave 5 — PARTIALLY COMPLETE (UNCOMMITTED, build-green)
-DONE (uncommitted): **AI Asystent**, **Faktury**, **Płatności**, **Kupony** (real
-CRUD), **Analityka**. NOT STARTED: **Marketing**, **Ustawienia** redesign +
-Profil merge, **Customer Panel**. Detail below.
+### Wave 5 — COMPLETE
+- **AI Asystent**, **Faktury**, **Płatności**, **Kupony** (real CRUD),
+  **Analityka** — committed `9a4eaa2` (the transferred partial work).
+- **Marketing** (`c8aa1c0`) — honest campaign workspace: real audience segments
+  (Wszyscy / Nadchodzące / Stali / Uśpieni) from appointment history + per-channel
+  reachability (phone/e-mail + opt-in flags); SMS/WhatsApp via Twilio, e-mail via
+  Resend, **sends for real when configured, honestly reports "niedostępna" when
+  not — never fakes delivery**; token composer ({imię}/{salon}/{link}) + live
+  preview, working booking-link copy, local draft, confirm-gated send with a
+  truthful per-recipient tally. New files: `lib/marketing.ts` (client-safe logic),
+  `lib/marketing-config.ts` (server-only availability — keeps Resend/Twilio out of
+  the client bundle), `lib/actions/marketing.ts` (`sendCampaign`); additive
+  `smsConfigured`/`whatsappConfigured`/`emailConfigured` exports.
+- **Ustawienia + Salon Profile** (`9378ec2`) — decision-cards (question titles +
+  live consequence sentences) across Rezerwacje / Odwołania / Powiadomienia /
+  Profil publiczny / Bezpieczeństwo; dirty-state with a sticky save bar that only
+  appears on unsaved changes; NaN-guarded inputs; honest cancellation-fee copy
+  (system does not auto-charge). Salon Profile is embedded as a section while
+  `/business/profile` stays live — `ProfileClient` gained a backwards-compatible
+  `embedded` prop. All existing flows preserved (updateBusinessSettings, the
+  notification form, the danger-zone code-confirm deletion, invite).
+- **Customer Panel** (`7eb3a5a`) — appointment-focal: next-appointment ticket
+  (big date, relative countdown, salon+service+staff, Google-Maps action,
+  reschedule/cancel/favourite, cancellation policy), remaining upcoming,
+  quick-repeat from real completed history, recent history + review prompts,
+  quick links. All existing actions reused unchanged; history-only, no invented data.
 
 ---
 
@@ -213,49 +247,85 @@ All uncommitted files are **complete and build-green**, none partial/broken:
 
 ---
 
-## Verification State
+## Verification State (updated — Wave 5 completion session)
 
-- **Production build: SUCCESS.** Ran `pnpm build` AFTER the stop, with all
-  uncommitted Wave 5 files on disk → `✓ Compiled successfully in 3.9s`, static
-  generation 19/19, exit 0. Real, not assumed.
-- **Typecheck: PASS** (Next build type-checks; it would have failed on any TS error).
-- **Tests: NOT RUN** this session (no test run attempted for the redesign).
-- **Routes manually checked in a browser: NONE for Waves 1–5.** The in-app Preview
-  MCP disconnected mid-session and no dev server is running, so **there is zero
-  live/visual verification of the redesign** — correctness rests on the build +
-  code review only.
-- **Console/server errors: UNKNOWN** (not observed in a browser).
-- **Running at limit:** the background workflow (`wf_b63ef40d-650`) — its AI &
-  Płatności agents errored on the session limit but their files were already written.
-- **Not verified:** all visual/interaction, mobile/tablet/laptop breakpoints, both
-  roles, direct-URL compatibility, empty-vs-populated states, motion/reduced-motion,
-  the new Coupons CRUD end-to-end against the DB.
-
----
-
-## Known Problems / Risks
-
-1. **Wave 5 is uncommitted** — persists in the working tree but is not checkpointed;
-   commit it first (see Next Actions) so it can't be lost.
-2. **Marketing not built** — `/business/marketing` is still a `<ComingSoon>` stub,
-   yet the topbar `PAGE_META` gives it a "Nowa kampania" `?action=new` primary
-   action that currently does nothing. Build the page (and it should read `?action=new`).
-3. **Ustawienia + Customer Panel not redesigned** to Wave-5 spec (they render fine
-   on the earlier baseline, so not broken — just not the new experience). **Salon
-   Profile→Ustawienia merge not done** (route still standalone).
-4. Possible **unused-variable lint warnings** in agent-written `ai/page.tsx` and
-   `payments/page.tsx` (e.g. an unused icon/const) — non-blocking (build passed);
-   tidy during review.
-5. **No live/visual QA** performed for any wave (tooling constraint). High priority
-   before declaring done.
-6. **Coupons redemption** is intentionally not implemented (management only) — do
-   not present usage analytics as live.
-7. `recharts` is installed but unused (charts are hand-rolled SVG) — harmless; can
-   be removed in cleanup.
+- **Production build: SUCCESS** — `✓ Compiled successfully`, static generation
+  19/19, exit 0. Re-run green after every module.
+- **Typecheck: PASS** — `pnpm typecheck` (`tsc --noEmit`) exit 0, standalone.
+- **Tests: NONE EXIST** — no test script in `package.json` and no `*.test.*` /
+  `*.spec.*` files in the repo. Nothing to run (stated honestly, not skipped).
+- **Live/visual verification: DONE** (dev server on :3000, authenticated owner
+  session "Admin", real Supabase DB reachable — one transient `P1001` at cold
+  start only):
+  - **Marketing** — renders real audience ("2 klientów", segments, reach "2 z 2"),
+    E-mail shows "skonfigurowana" (Resend set), booking link, live preview; no
+    console errors. Send NOT triggered (would send real e-mail — correct to avoid).
+  - **Ustawienia** — decision cards + live consequences; **dirty-state confirmed**
+    (changed a value → "Masz niezapisane zmiany" sticky bar appeared; reverting
+    cleared it); **Profil publiczny** section renders the embedded editor with its
+    save intact; `/business/profile` still renders standalone (backwards-compat).
+  - **Customer Panel** — renders; empty focal hero + **quick-repeat from real
+    completed history** ("dainoda"/"nada") + recent history w/ "Napisz opinię" +
+    quick links; no console errors.
+  - **Analityka** — real summary sentence, revenue chart, stat tickers, weekday
+    rhythm, revenue structure, top clients — all real, no fabricated numbers.
+  - **Kupony** — **persistence proven end-to-end**: created a coupon → survived a
+    full reload (DB round-trip) → deleted → confirmed removed. Test data cleaned up.
+- **Route health: all 20 routes → HTTP 200** (14 business nav + profile + 5
+  customer), authenticated. No 500s / error redirects → no Wave 1–4 regressions.
+- **Console: no errors** on every page inspected.
+- **NOT visually verified (needs manual eyes):**
+  - Customer focal ticket **populated** state — no upcoming appointment existed on
+    the "Admin" account and the separate customer login was not used (password
+    policy). The empty-hero path + surrounding sections are verified; the ticket
+    card is build- + type-checked and shares the verified primitives.
+  - Full **tablet/desktop-width** visual pass — the in-app preview pane caps at
+    ~800px (renders the tablet/mobile layout with bottom nav); desktop grid
+    confirmed structurally + one 1280px settings check.
+  - Settings **save** persistence not committed to DB (dirty-state verified; save
+    uses the unchanged, previously-working `updateBusinessSettings`).
 
 ---
 
-## Exact Next Actions (resume here)
+## Known Problems / Risks / Backend limitations
+
+Resolved this session: Wave 5 committed; Marketing built (no longer a stub);
+Ustawienia + Customer Panel redesigned; Salon-Profile→Ustawienia merge done with
+the route preserved; Coupons CRUD proven against the DB; live/visual QA performed.
+
+Remaining honest limitations (product/backend, not regressions):
+
+1. **Marketing delivery is env-gated.** Real send needs Twilio (SMS/WhatsApp) and
+   Resend (e-mail). In this dev env Resend IS configured (e-mail sends for real);
+   Twilio is not (SMS/WhatsApp show "niedostępna" — correct, no fake success).
+   There is still **no `Campaign`/`CampaignRecipient` model** — drafts are
+   localStorage-only and sends are not persisted/scheduled/tracked. SMS/WhatsApp
+   marketing consent is approximated by the `smsNotifications`/`whatsappNotifications`
+   flags (there is no dedicated SMS-marketing opt-in column).
+2. **Coupons redemption** still intentionally not implemented (management only;
+   `usesCount` stays 0) — not wired into booking.
+3. **Cancellation fee is declarative** — `cancellationFeeType/Value` are saved and
+   shown as policy, but `cancelAppointment` does not auto-charge. Settings copy
+   says this honestly.
+4. **Faktury** = sales-history only (no invoice generation/numbering/PDF, no Stripe
+   webhook persistence) — unchanged from the partial checkpoint.
+5. **AI Asystent** = deterministic rule-based observations only (no LLM backend);
+   labelled as such, genuine ML behind an honest "Wkrótce".
+6. Possible **unused-variable lint warnings** in the earlier agent-written
+   `ai/page.tsx` / `payments/page.tsx` — non-blocking (build + typecheck green).
+7. `recharts` installed but unused (charts are hand-rolled SVG) — harmless.
+8. Customer focal **ticket populated state** and full tablet/desktop-width pass
+   still want a manual look (see Verification State).
+
+---
+
+## Exact Next Actions
+
+> **All steps below are DONE** (kept as a record of what was executed). The only
+> open follow-ups are the manual-eyes items in Verification State / Known Problems.
+> **Rollback:** `git reset --hard EXPERIENCE_REDESIGN_BEFORE` (→ `2b17878`) reverts
+> the entire experience redesign (Waves 1–5). To drop only Wave 5, reset to
+> `9622d7b`. To drop one module, `git revert <its commit>`.
 
 1. **Inspect first:** run `git status` (expect 6 modified + 3 untracked Wave-5
    files) and `git log --oneline -6`. Read this file fully.
