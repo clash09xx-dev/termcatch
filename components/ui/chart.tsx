@@ -100,13 +100,17 @@ export function AreaChart({
         )}
       </svg>
 
-      {/* x labels */}
+      {/* x labels — thinned when dense */}
       <div className="flex justify-between px-1 mt-1">
-        {data.map((d, i) => (
-          <span key={i} className={cn("text-[10px] tabular-nums", hover === i ? "text-slate-700 font-semibold" : "text-slate-400")}>
-            {d.label}
-          </span>
-        ))}
+        {data.map((d, i) => {
+          const step = Math.ceil(n / 8);
+          const show = i === 0 || i === n - 1 || i % step === 0;
+          return (
+            <span key={i} className={cn("text-[10px] tabular-nums", hover === i ? "text-slate-700 font-semibold" : "text-slate-400")}>
+              {show || hover === i ? d.label : ""}
+            </span>
+          );
+        })}
       </div>
 
       {/* tooltip */}
