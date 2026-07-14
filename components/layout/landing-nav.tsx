@@ -10,7 +10,7 @@ import { motion, AnimatePresence } from "framer-motion";
 type AuthState =
   | { status: "loading" }
   | { status: "guest" }
-  | { status: "authed"; dashboardHref: string };
+  | { status: "authed"; dashboardHref: string; isCustomer: boolean };
 
 // ── Chrome glass pill styles ──────────────────────────────────────────────────
 
@@ -43,17 +43,23 @@ export function LandingNav() {
       .then(({ data: { user } }) => {
         if (!user) { setAuth({ status: "guest" }); return; }
         const role = user.user_metadata?.role as string | undefined;
+        const isBusiness = role === "BUSINESS_OWNER";
         setAuth({
           status: "authed",
-          dashboardHref: role === "BUSINESS_OWNER" ? "/business/dashboard" : "/customer/dashboard",
+          dashboardHref: isBusiness ? "/business/dashboard" : "/customer/dashboard",
+          isCustomer: !isBusiness,
         });
       })
       .catch(() => setAuth({ status: "guest" }));
   }, []);
 
+  // "Dla specjalistów" (/for-business) is a B2B acquisition link — irrelevant to a
+  // logged-in customer, so hide it for them (guests + business owners still see it).
   const links = [
     { href: "/search", label: "Szukaj" },
-    { href: "/for-business", label: "Dla specjalistów" },
+    ...(auth.status === "authed" && auth.isCustomer
+      ? []
+      : [{ href: "/for-business", label: "Dla specjalistów" }]),
   ];
 
   return (
