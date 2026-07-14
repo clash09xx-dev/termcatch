@@ -2,23 +2,69 @@ export const dynamic = "force-dynamic";
 
 import { redirect } from "next/navigation";
 import { getServerUser } from "@/lib/supabase/server";
-import { ComingSoon } from "@/components/ui/glass";
+import { prisma } from "@/lib/prisma";
+import { buildAudience, SEGMENTS, channelReach } from "@/lib/marketing";
+import { channelAvailability } from "@/lib/marketing-config";
+import { MarketingClient, type SegmentView } from "./marketing-client";
 
-// Kampanie SMS / e-mail nie mają jeszcze backendu. Link do rezerwacji —
-// jedyna działająca rzecz z tej strony — mieszka teraz na Pulpicie.
+const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? "https://termcatch.com";
+
 export default async function MarketingPage() {
   const user = await getServerUser();
   if (!user) redirect("/login");
 
+  const dbUser = await prisma.user.findUnique({
+    where: { supabaseId: user.id },
+    include: { ownedBusinesses: { take: 1, select: { id: true, name: true, slug: true } } },
+  });
+  const business = dbUser?.ownedBusinesses[0];
+  if (!business) redirect("/business/onboarding");
+
+  const appointments = await prisma.appointment.findMany({
+    where: { businessId: business.id },
+    select: {
+      customerId: true,
+      status: true,
+      startTime: true,
+      customer: {
+        select: {
+          firstName: true,
+          lastName: true,
+          email: true,
+          phone: true,
+          marketingEmails: true,
+          smsNotifications: true,
+          whatsappNotifications: true,
+        },
+      },
+    },
+    orderBy: { startTime: "desc" },
+  });
+
+  const recipients = buildAudience(appointments);
+  const segments: SegmentView[] = SEGMENTS.map((s) => {
+    const inSeg = recipients.filter(s.match);
+    return {
+      key: s.key,
+      label: s.label,
+      hint: s.hint,
+      total: inSeg.length,
+      reach: {
+        sms: inSeg.filter((r) => channelReach(r, "sms")).length,
+        whatsapp: inSeg.filter((r) => channelReach(r, "whatsapp")).length,
+        email: inSeg.filter((r) => channelReach(r, "email")).length,
+      },
+      sample: inSeg.find((r) => r.firstName)?.firstName ?? null,
+    };
+  });
+
   return (
-    <ComingSoon
-      title="Marketing"
-      body="Kampanie SMS i e-mail do Twojej bazy klientów — promocje, wolne terminy, sezonowe oferty. Twój link do rezerwacji znajdziesz na Pulpicie."
-      icon={
-        <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} aria-hidden="true">
-          <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
-        </svg>
-      }
+    <MarketingClient
+      segments={segments}
+      channels={channelAvailability()}
+      salonName={business.name}
+      bookingUrl={`${APP_URL}/b/${business.slug}`}
+      totalCustomers={recipients.length}
     />
   );
 }

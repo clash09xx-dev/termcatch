@@ -10,6 +10,21 @@ function twilioConfigured(): boolean {
   return sid.startsWith("AC") && sid.length > 10 && token.length > 10 && !token.includes("...");
 }
 
+/**
+ * Czy kanał SMS/WhatsApp jest realnie skonfigurowany do wysyłki.
+ * Odzwierciedla dokładnie warunki bramkujące w sendSms/sendWhatsApp,
+ * żeby UI mógł uczciwie pokazać dostępność wysyłki (bez udawania sukcesu).
+ */
+export function smsConfigured(): boolean {
+  const from = process.env.TWILIO_FROM_NUMBER ?? "";
+  return twilioConfigured() && from.length > 0 && !from.includes("...");
+}
+
+export function whatsappConfigured(): boolean {
+  const from = process.env.TWILIO_WHATSAPP_FROM ?? "";
+  return twilioConfigured() && from.length > 0 && !from.includes("...");
+}
+
 async function twilioSend(to: string, from: string, body: string): Promise<boolean> {
   if (!twilioConfigured()) {
     console.log(`[messaging:skipped] ${to} — brak konfiguracji Twilio`);

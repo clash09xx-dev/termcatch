@@ -23,6 +23,11 @@ const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? "https://termcatch.com";
 
 let warnedMissingKey = false;
 
+/** Czy wysyłka e-mail (Resend) jest realnie skonfigurowana. */
+export function emailConfigured(): boolean {
+  return Boolean(process.env.RESEND_API_KEY);
+}
+
 function getClient(): Resend | null {
   const key = process.env.RESEND_API_KEY;
   if (!key) {
