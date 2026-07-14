@@ -10,11 +10,57 @@
 > Płatności/Kupony/Analityka) · `c8aa1c0` Marketing · `9378ec2` Ustawienia +
 > Salon Profile · `7eb3a5a` Customer Panel.
 >
-> Remaining is optional polish + two items that need manual eyes (see
-> "Verification State" and "Known Problems"): the **populated** customer focal
-> ticket (no upcoming appointment existed on the available account, and the
-> separate customer login was not used — password policy) and a full
-> tablet/desktop-width pass (the in-app preview pane caps at ~800px).
+> Remaining is optional polish + one item that needs manual eyes (see "Final QA
+> Pass"): the logged-out **register/login** pages could not be re-inspected while
+> authenticated (the auth guard redirects them to the dashboard, and re-login is
+> blocked by the password policy). Login was confirmed rendering at session start.
+
+---
+
+## Final QA Pass (visual + functional)
+
+A full visual + functional QA pass was run across **four viewports — 1440×900,
+1280×800, 1024×768, 390×844** — on the live dev server (authenticated owner
+"Admin", real Supabase DB).
+
+**Result: NO visual or functional regressions found. No code changes made**
+(per "fix only concrete problems / no speculative changes").
+
+Verified across the viewports:
+- **Zero horizontal overflow** on every screen at every viewport (measured
+  `scrollWidth` vs `innerWidth`, not eyeballed).
+- **Route-health: 24/24 routes HTTP 200** (business + customer + public
+  `/`, `/search`, `/b/[slug]`, `/b/[slug]/book`).
+- **No console errors** on any page.
+- **Populated customer ticket VERIFIED** — a future PENDING appointment was
+  temporarily inserted (then deleted): big date "16 LIP", relative "pojutrze",
+  salon+service, Google-Maps address action, Przełóż/Anuluj/♥ actions, "Oczekuje"
+  status, 24 h policy. Renders correctly at mobile + desktop.
+- **Calendar mobile (390):** clean single-day view, empty + populated states,
+  detail modal opens as a bottom sheet.
+- **Settings + embedded Salon Profile:** decision cards + dirty-state sticky bar;
+  Profil publiczny embeds the editor with its save intact; `/business/profile`
+  still renders standalone.
+- **Honesty (all confirmed):** Marketing implies no unsupported tracking; Kupony
+  is management-only; Faktury = "historia sprzedaży" with the "Wystaw fakturę"
+  button truly `disabled` + honest footer; AI = "nie jest to prognoza AI" /
+  "nie udajemy, że to już działa"; cancellation fee = "system nie pobiera jej
+  automatycznie". Salon `/b/[slug]` renders (old P0 crash gone).
+
+Non-issues (documented, deliberately NOT fixed):
+1. **Transient dashboard DB error** — the Supabase pooler drops the first
+   connection after idle → a one-off `PrismaClientKnownRequestError` overlay that
+   recovers on reload. Environmental/infra, not a redesign regression; every data
+   page depends on the same connection.
+2. **TanStack Query Devtools button** (`z-index 100000`) overlaps the mobile
+   modal/CTA — **dev-only**, absent from production builds.
+3. **"od 0 zł"** service on the test salon in search — pre-existing seed-data
+   artifact (a 0-zł service), not a redesign issue.
+
+Manual eyes still wanted: logged-out **register** page (auth redirect + password
+policy prevented inspection this pass); a native ≥1024px screenshot (the in-app
+preview pane downscales captures to 800px wide, though overflow was measured
+directly at each true viewport).
 
 ---
 
