@@ -13,8 +13,9 @@
 > deps). **Schema changes applied via `pnpm db:push`** (no migrations dir).
 
 **Implementation order & status:**
-1. **Service add-ons + booking-duration integration — ✅ DONE** (commit below)
-2. Coupon redemption — ⏳ next
+1. **Service add-ons + booking-duration integration — ✅ DONE**
+2. **Coupon redemption — ✅ DONE**
+3. "Caught one." success moment — ⏳ next
 3. "Caught one." success moment — pending
 4. Marketing persistence — pending
 5. DB hardening + logged-out auth QA — pending
@@ -45,6 +46,27 @@
   business dashboard detail, CRM visit history, customer history list, e-mail
   confirmation. (Customer ticket + booking confirm/success DONE.)
 - `createManualAppointment` (walk-in) intentionally add-on-free for now.
+
+### Area 2 — Coupon redemption ✅
+- **Applies to combined subtotal** (service base + add-ons), server-side only.
+- `lib/actions/coupon-redemption.ts` → `previewCoupon` (read-only: validates +
+  returns subtotal/discount/final for the wizard "Zastosuj" button; NEVER mutates).
+- `createAppointment` accepts `couponCode`; inside the booking `$transaction` it
+  re-fetches the coupon (business-scoped by `@@unique([businessId, code])`),
+  re-evaluates against the server subtotal, and **atomically claims one use**
+  via `updateMany({ where: { id, usesCount: { lt: maxUses } }, data: { increment }})`
+  — count===0 → throw (no over-limit under races). `usesCount` increments ONLY on
+  a real booking. Snapshots `couponCode/couponType/couponValue/couponDiscount` +
+  `subtotal` onto the appointment; `price` = final. Changing/deleting the coupon
+  later can't alter historical totals.
+- `evaluateCoupon`: PERCENTAGE + FIXED_AMOUNT; **FREE_SERVICE rejected honestly**
+  (no online rule). Negative totals clamped. Polish messages throughout.
+- **Wizard:** coupon input in step 4 (Zastosuj/Usuń), Polish success/error, and
+  Suma / Rabat / Do zapłaty rows in confirm + success.
+- **Tests:** 22 pass (added FREE_SERVICE rejection). Percentage/fixed/inactive/
+  expired/not-yet-active/exhausted/min-order/discount>subtotal all covered pure;
+  atomic-increment + snapshot are DB/action-level (verify in final QA).
+- **Live E2E (coupon applied on a real booking) pending** for final QA step 10.
 
 ---
 

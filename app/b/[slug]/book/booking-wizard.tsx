@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
 import { stepSlide, stepFade } from "@/lib/motion";
 import { formatCurrency, formatDuration, formatDate, getInitials, cn } from "@/lib/utils";
+import { previewCoupon, type CouponPreview } from "@/lib/actions/coupon-redemption";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -329,6 +330,9 @@ export default function BookingWizard({
   const [submitError, setSubmitError] = useState<string>("");
   // addonId → quantity. Empty by default — never preselect paid add-ons.
   const [selectedAddons, setSelectedAddons] = useState<Record<string, number>>({});
+  const [couponInput, setCouponInput] = useState("");
+  const [couponPreview, setCouponPreview] = useState<CouponPreview | null>(null);
+  const [couponPending, setCouponPending] = useState(false);
 
   const days = getNext14Days();
 
@@ -375,6 +379,33 @@ export default function BookingWizard({
         .join(","),
     [selectedAddons]
   );
+
+  const appliedCoupon = couponPreview?.ok ? couponPreview : null;
+  const effectiveFinal = appliedCoupon ? appliedCoupon.finalTotal : subtotal;
+
+  // A coupon is valid only for the exact service+add-on subtotal it was checked
+  // against — clear it whenever the service or add-ons change.
+  useEffect(() => {
+    setCouponPreview(null);
+    setCouponInput("");
+  }, [selectedServiceId, addonParam]);
+
+  const applyCoupon = useCallback(() => {
+    const code = couponInput.trim();
+    if (!code) return;
+    setCouponPending(true);
+    previewCoupon({
+      businessId: business.id,
+      serviceId: selectedServiceId,
+      code,
+      addons: Object.entries(selectedAddons)
+        .filter(([, q]) => q > 0)
+        .map(([addonId, quantity]) => ({ addonId, quantity })),
+    })
+      .then((res) => setCouponPreview(res))
+      .catch(() => setCouponPreview({ ok: false, message: "Nie udało się sprawdzić kuponu." }))
+      .finally(() => setCouponPending(false));
+  }, [couponInput, business.id, selectedServiceId, selectedAddons]);
   const selectedEmployee =
     selectedEmployeeId
       ? employees.find((e) => e.id === selectedEmployeeId) ?? null
@@ -454,6 +485,7 @@ export default function BookingWizard({
         addons: Object.entries(selectedAddons)
           .filter(([, q]) => q > 0)
           .map(([addonId, quantity]) => ({ addonId, quantity })),
+        couponCode: appliedCoupon ? appliedCoupon.code : undefined,
       });
 
       setDirection(1);
@@ -476,7 +508,7 @@ export default function BookingWizard({
   const nextDisabled =
     step === 1 ? !selectedServiceId : step === 3 ? !selectedDate || !selectedTime : false;
 
-  const price = selectedService ? formatCurrency(subtotal) : "";
+  const price = selectedService ? formatCurrency(effectiveFinal) : "";
 
   const summaryMeta = selectedService
     ? [
@@ -928,7 +960,13 @@ export default function BookingWizard({
                         nums: true,
                       })),
                       { label: "Czas trwania", value: formatDuration(finalDuration) },
-                      { label: addonLines.length > 0 ? "Razem" : "Cena", value: price, bold: true, nums: true },
+                      ...(appliedCoupon
+                        ? [
+                            { label: "Suma", value: formatCurrency(appliedCoupon.subtotal), nums: true },
+                            { label: `Rabat (${appliedCoupon.code})`, value: `−${formatCurrency(appliedCoupon.discountAmount)}`, nums: true },
+                            { label: "Do zapłaty", value: price, bold: true, nums: true },
+                          ]
+                        : [{ label: addonLines.length > 0 ? "Razem" : "Cena", value: price, bold: true, nums: true }]),
                       {
                         label: "Specjalista",
                         value: selectedEmployee
@@ -960,6 +998,59 @@ export default function BookingWizard({
                       </div>
                     ))}
                   </dl>
+
+                  {/* Coupon */}
+                  <div className="mb-4">
+                    <label htmlFor="booking-coupon" className="block text-xs font-semibold text-slate-600 mb-1.5">
+                      Kod rabatowy <span className="text-slate-400 font-normal">— opcjonalnie</span>
+                    </label>
+                    <div className="flex gap-2">
+                      <input
+                        id="booking-coupon"
+                        value={couponInput}
+                        onChange={(e) => setCouponInput(e.target.value.toUpperCase())}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter") {
+                            e.preventDefault();
+                            applyCoupon();
+                          }
+                        }}
+                        placeholder="WELCOME20"
+                        disabled={!!appliedCoupon}
+                        className="input-glass flex-1 px-3.5 py-2.5 text-sm rounded-xl outline-none text-slate-800 placeholder:text-slate-400 uppercase tabular-nums disabled:opacity-60"
+                      />
+                      {appliedCoupon ? (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setCouponPreview(null);
+                            setCouponInput("");
+                          }}
+                          className="px-4 rounded-xl text-sm font-semibold text-slate-600 flex-shrink-0"
+                          style={{ background: "rgba(255,255,255,0.72)", border: "1px solid rgba(203,213,225,0.55)" }}
+                        >
+                          Usuń
+                        </button>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={applyCoupon}
+                          disabled={couponPending || !couponInput.trim()}
+                          className="px-4 rounded-xl text-sm font-semibold disabled:opacity-50 flex-shrink-0"
+                          style={{ background: INK, border: "1px solid #0F172A", color: "#F8FAFC" }}
+                        >
+                          {couponPending ? "…" : "Zastosuj"}
+                        </button>
+                      )}
+                    </div>
+                    {couponPreview && (
+                      <p role="status" className="text-xs mt-1.5 font-medium" style={{ color: couponPreview.ok ? "#047857" : "#BE123C" }}>
+                        {couponPreview.ok
+                          ? `${couponPreview.message} Rabat −${formatCurrency(couponPreview.discountAmount)}.`
+                          : couponPreview.message}
+                      </p>
+                    )}
+                  </div>
 
                   {/* Notes */}
                   <div className="mb-4">
@@ -1073,6 +1164,17 @@ export default function BookingWizard({
                       </span>
                     </div>
                     <div className="h-px" style={{ background: "rgba(203,213,225,0.40)" }} />
+                    {appliedCoupon && (
+                      <>
+                        <div className="flex items-center justify-between text-sm">
+                          <span className="text-slate-500">Rabat ({appliedCoupon.code})</span>
+                          <span className="font-medium tabular-nums" style={{ color: "#047857" }}>
+                            −{formatCurrency(appliedCoupon.discountAmount)}
+                          </span>
+                        </div>
+                        <div className="h-px" style={{ background: "rgba(203,213,225,0.40)" }} />
+                      </>
+                    )}
                     <div className="flex items-center justify-between text-sm">
                       <span className="text-slate-500">Do zapłaty</span>
                       <span className="font-bold text-slate-900 tabular-nums">{price}</span>

@@ -16,7 +16,7 @@ import {
 import { sendSms, sendWhatsApp } from "@/lib/messaging";
 import { getBusinessNotificationSettings } from "@/lib/notification-settings";
 import { resolveBookingAddons, type AddonSelection } from "@/lib/booking-addons";
-import { computeBookingTotals } from "@/lib/booking-pricing";
+import { computeBookingTotals, evaluateCoupon } from "@/lib/booking-pricing";
 
 /** SMS/WhatsApp do salonu zgodnie z jego preferencjami — nigdy nie rzuca. */
 async function notifySalonChannels(businessId: string, message: string) {
@@ -101,6 +101,8 @@ export type CreateAppointmentInput = {
   customerNote?: string;
   /** Optional service add-ons (validated + priced server-side; client values ignored). */
   addons?: AddonSelection[];
+  /** Optional coupon code (validated + applied server-side against the subtotal). */
+  couponCode?: string;
 };
 
 // ─── Customer: Create ─────────────────────────────────────────
@@ -136,10 +138,12 @@ export async function createAppointment(data: CreateAppointmentInput) {
   // Client-submitted prices/durations are never trusted — recomputed from the DB.
   const addonLines = await resolveBookingAddons(data.businessId, data.serviceId, data.addons);
   const basePrice = service.discountedPrice ?? service.price;
-  const totals = computeBookingTotals({ basePrice, baseDuration: service.duration, addonLines });
-  const end = new Date(start.getTime() + totals.totalDuration * 60_000);
+  const base = computeBookingTotals({ basePrice, baseDuration: service.duration, addonLines });
+  const end = new Date(start.getTime() + base.totalDuration * 60_000);
+  const couponCode = data.couponCode?.trim();
 
-  // Conflict guard + create in one transaction to shrink the double-booking race.
+  // Conflict guard + coupon claim + create in one transaction: shrinks the
+  // double-booking race AND makes coupon usage atomic (no over-limit under races).
   const appointment = await prisma.$transaction(async (tx) => {
     const conflict = await tx.appointment.findFirst({
       where: {
@@ -156,6 +160,51 @@ export async function createAppointment(data: CreateAppointmentInput) {
     if (conflict) {
       throw new Error("Ten termin został właśnie zajęty. Wybierz inną godzinę.");
     }
+
+    let discountAmount = 0;
+    const couponData: {
+      couponId?: string;
+      couponCode?: string;
+      couponType?: string;
+      couponValue?: number;
+      couponDiscount?: number;
+    } = {};
+    if (couponCode) {
+      const c = await tx.coupon.findFirst({ where: { businessId: data.businessId, code: couponCode } });
+      if (!c) throw new Error("Nieprawidłowy kod kuponu.");
+      const evalr = evaluateCoupon(
+        {
+          code: c.code,
+          type: c.type,
+          value: c.value,
+          minOrderValue: c.minOrderValue,
+          maxUses: c.maxUses,
+          usesCount: c.usesCount,
+          validFrom: c.validFrom,
+          validUntil: c.validUntil,
+          isActive: c.isActive,
+        },
+        base.subtotal,
+        new Date()
+      );
+      if (!evalr.valid) throw new Error(evalr.reason);
+      // Atomically claim one use, guarded by maxUses so concurrent bookings
+      // cannot push usesCount past the limit. Only increments on real booking.
+      const claimed = await tx.coupon.updateMany({
+        where: { id: c.id, ...(c.maxUses != null ? { usesCount: { lt: c.maxUses } } : {}) },
+        data: { usesCount: { increment: 1 } },
+      });
+      if (claimed.count === 0) throw new Error("Limit użyć tego kuponu został wyczerpany.");
+      discountAmount = evalr.discountAmount;
+      couponData.couponId = c.id;
+      couponData.couponCode = c.code;
+      couponData.couponType = c.type;
+      couponData.couponValue = c.value;
+      couponData.couponDiscount = discountAmount;
+    }
+
+    const totals = computeBookingTotals({ basePrice, baseDuration: service.duration, addonLines, discountAmount });
+
     return tx.appointment.create({
       data: {
         businessId: data.businessId,
@@ -170,6 +219,7 @@ export async function createAppointment(data: CreateAppointmentInput) {
         basePrice: totals.basePrice,
         addonsTotal: totals.addonsTotal,
         subtotal: totals.subtotal,
+        ...couponData,
         currency: service.currency,
         customerNotes: data.customerNote ?? null,
         addons: {

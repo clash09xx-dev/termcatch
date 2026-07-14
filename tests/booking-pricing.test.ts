@@ -128,6 +128,12 @@ describe("evaluateCoupon — discount rules", () => {
     const r = evaluateCoupon(coupon({ type: "PERCENTAGE", value: 100 }), 80, NOW);
     if (r.valid) assert.equal(r.discountAmount, 80);
   });
+
+  test("unsupported FREE_SERVICE type is rejected (not silently treated as a value)", () => {
+    const r = evaluateCoupon(coupon({ type: "FREE_SERVICE", value: 999 }), 100, NOW);
+    assert.equal(r.valid, false);
+    if (!r.valid) assert.match(r.reason, /nie jest obsługiwany/);
+  });
 });
 
 describe("computeBookingTotals — final amount & duration", () => {

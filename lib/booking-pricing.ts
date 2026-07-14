@@ -5,7 +5,9 @@
 // durations are NEVER trusted. Money is rounded to 2 decimals; durations are
 // whole minutes.
 
-export type CouponType = "PERCENTAGE" | "FIXED_AMOUNT";
+// The DB enum also has FREE_SERVICE, which has no online-redemption rule yet —
+// evaluateCoupon rejects it honestly rather than guessing a discount.
+export type CouponType = "PERCENTAGE" | "FIXED_AMOUNT" | "FREE_SERVICE";
 
 /** Add-on definition as loaded from the DB (trusted values). */
 export type AddonDef = {
@@ -109,8 +111,10 @@ export function evaluateCoupon(coupon: CouponDef, subtotal: number, now: Date): 
   let discountAmount: number;
   if (coupon.type === "PERCENTAGE") {
     discountAmount = money((subtotal * coupon.value) / 100);
-  } else {
+  } else if (coupon.type === "FIXED_AMOUNT") {
     discountAmount = money(coupon.value);
+  } else {
+    return { valid: false, reason: "Ten typ kuponu nie jest obsługiwany przy rezerwacji online." };
   }
   // Never allow a negative final amount.
   discountAmount = Math.min(discountAmount, subtotal);
