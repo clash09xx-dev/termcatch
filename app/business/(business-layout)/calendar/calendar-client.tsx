@@ -2,7 +2,7 @@
 
 import { useState, useMemo, useRef } from "react";
 import { useRouter } from "next/navigation";
-import type { Appointment, Service, Employee, User, WorkingHours } from "@prisma/client";
+import type { Appointment, AppointmentAddon, Service, Employee, User, WorkingHours } from "@prisma/client";
 import {
   confirmAppointment, declineAppointment, completeAppointment, markNoShow,
 } from "@/lib/actions/appointments";
@@ -10,9 +10,10 @@ import { GlassModal, ModalInkButton, ModalGlassButton } from "@/components/ui/gl
 import { NewAppointmentSheet } from "@/components/business/new-appointment-sheet";
 import { Segmented } from "@/components/ui/segmented";
 import { STATUS_TINT, CHIP, HAIRLINE, type StatusKey } from "@/components/ui/glass/tokens";
+import { computeLanes } from "@/lib/calendar-utils";
 import { cn } from "@/lib/utils";
 
-type ApptR = Appointment & { service: Service; employee: Employee | null; customer: User };
+type ApptR = Appointment & { service: Service; employee: Employee | null; customer: User; addons: AppointmentAddon[] };
 type Svc = { id: string; name: string; duration: number; price: number; discountedPrice: number | null };
 type Emp = { id: string; firstName: string; lastName: string; color: string };
 
@@ -34,6 +35,7 @@ const DOW = ["SUNDAY", "MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY", "
 const D_SHORT = ["Nd", "Pn", "Wt", "Śr", "Cz", "Pt", "Sb"];
 const D_FULL = ["niedziela", "poniedziałek", "wtorek", "środa", "czwartek", "piątek", "sobota"];
 const MON = ["stycznia", "lutego", "marca", "kwietnia", "maja", "czerwca", "lipca", "sierpnia", "września", "października", "listopada", "grudnia"];
+const MON_NOM = ["Styczeń", "Luty", "Marzec", "Kwiecień", "Maj", "Czerwiec", "Lipiec", "Sierpień", "Wrzesień", "Październik", "Listopad", "Grudzień"];
 const STATUS_META = STATUS_TINT as Record<string, { label: string; style: React.CSSProperties; rail: string }>;
 
 function ymd(d: Date): string {
@@ -112,16 +114,17 @@ export function CalendarClient(props: Props) {
       .finally(() => setPending(false));
   }
 
-  // Lanes for the day view (desktop). Columns = employees (when unfiltered) else single.
-  const laneEmps: (Emp | null)[] = empFilter !== "all"
-    ? [employees.find((e) => e.id === empFilter) ?? null]
-    : employees.length > 0 ? employees : [null];
-
   const dayWin = windowFor(cursor) ?? [8 * 60, 20 * 60];
   const [openMin, closeMin] = dayWin;
   const isClosedToday = windowFor(cursor) === null;
   const gridHours = Array.from({ length: Math.ceil((closeMin - openMin) / 60) + 1 }, (_, i) => openMin + i * 60).filter((m) => m <= closeMin);
   const dayAppts = apptsForDay(cursor);
+
+  // Lanes for the day view (desktop). Columns = employees (when unfiltered) else
+  // single. Appointments booked with "Dowolny specjalista" have employeeId=null —
+  // they get their own "Bez przypisania" lane whenever the day has any, so they
+  // can never silently disappear from the grid.
+  const laneEmps: (Emp | null)[] = computeLanes(employees, empFilter, dayAppts.some((a) => !a.employeeId));
 
   function blockStyle(a: ApptR) {
     const s = localMin(new Date(a.startTime));
@@ -289,6 +292,13 @@ export function CalendarClient(props: Props) {
             <div className="space-y-2.5 mt-2">
               <Row label="Czas" value={`${new Date(selected.startTime).toLocaleTimeString("pl-PL", { hour: "2-digit", minute: "2-digit" })} – ${new Date(selected.endTime).toLocaleTimeString("pl-PL", { hour: "2-digit", minute: "2-digit" })} (${selected.duration} min)`} />
               <Row label="Cena" value={`${selected.price.toFixed(0)} zł`} />
+              {selected.addons?.map((ad) => (
+                <Row
+                  key={ad.id}
+                  label={`+ ${ad.name}${ad.quantity > 1 ? ` ×${ad.quantity}` : ""}`}
+                  value={`${ad.totalPrice.toFixed(0)} zł · ${ad.totalDuration} min`}
+                />
+              ))}
               {selected.employee && <Row label="Pracownik" value={`${selected.employee.firstName} ${selected.employee.lastName}`} />}
               {selected.customer.phone && <Row label="Telefon" value={selected.customer.phone} />}
               <div className="flex items-center justify-between">
@@ -438,7 +448,7 @@ function MiniMonth({ cursor, onPick, appointments }: { cursor: Date; onPick: (d:
   return (
     <div className="rounded-[18px] p-3" style={{ background: "rgba(255,255,255,0.65)", border: "1px solid rgba(203,213,225,0.4)", boxShadow: "inset 0 1px 0 rgba(255,255,255,0.9)" }}>
       <div className="flex items-center justify-between mb-2 px-1">
-        <p className="text-xs font-semibold text-slate-700 capitalize">{MON[viewMonth.getMonth()].replace(/a$/, "")} {viewMonth.getFullYear()}</p>
+        <p className="text-xs font-semibold text-slate-700">{MON_NOM[viewMonth.getMonth()]} {viewMonth.getFullYear()}</p>
         <div className="flex gap-0.5">
           <button onClick={() => setViewMonth(new Date(viewMonth.getFullYear(), viewMonth.getMonth() - 1, 1))} aria-label="Poprzedni miesiąc" className="icon-btn p-1 rounded-md" style={{ color: "#94A3B8" }}><svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}><path d="m15 18-6-6 6-6" /></svg></button>
           <button onClick={() => setViewMonth(new Date(viewMonth.getFullYear(), viewMonth.getMonth() + 1, 1))} aria-label="Następny miesiąc" className="icon-btn p-1 rounded-md" style={{ color: "#94A3B8" }}><svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}><path d="m9 18 6-6-6-6" /></svg></button>

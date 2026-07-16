@@ -2,6 +2,56 @@
 
 ---
 
+## 🔧 PRODUCTION FIXES PASS (IN PROGRESS)
+
+> Focused bug-fix + UX correction pass. **Rollback checkpoint: tag
+> `PRODUCTION_FIXES_BEFORE` → `8e15580`** (`git reset --hard PRODUCTION_FIXES_BEFORE`).
+> Note: "Caught one." was removed by product decision (commit reverted) and the
+> pre-pass state is pushed to origin/main = `8e15580`.
+
+**Order & status:**
+1. **Calendar functionality — ✅ DONE** (see below)
+2. Logo/banner uploads — ⏳ next
+3. Structured map location — pending
+4. Review-reply e-mails — pending
+5. Staff pricing notice — pending
+6. Analytics chart layout — pending
+7. Remove "Dla specjalistów" — pending (already hidden for logged-in customers; remove for everyone)
+
+### Fix 1 — Calendar ✅ (root causes + fixes)
+Reproduced live; visual layout untouched. Five defects found:
+1. **CRITICAL — unassigned appointments invisible (desktop day view).** Lanes were
+   built from employees only (`calendar-client.tsx`), so bookings made with
+   "Dowolny specjalista" (`employeeId=null` — the DEFAULT customer path) matched
+   no lane and silently disappeared once the salon had any employee. **Fix:**
+   `computeLanes()` in `lib/calendar-utils.ts` appends a trailing
+   "Bez przypisania" lane whenever the day has unassigned appointments.
+2. **Cancelled-by-business appointments** were fetched (`status: { not:
+   CANCELLED_CUSTOMER }`), inflating week-strip badges/mini-month dots for freed
+   slots (and would render as blocks). **Fix:** fetch excludes BOTH cancelled
+   statuses — consistent with availability/conflict logic.
+3. **"Lipc 2026"** mini-month title — `.replace(/a$/,"")` faked a nominative from
+   the genitive. **Fix:** proper `MON_NOM` array ("Lipiec", "Styczeń", …).
+4. **Server "today" wasn't Warsaw-aware** — on a UTC server, "Dziś"/default focus
+   pointed at yesterday between 22:00–24:00 Warsaw. **Fix:** `warsawTodayYmd()`.
+5. **Detail modal lacked add-on snapshots.** **Fix:** fetch includes `addons`,
+   modal shows "+ name ×qty — X zł · Y min" rows.
+**Verified live (DOM-driven, state-asserted):** prev/next/Dziś/mini-cal/day-week
+switch; employee + Do-potwierdzenia filters; working hours (Thu 09–18, Sat 10–16,
+Sun closed banner); now-line; empty-slot→prefilled sheet; Escape close; detail
+modal (Warsaw times, 90-min add-on duration, 540 zł); **Potwierdź → Zakończ
+mutations persisted to DB** (on a disposable test appointment, then deleted);
+week view; mobile day list; URL `?date=`/`?week=` reads + cross-week pushes.
+**Tests:** `tests/calendar-utils.test.ts` (12) — lanes, Monday-first weeks,
+Warsaw-today across DST. Suite: 34/34. Build + typecheck green.
+**Pre-existing non-issue (documented):** React dev warning about JSON-LD
+`<script>` on `/` and `/b/[slug]` — standard SEO pattern, not a regression.
+**Env-note:** pointer clicks in the in-app preview pane can miss due to viewport
+scaling — earlier "unclickable calendar" reports must be validated with DOM-level
+hit-tests (`elementFromPoint`), which all pass.
+
+---
+
 ## 🚀 LAUNCH FEATURES (post-redesign work — IN PROGRESS)
 
 > Making the visible launch features genuinely functional/secure/honest.
@@ -15,8 +65,7 @@
 **Implementation order & status:**
 1. **Service add-ons + booking-duration integration — ✅ DONE**
 2. **Coupon redemption — ✅ DONE**
-3. "Caught one." success moment — ⏳ next
-3. "Caught one." success moment — pending
+3. "Caught one." success moment — ❌ REMOVED (product decision: feature dropped and commit reverted)
 4. Marketing persistence — pending
 5. DB hardening + logged-out auth QA — pending
 6. AI Assistant architecture — pending
