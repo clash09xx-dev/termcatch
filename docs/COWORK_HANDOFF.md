@@ -16,10 +16,19 @@
    decisions + nullable schema fields `placeId`, verified lat/lng handling;
    existing `latitude/longitude` columns exist on Business but are never set;
    public profile map + settings autocomplete both to build)
-4. Review-reply e-mails — ⏳ NOT STARTED (wire into the existing reply server
-   action in `lib/actions/*reviews*`; use `sendEmail` from `lib/email.ts` (Resend,
-   configured); dedupe via a "first reply only" guard — e.g. only send when
-   `replyText` transitions from null; add in-app `notify()` like appointments do)
+4. **Review-reply e-mails — ✅ DONE.** `replyToReview` (lib/actions/reviews.ts)
+   now: (a) **atomic first-reply claim** — conditional `updateMany` on
+   `replyText: null|""`; only the call that wins the transition sends anything;
+   retries/double-clicks/edits hit the plain-edit path (proven: second claim
+   matched 0 rows); (b) after a successful save only: in-app REVIEW_RECEIVED
+   notification + Resend e-mail (existing template/sender/Reply-To) with
+   customer name, star rating, review excerpt (escaped), salon reply (escaped),
+   CTA to `/b/{slug}`; subject `{salon} odpowiedział na Twoją opinię`;
+   (c) honors `User.emailNotifications` opt-out and skips synthetic walk-in
+   addresses (`@termcatch.local`, `@unknown.termcatch.com`); (d) e-mail failures
+   can't break the action (`Promise.allSettled`). Verified live end-to-end on a
+   disposable review (one real e-mail to hello@termcatch.com — check the inbox);
+   all QA rows removed. The user's own review/reply untouched.
 5. Staff pricing notice — ⏳ NOT STARTED (find real pricing source:
    `SubscriptionPlan` enum + `/pricing` page; do NOT invent amounts; confirmation
    dialog in staff editor before create; if no per-employee pricing config exists,

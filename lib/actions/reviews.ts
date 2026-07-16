@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import { getServerUser } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
+import { sendEmail } from "@/lib/email";
 
 async function getBusinessId(): Promise<string> {
   const user = await getServerUser();
@@ -101,16 +102,86 @@ export async function createReview(input: {
   revalidatePath("/business/reviews");
 }
 
+function escapeHtml(s: string): string {
+  return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+}
+
 export async function replyToReview(reviewId: string, replyText: string) {
   const businessId = await getBusinessId();
+  const text = replyText.trim();
+  if (!text) throw new Error("Odpowiedź nie może być pusta.");
 
-  await prisma.review.updateMany({
-    where: { id: reviewId, businessId },
-    data: {
-      replyText,
-      repliedAt: new Date(),
-    },
+  // Atomic first-reply claim: only the call that transitions replyText from
+  // empty → text wins the notification. Retries, double-clicks and later edits
+  // hit the fallback edit path below and can never send a duplicate e-mail.
+  const claimed = await prisma.review.updateMany({
+    where: { id: reviewId, businessId, OR: [{ replyText: null }, { replyText: "" }] },
+    data: { replyText: text, repliedAt: new Date() },
   });
 
+  const isFirstReply = claimed.count === 1;
+  if (!isFirstReply) {
+    // Edit of an existing reply (or unknown id — scoped updateMany is a no-op).
+    await prisma.review.updateMany({
+      where: { id: reviewId, businessId },
+      data: { replyText: text, repliedAt: new Date() },
+    });
+  }
+
+  if (isFirstReply) {
+    // Notify the customer — only AFTER the reply was successfully saved.
+    const review = await prisma.review.findFirst({
+      where: { id: reviewId, businessId },
+      select: {
+        rating: true,
+        comment: true,
+        customer: { select: { id: true, firstName: true, email: true, emailNotifications: true } },
+        business: { select: { name: true, slug: true } },
+      },
+    });
+    if (review) {
+      const { customer, business } = review;
+      // Walk-in placeholders can't receive mail; respect the e-mail opt-out.
+      const emailOk =
+        customer.emailNotifications &&
+        !!customer.email &&
+        !customer.email.endsWith("@termcatch.local") &&
+        !customer.email.endsWith("@unknown.termcatch.com");
+      const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "https://termcatch.com";
+      const excerpt = review.comment ? (review.comment.length > 140 ? `${review.comment.slice(0, 140)}…` : review.comment) : null;
+      const stars = "★".repeat(review.rating) + "☆".repeat(Math.max(0, 5 - review.rating));
+
+      await Promise.allSettled([
+        prisma.notification.create({
+          data: {
+            userId: customer.id,
+            businessId,
+            type: "REVIEW_RECEIVED",
+            channel: "IN_APP",
+            title: `${business.name} odpowiedział na Twoją opinię`,
+            body: text.length > 120 ? `${text.slice(0, 120)}…` : text,
+            sentAt: new Date(),
+          },
+        }),
+        emailOk
+          ? sendEmail({
+              to: customer.email,
+              subject: `${business.name} odpowiedział na Twoją opinię`,
+              heading: `${business.name} odpowiedział na Twoją opinię`,
+              lines: [
+                `Cześć${customer.firstName ? ` ${escapeHtml(customer.firstName)}` : ""},`,
+                `Twoja ocena: <strong>${stars} (${review.rating}/5)</strong>`,
+                ...(excerpt ? [`Twoja opinia: „${escapeHtml(excerpt)}"`] : []),
+                `<strong>Odpowiedź salonu:</strong> ${escapeHtml(text)}`,
+              ],
+              ctaLabel: "Zobacz profil salonu",
+              ctaUrl: `${appUrl}/b/${business.slug}`,
+            })
+          : Promise.resolve(),
+      ]);
+    }
+  }
+
   revalidatePath("/business/reviews");
+  return { firstReply: isFirstReply };
 }
