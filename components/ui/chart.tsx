@@ -4,7 +4,7 @@
 // Silver area / bars with an ink emphasis, faint hairline grid, glass tooltip.
 // No charting dependency: full control over the Machined Silver aesthetic.
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { cn } from "@/lib/utils";
 
 const INK = "#0F172A";
@@ -13,6 +13,9 @@ const INK_SOFT = "#334155";
 type Point = { label: string; value: number };
 
 // ── Area chart (revenue over time) ────────────────────────────
+// Renders at the container's REAL pixel width (ResizeObserver) instead of
+// stretching a fixed viewBox — no distortion at any breakpoint, round dots,
+// true edge padding, and the first/last points never clip.
 
 export function AreaChart({
   data,
@@ -25,32 +28,46 @@ export function AreaChart({
   formatValue?: (v: number) => string;
   className?: string;
 }) {
-  const W = 760;
   const H = height;
-  const padX = 8;
-  const padTop = 16;
-  const padBottom = 26;
-  const ref = useRef<SVGSVGElement | null>(null);
+  const padL = 12;
+  const padR = 14; // endpoint dot (r 3.5 + 2px ring) stays inside
+  const padTop = 18;
+  const padBottom = 6;
+  const wrapRef = useRef<HTMLDivElement | null>(null);
+  const [W, setW] = useState(0);
   const [hover, setHover] = useState<number | null>(null);
 
-  const max = Math.max(...data.map((d) => d.value), 1);
-  const innerW = W - padX * 2;
+  useEffect(() => {
+    const el = wrapRef.current;
+    if (!el) return;
+    const ro = new ResizeObserver((entries) => {
+      const w = Math.round(entries[0].contentRect.width);
+      if (w > 0) setW(w);
+    });
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
+
+  const realMax = Math.max(...data.map((d) => d.value), 0);
+  const max = Math.max(realMax, 1);
+  const innerW = Math.max(W - padL - padR, 1);
   const innerH = H - padTop - padBottom;
   const n = data.length;
 
-  const x = (i: number) => (n <= 1 ? padX + innerW / 2 : padX + (i / (n - 1)) * innerW);
+  const x = (i: number) => (n <= 1 ? padL + innerW / 2 : padL + (i / (n - 1)) * innerW);
   const y = (v: number) => padTop + innerH - (v / max) * innerH;
 
   const linePath = data.map((d, i) => `${i === 0 ? "M" : "L"}${x(i).toFixed(1)},${y(d.value).toFixed(1)}`).join(" ");
-  const areaPath = `${linePath} L${x(n - 1).toFixed(1)},${padTop + innerH} L${x(0).toFixed(1)},${padTop + innerH} Z`;
+  const areaPath = n > 1 ? `${linePath} L${x(n - 1).toFixed(1)},${padTop + innerH} L${x(0).toFixed(1)},${padTop + innerH} Z` : "";
 
-  const gridLines = [0.25, 0.5, 0.75, 1].map((f) => padTop + innerH - f * innerH);
+  // Value context on the 50% / 100% gridlines (skipped when everything is 0 —
+  // no fabricated scale).
+  const gridLines = [0.25, 0.5, 0.75, 1].map((f) => ({ gy: padTop + innerH - f * innerH, f }));
 
   function onMove(e: React.MouseEvent<SVGSVGElement>) {
-    const svg = ref.current;
-    if (!svg) return;
-    const rect = svg.getBoundingClientRect();
-    const px = ((e.clientX - rect.left) / rect.width) * W;
+    if (W === 0 || n === 0) return;
+    const rect = (e.currentTarget as SVGSVGElement).getBoundingClientRect();
+    const px = e.clientX - rect.left;
     let nearest = 0;
     let best = Infinity;
     for (let i = 0; i < n; i++) {
@@ -61,47 +78,58 @@ export function AreaChart({
   }
 
   const hv = hover !== null ? data[hover] : null;
+  // Clamp the tooltip so it never leaves the card horizontally.
+  const tipAnchor = hover !== null ? x(hover) : 0;
+  const tipTransform = tipAnchor < 70 ? "translate(0, -100%)" : tipAnchor > W - 70 ? "translate(-100%, -100%)" : "translate(-50%, -100%)";
 
   return (
-    <div className={cn("relative w-full", className)}>
-      <svg
-        ref={ref}
-        viewBox={`0 0 ${W} ${H}`}
-        width="100%"
-        height={H}
-        preserveAspectRatio="none"
-        onMouseMove={onMove}
-        onMouseLeave={() => setHover(null)}
-        role="img"
-        aria-label="Wykres przychodu w czasie"
-        style={{ display: "block" }}
-      >
-        <defs>
-          <linearGradient id="tc-area-fill" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor="rgba(100,116,139,0.28)" />
-            <stop offset="100%" stopColor="rgba(148,163,184,0.02)" />
-          </linearGradient>
-        </defs>
-        {gridLines.map((gy, i) => (
-          <line key={i} x1={padX} y1={gy} x2={W - padX} y2={gy} stroke="rgba(203,213,225,0.35)" strokeWidth={1} strokeDasharray="2 4" vectorEffect="non-scaling-stroke" />
-        ))}
-        <path d={areaPath} fill="url(#tc-area-fill)" />
-        <path d={linePath} fill="none" stroke={INK_SOFT} strokeWidth={2} vectorEffect="non-scaling-stroke" strokeLinejoin="round" strokeLinecap="round" />
-        {/* endpoint dot */}
-        {n > 0 && (
-          <circle cx={x(n - 1)} cy={y(data[n - 1].value)} r={3.5} fill={INK} stroke="#fff" strokeWidth={2} vectorEffect="non-scaling-stroke" />
-        )}
-        {/* hover crosshair */}
-        {hv && hover !== null && (
-          <>
-            <line x1={x(hover)} y1={padTop} x2={x(hover)} y2={padTop + innerH} stroke="rgba(100,116,139,0.4)" strokeWidth={1} vectorEffect="non-scaling-stroke" />
-            <circle cx={x(hover)} cy={y(hv.value)} r={4} fill={INK} stroke="#fff" strokeWidth={2} vectorEffect="non-scaling-stroke" />
-          </>
-        )}
-      </svg>
+    <div ref={wrapRef} className={cn("relative w-full", className)}>
+      {W > 0 && (
+        <svg
+          viewBox={`0 0 ${W} ${H}`}
+          width={W}
+          height={H}
+          onMouseMove={onMove}
+          onMouseLeave={() => setHover(null)}
+          role="img"
+          aria-label="Wykres przychodu w czasie"
+          style={{ display: "block" }}
+        >
+          <defs>
+            <linearGradient id="tc-area-fill" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stopColor="rgba(100,116,139,0.28)" />
+              <stop offset="100%" stopColor="rgba(148,163,184,0.02)" />
+            </linearGradient>
+          </defs>
+          {gridLines.map(({ gy, f }) => (
+            <g key={f}>
+              <line x1={padL} y1={gy} x2={W - padR} y2={gy} stroke="rgba(203,213,225,0.35)" strokeWidth={1} strokeDasharray="2 4" />
+              {realMax > 0 && (f === 1 || f === 0.5) && (
+                <text x={padL} y={gy - 4} fontSize={10} fill="#94A3B8" className="tabular-nums">
+                  {formatValue(Math.round(max * f))}
+                </text>
+              )}
+            </g>
+          ))}
+          {areaPath && <path d={areaPath} fill="url(#tc-area-fill)" />}
+          <path d={linePath} fill="none" stroke={INK_SOFT} strokeWidth={2} strokeLinejoin="round" strokeLinecap="round" />
+          {/* endpoint dot */}
+          {n > 0 && (
+            <circle cx={x(n - 1)} cy={y(data[n - 1].value)} r={3.5} fill={INK} stroke="#fff" strokeWidth={2} />
+          )}
+          {/* hover crosshair */}
+          {hv && hover !== null && (
+            <>
+              <line x1={x(hover)} y1={padTop} x2={x(hover)} y2={padTop + innerH} stroke="rgba(100,116,139,0.4)" strokeWidth={1} />
+              <circle cx={x(hover)} cy={y(hv.value)} r={4} fill={INK} stroke="#fff" strokeWidth={2} />
+            </>
+          )}
+        </svg>
+      )}
+      {W === 0 && <div style={{ height: H }} aria-hidden="true" />}
 
       {/* x labels — thinned when dense */}
-      <div className="flex justify-between px-1 mt-1">
+      <div className="flex justify-between mt-1" style={{ paddingLeft: padL, paddingRight: padR }}>
         {data.map((d, i) => {
           const step = Math.ceil(n / 8);
           const show = i === 0 || i === n - 1 || i % step === 0;
@@ -113,13 +141,13 @@ export function AreaChart({
         })}
       </div>
 
-      {/* tooltip */}
+      {/* tooltip — clamped inside the card */}
       {hv && hover !== null && (
         <div
           className="absolute -top-1 pointer-events-none px-2.5 py-1.5 rounded-lg text-xs"
           style={{
-            left: `${(x(hover) / W) * 100}%`,
-            transform: "translate(-50%, -100%)",
+            left: tipAnchor,
+            transform: tipTransform,
             background: "rgba(255,255,255,0.94)",
             border: "1px solid rgba(203,213,225,0.5)",
             boxShadow: "0 4px 16px rgba(15,23,42,0.12), inset 0 1px 0 rgba(255,255,255,0.9)",

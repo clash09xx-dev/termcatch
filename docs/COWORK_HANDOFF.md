@@ -12,11 +12,37 @@
 **Order & status:**
 1. **Calendar functionality — ✅ DONE** (see below)
 2. **Logo/banner uploads — ✅ DONE** (see below)
-3. Structured map location — ⏳ next
-4. Review-reply e-mails — pending
-5. Staff pricing notice — pending
-6. Analytics chart layout — pending
-7. Remove "Dla specjalistów" — pending (already hidden for logged-in customers; remove for everyone)
+3. Structured map location — ⏳ NOT STARTED (largest; needs Google Places API key
+   decisions + nullable schema fields `placeId`, verified lat/lng handling;
+   existing `latitude/longitude` columns exist on Business but are never set;
+   public profile map + settings autocomplete both to build)
+4. Review-reply e-mails — ⏳ NOT STARTED (wire into the existing reply server
+   action in `lib/actions/*reviews*`; use `sendEmail` from `lib/email.ts` (Resend,
+   configured); dedupe via a "first reply only" guard — e.g. only send when
+   `replyText` transitions from null; add in-app `notify()` like appointments do)
+5. Staff pricing notice — ⏳ NOT STARTED (find real pricing source:
+   `SubscriptionPlan` enum + `/pricing` page; do NOT invent amounts; confirmation
+   dialog in staff editor before create; if no per-employee pricing config exists,
+   create ONE source of truth + document the open product decision)
+6. **Analytics chart layout — ✅ DONE** (see below)
+7. **Remove "Dla specjalistów" — ✅ DONE** — public nav is just "Szukaj" for
+   everyone (desktop+mobile share one links array); /for-business kept, reachable
+   via landing CTA + footer "Funkcje" + direct URL. Commit `fc85574`.
+
+### Fix 6 — Analytics chart ✅ (root cause + fix)
+**Root cause:** `AreaChart` stretched a fixed `viewBox="0 0 760 H"` with
+`preserveAspectRatio="none"` — non-uniform distortion at every width ≠ 760
+(the reported "stretched" look), fake edge padding (endpoint dot clipped),
+no y-axis value context, tooltip could escape the card.
+**Fix (components/ui/chart.tsx):** chart now measures its container via
+ResizeObserver and renders 1 SVG unit = 1 px (no distortion at any width);
+padL/padR keep first/last points + endpoint dot inside; **y-value labels on the
+50%/100% gridlines** (PLN-formatted, skipped when all-zero — no fabricated
+scale); tooltip clamps at the edges; empty width renders a placeholder box.
+**Verified live:** 1440 (viewBox 1086×210 = real px, dot inside, y-labels
+"250 zł"/"500 zł", inside card, no overflow), 390 (re-measured 312×210, no
+overflow), left-edge tooltip clamps to `translate(0,-100%)` inside the card.
+Real data only. BarColumns/Sparkline unaffected (flex/fixed — no stretch bug).
 
 ### Fix 1 — Calendar ✅ (root causes + fixes)
 Reproduced live; visual layout untouched. Five defects found:
