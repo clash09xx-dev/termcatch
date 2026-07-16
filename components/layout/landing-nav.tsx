@@ -10,7 +10,7 @@ import { motion, AnimatePresence } from "framer-motion";
 type AuthState =
   | { status: "loading" }
   | { status: "guest" }
-  | { status: "authed"; dashboardHref: string; isCustomer: boolean };
+  | { status: "authed"; dashboardHref: string };
 
 // ── Chrome glass pill styles ──────────────────────────────────────────────────
 
@@ -43,24 +43,17 @@ export function LandingNav() {
       .then(({ data: { user } }) => {
         if (!user) { setAuth({ status: "guest" }); return; }
         const role = user.user_metadata?.role as string | undefined;
-        const isBusiness = role === "BUSINESS_OWNER";
         setAuth({
           status: "authed",
-          dashboardHref: isBusiness ? "/business/dashboard" : "/customer/dashboard",
-          isCustomer: !isBusiness,
+          dashboardHref: role === "BUSINESS_OWNER" ? "/business/dashboard" : "/customer/dashboard",
         });
       })
       .catch(() => setAuth({ status: "guest" }));
   }, []);
 
-  // "Dla specjalistów" (/for-business) is a B2B acquisition link — irrelevant to a
-  // logged-in customer, so hide it for them (guests + business owners still see it).
-  const links = [
-    { href: "/search", label: "Szukaj" },
-    ...(auth.status === "authed" && auth.isCustomer
-      ? []
-      : [{ href: "/for-business", label: "Dla specjalistów" }]),
-  ];
+  // Public nav is intentionally minimal: just "Szukaj". The B2B page
+  // (/for-business) stays reachable via landing CTAs, the footer and direct URL.
+  const links = [{ href: "/search", label: "Szukaj" }];
 
   return (
     <header className="fixed top-0 inset-x-0 z-50 px-4 pt-3">
