@@ -11,8 +11,8 @@
 
 **Order & status:**
 1. **Calendar functionality — ✅ DONE** (see below)
-2. Logo/banner uploads — ⏳ next
-3. Structured map location — pending
+2. **Logo/banner uploads — ✅ DONE** (see below)
+3. Structured map location — ⏳ next
 4. Review-reply e-mails — pending
 5. Staff pricing notice — pending
 6. Analytics chart layout — pending
@@ -49,6 +49,29 @@ Warsaw-today across DST. Suite: 34/34. Build + typecheck green.
 **Env-note:** pointer clicks in the in-app preview pane can miss due to viewport
 scaling — earlier "unclickable calendar" reports must be validated with DOM-level
 hit-tests (`elementFromPoint`), which all pass.
+
+### Fix 2 — Logo/banner uploads ✅ (root cause + fix)
+**Root cause: the `business-media` Supabase Storage bucket did not exist**
+(project had ZERO buckets) — every upload failed with "Bucket not found" → the
+generic "Nie udało się przesłać pliku" error. The action/UI code was sound
+(owner-scoped, MIME whitelist, 5 MB cap, service-role server-only, safe
+`{businessId}/{timestamp}.{ext}` object names; both fields already have
+previews + square/wide guidance).
+**Fix:** (a) created the bucket (public, 5 MB `fileSizeLimit`, image
+`allowedMimeTypes` — storage-level double enforcement); (b) `uploadBusinessImage`
+now **self-heals**: on "Bucket not found" it creates the bucket with the same
+restrictions and retries once — so the production Supabase project needs **no
+manual step** (first upload provisions it). No RLS policies needed: writes go
+through the service-role server action only; reads via public URLs.
+**Verified end-to-end through the real UI:** injected a PNG into the actual
+file input → real server action → bucket → preview showed the public URL →
+Zapisz → full reload → **public salon profile rendered the uploaded logo** →
+test asset removed + `logoUrl` reset (storage/DB clean). Banner uses the
+identical action/component path (same fix).
+**Replacement policy (documented):** old objects are NOT deleted on re-upload —
+persistence happens on a separate "Zapisz", so deleting at upload time could
+break the still-saved image; a failed upload never touches the existing one.
+Orphaned objects may accumulate (acceptable trade-off).
 
 ---
 

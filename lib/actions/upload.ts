@@ -32,12 +32,28 @@ export async function uploadBusinessImage(
   const buffer = Buffer.from(await file.arrayBuffer());
 
   const admin = createAdminClient();
-  const { data, error } = await admin.storage
+  let { data, error } = await admin.storage
     .from("business-media")
     .upload(filename, buffer, { contentType: file.type, upsert: true });
 
-  if (error) {
-    console.error("[upload]", error.message);
+  // Self-heal: create the bucket on first use (new environments ship without
+  // it — this was the root cause of uploads failing entirely), then retry once.
+  if (error && /bucket not found/i.test(error.message)) {
+    const created = await admin.storage.createBucket("business-media", {
+      public: true,
+      fileSizeLimit: MAX_BYTES,
+      allowedMimeTypes: ALLOWED_TYPES,
+    });
+    // "already exists" = concurrent creation — safe to retry either way.
+    if (!created.error || /already exists/i.test(created.error.message)) {
+      ({ data, error } = await admin.storage
+        .from("business-media")
+        .upload(filename, buffer, { contentType: file.type, upsert: true }));
+    }
+  }
+
+  if (error || !data) {
+    console.error("[upload]", error?.message ?? "no data");
     return { error: "Nie udało się przesłać pliku. Spróbuj ponownie." };
   }
 
