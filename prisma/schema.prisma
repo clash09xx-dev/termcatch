@@ -324,6 +324,7 @@ model Business {
   country      String  @default("PL")
   latitude     Float?
   longitude    Float?
+  placeId      String? @map("place_id") // Google Place ID (verified location)
 
   // Contact
   phone        String?

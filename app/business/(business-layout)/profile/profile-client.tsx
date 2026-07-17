@@ -3,6 +3,7 @@
 import { useState, useTransition, useRef, useCallback } from "react";
 import { updateBusinessProfile } from "@/lib/actions/business";
 import { uploadBusinessImage } from "@/lib/actions/upload";
+import { LocationPicker } from "@/components/business/location-picker";
 import { cn } from "@/lib/utils";
 import type { Business } from "@prisma/client";
 import { PageHeader, GlassCard, InkButton, HAIRLINE, CHIP } from "@/components/ui/glass";
@@ -276,6 +277,15 @@ export function ProfileClient({ business, embedded = false }: Props) {
                   />
                 </div>
               </div>
+
+              <LocationPicker
+                current={{
+                  placeId: business.placeId,
+                  latitude: business.latitude,
+                  longitude: business.longitude,
+                  address: business.address,
+                }}
+              />
             </>
           )}
 

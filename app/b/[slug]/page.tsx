@@ -7,6 +7,7 @@ import { LandingNav } from "@/components/layout/landing-nav";
 import { formatCurrency, formatDate, formatDuration, getInitials, cn } from "@/lib/utils";
 import { BusinessStatus, ReviewStatus } from "@prisma/client";
 import { PlaceholderCover } from "@/components/ui/placeholder-cover";
+import { mapsBrowserKey, embedUrl, navigationUrl, addressSearchUrl } from "@/lib/maps";
 import BookingWidget from "./booking-widget";
 import ReviewForm from "./review-form";
 import FavouriteButton from "@/components/booking/favourite-button";
@@ -270,9 +271,14 @@ export default async function BusinessProfilePage({
 
   const openStatus = sortedWorkingHours.length > 0 ? getOpenStatus(sortedWorkingHours) : null;
 
-  const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
-    `${business.address}, ${business.city}`
-  )}`;
+  // Verified location = coordinates stored from a real Google Places selection.
+  // Without them we NEVER guess a pin — address text + an address-only search
+  // link (no salon name; names mislead geocoding).
+  const hasVerifiedLocation = business.latitude != null && business.longitude != null;
+  const browserMapsKey = mapsBrowserKey();
+  const mapsUrl = hasVerifiedLocation
+    ? navigationUrl({ latitude: business.latitude!, longitude: business.longitude!, placeId: business.placeId })
+    : addressSearchUrl(business.address, business.postalCode, business.city);
 
   const initials = getInitials(business.name.split(" ")[0] ?? "", business.name.split(" ")[1]);
 
@@ -301,6 +307,15 @@ export default async function BusinessProfilePage({
       postalCode: business.postalCode,
       addressCountry: "PL",
     },
+    ...(hasVerifiedLocation
+      ? {
+          geo: {
+            "@type": "GeoCoordinates",
+            latitude: business.latitude,
+            longitude: business.longitude,
+          },
+        }
+      : {}),
     ...(business.totalReviews > 0
       ? {
           aggregateRating: {
@@ -663,18 +678,28 @@ export default async function BusinessProfilePage({
                     Adres
                   </h3>
                   <p className="text-sm text-slate-600">{business.address}, {business.postalCode} {business.city}</p>
-                  <div className="mt-3 rounded-xl overflow-hidden" style={{ border: "1px solid rgba(203,213,225,0.35)" }}>
-                    <iframe
-                      title={`Mapa dojazdu — ${business.name}`}
-                      src={`https://maps.google.com/maps?f=q&source=s_q&q=${encodeURIComponent(`${business.name}, ${business.address}, ${business.city}`)}&z=15&t=m&hl=pl&ie=UTF8&iwloc=B&output=embed`}
-                      className="w-full h-56 border-0"
-                      loading="lazy"
-                      referrerPolicy="no-referrer-when-downgrade"
-                      allowFullScreen
-                    />
-                  </div>
+                  {hasVerifiedLocation && browserMapsKey ? (
+                    <div className="mt-3 rounded-xl overflow-hidden" style={{ border: "1px solid rgba(203,213,225,0.35)" }}>
+                      <iframe
+                        title={`Mapa dojazdu — ${business.name}`}
+                        src={embedUrl(browserMapsKey, { latitude: business.latitude!, longitude: business.longitude!, placeId: business.placeId })}
+                        className="w-full h-56 border-0"
+                        loading="lazy"
+                        referrerPolicy="no-referrer-when-downgrade"
+                        allowFullScreen
+                      />
+                    </div>
+                  ) : !hasVerifiedLocation ? (
+                    <div
+                      className="mt-3 rounded-xl px-3.5 py-3 text-xs text-slate-500 leading-relaxed"
+                      style={{ background: "rgba(203,213,225,0.14)", border: "1px dashed rgba(148,163,184,0.4)" }}
+                    >
+                      Nie udało się potwierdzić dokładnej lokalizacji na mapie. Skorzystaj z adresu powyżej
+                      lub wyszukaj go w Google Maps.
+                    </div>
+                  ) : null}
                   <a href={mapsUrl} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1.5 mt-3 text-xs font-semibold text-slate-600 hover:text-slate-900 hover:underline underline-offset-4 transition-colors">
-                    Otwórz w Google Maps (nawigacja)
+                    {hasVerifiedLocation ? "Prowadź w Google Maps" : "Wyszukaj adres w Google Maps"}
                     <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} aria-hidden="true">
                       <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 6H5.25A2.25 2.25 0 0 0 3 8.25v10.5A2.25 2.25 0 0 0 5.25 21h10.5A2.25 2.25 0 0 0 18 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25" />
                     </svg>
