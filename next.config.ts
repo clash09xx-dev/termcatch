@@ -4,6 +4,12 @@ const nextConfig: NextConfig = {
   output: "standalone",
   experimental: {
     ppr: false,
+    serverActions: {
+      // Image uploads go through a server action; the Next default of 1 MB
+      // hard-rejected every real phone photo (the reported upload "crash").
+      // 8 MB = 5 MB file limit + multipart/encoding overhead headroom.
+      bodySizeLimit: "8mb",
+    },
   },
   images: {
     remotePatterns: [

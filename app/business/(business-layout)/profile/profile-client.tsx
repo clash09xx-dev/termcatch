@@ -413,19 +413,46 @@ function ImageUploadField({
 
   const handleFile = useCallback(
     async (file: File) => {
+      if (uploading) return; // no duplicate submissions
       setError("");
+
+      // Client pre-validation — drag&drop bypasses the input's `accept`, so
+      // iPhone HEIC photos and oversized files must be caught here, BEFORE the
+      // request (a rejected oversized action body used to crash the page).
+      const okTypes = ["image/jpeg", "image/png", "image/webp", "image/avif"];
+      const name = file.name.toLowerCase();
+      if (/\.(heic|heif)$/.test(name) || /image\/hei[cf]/.test(file.type)) {
+        setError("Zdjęcia HEIC/HEIF z iPhone'a nie są obsługiwane. Wybierz JPG, PNG lub WebP (w iPhonie: Ustawienia → Aparat → Formaty → „Maksymalna zgodność”).");
+        return;
+      }
+      if (!okTypes.includes(file.type)) {
+        setError("Dozwolone formaty: JPG, PNG lub WebP.");
+        return;
+      }
+      if (file.size > 5 * 1024 * 1024) {
+        setError("Plik jest za duży. Maksymalny rozmiar to 5 MB.");
+        return;
+      }
+
       setUploading(true);
-      const fd = new FormData();
-      fd.append("file", file);
-      const result = await uploadBusinessImage(fd);
-      setUploading(false);
-      if (result.error) {
-        setError(result.error);
-      } else if (result.url) {
-        onChange(result.url);
+      try {
+        const fd = new FormData();
+        fd.append("file", file);
+        const result = await uploadBusinessImage(fd);
+        if (result.error) {
+          setError(result.error);
+        } else if (result.url) {
+          onChange(result.url);
+        }
+      } catch {
+        // Network/server failure must never crash the form or lose the
+        // existing image — keep everything usable with an honest message.
+        setError("Nie udało się przesłać zdjęcia. Sprawdź połączenie i spróbuj ponownie.");
+      } finally {
+        setUploading(false);
       }
     },
-    [onChange]
+    [onChange, uploading]
   );
 
   function onDrop(e: React.DragEvent) {
