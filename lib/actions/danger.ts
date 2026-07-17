@@ -1,12 +1,15 @@
 "use server";
 
 import { prisma } from "@/lib/prisma";
-import { createClient, getServerUser } from "@/lib/supabase/server";
+import { getServerUser } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { sendEmail } from "@/lib/email";
+import { createDangerCode, verifyAndConsumeDangerCode } from "@/lib/danger-codes";
 
 /**
- * Niebezpieczna strefa — operacje wymagają potwierdzenia kodem
- * wysyłanym na e-mail właściciela (Supabase OTP / Magic Link).
+ * Niebezpieczna strefa — operacje wymagają potwierdzenia jednorazowym
+ * 6-cyfrowym kodem wysyłanym e-mailem (Resend). Kody: HMAC w bazie (nigdy
+ * plaintext), 10 min ważności, limit prób i ponownej wysyłki, jednorazowe.
  */
 
 export type DangerState = {
@@ -15,66 +18,61 @@ export type DangerState = {
   deleted?: boolean;
 };
 
-/** Krok 1: wyślij 6-cyfrowy kod na e-mail zalogowanego właściciela. */
+/** Krok 1: wyślij 6-cyfrowy kod na e-mail zalogowanego właściciela salonu. */
 export async function requestDangerCode(): Promise<DangerState> {
   const user = await getServerUser();
   if (!user?.email) return { error: "Nie jesteś zalogowany." };
 
-  const supabase = await createClient();
-  const { error } = await supabase.auth.signInWithOtp({
-    email: user.email,
-    options: {
-      shouldCreateUser: false,
-      // Wymuś 6-cyfrowy OTP zamiast magic link
-      data: {},
-    },
+  // Kod wysyłamy tylko właścicielowi salonu.
+  const dbUser = await prisma.user.findUnique({
+    where: { supabaseId: user.id },
+    include: { ownedBusinesses: { select: { name: true }, take: 1 } },
+  });
+  const business = dbUser?.ownedBusinesses[0];
+  if (!business) return { error: "Nie masz przypisanego salonu." };
+
+  const created = await createDangerCode(user.id);
+  if (!created.ok) {
+    return { error: "Kod został niedawno wysłany. Odczekaj minutę i spróbuj ponownie." };
+  }
+
+  const { sent } = await sendEmail({
+    to: user.email,
+    subject: "Kod potwierdzający usunięcie — Termcatch",
+    heading: "Potwierdź operację usunięcia",
+    lines: [
+      `Otrzymaliśmy prośbę o usunięcie danych salonu <strong>${business.name}</strong> w Termcatch.`,
+      `Twój kod potwierdzający: <strong style="font-size:24px;letter-spacing:6px;">${created.code}</strong>`,
+      "Kod wygasa po 10 minutach i działa tylko raz.",
+      "Jeśli to nie Ty — zignoruj tę wiadomość i jak najszybciej zmień hasło do konta.",
+    ],
   });
 
-  if (error) {
-    console.error("[danger] signInWithOtp error:", error.status, error.message);
-
-    if (error.status === 429 || error.message.toLowerCase().includes("rate limit")) {
-      return { error: "Kod został niedawno wysłany. Odczekaj chwilę i spróbuj ponownie." };
-    }
-    if (error.message.toLowerCase().includes("email not confirmed")) {
-      return { error: "Adres e-mail nie jest potwierdzony. Sprawdź skrzynkę i potwierdź konto." };
-    }
-    if (error.message.toLowerCase().includes("user not found") || error.status === 422) {
-      return { error: "Nie znaleziono użytkownika. Spróbuj wylogować się i zalogować ponownie." };
-    }
-
-    return {
-      error: `Nie udało się wysłać kodu (${error.message}). Sprawdź czy w Supabase Auth włączone jest OTP e-mail.`,
-    };
+  if (!sent) {
+    // Nie zostawiaj aktywnego kodu, którego nikt nie zobaczy.
+    await prisma.dangerCode.updateMany({
+      where: { userId: user.id, consumedAt: null },
+      data: { consumedAt: new Date() },
+    });
+    return { error: "Nie udało się wysłać e-maila z kodem. Spróbuj ponownie za chwilę lub skontaktuj się z pomocą." };
   }
 
   return { codeSent: true };
 }
 
-// ── Shared OTP verification ───────────────────────────────────────────────────
+// ── Shared code verification ──────────────────────────────────────────────────
 
-async function verifyOtpCode(
-  email: string,
-  code: string
-): Promise<{ error?: string }> {
-  const trimmed = code.replace(/\s/g, "");
-  if (!/^\d{6}$/.test(trimmed)) {
-    return { error: "Kod musi mieć 6 cyfr." };
+async function verifyDangerCode(userId: string, code: string): Promise<{ error?: string }> {
+  const result = await verifyAndConsumeDangerCode(userId, code);
+  if (result.ok) return {};
+  switch (result.reason) {
+    case "expired":
+      return { error: "Kod wygasł. Poproś o nowy kod." };
+    case "locked":
+      return { error: "Zbyt wiele nieudanych prób. Poproś o nowy kod." };
+    default:
+      return { error: "Nieprawidłowy kod. Sprawdź e-mail i spróbuj ponownie." };
   }
-
-  const supabase = await createClient();
-  const { error } = await supabase.auth.verifyOtp({
-    email,
-    token: trimmed,
-    type: "email",
-  });
-
-  if (error) {
-    console.error("[danger] verifyOtp error:", error.status, error.message);
-    return { error: "Nieprawidłowy lub wygasły kod. Sprawdź e-mail i spróbuj ponownie." };
-  }
-
-  return {};
 }
 
 // ── Shared business data deletion ─────────────────────────────────────────────
@@ -114,7 +112,7 @@ export async function confirmSalonDeletion(code: string): Promise<DangerState> {
   const user = await getServerUser();
   if (!user?.email) return { error: "Nie jesteś zalogowany." };
 
-  const otpResult = await verifyOtpCode(user.email, code);
+  const otpResult = await verifyDangerCode(user.id, code);
   if (otpResult.error) return { error: otpResult.error };
 
   const dbUser = await prisma.user.findUnique({
@@ -146,7 +144,7 @@ export async function confirmBusinessDeletion(code: string): Promise<DangerState
   const user = await getServerUser();
   if (!user?.email) return { error: "Nie jesteś zalogowany." };
 
-  const otpResult = await verifyOtpCode(user.email, code);
+  const otpResult = await verifyDangerCode(user.id, code);
   if (otpResult.error) return { error: otpResult.error };
 
   const dbUser = await prisma.user.findUnique({

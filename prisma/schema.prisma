@@ -1191,6 +1191,21 @@ model AiInsight {
 // ANALYTICS
 // ============================================================
 
+// One-time 6-digit codes authorizing destructive owner operations (salon /
+// account deletion). Only an HMAC of the code is stored — never plaintext.
+model DangerCode {
+  id         String    @id @default(cuid())
+  userId     String    @map("user_id") // Supabase auth user id
+  codeHash   String    @map("code_hash")
+  expiresAt  DateTime  @map("expires_at")
+  attempts   Int       @default(0)
+  consumedAt DateTime? @map("consumed_at")
+  createdAt  DateTime  @default(now()) @map("created_at")
+
+  @@index([userId, createdAt])
+  @@map("danger_codes")
+}
+
 model AnalyticsEvent {
   id         String   @id @default(cuid())
   businessId String?  @map("business_id")
