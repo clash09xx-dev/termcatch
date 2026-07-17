@@ -2,6 +2,31 @@
 
 ---
 
+## 🚀 LAUNCH PASS 2 (Booksy copy, OTP, Maps, SMS, WhatsApp flag, Assistant) — ✅ COMPLETE
+
+> **Rollback checkpoint: tag `CUSTOMER_AI_SMS_MAP_OTP_BEFORE` → `eca8e91`.**
+> Commits: `262b652` (competitor copy) · `60eee1e` (deletion OTP) · `a96eafc`
+> (structured locations) · `350a21a` (Twilio SMS + WhatsApp flag) · `cc558e7`
+> (discovery assistant). NOT pushed. Tests 66/66; build + typecheck green.
+> Schema (db push, additive): DangerCode, SmsMessage, Business.placeId,
+> Business.specialties, User.smsConsentAt.
+>
+> **Env (all server-side unless noted):** SMS_ENABLED (default off),
+> TWILIO_ACCOUNT_SID/AUTH_TOKEN/MESSAGING_SERVICE_SID (or FROM_NUMBER),
+> CRON_SECRET (reminder cron), WHATSAPP_ENABLED (default off),
+> DANGER_CODE_SECRET (optional; falls back to service-role key),
+> GOOGLE_MAPS_API_KEY (server, Places Details verification),
+> NEXT_PUBLIC_GOOGLE_MAPS_API_KEY (browser, referrer-restricted — currently a
+> placeholder, so all Google features show honest fallbacks).
+> **External setup pending:** real Google keys (enable Maps JavaScript API,
+> Places API, Maps Embed API; restrict browser key by referrer, server key by
+> IP/API); Railway Cron hourly POST → /api/cron/sms-reminders with
+> Authorization: Bearer $CRON_SECRET; Twilio console → status callback URL
+> auto-set per message. Dev-server note: after `pnpm db:push`, RESTART the dev
+> server (stale in-memory Prisma client otherwise).
+
+---
+
 ## 🔧 PRODUCTION FIXES PASS (IN PROGRESS)
 
 > Focused bug-fix + UX correction pass. **Rollback checkpoint: tag
