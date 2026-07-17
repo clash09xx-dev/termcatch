@@ -327,6 +327,10 @@ model Business {
   longitude    Float?
   placeId      String? @map("place_id") // Google Place ID (verified location)
 
+  // Controlled, searchable specialty tags (slugs from lib/discovery.ts) —
+  // picked by the owner, used by the discovery assistant. Never free text.
+  specialties  String[] @default([])
+
   // Contact
   phone        String?
   email        String?

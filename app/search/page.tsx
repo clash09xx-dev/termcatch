@@ -16,6 +16,7 @@ import { ServiceCategory, BusinessStatus } from "@prisma/client";
 import { parseCategoryParam, categoryLabel } from "@/lib/categories";
 import { PlaceholderCover } from "@/components/ui/placeholder-cover";
 import { FilterPanel, MobileFilters } from "./search-filters";
+import { DiscoveryAssistant } from "@/components/search/discovery-assistant";
 
 const PAGE_SIZE = 20;
 const PRICE_SORT_CAP = 500;
@@ -424,6 +425,11 @@ export default async function SearchPage({
             {title}
           </h1>
           <p className="text-sm text-slate-500 mt-1">{subtitle}</p>
+        </div>
+
+        {/* Discovery assistant — optional, compact, deterministic (Beta) */}
+        <div className="mb-6 fade-rise fade-rise-d1 max-w-2xl">
+          <DiscoveryAssistant />
         </div>
 
         {/* Mobile filter bar */}

@@ -4,6 +4,7 @@ import { useState, useTransition, useRef, useCallback } from "react";
 import { updateBusinessProfile } from "@/lib/actions/business";
 import { uploadBusinessImage } from "@/lib/actions/upload";
 import { LocationPicker } from "@/components/business/location-picker";
+import { SPECIALTY_TAGS } from "@/lib/discovery";
 import { cn } from "@/lib/utils";
 import type { Business } from "@prisma/client";
 import { PageHeader, GlassCard, InkButton, HAIRLINE, CHIP } from "@/components/ui/glass";
@@ -38,6 +39,7 @@ export function ProfileClient({ business, embedded = false }: Props) {
   const [description, setDescription] = useState(business.description ?? "");
   const [shortDescription, setShortDescription] = useState(business.shortDescription ?? "");
   const [subcategory, setSubcategory] = useState(business.subcategory ?? "");
+  const [specialties, setSpecialties] = useState<string[]>(business.specialties ?? []);
 
   // Tab 2 — Kontakt
   const [phone, setPhone] = useState(business.phone ?? "");
@@ -57,7 +59,7 @@ export function ProfileClient({ business, embedded = false }: Props) {
 
   function handleSave() {
     const dataMap: Record<Tab, Parameters<typeof updateBusinessProfile>[0]> = {
-      podstawowe: { name, description, shortDescription, subcategory },
+      podstawowe: { name, description, shortDescription, subcategory, specialties },
       kontakt: { phone, email, website, address, city, postalCode },
       media: { logoUrl, coverImageUrl },
       social: { instagramUrl, facebookUrl },
@@ -195,6 +197,36 @@ export function ProfileClient({ business, embedded = false }: Props) {
                   placeholder="np. Kosmetologia, Makijaż permanentny..."
                   className={INPUT_CLS}
                 />
+              </div>
+
+              <div>
+                <label className={LABEL_CLS}>Specjalizacje (maks. 6)</label>
+                <p className="text-xs text-slate-500 mb-2">
+                  Wybrane tagi pomagają klientom znaleźć Twój salon w wyszukiwarce i asystencie TermCatch.
+                </p>
+                <div className="flex flex-wrap gap-1.5">
+                  {SPECIALTY_TAGS.map((t) => {
+                    const on = specialties.includes(t.slug);
+                    return (
+                      <button
+                        key={t.slug}
+                        type="button"
+                        aria-pressed={on}
+                        onClick={() =>
+                          setSpecialties((prev) =>
+                            on ? prev.filter((s) => s !== t.slug) : prev.length >= 6 ? prev : [...prev, t.slug]
+                          )
+                        }
+                        className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${on ? "text-white" : "text-slate-600"}`}
+                        style={on
+                          ? { background: "linear-gradient(180deg,#1E293B,#0F172A)", border: "1px solid #0F172A" }
+                          : { background: "rgba(255,255,255,0.7)", border: "1px solid rgba(203,213,225,0.55)" }}
+                      >
+                        {t.label}
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
             </>
           )}

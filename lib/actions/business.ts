@@ -5,6 +5,7 @@ import { prisma } from "@/lib/prisma";
 import { getServerUser } from "@/lib/supabase/server";
 import { ServiceCategory, DayOfWeek } from "@prisma/client";
 import { redirect } from "next/navigation";
+import { SPECIALTY_TAGS } from "@/lib/discovery";
 
 const DAY_OF_WEEK_MAP: Record<number, DayOfWeek> = {
   0: DayOfWeek.MONDAY,
@@ -170,6 +171,8 @@ export type BusinessProfileData = {
   coverImageUrl?: string;
   instagramUrl?: string;
   facebookUrl?: string;
+  /** Controlled specialty slugs (validated server-side against SPECIALTY_TAGS). */
+  specialties?: string[];
 };
 
 export async function updateBusinessProfile(data: BusinessProfileData) {
@@ -192,6 +195,9 @@ export async function updateBusinessProfile(data: BusinessProfileData) {
       coverImageUrl: data.coverImageUrl,
       instagramUrl: data.instagramUrl,
       facebookUrl: data.facebookUrl,
+      ...(data.specialties
+        ? { specialties: data.specialties.filter((s) => SPECIALTY_TAGS.some((t) => t.slug === s)).slice(0, 6) }
+        : {}),
     },
   });
 
