@@ -39,6 +39,13 @@ export async function updateProfileAction(
   }
 
   const { firstName, lastName, phone } = parsed.data;
+  const smsNotifications = formData.get("smsNotifications") === "on";
+
+  // Consent tracking: stamp smsConsentAt only on the OFF→ON transition.
+  const existing = await prisma.user.findUnique({
+    where: { supabaseId: user.id },
+    select: { smsNotifications: true },
+  });
 
   await prisma.user.update({
     where: { supabaseId: user.id },
@@ -46,6 +53,8 @@ export async function updateProfileAction(
       firstName,
       lastName,
       phone: phone || null,
+      smsNotifications,
+      ...(smsNotifications && !existing?.smsNotifications ? { smsConsentAt: new Date() } : {}),
     },
   });
 

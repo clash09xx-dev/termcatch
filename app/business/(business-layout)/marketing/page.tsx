@@ -5,6 +5,7 @@ import { getServerUser } from "@/lib/supabase/server";
 import { prisma } from "@/lib/prisma";
 import { buildAudience, SEGMENTS, channelReach } from "@/lib/marketing";
 import { channelAvailability } from "@/lib/marketing-config";
+import { whatsappEnabled } from "@/lib/messaging";
 import { MarketingClient, type SegmentView } from "./marketing-client";
 
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? "https://termcatch.com";
@@ -62,6 +63,7 @@ export default async function MarketingPage() {
     <MarketingClient
       segments={segments}
       channels={channelAvailability()}
+      showWhatsapp={whatsappEnabled()}
       salonName={business.name}
       bookingUrl={`${APP_URL}/b/${business.slug}`}
       totalCustomers={recipients.length}

@@ -53,17 +53,21 @@ export function MarketingClient({
   salonName,
   bookingUrl,
   totalCustomers,
+  showWhatsapp = false,
 }: {
   segments: SegmentView[];
   channels: ChannelAvailability;
   salonName: string;
   bookingUrl: string;
   totalCustomers: number;
+  /** WhatsApp is feature-flagged off for launch — hidden entirely unless enabled server-side. */
+  showWhatsapp?: boolean;
 }) {
+  const visibleChannels = CHANNELS.filter((c) => c !== "whatsapp" || showWhatsapp);
   const searchParams = useSearchParams();
   const composerRef = useRef<HTMLTextAreaElement>(null);
 
-  const firstAvailable = CHANNELS.find((c) => channels[c]) ?? "sms";
+  const firstAvailable = visibleChannels.find((c) => channels[c]) ?? "sms";
   const [channel, setChannel] = useState<Channel>(firstAvailable);
   const [segment, setSegment] = useState<SegmentKey>("all");
   const [subject, setSubject] = useState("");
@@ -173,7 +177,7 @@ export function MarketingClient({
               </svg>
             }
             title="Twoja baza klientów jest jeszcze pusta"
-            body="Kampanie SMS, WhatsApp i e-mail pojawią się, gdy zdobędziesz pierwszych klientów. Zacznij od udostępnienia linku do rezerwacji."
+            body={`Kampanie ${showWhatsapp ? "SMS, WhatsApp i e-mail" : "SMS i e-mail"} pojawią się, gdy zdobędziesz pierwszych klientów. Zacznij od udostępnienia linku do rezerwacji.`}
             action={
               <InkButton size="sm" onClick={copyLink}>
                 {copied ? "Skopiowano ✓" : "Kopiuj link do rezerwacji"}
@@ -208,7 +212,7 @@ export function MarketingClient({
               onChange={(v) => setChannel(v as Channel)}
               idBase="mkt-channel"
               className="w-full"
-              options={CHANNELS.map((c) => ({ value: c, label: CHANNEL_LABEL[c] }))}
+              options={visibleChannels.map((c) => ({ value: c, label: CHANNEL_LABEL[c] }))}
             />
             <div className="mt-3 flex items-start gap-2 text-xs leading-relaxed">
               <span

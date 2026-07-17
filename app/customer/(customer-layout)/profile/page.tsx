@@ -12,6 +12,7 @@ export default async function CustomerProfilePage() {
       lastName={dbUser.lastName}
       phone={dbUser.phone ?? ""}
       email={dbUser.email}
+      smsNotifications={dbUser.smsNotifications}
     />
   );
 }

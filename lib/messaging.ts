@@ -4,6 +4,8 @@
  * wysyłka po prostu jest pomijana z logiem, aplikacja działa dalej.
  */
 
+import { sendRawSms, smsReady } from "@/lib/sms";
+
 function twilioConfigured(): boolean {
   const sid = process.env.TWILIO_ACCOUNT_SID ?? "";
   const token = process.env.TWILIO_AUTH_TOKEN ?? "";
@@ -16,11 +18,22 @@ function twilioConfigured(): boolean {
  * żeby UI mógł uczciwie pokazać dostępność wysyłki (bez udawania sukcesu).
  */
 export function smsConfigured(): boolean {
-  const from = process.env.TWILIO_FROM_NUMBER ?? "";
-  return twilioConfigured() && from.length > 0 && !from.includes("...");
+  // SMS_ENABLED is the launch kill-switch: even with valid Twilio credentials
+  // nothing sends (and no UI claims SMS works) until it's explicitly true.
+  return smsReady();
+}
+
+/**
+ * WhatsApp is NOT part of the current launch. The implementation stays, but
+ * everything is gated behind WHATSAPP_ENABLED (default off). This check is
+ * server-side — manipulated client state cannot trigger a send.
+ */
+export function whatsappEnabled(): boolean {
+  return process.env.WHATSAPP_ENABLED === "true";
 }
 
 export function whatsappConfigured(): boolean {
+  if (!whatsappEnabled()) return false;
   const from = process.env.TWILIO_WHATSAPP_FROM ?? "";
   return twilioConfigured() && from.length > 0 && !from.includes("...");
 }
@@ -55,27 +68,20 @@ async function twilioSend(to: string, from: string, body: string): Promise<boole
   }
 }
 
-/** Normalizuje polski numer do formatu E.164 (+48...). */
-export function normalizePhone(phone: string): string | null {
-  const digits = phone.replace(/[\s\-()]/g, "");
-  if (/^\+\d{9,15}$/.test(digits)) return digits;
-  if (/^\d{9}$/.test(digits)) return `+48${digits}`;
-  if (/^48\d{9}$/.test(digits)) return `+${digits}`;
-  return null;
-}
+import { normalizePhone } from "@/lib/phone";
+export { normalizePhone };
 
 export async function sendSms(toPhone: string, body: string): Promise<boolean> {
-  const from = process.env.TWILIO_FROM_NUMBER;
-  if (!from || from.includes("...")) {
-    console.log("[messaging:skipped] brak TWILIO_FROM_NUMBER");
-    return false;
-  }
-  const to = normalizePhone(toPhone);
-  if (!to) return false;
-  return twilioSend(to, from, body);
+  // Delegates to the SMS provider core (flag gate, Messaging Service support,
+  // retry on temporary failures, masked logging).
+  return sendRawSms(toPhone, body);
 }
 
 export async function sendWhatsApp(toPhone: string, body: string): Promise<boolean> {
+  if (!whatsappEnabled()) {
+    console.log("[messaging:skipped] WhatsApp wyłączony (WHATSAPP_ENABLED)");
+    return false;
+  }
   const from = process.env.TWILIO_WHATSAPP_FROM;
   if (!from || from.includes("...")) {
     console.log("[messaging:skipped] brak TWILIO_WHATSAPP_FROM");

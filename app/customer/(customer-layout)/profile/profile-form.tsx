@@ -13,6 +13,7 @@ import {
 } from "@/components/ui/glass";
 
 interface ProfileFormProps {
+  smsNotifications: boolean;
   firstName: string;
   lastName: string;
   phone: string;
@@ -25,7 +26,7 @@ const INPUT_CLS =
   "input-glass w-full px-3.5 py-2.5 rounded-xl text-sm outline-none text-slate-800 placeholder:text-slate-400";
 const LABEL_CLS = "block text-sm font-medium text-slate-700 mb-1.5";
 
-export default function ProfileForm({ firstName, lastName, phone, email }: ProfileFormProps) {
+export default function ProfileForm({ firstName, lastName, phone, email, smsNotifications }: ProfileFormProps) {
   const [state, formAction, isPending] = useActionState(updateProfileAction, initialState);
 
   return (
@@ -88,6 +89,27 @@ export default function ProfileForm({ firstName, lastName, phone, email }: Profi
                 className={`${INPUT_CLS} tabular-nums`}
               />
             </div>
+
+            <label
+              htmlFor="pf-sms"
+              className="flex items-start gap-3 rounded-xl px-3.5 py-3 cursor-pointer"
+              style={{ background: "rgba(203,213,225,0.16)", border: "1px solid rgba(203,213,225,0.40)" }}
+            >
+              <input
+                id="pf-sms"
+                type="checkbox"
+                name="smsNotifications"
+                defaultChecked={smsNotifications}
+                className="mt-0.5 w-4 h-4 accent-slate-900"
+              />
+              <span className="text-sm text-slate-700">
+                Powiadomienia SMS o wizytach
+                <span className="block text-xs text-slate-500 mt-0.5">
+                  Potwierdzenia, zmiany terminu i przypomnienia o Twoich rezerwacjach.
+                  Wyłącznie wiadomości transakcyjne — bez marketingu.
+                </span>
+              </span>
+            </label>
 
             {state.error && (
               <div

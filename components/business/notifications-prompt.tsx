@@ -51,7 +51,7 @@ export function NotificationsPrompt({ configured }: { configured: boolean }) {
           Wiedz o rezerwacjach od razu
         </p>
         <p className="text-xs text-slate-500 mt-0.5 leading-relaxed">
-          Włącz SMS lub WhatsApp — wiadomość w sekundę po każdej rezerwacji. E-maile działają domyślnie.
+          Włącz powiadomienia SMS — wiadomość w sekundę po każdej rezerwacji. E-maile działają domyślnie.
         </p>
       </div>
       <div className="flex items-center gap-2 flex-shrink-0">

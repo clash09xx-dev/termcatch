@@ -14,6 +14,7 @@ import {
   sendNewBookingNotificationEmail,
 } from "@/lib/email";
 import { sendSms, sendWhatsApp } from "@/lib/messaging";
+import { sendTransactionalSms, type SmsTemplate } from "@/lib/sms";
 import { getBusinessNotificationSettings } from "@/lib/notification-settings";
 import { resolveBookingAddons, type AddonSelection } from "@/lib/booking-addons";
 import { computeBookingTotals, evaluateCoupon } from "@/lib/booking-pricing";
@@ -82,6 +83,26 @@ function notify(params: {
       sentAt: new Date(),
     },
   });
+}
+
+/** Transactional booking SMS to the CUSTOMER — only with explicit opt-in
+ * (User.smsNotifications) + a phone number; feature-gated and deduplicated
+ * inside sendTransactionalSms. Never throws. */
+function customerBookingSms(args: {
+  customer: { phone: string | null; smsNotifications: boolean };
+  appointmentId: string;
+  template: SmsTemplate;
+  body: string;
+  dedupeSuffix?: string;
+}): Promise<unknown> {
+  if (!args.customer.smsNotifications || !args.customer.phone) return Promise.resolve();
+  return sendTransactionalSms({
+    toPhone: args.customer.phone,
+    body: args.body,
+    template: args.template,
+    dedupeKey: `sms:${args.template}:${args.appointmentId}${args.dedupeSuffix ?? ""}`,
+    appointmentId: args.appointmentId,
+  }).catch(() => undefined);
 }
 
 function describeSlot(start: Date): string {
@@ -278,6 +299,12 @@ export async function createAppointment(data: CreateAppointmentInput) {
       business.id,
       `Termcatch: nowa rezerwacja — ${service.name}, ${slotLabel}, ${customer.firstName} ${customer.lastName}. Potwierdź w panelu: ${process.env.NEXT_PUBLIC_APP_URL ?? "https://termcatch.com"}/business/dashboard`
     ),
+    customerBookingSms({
+      customer,
+      appointmentId: appointment.id,
+      template: "booked",
+      body: `Termcatch: prośba o rezerwację wysłana — ${service.name} w ${business.name}, ${slotLabel}. Salon potwierdzi wizytę.`,
+    }),
   ]);
 
   revalidatePath("/customer/dashboard");
@@ -404,6 +431,13 @@ export async function rescheduleAppointment(input: {
       appointment.business.id,
       `Termcatch: wizyta przełożona — ${appointment.service.name} z ${oldSlotLabel} na ${newSlotLabel}. Potwierdź nowy termin w panelu.`
     ),
+    customerBookingSms({
+      customer,
+      appointmentId: appointment.id,
+      template: "rescheduled",
+      body: `Termcatch: wizyta przełożona — ${appointment.service.name} w ${appointment.business.name}, nowy termin: ${newSlotLabel}. Salon potwierdzi zmianę.`,
+      dedupeSuffix: `:${newStart.toISOString()}`,
+    }),
   ]);
 
   revalidatePath("/customer/dashboard");
@@ -486,6 +520,12 @@ export async function cancelAppointment(appointmentId: string) {
       appointment.business.id,
       `Termcatch: klient anulował wizytę — ${appointment.service.name}, ${describeSlot(appointment.startTime)}. Termin jest znów wolny.`
     ),
+    customerBookingSms({
+      customer,
+      appointmentId,
+      template: "cancelled",
+      body: `Termcatch: Twoja wizyta ${appointment.service.name} w ${appointment.business.name}, ${describeSlot(appointment.startTime)} została anulowana.`,
+    }),
   ]);
 
   revalidatePath("/customer/dashboard");
@@ -503,7 +543,7 @@ export async function confirmAppointment(appointmentId: string) {
     include: {
       business: { select: { id: true, name: true } },
       service: { select: { name: true } },
-      customer: { select: { id: true, email: true, firstName: true } },
+      customer: { select: { id: true, email: true, firstName: true, phone: true, smsNotifications: true } },
     },
   });
 
@@ -535,6 +575,12 @@ export async function confirmAppointment(appointmentId: string) {
       serviceName: appointment.service.name,
       slotLabel,
     }),
+    customerBookingSms({
+      customer: appointment.customer,
+      appointmentId,
+      template: "confirmed",
+      body: `Termcatch: wizyta potwierdzona — ${appointment.service.name} w ${appointment.business.name}, ${slotLabel}. Do zobaczenia!`,
+    }),
   ]);
 
   revalidatePath("/business/dashboard");
@@ -552,7 +598,7 @@ export async function declineAppointment(appointmentId: string) {
     include: {
       business: { select: { id: true, name: true } },
       service: { select: { name: true } },
-      customer: { select: { id: true, email: true, firstName: true } },
+      customer: { select: { id: true, email: true, firstName: true, phone: true, smsNotifications: true } },
     },
   });
 
@@ -593,6 +639,12 @@ export async function declineAppointment(appointmentId: string) {
       serviceName: appointment.service.name,
       slotLabel,
       cancelledBy: "business",
+    }),
+    customerBookingSms({
+      customer: appointment.customer,
+      appointmentId,
+      template: "declined",
+      body: `Termcatch: salon ${appointment.business.name} odwołał wizytę ${appointment.service.name}, ${slotLabel}. Zarezerwuj inny termin w aplikacji.`,
     }),
   ]);
 

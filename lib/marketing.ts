@@ -5,7 +5,7 @@
 // appointments + real customer opt-in flags. Delivery availability reflects
 // the real Twilio/Resend configuration.
 
-import { normalizePhone } from "@/lib/messaging";
+import { normalizePhone } from "@/lib/phone";
 
 const DAY = 86_400_000;
 const DORMANT_DAYS = 60;

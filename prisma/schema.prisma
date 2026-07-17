@@ -263,6 +263,7 @@ model User {
   // Notification preferences
   emailNotifications   Boolean @default(true) @map("email_notifications")
   smsNotifications     Boolean @default(false) @map("sms_notifications")
+  smsConsentAt         DateTime? @map("sms_consent_at") // when the user opted in to SMS
   whatsappNotifications Boolean @default(false) @map("whatsapp_notifications")
   pushNotifications    Boolean @default(true) @map("push_notifications")
   marketingEmails      Boolean @default(true) @map("marketing_emails")
@@ -1191,6 +1192,25 @@ model AiInsight {
 // ============================================================
 // ANALYTICS
 // ============================================================
+
+// Transactional SMS audit + idempotency. dedupeKey guarantees one send per
+// business event; phone numbers are stored MASKED (never full), bodies are
+// identified by template key only (no private content persisted).
+model SmsMessage {
+  id            String   @id @default(cuid())
+  dedupeKey     String   @unique @map("dedupe_key")
+  toMasked      String   @map("to_masked")
+  template      String
+  status        String   @default("QUEUED") // QUEUED | SENT | DELIVERED | FAILED | UNDELIVERED | SKIPPED
+  providerSid   String?  @unique @map("provider_sid")
+  error         String?
+  appointmentId String?  @map("appointment_id")
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  @@index([appointmentId])
+  @@map("sms_messages")
+}
 
 // One-time 6-digit codes authorizing destructive owner operations (salon /
 // account deletion). Only an HMAC of the code is stored — never plaintext.
