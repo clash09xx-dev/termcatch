@@ -38,7 +38,7 @@ export async function requestDangerCode(): Promise<DangerState> {
 
   const { sent } = await sendEmail({
     to: user.email,
-    subject: "Kod potwierdzający usunięcie — Termcatch",
+    subject: "Kod potwierdzający usunięcie profilu salonu",
     heading: "Potwierdź operację usunięcia",
     lines: [
       `Otrzymaliśmy prośbę o usunięcie danych salonu <strong>${business.name}</strong> w Termcatch.`,
