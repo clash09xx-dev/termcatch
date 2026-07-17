@@ -4,7 +4,7 @@ import { LandingFooter } from "@/components/layout/landing-footer";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "Cennik — o połowę taniej niż Booksy",
+  title: "Cennik — tańsza alternatywa dla salonów",
   description:
     "Przejrzysty cennik Termcatch: plany od 39 zł/mies., 0% prowizji od wizyt. Pierwsze 100 salonów — 3 miesiące bez opłat.",
   alternates: { canonical: "/pricing" },
@@ -144,8 +144,8 @@ const FAQ = [
     a: "Pierwsze 100 salonów, które zarejestrują się w Termcatch, korzysta z pełnego planu przez 3 miesiące całkowicie bez opłat — bez karty, bez zobowiązań.",
   },
   {
-    q: "Czym różnicie się od Booksy?",
-    a: "Nasze plany są około o połowę tańsze, nie pobieramy prowizji od wizyt ani opłat za pozyskanie klienta, którego już masz.",
+    q: "Dlaczego Termcatch?",
+    a: "Płacisz jedną przewidywalną stawkę za plan. Nie pobieramy opłat za pozyskanie klienta, którego już masz, a wszystkie najważniejsze narzędzia salonu są w jednym miejscu.",
   },
   {
     q: "Czy jest ukryta opłata za instalację?",
@@ -213,7 +213,7 @@ export default function PricingPage() {
               className="text-5xl font-bold mb-4"
               style={{ letterSpacing: "-0.04em", color: "#0F172A" }}
             >
-              O połowę taniej niż{" "}
+              Tańsza alternatywa{" "}
               <span
                 style={{
                   background: "linear-gradient(135deg, #1E293B 0%, #334155 50%, #1E293B 100%)",
@@ -222,7 +222,7 @@ export default function PricingPage() {
                   backgroundClip: "text",
                 }}
               >
-                Booksy.
+                dla salonów.
               </span>
             </h1>
             <p className="text-lg" style={{ color: "#64748B" }}>

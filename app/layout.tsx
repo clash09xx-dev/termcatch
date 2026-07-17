@@ -19,7 +19,7 @@ export const metadata: Metadata = {
     default: "Termcatch — Rezerwacje online dla salonów beauty | Fryzjer, barber, masaż",
   },
   description:
-    "Rezerwacja wizyt online w salonach beauty: fryzjer, barber, paznokcie, masaż. Umów wizytę 24/7 w Krakowie i całej Polsce. Polska alternatywa dla Booksy — dla salonów o połowę taniej.",
+    "Rezerwacja wizyt online w salonach beauty: fryzjer, barber, paznokcie, masaż. Umów wizytę 24/7 w Krakowie i całej Polsce. Tańsza alternatywa dla salonów.",
   keywords: [
     "rezerwacja wizyt online",
     "umów wizytę online",
@@ -31,7 +31,7 @@ export const metadata: Metadata = {
     "barber Kraków",
     "manicure Kraków",
     "system rezerwacji dla salonu",
-    "alternatywa dla Booksy",
+    "system rezerwacji online dla salonów",
     "polska aplikacja do rezerwacji",
     "online booking",
     "appointment booking",
