@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { motion, useInView } from "framer-motion";
 import { LandingNav } from "@/components/layout/landing-nav";
 import { LandingFooter } from "@/components/layout/landing-footer";
+import { CustomerAssistant } from "@/components/assistant/customer-assistant";
 
 // ── Premium Chrome Glass style helpers ───────────────────────────────────────
 // Every surface is multi-layer: chrome ring → contact → depth → ambient
@@ -343,7 +344,7 @@ export default function HomePage() {
   return (
     <div className="min-h-screen overflow-x-hidden text-slate-900" style={{ background: BG.hero }}>
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(HOME_JSON_LD) }} />
-      <LandingNav />
+      <LandingNav variant="marketing" />
 
       {/* ── HERO ─────────────────────────────────────────────────── */}
       <section className="relative min-h-screen flex items-start overflow-hidden px-6 pt-28 md:pt-32 pb-16">
@@ -419,6 +420,9 @@ export default function HomePage() {
               className="mt-9"
             >
               <HeroSearch />
+              <div className="mt-3">
+                <CustomerAssistant />
+              </div>
               <p className="mt-3 text-xs text-slate-500">
                 Lub{" "}
                 <Link href="/register?role=business" className="underline underline-offset-2 hover:text-slate-700 transition-colors">

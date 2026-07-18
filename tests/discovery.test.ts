@@ -35,6 +35,24 @@ describe("deterministic interpreter", () => {
     const f = interp.interpret(["dobry fryzjer"]);
     assert.match(nextQuestion(f) ?? "", /mieście/);
   });
+  test("time extraction: 'dzisiaj' / 'jutro' / 'pojutrze'", () => {
+    assert.equal(interp.interpret(["manicure w Krakowie dzisiaj"]).dayOffset, 0);
+    assert.equal(interp.interpret(["barber w Gdańsku jutro"]).dayOffset, 1);
+    assert.equal(interp.interpret(["masaż w Warszawie pojutrze"]).dayOffset, 2);
+  });
+  test("time extraction: 'jutro po 17:00' → dayOffset 1 + afterMinutes 1020", () => {
+    const f = interp.interpret(["Barber w Krakowie jutro po 17:00"]);
+    assert.equal(f.dayOffset, 1);
+    assert.equal(f.afterMinutes, 17 * 60);
+  });
+  test("a bare time implies today; budget 'do 200 zł' is not a time", () => {
+    const f = interp.interpret(["masaż w Warszawie po 18:00"]);
+    assert.equal(f.dayOffset, 0);
+    assert.equal(f.afterMinutes, 18 * 60);
+    const g = interp.interpret(["koloryzacja w Krakowie do 200 zł"]);
+    assert.equal(g.afterMinutes, undefined);
+    assert.equal(g.maxPrice, 200);
+  });
   test("missing service/specialty → asks what they need", () => {
     const f = interp.interpret(["cokolwiek w Warszawie"]);
     assert.match(nextQuestion(f) ?? "", /usługi|specjalizacji/);
@@ -75,5 +93,28 @@ describe("ranking — real relevance, never pay-to-win", () => {
     const out = rankSalons([s], { cityQuery: "Warszawa", serviceQuery: "strzyzenie" });
     assert.equal(out.length, 1);
     assert.match(out[0].reasons.join(" "), /Strzyżenie damskie/);
+  });
+  test("keyword found in salon/service DESCRIPTION matches (kręcone włosy)", () => {
+    const s = salon({
+      slug: "desc",
+      description: "Specjalizujemy się w kręconych włosach i lokach.",
+      services: [{ name: "Strzyżenie", price: 150, discountedPrice: null }],
+    });
+    const out = rankSalons([s], { cityQuery: "Warszawa", specialty: "krecone-wlosy" });
+    assert.equal(out.length, 1);
+    assert.match(out[0].reasons.join(" "), /Pasuje do zapytania/);
+  });
+  test("requested day: salons WITHOUT a real free slot are excluded; slot is shown", () => {
+    const withSlot = salon({ slug: "free", specialties: ["depilacja"], earliestSlotMin: 16 * 60 + 30 });
+    const noSlot = salon({ slug: "full", specialties: ["depilacja"], earliestSlotMin: null });
+    const out = rankSalons([withSlot, noSlot], { cityQuery: "Warszawa", specialty: "depilacja", dayOffset: 0 });
+    assert.deepEqual(out.map((r) => r.slug), ["free"]);
+    assert.equal(out[0].slotLabel, "16:30");
+    assert.match(out[0].reasons.join(" "), /wolny termin dzisiaj o 16:30/);
+  });
+  test("matched service exposes serviceId for direct booking", () => {
+    const s = salon({ slug: "svc2", services: [{ id: "s1", name: "Manicure hybrydowy", price: 120, discountedPrice: null }] });
+    const out = rankSalons([s], { cityQuery: "Warszawa", specialty: "manicure-hybrydowy" });
+    assert.equal(out[0].serviceId, "s1");
   });
 });

@@ -10,7 +10,13 @@ export type DiscoveryFilters = {
   specialty?: string; // slug from SPECIALTY_TAGS
   serviceQuery?: string; // free text matched against real service names
   maxPrice?: number;
+  /** Requested day: 0 = dzisiaj, 1 = jutro, 2 = pojutrze (Warsaw calendar). */
+  dayOffset?: 0 | 1 | 2;
+  /** "po 17:00" → 1020 — only slots starting at/after this Warsaw minute. */
+  afterMinutes?: number;
 };
+
+export const DAY_WORDS: Record<0 | 1 | 2, string> = { 0: "dzisiaj", 1: "jutro", 2: "pojutrze" };
 
 export type DiscoveryResult = {
   slug: string;
@@ -21,6 +27,10 @@ export type DiscoveryResult = {
   reviewCount: number;
   priceFrom: number | null;
   reasons: string[];
+  /** Matched service (when the query matched one) — used for direct booking links. */
+  serviceId: string | null;
+  /** Real earliest free slot for the requested day, e.g. "16:30" — never invented. */
+  slotLabel: string | null;
   /** Reserved for a future clearly-labelled paid placement. Always false today —
    * organic relevance is never replaced by payment. */
   sponsored: boolean;
@@ -55,6 +65,20 @@ export const SPECIALTY_TAGS: { slug: string; label: string; keywords: string[] }
 
 export function specialtyLabel(slug: string): string {
   return SPECIALTY_TAGS.find((t) => t.slug === slug)?.label ?? slug;
+}
+
+/** Major Polish cities — merged into interpretation so "w Warszawie" is
+ * understood even before any salon exists there (search itself stays honest:
+ * an empty DB result produces the no-results message, never fabrications). */
+export const MAJOR_CITIES = [
+  "Warszawa", "Kraków", "Łódź", "Wrocław", "Poznań", "Gdańsk", "Szczecin",
+  "Bydgoszcz", "Lublin", "Białystok", "Katowice", "Gdynia", "Częstochowa",
+  "Radom", "Toruń", "Sosnowiec", "Rzeszów", "Kielce", "Gliwice", "Olsztyn",
+  "Zabrze", "Bielsko-Biała", "Opole", "Zielona Góra",
+];
+
+export function timeLabelFromMinutes(min: number): string {
+  return `${String(Math.floor(min / 60)).padStart(2, "0")}:${String(min % 60).padStart(2, "0")}`;
 }
 
 // ── Text normalization (diacritic- and case-insensitive) ──────
@@ -110,6 +134,23 @@ export class DeterministicInterpreter implements DiscoveryInterpreter {
     const budget = text.match(/(?:do|max|maks|budzet(?:u|em)?)\s*(\d{2,5})\s*(?:zl|pln)?/);
     if (budget) filters.maxPrice = parseInt(budget[1], 10);
 
+    // Requested day — "pojutrze" first ("pojutrze" contains "jutro").
+    if (text.includes("pojutrze")) filters.dayOffset = 2;
+    else if (text.includes("jutro")) filters.dayOffset = 1;
+    else if (/\bdzis(iaj)?\b/.test(text) || text.includes("na dzis")) filters.dayOffset = 0;
+
+    // Time bound — "po 17", "po 17:30", "od 18:00".
+    const after = text.match(/\b(?:po|od)\s+(\d{1,2})(?::(\d{2}))?\b/);
+    if (after) {
+      const h = parseInt(after[1], 10);
+      const m = after[2] ? parseInt(after[2], 10) : 0;
+      // Only treat plausible clock times as times (not "po 200 zł" etc.).
+      if (h >= 6 && h <= 23 && m < 60) {
+        filters.afterMinutes = h * 60 + m;
+        if (filters.dayOffset === undefined) filters.dayOffset = 0; // a time implies "today"
+      }
+    }
+
     // Service words: generic service nouns worth matching against real names.
     const serviceWords = ["strzyzenie", "farbowanie", "manicure", "pedicure", "masaz", "depilacja", "makijaz", "fryzjer", "peeling", "regulacja"];
     const found = serviceWords.find((s) => text.includes(s));
@@ -121,7 +162,7 @@ export class DeterministicInterpreter implements DiscoveryInterpreter {
 
 /** The follow-up question for missing info — one at a time, city first. */
 export function nextQuestion(f: DiscoveryFilters): string | null {
-  if (!f.cityQuery) return "W jakim mieście szukasz salonu?";
+  if (!f.cityQuery) return "W jakim mieście mam szukać?";
   if (!f.specialty && !f.serviceQuery) return "Jakiej usługi lub specjalizacji szukasz? Np. koloryzacja, kręcone włosy, manicure…";
   return null;
 }
@@ -135,33 +176,69 @@ export type RankableSalon = {
   averageRating: number;
   totalReviews: number;
   specialties: string[];
-  services: { name: string; price: number; discountedPrice: number | null }[];
+  /** Public salon description — scanned for keyword matches. */
+  description?: string | null;
+  services: {
+    id?: string;
+    name: string;
+    price: number;
+    discountedPrice: number | null;
+    description?: string | null;
+  }[];
+  /** Real earliest free slot (Warsaw minutes) for the requested day, computed
+   * by the caller from the availability system; null = nothing free. */
+  earliestSlotMin?: number | null;
 };
 
 export function rankSalons(salons: RankableSalon[], f: DiscoveryFilters, limit = 5): DiscoveryResult[] {
   const requiresMatch = Boolean(f.specialty || f.serviceQuery);
+  const requiresSlot = f.dayOffset !== undefined;
+  const dayWord = f.dayOffset !== undefined ? DAY_WORDS[f.dayOffset] : null;
+
+  // Needles for text matching: the matched tag's keyword stems + the raw
+  // service query — scanned against service names/descriptions and the salon
+  // description (all normalized, diacritic-insensitive).
+  const tag = f.specialty ? SPECIALTY_TAGS.find((t) => t.slug === f.specialty) : undefined;
+  const needles = [
+    ...(tag ? tag.keywords.map(normalizeText) : []),
+    ...(f.serviceQuery ? [normalizeText(f.serviceQuery)] : []),
+  ];
+  const hasNeedle = (text: string | null | undefined) =>
+    !!text && needles.some((n) => normalizeText(text).includes(n));
+
   const scored = salons.map((s) => {
     const reasons: string[] = [];
     let score = 0;
     let matched = false;
+    let serviceId: string | null = null;
 
+    // 1) Structured specialty tag — strongest signal.
     if (f.specialty && s.specialties.includes(f.specialty)) {
       score += 100;
       matched = true;
-      reasons.push(`specjalizacja: ${specialtyLabel(f.specialty)}`);
+      reasons.push(`Pasuje do zapytania: ${specialtyLabel(f.specialty)}`);
     }
 
     let priceFrom: number | null = null;
     const activePrices = s.services.map((sv) => sv.discountedPrice ?? sv.price);
     if (activePrices.length) priceFrom = Math.min(...activePrices);
 
-    if (f.serviceQuery) {
-      const match = s.services.find((sv) => normalizeText(sv.name).includes(normalizeText(f.serviceQuery!)));
-      if (match) {
-        score += 60;
-        matched = true;
-        reasons.push(`usługa: ${match.name}`);
-      }
+    // 2) A concrete service whose name/description matches.
+    const svcMatch = s.services.find(
+      (sv) => hasNeedle(sv.name) || hasNeedle(sv.description)
+    );
+    if (svcMatch && needles.length > 0) {
+      score += 60;
+      matched = true;
+      serviceId = svcMatch.id ?? null;
+      reasons.push(`usługa: ${svcMatch.name}`);
+    }
+
+    // 3) Keyword found in the salon's own description (weaker evidence).
+    if (!matched && needles.length > 0 && hasNeedle(s.description)) {
+      score += 30;
+      matched = true;
+      reasons.push(`Pasuje do zapytania: ${tag ? specialtyLabel(tag.slug) : f.serviceQuery}`);
     }
 
     if (f.maxPrice != null && priceFrom != null && priceFrom <= f.maxPrice) {
@@ -169,24 +246,33 @@ export function rankSalons(salons: RankableSalon[], f: DiscoveryFilters, limit =
       reasons.push(`ceny od ${Math.round(priceFrom)} zł`);
     }
 
-    // Rating confidence: rating weighted by review volume (log damped).
+    // 4) Real availability on the requested day (computed by the caller from
+    //    the actual availability system — never invented here).
+    const slotMin = s.earliestSlotMin ?? null;
+    if (requiresSlot && slotMin != null && dayWord) {
+      score += 40;
+      reasons.push(`wolny termin ${dayWord} o ${timeLabelFromMinutes(slotMin)}`);
+    }
+
+    // 5) Rating confidence: rating weighted by review volume (log damped).
     if (s.totalReviews > 0) {
       score += s.averageRating * Math.min(Math.log10(s.totalReviews + 1), 1.5) * 8;
-      reasons.push(`ocena ${s.averageRating.toFixed(1)} (${s.totalReviews} opinii)`);
+      reasons.push(`ocena ${s.averageRating.toFixed(1).replace(".", ",")} (${s.totalReviews} opinii)`);
     }
 
     reasons.push(s.city);
-    return { s, score, reasons, priceFrom, matched };
+    return { s, score, reasons, priceFrom, matched, serviceId, slotMin };
   });
 
-  // Honesty rule: when the customer asked for a concrete specialty/service,
-  // only salons that actually offer it may appear — a high rating alone never
-  // fabricates a match.
+  // Honesty rules: a requested specialty/service must actually be offered
+  // (rating alone never fabricates a match), and a requested day must have a
+  // REAL free slot — salons without one are not shown as available.
   return scored
     .filter((x) => (requiresMatch ? x.matched : true))
+    .filter((x) => (requiresSlot ? x.slotMin != null : true))
     .sort((a, b) => b.score - a.score)
     .slice(0, limit)
-    .map(({ s, reasons, priceFrom }) => ({
+    .map(({ s, reasons, priceFrom, serviceId, slotMin }) => ({
       slug: s.slug,
       name: s.name,
       city: s.city,
@@ -194,7 +280,17 @@ export function rankSalons(salons: RankableSalon[], f: DiscoveryFilters, limit =
       rating: s.averageRating,
       reviewCount: s.totalReviews,
       priceFrom,
-      reasons: reasons.slice(0, 3),
+      reasons: reasons.slice(0, 4),
+      serviceId,
+      slotLabel: slotMin != null ? timeLabelFromMinutes(slotMin) : null,
       sponsored: false,
     }));
 }
+
+// ── Provider boundary for a future external AI model ─────────
+// The chat UI and the search/scoring pipeline depend only on these types.
+// Swapping the deterministic interpreter for an LLM-backed provider later
+// means implementing CustomerAssistantProvider server-side — nothing else
+// changes. No paid provider is referenced or required today.
+export type CustomerAssistantProvider = DiscoveryInterpreter;
+export const LocalRecommendationProvider = DeterministicInterpreter;

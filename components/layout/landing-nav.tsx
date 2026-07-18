@@ -25,7 +25,15 @@ const NAV_SHADOW_REST =
 const NAV_SHADOW_SCROLLED =
   "0 0 0 0.5px rgba(203,213,225,0.45), 0 2px 4px rgba(0,0,0,0.05), 0 8px 32px rgba(100,116,139,0.10), 0 20px 48px rgba(100,116,139,0.05), inset 0 1px 0 rgba(255,255,255,0.95)";
 
-export function LandingNav() {
+export type LandingNavVariant = "marketing" | "customer-discovery";
+
+export function LandingNav({
+  variant = "customer-discovery",
+}: {
+  /** "marketing" (homepage marketing context) additionally shows "Dla salonów".
+   *  The default customer-discovery/booking variant shows only "Szukaj". */
+  variant?: LandingNavVariant;
+}) {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileOpen, setIsMobileOpen] = useState(false);
   const [auth, setAuth] = useState<AuthState>({ status: "loading" });
@@ -51,9 +59,12 @@ export function LandingNav() {
       .catch(() => setAuth({ status: "guest" }));
   }, []);
 
-  // Public nav is intentionally minimal: just "Szukaj". The B2B page
-  // (/for-business) stays reachable via landing CTAs, the footer and direct URL.
-  const links = [{ href: "/search", label: "Szukaj" }];
+  // Customer discovery/booking contexts stay minimal ("Szukaj" only); the
+  // homepage marketing variant also offers the B2B entry point.
+  const links = [
+    { href: "/search", label: "Szukaj" },
+    ...(variant === "marketing" ? [{ href: "/for-business", label: "Dla salonów" }] : []),
+  ];
 
   return (
     <header className="fixed top-0 inset-x-0 z-50 px-4 pt-3">
