@@ -6,7 +6,7 @@ import type { Metadata } from "next";
 export const metadata: Metadata = {
   title: "Cennik — tańsza alternatywa dla salonów",
   description:
-    "Przejrzysty cennik Termcatch: plany od 39 zł/mies., 0% prowizji od wizyt. Pierwsze 100 salonów — 3 miesiące bez opłat.",
+    "Przejrzysty cennik Termcatch: cztery plany od 99 zł/mies. Pierwsze 100 salonów — 3 miesiące bez opłat.",
   alternates: { canonical: "/pricing" },
 };
 
@@ -82,59 +82,76 @@ import React from "react";
 const PLANS = [
   {
     name: "Solo",
-    price: "39 zł",
-    period: "miesięcznie",
-    desc: "Dla niezależnych specjalistów — fryzjer, barber, kosmetolog, masażysta pracujący na własny rachunek.",
+    oldPrice: "139 zł",
+    price: "99 zł",
+    period: "miesiąc",
+    desc: "Dla specjalisty prowadzącego jednoosobowy salon.",
     cta: "Wypróbuj 14 dni za darmo",
     href: "/register?role=business&plan=solo",
     highlight: false,
     features: [
+      "Dla jednoosobowej działalności",
       "1 specjalista",
-      "Nieograniczone rezerwacje",
-      "Publiczny profil salonu",
-      "Powiadomienia e-mail dla klientów",
-      "Kalendarz i zarządzanie grafikiem",
-      "CRM i historia klientów",
-      "0% prowizji od wizyt",
+      "1 lokalizacja",
+      "Podstawowe funkcje rezerwacji",
+      "Kalendarz i zarządzanie wizytami",
+      "Profil salonu w TermCatch",
+      "20% od pierwszej wizyty",
     ],
-    missing: ["Zespół i wiele stanowisk", "Płatności i zaliczki online", "Pełna analityka"],
   },
   {
     name: "Zespół",
-    price: "89 zł",
-    period: "miesięcznie",
-    desc: "Dla małych salonów. Do 5 stanowisk, płatności online i pełne przypomnienia.",
+    oldPrice: "249 zł",
+    price: "199 zł",
+    period: "miesiąc",
+    desc: "Dla małych zespołów w jednej lokalizacji.",
     cta: "Wypróbuj 14 dni za darmo",
     href: "/register?role=business&plan=team",
-    highlight: true,
+    highlight: false,
     features: [
-      "Do 5 specjalistów",
-      "Wszystko z planu Solo",
-      "Płatności i zaliczki online (Stripe)",
-      "Analityka i raporty",
-      "Kupony i promocje",
-      "Ochrona przed no-show",
-      "Wsparcie priorytetowe",
+      "Wszystko, co w planie Solo",
+      "Maksymalnie 4 specjalistów",
+      "1 lokalizacja",
+      "Comiesięczne raporty",
+      "Zarządzanie zespołem",
+      "20% od pierwszej wizyty",
     ],
-    missing: [],
   },
   {
     name: "Salon Pro",
-    price: "149 zł",
-    period: "miesięcznie",
-    desc: "Dla większych salonów i sieci. Bez limitu stanowisk, AI i dedykowana opieka.",
+    oldPrice: "439 zł",
+    price: "369 zł",
+    period: "miesiąc",
+    desc: "Dla rozwijających się salonów z większym zespołem.",
     cta: "Wypróbuj 14 dni za darmo",
     href: "/register?role=business&plan=pro",
+    highlight: true,
+    features: [
+      "Wszystko, co w planie Zespół",
+      "Do 15 specjalistów",
+      "Do 2 lokalizacji",
+      "Podstawowy Asystent AI",
+      "Priorytetowa pomoc w nagłych sytuacjach",
+      "20% od pierwszej wizyty",
+    ],
+  },
+  {
+    name: "Ultimate",
+    oldPrice: "799 zł",
+    price: "499 zł",
+    period: "miesiąc",
+    desc: "Dla sieci salonów i zespołów bez limitów.",
+    cta: "Wypróbuj 14 dni za darmo",
+    href: "/register?role=business&plan=ultimate",
     highlight: false,
     features: [
-      "Nieograniczona liczba specjalistów",
-      "Wszystko z planu Zespół",
-      "AI Asystent (analiza obłożenia)",
-      "Wiele lokalizacji",
-      "Faktury i eksporty księgowe",
-      "Dedykowany opiekun i onboarding",
+      "Wszystko, co w planie Salon Pro",
+      "Nielimitowana liczba specjalistów",
+      "Nielimitowana liczba lokalizacji",
+      "Asystent AI bez limitu",
+      "Priorytetowa pomoc w nagłych sytuacjach",
+      "20% od pierwszej wizyty",
     ],
-    missing: [],
   },
 ];
 
@@ -157,7 +174,7 @@ const FAQ = [
   },
   {
     q: "Jak działają płatności online?",
-    a: "Integrujemy się ze Stripe. Pieniądze za wizyty trafiają bezpośrednio na Twoje konto — Termcatch nie pobiera od nich żadnej prowizji.",
+    a: "Integrujemy się ze Stripe. Pieniądze za wizyty trafiają bezpośrednio na Twoje konto. Opłata 20% dotyczy wyłącznie pierwszej wizyty nowego klienta pozyskanego przez TermCatch.",
   },
 ];
 
@@ -171,20 +188,6 @@ function CheckIcon({ highlight }: { highlight: boolean }) {
       strokeWidth="2.5"
     >
       <path strokeLinecap="round" strokeLinejoin="round" d="m5 13 4 4L19 7" />
-    </svg>
-  );
-}
-
-function CrossIcon() {
-  return (
-    <svg
-      className="w-4 h-4 flex-shrink-0"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="rgba(148,163,184,0.40)"
-      strokeWidth="2"
-    >
-      <path strokeLinecap="round" strokeLinejoin="round" d="M6 18 18 6M6 6l12 12" />
     </svg>
   );
 }
@@ -226,7 +229,7 @@ export default function PricingPage() {
               </span>
             </h1>
             <p className="text-lg" style={{ color: "#64748B" }}>
-              Jedna przewidywalna stawka. 0% prowizji od wizyt. Bez ukrytych opłat.
+              Jedna przewidywalna stawka. Bez ukrytych opłat.
             </p>
           </div>
 
@@ -277,12 +280,12 @@ export default function PricingPage() {
             </div>
           </div>
 
-          {/* Plans */}
-          <div className="grid md:grid-cols-3 gap-6 mb-6 items-start">
+          {/* Plans — 1 col mobile, 2×2 tablet, 4 in a row on wide desktop */}
+          <div className="grid md:grid-cols-2 xl:grid-cols-4 gap-6 xl:gap-4 mb-6">
             {PLANS.map((plan) => (
               <div
                 key={plan.name}
-                className="p-8 flex flex-col glass-shimmer-wrap"
+                className="p-8 xl:p-6 flex flex-col glass-shimmer-wrap"
                 style={plan.highlight ? cardHighlight : card}
               >
                 {plan.highlight && (
@@ -294,7 +297,7 @@ export default function PricingPage() {
                       color: "#475569",
                     }}
                   >
-                    Najpopularniejszy
+                    Najczęściej wybierany
                   </div>
                 )}
 
@@ -305,6 +308,13 @@ export default function PricingPage() {
                   >
                     {plan.name}
                   </h2>
+                  <p
+                    className="text-sm font-medium tabular-nums"
+                    style={{ color: "#94A3B8", textDecoration: "line-through", textDecorationColor: "rgba(148,163,184,0.7)" }}
+                    aria-label={`Cena regularna ${plan.oldPrice}`}
+                  >
+                    {plan.oldPrice}
+                  </p>
                   <div className="flex items-baseline gap-1.5 mb-3">
                     <span
                       className="text-4xl font-bold"
@@ -334,15 +344,9 @@ export default function PricingPage() {
 
                 <div className="space-y-2.5 mb-8 flex-1">
                   {plan.features.map((f) => (
-                    <div key={f} className="flex items-center gap-2.5 text-sm">
-                      <CheckIcon highlight={plan.highlight} />
+                    <div key={f} className="flex items-start gap-2.5 text-sm">
+                      <span className="mt-0.5"><CheckIcon highlight={plan.highlight} /></span>
                       <span style={{ color: plan.highlight ? "#0F172A" : "#475569" }}>{f}</span>
-                    </div>
-                  ))}
-                  {plan.missing.map((f) => (
-                    <div key={f} className="flex items-center gap-2.5 text-sm">
-                      <CrossIcon />
-                      <span style={{ color: "#CBD5E1" }}>{f}</span>
                     </div>
                   ))}
                 </div>
@@ -357,6 +361,11 @@ export default function PricingPage() {
               </div>
             ))}
           </div>
+
+          {/* Commission note */}
+          <p className="text-center text-sm mb-6" style={{ color: "#94A3B8" }}>
+            Opłata dotyczy pierwszej wizyty nowego klienta pozyskanego przez TermCatch.
+          </p>
 
           <div style={{ ...divider, margin: "4rem 0" }} />
 
