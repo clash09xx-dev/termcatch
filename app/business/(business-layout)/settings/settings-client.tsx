@@ -36,6 +36,7 @@ type Props = {
   settings: Settings;
   notificationSettings: BusinessNotificationSettings;
   business: Business;
+  smsAvailable: boolean;
 };
 
 type Section = "rezerwacje" | "odwolania" | "powiadomienia" | "profil" | "strefa";
@@ -138,7 +139,7 @@ function DecisionCard({
   );
 }
 
-export function SettingsClient({ settings: initialSettings, notificationSettings, business }: Props) {
+export function SettingsClient({ settings: initialSettings, notificationSettings, business, smsAvailable }: Props) {
   const router = useRouter();
   const [activeSection, setActiveSection] = useState<Section>("rezerwacje");
   const [settings, setSettings] = useState<Settings>(initialSettings);
@@ -455,7 +456,7 @@ export function SettingsClient({ settings: initialSettings, notificationSettings
           )}
 
           {/* Powiadomienia */}
-          {activeSection === "powiadomienia" && <NotificationSettingsForm initial={notificationSettings} />}
+          {activeSection === "powiadomienia" && <NotificationSettingsForm initial={notificationSettings} smsAvailable={smsAvailable} />}
 
           {/* Profil publiczny */}
           {activeSection === "profil" && (

@@ -45,14 +45,19 @@ function Toggle({
 
 export function NotificationSettingsForm({
   initial,
+  smsAvailable = false,
 }: {
   initial: BusinessNotificationSettings;
+  /** Platform SMS gateway is live (SMS_ENABLED + Twilio configured). */
+  smsAvailable?: boolean;
 }) {
   const [state, formAction, isPending] = useActionState(
     updateNotificationSettingsAction,
     initialState
   );
   const [email, setEmail] = useState(initial.emailEnabled);
+  const [sms, setSms] = useState(initial.smsEnabled);
+  const [smsPhone, setSmsPhone] = useState(initial.smsPhone ?? "");
 
   return (
     <form action={formAction} className="rounded-[20px] p-6 space-y-4" style={ELEV_RAISED}>
@@ -62,9 +67,7 @@ export function NotificationSettingsForm({
         wizytach. Powiadomienia w aplikacji mobilnej pojawią się wraz z premierą aplikacji.
       </p>
 
-      {/* Hidden fields to preserve SMS/WhatsApp values in DB */}
-      <input type="hidden" name="smsEnabled" value="false" />
-      <input type="hidden" name="smsPhone" value={initial.smsPhone ?? ""} />
+      {/* WhatsApp stays off for now — preserve its stored values. */}
       <input type="hidden" name="whatsappEnabled" value="false" />
       <input type="hidden" name="whatsappPhone" value={initial.whatsappPhone ?? ""} />
 
@@ -79,25 +82,46 @@ export function NotificationSettingsForm({
         <Toggle name="emailEnabled" checked={email} onChange={setEmail} />
       </div>
 
-      {/* SMS — disabled / coming soon */}
-      <div className="p-4 rounded-xl opacity-60" style={CHIP}>
+      {/* SMS */}
+      <div className="p-4 rounded-xl" style={CHIP}>
         <div className="flex items-start justify-between">
           <div>
-            <div className="flex items-center gap-2">
-              <p className="text-sm font-medium text-slate-800">SMS</p>
-              <span
-                className="text-[10px] px-1.5 py-0.5 rounded-full font-semibold text-slate-500"
-                style={{ background: "rgba(203,213,225,0.35)", border: "1px solid rgba(203,213,225,0.50)" }}
-              >
-                Wkrótce
-              </span>
-            </div>
+            <p className="text-sm font-medium text-slate-800">SMS</p>
             <p className="text-xs text-slate-500 mt-0.5">
               Krótki SMS przy nowej rezerwacji i anulowaniu.
             </p>
           </div>
-          <Toggle name="_smsDisabled" checked={false} onChange={() => {}} disabled />
+          <Toggle name="smsEnabled" checked={sms} onChange={setSms} />
         </div>
+
+        {sms ? (
+          <div className="mt-3">
+            <label htmlFor="smsPhone" className="block text-xs font-medium text-slate-600 mb-1">
+              Numer telefonu do powiadomień SMS
+            </label>
+            <input
+              id="smsPhone"
+              name="smsPhone"
+              type="tel"
+              inputMode="tel"
+              value={smsPhone}
+              onChange={(e) => setSmsPhone(e.target.value)}
+              placeholder="+48 600 000 000"
+              maxLength={20}
+              className="w-full text-sm px-3 py-2 rounded-lg bg-white/70 outline-none focus:ring-2 focus:ring-slate-900/10"
+              style={{ border: "1px solid rgba(148,163,184,0.35)" }}
+            />
+            {!smsAvailable && (
+              <p className="text-[11px] mt-2 leading-relaxed" style={{ color: "#B45309" }}>
+                Wysyłka SMS uruchomi się, gdy aktywujemy bramkę SMS na koncie. Ustawienie
+                zapiszemy już teraz i zadziała automatycznie po włączeniu.
+              </p>
+            )}
+          </div>
+        ) : (
+          // Preserve a previously saved number when SMS is toggled off.
+          <input type="hidden" name="smsPhone" value={smsPhone} />
+        )}
       </div>
 
       {state.error && (
