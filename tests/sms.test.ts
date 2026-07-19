@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import { createHmac } from "crypto";
 import { maskPhone, verifyTwilioSignature, smsFlagEnabled, smsReady } from "../lib/sms";
 import { whatsappEnabled, whatsappConfigured } from "../lib/messaging";
+import { normalizePhone } from "../lib/phone";
 
 describe("maskPhone — no full numbers in logs or DB", () => {
   test("polish mobile masked, keeps prefix + last 4", () => {
@@ -32,18 +33,52 @@ describe("verifyTwilioSignature", () => {
   });
 });
 
+describe("normalizePhone — polskie numery do E.164", () => {
+  test("9 cyfr → +48…", () => assert.equal(normalizePhone("123456789"), "+48123456789"));
+  test("48XXXXXXXXX → +48XXXXXXXXX", () => assert.equal(normalizePhone("48123456789"), "+48123456789"));
+  test("+48XXXXXXXXX pozostaje bez zmian", () => assert.equal(normalizePhone("+48123456789"), "+48123456789"));
+  test("spacje i myślniki są tolerowane", () => assert.equal(normalizePhone("+48 123-456-789"), "+48123456789"));
+  test("nieprawidłowy numer → null (blokuje wysyłkę)", () => {
+    assert.equal(normalizePhone("12345"), null);
+    assert.equal(normalizePhone("abc"), null);
+    assert.equal(normalizePhone(""), null);
+  });
+});
+
 describe("feature flags — hard server-side gates", () => {
-  test("SMS disabled by default (flag absent)", () => {
+  const TWILIO_KEYS = [
+    "TWILIO_ACCOUNT_SID",
+    "TWILIO_API_KEY_SID",
+    "TWILIO_API_KEY_SECRET",
+    "TWILIO_FROM_NUMBER",
+  ];
+  const clearTwilio = () => {
     delete process.env.SMS_ENABLED;
+    for (const k of TWILIO_KEYS) delete process.env[k];
+  };
+
+  test("SMS disabled by default (flag absent)", () => {
+    clearTwilio();
     assert.equal(smsFlagEnabled(), false);
     assert.equal(smsReady(), false);
   });
   test("SMS flag alone is not enough without Twilio credentials", () => {
+    clearTwilio();
     process.env.SMS_ENABLED = "true";
-    delete process.env.TWILIO_ACCOUNT_SID;
     assert.equal(smsFlagEnabled(), true);
     assert.equal(smsReady(), false);
-    delete process.env.SMS_ENABLED;
+    clearTwilio();
+  });
+  test("SMS ready requires the API Key set (SID + KEY SID + KEY SECRET + FROM) plus the flag", () => {
+    clearTwilio();
+    process.env.SMS_ENABLED = "true";
+    process.env.TWILIO_ACCOUNT_SID = "AC00000000000000000000000000000000";
+    process.env.TWILIO_API_KEY_SID = "SK00000000000000000000000000000000";
+    process.env.TWILIO_FROM_NUMBER = "+48123456789";
+    assert.equal(smsReady(), false); // API Key secret still missing
+    process.env.TWILIO_API_KEY_SECRET = "dummy_secret_for_tests_only";
+    assert.equal(smsReady(), true);
+    clearTwilio();
   });
   test("WhatsApp disabled by default and even when Twilio is configured", () => {
     delete process.env.WHATSAPP_ENABLED;

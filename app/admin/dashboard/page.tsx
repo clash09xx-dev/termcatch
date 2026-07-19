@@ -7,6 +7,7 @@ import { prisma } from "@/lib/prisma";
 import { formatCurrency, formatRelativeTime } from "@/lib/utils";
 import { Wordmark } from "@/components/brand/wordmark";
 import { AdminViewSwitcher } from "@/components/admin-view-switcher";
+import { TestSmsForm } from "@/components/admin/test-sms-form";
 import {
   adminBanBusiness,
   adminRestoreBusiness,
@@ -335,6 +336,8 @@ export default async function AdminDashboardPage() {
             )}
           </div>
         </div>
+
+        <TestSmsForm />
 
         <p className="text-xs text-gray-400 text-center pb-4">
           Statystyki odwiedzin liczone anonimowo, bez odświeżeń tej samej podstrony w ramach sesji.

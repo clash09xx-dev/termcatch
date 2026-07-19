@@ -157,7 +157,7 @@ export const CHANNEL_LABEL: Record<Channel, string> = {
 
 /** The env var a salon must set to enable each channel (for honest guidance). */
 export const CHANNEL_ENV_HINT: Record<Channel, string> = {
-  sms: "TWILIO_ACCOUNT_SID + TWILIO_AUTH_TOKEN + TWILIO_FROM_NUMBER",
+  sms: "TWILIO_ACCOUNT_SID + TWILIO_API_KEY_SID + TWILIO_API_KEY_SECRET + TWILIO_FROM_NUMBER",
   whatsapp: "TWILIO_ACCOUNT_SID + TWILIO_AUTH_TOKEN + TWILIO_WHATSAPP_FROM",
   email: "RESEND_API_KEY",
 };

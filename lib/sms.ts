@@ -17,24 +17,23 @@ export function smsFlagEnabled(): boolean {
   return process.env.SMS_ENABLED === "true";
 }
 
-function real(v: string | undefined, prefix?: string): boolean {
-  if (!v || v.includes("...")) return false;
-  return prefix ? v.startsWith(prefix) && v.length > 10 : v.length > 5;
-}
-
-function twilioCreds(): { sid: string; token: string; msgService?: string; from?: string } | null {
-  const sid = process.env.TWILIO_ACCOUNT_SID;
-  const token = process.env.TWILIO_AUTH_TOKEN;
-  if (!real(sid, "AC") || !real(token)) return null;
-  const msgService = process.env.TWILIO_MESSAGING_SERVICE_SID;
-  const from = process.env.TWILIO_FROM_NUMBER;
-  if (!real(msgService, "MG") && !real(from)) return null;
-  return { sid: sid!, token: token!, msgService: real(msgService, "MG") ? msgService : undefined, from: real(from) ? from : undefined };
+/**
+ * SMS provider is configured for sending: the API-key credentials + a sender
+ * number are all present. Mirrors REQUIRED_TWILIO_ENV in lib/twilio.ts — kept as
+ * a light, dependency-free check so this module (and the test suite that imports
+ * it) never has to load the Twilio SDK just to read a flag.
+ */
+function twilioSmsConfigured(): boolean {
+  const required = ["TWILIO_ACCOUNT_SID", "TWILIO_API_KEY_SID", "TWILIO_API_KEY_SECRET", "TWILIO_FROM_NUMBER"];
+  return required.every((key) => {
+    const v = process.env[key];
+    return typeof v === "string" && v.trim().length > 0 && !v.includes("...");
+  });
 }
 
 /** SMS is genuinely available: flag on AND provider configured. */
 export function smsReady(): boolean {
-  return smsFlagEnabled() && twilioCreds() !== null;
+  return smsFlagEnabled() && twilioSmsConfigured();
 }
 
 /** +48123456789 → +48•••••6789 — safe for logs and the audit table. */
@@ -45,31 +44,16 @@ export function maskPhone(e164: string): string {
 
 type RawResult = { ok: boolean; sid?: string; retryable?: boolean; error?: string };
 
+/**
+ * Low-level single send. Delegates to the API-key Twilio client in lib/twilio.ts,
+ * loaded via dynamic import so this module stays free of the SDK (and the
+ * `server-only` guard) on non-sending code paths and in unit tests. The From /
+ * Messaging Service selection and StatusCallback wiring live in that module.
+ */
 async function twilioSendOnce(to: string, body: string): Promise<RawResult> {
-  const creds = twilioCreds();
-  if (!creds) return { ok: false, error: "unconfigured" };
-  const params = new URLSearchParams({ To: to, Body: body });
-  if (creds.msgService) params.set("MessagingServiceSid", creds.msgService);
-  else params.set("From", creds.from!);
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL;
-  if (appUrl?.startsWith("https://")) params.set("StatusCallback", `${appUrl}/api/sms/status`);
-  try {
-    const res = await fetch(`https://api.twilio.com/2010-04-01/Accounts/${creds.sid}/Messages.json`, {
-      method: "POST",
-      headers: {
-        Authorization: `Basic ${Buffer.from(`${creds.sid}:${creds.token}`).toString("base64")}`,
-        "Content-Type": "application/x-www-form-urlencoded",
-      },
-      body: params,
-    });
-    if (res.ok) {
-      const data = (await res.json()) as { sid?: string };
-      return { ok: true, sid: data.sid };
-    }
-    return { ok: false, retryable: res.status === 429 || res.status >= 500, error: `http_${res.status}` };
-  } catch {
-    return { ok: false, retryable: true, error: "network" };
-  }
+  const { sendSms } = await import("@/lib/twilio");
+  const r = await sendSms(to, body);
+  return { ok: r.ok, sid: r.sid, retryable: r.retryable, error: r.error };
 }
 
 /** Low-level send with a single retry on temporary failures. No persistence. */

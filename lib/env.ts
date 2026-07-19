@@ -34,10 +34,13 @@ export const env = {
   RESEND_API_KEY: process.env.RESEND_API_KEY,
   EMAIL_FROM: process.env.EMAIL_FROM ?? "noreply@termcatch.com",
 
-  // Twilio (SMS/WhatsApp)
+  // Twilio (SMS/WhatsApp) — sending uses the API Key; Auth Token is webhook-only.
   TWILIO_ACCOUNT_SID: process.env.TWILIO_ACCOUNT_SID,
+  TWILIO_API_KEY_SID: process.env.TWILIO_API_KEY_SID,
+  TWILIO_API_KEY_SECRET: process.env.TWILIO_API_KEY_SECRET,
   TWILIO_AUTH_TOKEN: process.env.TWILIO_AUTH_TOKEN,
   TWILIO_FROM_NUMBER: process.env.TWILIO_FROM_NUMBER,
+  TWILIO_MESSAGING_SERVICE_SID: process.env.TWILIO_MESSAGING_SERVICE_SID,
   TWILIO_WHATSAPP_FROM: process.env.TWILIO_WHATSAPP_FROM,
 
   // Google Maps
