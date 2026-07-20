@@ -4,47 +4,22 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { isPlatformAdmin } from "@/lib/is-admin";
-import { getServerUser } from "@/lib/supabase/server";
 import { BusinessStatus } from "@prisma/client";
 
 async function requireAdmin() {
   if (!(await isPlatformAdmin())) redirect("/");
 }
 
-/** Admin: publish (verify) a salon — the only transition into public ACTIVE. */
-export async function adminPublishBusiness(businessId: string) {
-  await requireAdmin();
-  const user = await getServerUser();
-  await prisma.business.update({
-    where: { id: businessId },
-    data: {
-      status: BusinessStatus.ACTIVE,
-      isActive: true,
-      verifiedAt: new Date(),
-      verifiedBy: user?.email ?? user?.id ?? null,
-    },
-  });
-  revalidatePath("/admin/dashboard");
-  revalidatePath("/search");
-}
+// Publication is automatic once onboarding is complete — there is no manual
+// "publish/approve" admin action. Admin keeps only MODERATION controls:
+// suspend (hide) and reactivate/restore, plus ban.
 
-/** Admin: suspend a salon (temporarily hidden from all public discovery). */
+/** Admin moderation: suspend a salon (hidden from all public discovery + unbookable). */
 export async function adminSuspendBusiness(businessId: string) {
   await requireAdmin();
   await prisma.business.update({
     where: { id: businessId },
     data: { status: BusinessStatus.SUSPENDED },
-  });
-  revalidatePath("/admin/dashboard");
-  revalidatePath("/search");
-}
-
-/** Admin: return a salon to draft / pending verification (un-publish). */
-export async function adminReturnToDraft(businessId: string) {
-  await requireAdmin();
-  await prisma.business.update({
-    where: { id: businessId },
-    data: { status: BusinessStatus.PENDING_VERIFICATION, verifiedAt: null },
   });
   revalidatePath("/admin/dashboard");
   revalidatePath("/search");

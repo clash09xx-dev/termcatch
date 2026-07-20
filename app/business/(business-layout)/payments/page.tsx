@@ -6,6 +6,8 @@ import { getServerUser } from "@/lib/supabase/server";
 import { prisma } from "@/lib/prisma";
 import { cn } from "@/lib/utils";
 import { PLATFORM_FEE_PERCENT } from "@/lib/stripe";
+import { billingConfigured } from "@/lib/subscription";
+import { SubscribeButtons } from "@/components/business/subscribe-buttons";
 import {
   PageHeader,
   GlassCard,
@@ -16,6 +18,62 @@ import {
   CHIP,
   INK_GRADIENT,
 } from "@/components/ui/glass";
+
+const SUB_STATUS_LABEL: Record<string, string> = {
+  TRIALING: "Okres próbny",
+  ACTIVE: "Aktywna",
+  PAST_DUE: "Zaległa płatność",
+  CANCELLED: "Anulowana",
+  PAUSED: "Wstrzymana",
+};
+
+function fmtDate(d: Date | null): string {
+  return d ? new Date(d).toLocaleDateString("pl-PL", { day: "numeric", month: "long", year: "numeric" }) : "";
+}
+
+type SubRow = {
+  status: string;
+  stripeSubscriptionId: string | null;
+  trialEndsAt: Date | null;
+  currentPeriodEnd: Date | null;
+  cancelAtPeriodEnd: boolean;
+} | null;
+
+// Real subscription/trial status from synced Stripe data — never a hardcoded "7 dni".
+function SubscriptionCard({ sub }: { sub: SubRow }) {
+  const active = Boolean(sub?.stripeSubscriptionId);
+  return (
+    <GlassCard className="p-5 fade-rise fade-rise-d1">
+      <Overline>Subskrypcja TermCatch</Overline>
+      {active && sub ? (
+        <div className="mt-2">
+          <p className="text-sm font-semibold text-slate-900">
+            Status: {SUB_STATUS_LABEL[sub.status] ?? sub.status}
+          </p>
+          {sub.status === "TRIALING" && sub.trialEndsAt && (
+            <p className="text-sm text-slate-600 mt-1">Okres próbny trwa do {fmtDate(sub.trialEndsAt)}.</p>
+          )}
+          {sub.status !== "TRIALING" && sub.currentPeriodEnd && (
+            <p className="text-sm text-slate-600 mt-1">
+              {sub.cancelAtPeriodEnd ? "Subskrypcja zakończy się" : "Kolejne odnowienie"}: {fmtDate(sub.currentPeriodEnd)}.
+            </p>
+          )}
+        </div>
+      ) : billingConfigured() ? (
+        <div className="mt-2">
+          <p className="text-sm text-slate-600 mb-3">
+            Rozpocznij subskrypcję z 7-dniowym okresem próbnym — bez opłat na start.
+          </p>
+          <SubscribeButtons />
+        </div>
+      ) : (
+        <p className="text-sm text-slate-500 mt-2">
+          Płatności abonamentowe będą dostępne wkrótce. 7 dni za darmo na start.
+        </p>
+      )}
+    </GlassCard>
+  );
+}
 
 // ── Data ──────────────────────────────────────────────────────
 
@@ -30,6 +88,17 @@ async function getPaymentsData(supabaseId: string) {
           currency: true,
           stripeAccountId: true,
           stripeOnboarded: true,
+          subscriptions: {
+            orderBy: { createdAt: "desc" },
+            take: 1,
+            select: {
+              status: true,
+              stripeSubscriptionId: true,
+              trialEndsAt: true,
+              currentPeriodEnd: true,
+              cancelAtPeriodEnd: true,
+            },
+          },
         },
       },
     },
@@ -156,6 +225,8 @@ export default async function PaymentsPage() {
         subtitle="Płatności online i wypłaty przez Stripe"
         actions={<GlassLink href="/business/settings" size="sm">Ustawienia</GlassLink>}
       />
+
+      <SubscriptionCard sub={business.subscriptions[0] ?? null} />
 
       {state === "NOT_CONNECTED" && (
         <GlassCard className="fade-rise fade-rise-d1 overflow-hidden">

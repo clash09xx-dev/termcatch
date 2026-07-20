@@ -6,7 +6,7 @@ import type { Metadata } from "next";
 export const metadata: Metadata = {
   title: "Cennik — tańsza alternatywa dla salonów",
   description:
-    "Przejrzysty cennik TermCatch: cztery plany od 99 zł/mies. Pierwsze 100 salonów — 3 miesiące bez opłat.",
+    "Przejrzysty cennik TermCatch: cztery plany od 99 zł/mies. 7 dni za darmo na start. Pierwsze 100 salonów — dodatkowo 3 miesiące bez opłat.",
   alternates: { canonical: "/pricing" },
 };
 
@@ -157,8 +157,12 @@ const PLANS = [
 
 const FAQ = [
   {
-    q: "Na czym polega oferta startowa?",
-    a: "Pierwsze 100 salonów, które zarejestrują się w TermCatch, korzysta z pełnego planu przez 3 miesiące całkowicie bez opłat — bez karty, bez zobowiązań.",
+    q: "Czy jest okres próbny?",
+    a: "Tak — każdy nowy salon zaczyna od 7 dni za darmo, bez podawania karty na start. Po zakończeniu okresu próbnego przechodzisz na wybrany płatny plan.",
+  },
+  {
+    q: "Na czym polega oferta startowa i czy łączy się z okresem próbnym?",
+    a: "To osobna, ograniczona promocja: pierwsze 100 salonów otrzymuje dodatkowo 3 miesiące bez opłat. Nie łączy się automatycznie z 7-dniowym okresem próbnym — obowiązuje jedna oferta na subskrypcję.",
   },
   {
     q: "Dlaczego TermCatch?",
@@ -229,7 +233,7 @@ export default function PricingPage() {
               </span>
             </h1>
             <p className="text-lg" style={{ color: "#64748B" }}>
-              Jedna przewidywalna stawka. Bez ukrytych opłat.
+              Jedna przewidywalna stawka. Bez ukrytych opłat. 7 dni za darmo na start — bez karty.
             </p>
           </div>
 
@@ -358,6 +362,9 @@ export default function PricingPage() {
                 >
                   {plan.cta}
                 </Link>
+                <p className="text-[11px] text-center mt-2.5" style={{ color: "#94A3B8" }}>
+                  7 dni za darmo, potem {plan.price} / {plan.period}
+                </p>
               </div>
             ))}
           </div>

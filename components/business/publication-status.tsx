@@ -34,9 +34,9 @@ export function PublicationStatus({
             </p>
             <p className="text-xs text-slate-600 mt-0.5">
               {isPublished
-                ? "Twój salon jest widoczny w wyszukiwarce i można u Ciebie rezerwować online."
+                ? "Gotowe! Twój salon jest widoczny w wyszukiwarce i można u Ciebie rezerwować online."
                 : isPending
-                ? "Profil czeka na publikację. Uzupełnij poniższe wymagania — opublikujemy go po weryfikacji."
+                ? "Twój profil opublikuje się automatycznie, gdy uzupełnisz poniższe informacje — bez zatwierdzania przez administratora."
                 : status === BusinessStatus.SUSPENDED
                 ? "Profil jest zawieszony i chwilowo niewidoczny publicznie. Skontaktuj się z nami, aby go przywrócić."
                 : "Profil nie jest publiczny."}
@@ -73,9 +73,9 @@ export function PublicationStatus({
         </div>
       )}
 
-      {!isPublished && missing.length === 0 && (
+      {!isPublished && isPending && missing.length === 0 && (
         <p className="mt-3 text-sm text-slate-700">
-          Wszystko gotowe — profil spełnia wymagania i czeka na publikację przez nasz zespół.
+          Wszystko gotowe — profil pojawi się publicznie automatycznie w ciągu chwili.
         </p>
       )}
     </div>

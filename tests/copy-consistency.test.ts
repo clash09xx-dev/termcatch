@@ -10,7 +10,8 @@ const FORBIDDEN: { needle: string; why: string }[] = [
   { needle: "0% prowizji", why: "commission is 20% of the first visit, not 0%" },
   { needle: "Plan Starter", why: "no 'Starter' plan (Solo/Zespół/Salon Pro/Ultimate)" },
   { needle: "bezpłatnie na zawsze", why: "paid plans are not permanently free" },
-  { needle: "14 dni za darmo", why: "the promo is 3 months for the first 100 salons" },
+  { needle: "14 dni za darmo", why: "the standard trial is now 7 days" },
+  { needle: "14-dniowy okres", why: "the standard trial is now 7 days" },
   { needle: "Zero no-show", why: "unsupported absolute claim" },
   { needle: "Termcatch", why: "brand is 'TermCatch'" },
   { needle: "Odpiszemy w ciągu godziny", why: "unsupported response-time promise" },
@@ -45,4 +46,10 @@ describe("public copy consistency — no fabricated/outdated phrases", () => {
       assert.equal(hits.length, 0, `Found "${needle}" in:\n${hits.join("\n")}`);
     });
   }
+
+  test("the 7-day trial ('7 dni') is present on the pricing page", () => {
+    const pricing = files.find((f) => f.endsWith("app/pricing/page.tsx"));
+    assert.ok(pricing, "pricing page not found");
+    assert.ok(readFileSync(pricing!, "utf8").includes("7 dni"), "expected '7 dni' trial copy on pricing");
+  });
 });

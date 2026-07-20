@@ -151,13 +151,11 @@ export default async function BusinessDashboardPage() {
     <div className="max-w-6xl mx-auto space-y-5">
       <NotificationsPrompt configured={notifConfigured} />
 
-      {business.status !== "ACTIVE" && (
-        <PublicationStatus
-          status={business.status}
-          slug={business.slug}
-          requirements={publication.requirements}
-        />
-      )}
+      <PublicationStatus
+        status={business.status}
+        slug={business.slug}
+        requirements={publication.requirements}
+      />
 
       {/* Greeting — a spoken sentence, not a stat grid */}
       <div className="fade-rise">

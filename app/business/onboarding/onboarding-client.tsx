@@ -9,6 +9,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { Wordmark } from "@/components/brand/wordmark";
 import { createBusiness, type OnboardingInput, type WorkingHourInput } from "@/lib/actions/business";
+import { visibleCategories } from "@/lib/categories";
 import { ServiceCategory } from "@prisma/client";
 import { stepSlide, stepFade, SPRING, useReducedMotion } from "@/lib/motion";
 
@@ -37,24 +38,9 @@ const inputCls =
 
 // ─── Data ─────────────────────────────────────────────────────
 
-const CATEGORIES: { value: ServiceCategory; label: string }[] = [
-  { value: "HAIR_SALON", label: "Salon fryzjerski" },
-  { value: "BARBER", label: "Barber" },
-  { value: "NAIL_SALON", label: "Paznokcie" },
-  { value: "MASSAGE", label: "Masaż" },
-  { value: "SPA", label: "SPA" },
-  { value: "BEAUTY_CLINIC", label: "Klinika urody" },
-  { value: "EYEBROWS_LASHES", label: "Brwi & Rzęsy" },
-  { value: "MAKEUP", label: "Makijaż" },
-  { value: "TATTOO", label: "Tatuaż" },
-  { value: "PHYSIOTHERAPY", label: "Fizjoterapia" },
-  { value: "PERSONAL_TRAINER", label: "Trener personalny" },
-  { value: "YOGA", label: "Joga / Pilates" },
-  { value: "DENTIST", label: "Stomatolog" },
-  { value: "NUTRITIONIST", label: "Dietetyk" },
-  { value: "PSYCHOLOGIST", label: "Psycholog" },
-  { value: "GENERAL_PHYSICIAN", label: "Inne" },
-];
+// Single source of truth (lib/categories) — medical categories are excluded,
+// aesthetic ("Klinika urody" / BEAUTY_CLINIC) stays available.
+const CATEGORIES = visibleCategories();
 
 const DEFAULT_HOURS: WorkingHourInput[] = [
   { dayOfWeek: 0, isOpen: true, openTime: "09:00", closeTime: "18:00" },

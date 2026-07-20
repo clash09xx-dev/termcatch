@@ -5,6 +5,7 @@ import { updateBusinessProfile } from "@/lib/actions/business";
 import { uploadBusinessImage } from "@/lib/actions/upload";
 import { LocationPicker } from "@/components/business/location-picker";
 import { SPECIALTY_TAGS } from "@/lib/discovery";
+import { categoryLabel } from "@/lib/categories";
 import { cn } from "@/lib/utils";
 import type { Business } from "@prisma/client";
 import { PageHeader, GlassCard, InkButton, HAIRLINE, CHIP } from "@/components/ui/glass";
@@ -178,7 +179,7 @@ export function ProfileClient({ business, embedded = false }: Props) {
                 </label>
                 <input
                   type="text"
-                  value={business.category}
+                  value={categoryLabel(business.category)}
                   disabled
                   className={cn(INPUT_CLS, "opacity-60 cursor-not-allowed")}
                 />

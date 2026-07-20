@@ -12,9 +12,7 @@ import {
   adminBanBusiness,
   adminRestoreBusiness,
   adminDeleteBusiness,
-  adminPublishBusiness,
   adminSuspendBusiness,
-  adminReturnToDraft,
 } from "@/lib/actions/admin";
 import { STATUS_LABELS } from "@/lib/publication";
 
@@ -280,9 +278,7 @@ export default async function AdminDashboardPage() {
             ) : (
               <div className="divide-y divide-gray-100">
                 {recentBusinesses.map((b) => {
-                  const publishAction = adminPublishBusiness.bind(null, b.id);
                   const suspendAction = adminSuspendBusiness.bind(null, b.id);
-                  const draftAction = adminReturnToDraft.bind(null, b.id);
                   const banAction = adminBanBusiness.bind(null, b.id);
                   const restoreAction = adminRestoreBusiness.bind(null, b.id);
                   const deleteAction = adminDeleteBusiness.bind(null, b.id);
@@ -309,29 +305,21 @@ export default async function AdminDashboardPage() {
                       >
                         {STATUS_LABELS[b.status] ?? b.status}
                       </span>
+                      {/* Moderation only — publication is automatic. */}
                       <div className="flex items-center gap-1.5 flex-shrink-0 flex-wrap justify-end">
-                        {b.status !== "ACTIVE" && b.status !== "BANNED" && (
-                          <form action={publishAction}>
-                            <button type="submit" className="text-[11px] font-medium px-2.5 py-1.5 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors">
-                              Opublikuj
-                            </button>
-                          </form>
-                        )}
                         {isActive && (
                           <form action={suspendAction}>
                             <button type="submit" className={ghost}>Zawieś</button>
                           </form>
                         )}
-                        {(isActive || b.status === "SUSPENDED") && (
-                          <form action={draftAction}>
-                            <button type="submit" className={ghost}>Do weryfikacji</button>
+                        {(b.status === "SUSPENDED" || b.status === "BANNED") && (
+                          <form action={restoreAction}>
+                            <button type="submit" className="text-[11px] font-medium px-2.5 py-1.5 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors">
+                              {b.status === "SUSPENDED" ? "Reaktywuj" : "Przywróć"}
+                            </button>
                           </form>
                         )}
-                        {b.status === "BANNED" ? (
-                          <form action={restoreAction}>
-                            <button type="submit" className={ghost}>Przywróć</button>
-                          </form>
-                        ) : (
+                        {b.status !== "BANNED" && (
                           <form action={banAction}>
                             <button type="submit" className="text-[11px] font-medium px-2.5 py-1.5 border border-gray-200 hover:border-red-200 hover:text-red-600 text-gray-600 rounded-lg transition-colors">
                               Zablokuj

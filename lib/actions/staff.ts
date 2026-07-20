@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import { getServerUser } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
+import { autoPublishIfComplete } from "@/lib/publish";
 
 async function getBusinessId(): Promise<string> {
   const user = await getServerUser();
@@ -55,7 +56,9 @@ export async function createEmployee(data: EmployeeFormData) {
     });
   }
 
+  await autoPublishIfComplete(businessId);
   revalidatePath("/business/staff");
+  revalidatePath("/search");
 }
 
 export async function updateEmployee(id: string, data: Partial<EmployeeFormData>) {

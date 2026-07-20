@@ -14,7 +14,6 @@ import {
   parseCategoryParam,
   resolveQueryCategories,
   isMedicalCategory,
-  medicalCategoriesEnabled,
 } from "@/lib/categories";
 import { publicDiscoveryWhere } from "@/lib/publication";
 
@@ -69,8 +68,8 @@ export function buildBusinessSearchWhere(input: SearchWhereInput): Prisma.Busine
   const explicit = parseCategoryParam(input.category ?? undefined);
   let categoryCondition: Prisma.BusinessWhereInput | undefined;
   if (explicit) {
-    if (isMedicalCategory(explicit) && !medicalCategoriesEnabled()) {
-      // A hidden category was requested directly — return nothing, honestly.
+    if (isMedicalCategory(explicit)) {
+      // A hidden (medical) category was requested directly — return nothing.
       return { AND: [{ id: "__none__" }] };
     }
     categoryCondition = { category: explicit };

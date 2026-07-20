@@ -119,23 +119,27 @@ export const MEDICAL_CATEGORY_VALUES: ServiceCategory[] = [
 
 const MEDICAL_SET = new Set<string>(MEDICAL_CATEGORY_VALUES);
 
-/** Whether medical categories are publicly discoverable (default: false). */
-export function medicalCategoriesEnabled(): boolean {
-  return process.env.NEXT_PUBLIC_ENABLE_MEDICAL_CATEGORIES === "true";
-}
+// ─── Explicit category policy ────────────────────────────────────────────────
+// Medical categories (doctors, dentists, dermatologists, psychologists, …) are
+// ALWAYS hidden from the current product — there is no broad switch that can
+// un-hide them (the former NEXT_PUBLIC_ENABLE_MEDICAL_CATEGORIES is intentionally
+// gone, so aesthetic services stay available while medical stays disabled).
+// The ONLY aesthetic / aesthetic-medicine category kept public is BEAUTY_CLINIC
+// ("Klinika urody"), which is deliberately NOT in MEDICAL_CATEGORY_VALUES.
+// Enum values + DB records are preserved; to re-enable a specific category in
+// future, remove it from MEDICAL_CATEGORY_VALUES.
 
 export function isMedicalCategory(value: string): boolean {
   return MEDICAL_SET.has(value);
 }
 
-/** Category values that must NOT appear in public discovery right now. */
+/** Category values that must NOT appear in public discovery. */
 export function hiddenCategoryValues(): ServiceCategory[] {
-  return medicalCategoriesEnabled() ? [] : MEDICAL_CATEGORY_VALUES;
+  return MEDICAL_CATEGORY_VALUES;
 }
 
-/** The category picker, minus medical entries when the flag is off. */
+/** The category picker, with medical entries removed (aesthetic kept). */
 export function visibleCategories(): CategoryDef[] {
-  if (medicalCategoriesEnabled()) return CATEGORIES;
   return CATEGORIES.filter((c) => !MEDICAL_SET.has(c.value));
 }
 

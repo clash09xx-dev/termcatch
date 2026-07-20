@@ -1,8 +1,12 @@
 // ─── Business publication gate + lifecycle (single source of truth) ──────────
 // Public lifecycle (reusing the existing BusinessStatus enum — no migration):
-//   PENDING_VERIFICATION  → draft / awaiting admin review (NOT public)
+//   PENDING_VERIFICATION  → onboarding incomplete / not yet publishable (NOT public).
+//                           NO manual admin approval — the salon AUTO-PUBLISHES
+//                           (→ ACTIVE) the moment its profile is complete
+//                           (see lib/publish.ts autoPublishIfComplete).
 //   ACTIVE                → published (the ONLY publicly discoverable state)
-//   SUSPENDED             → temporarily hidden by admin (NOT public)
+//   SUSPENDED             → hidden by an admin for moderation (NOT public);
+//                           never auto-reactivated.
 //   BANNED / CLOSED       → not public
 //
 // Every public surface (search, category, profile, booking, sitemap, structured
@@ -50,7 +54,10 @@ export type PublicationCheckInput = {
   phone: string | null;
   email: string | null;
   activeServices: { price: number; duration: number }[];
-  activeEmployees: number;
+  /** Optional — retained for compatibility; NOT required to publish (a solo
+   *  salon books via "dowolny specjalista", so a separate employee record is
+   *  not mandatory). */
+  activeEmployees?: number;
   openDays: number; // count of WorkingHours rows with isOpen
 };
 
@@ -66,9 +73,10 @@ export function publicationRequirements(input: PublicationCheckInput): Publicati
   // Prices must be > 0 (a 0 zł service is treated as incomplete, not "free").
   const pricesValid = hasService && input.activeServices.every((s) => s.price > 0);
   const durationsValid = hasService && input.activeServices.every((s) => s.duration > 0);
-  const hasEmployee = input.activeEmployees > 0;
   const hasHours = input.openDays > 0;
 
+  // Employee is intentionally NOT a hard requirement — bookings work with
+  // "dowolny specjalista" (employeeId null), so solo salons must be able to go live.
   return [
     { key: "name", label: "Nazwa salonu", ok: hasName },
     { key: "category", label: "Kategoria", ok: hasCategory },
@@ -78,7 +86,6 @@ export function publicationRequirements(input: PublicationCheckInput): Publicati
     { key: "service", label: "Co najmniej jedna aktywna usługa", ok: hasService },
     { key: "price", label: "Każda usługa ma cenę większą niż 0 zł", ok: pricesValid },
     { key: "duration", label: "Każda usługa ma prawidłowy czas trwania", ok: durationsValid },
-    { key: "employee", label: "Co najmniej jeden aktywny specjalista", ok: hasEmployee },
     { key: "hours", label: "Godziny otwarcia (co najmniej jeden dzień)", ok: hasHours },
   ];
 }
@@ -95,7 +102,7 @@ export function validateForPublication(input: PublicationCheckInput): {
 
 /** Polish label for a status, for owner/admin UI. */
 export const STATUS_LABELS: Record<BusinessStatus, string> = {
-  PENDING_VERIFICATION: "Oczekuje na weryfikację",
+  PENDING_VERIFICATION: "Profil w przygotowaniu",
   ACTIVE: "Opublikowany",
   SUSPENDED: "Zawieszony",
   BANNED: "Zablokowany",

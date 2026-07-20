@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import { getServerUser } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
+import { autoPublishIfComplete } from "@/lib/publish";
 
 async function getBusinessId(): Promise<string> {
   const user = await getServerUser();
@@ -48,7 +49,10 @@ export async function createService(data: ServiceFormData) {
     },
   });
 
+  // Adding the first active service can complete the profile → auto-publish.
+  await autoPublishIfComplete(businessId);
   revalidatePath("/business/services");
+  revalidatePath("/search");
 }
 
 export async function updateService(id: string, data: Partial<ServiceFormData>) {
@@ -69,7 +73,9 @@ export async function updateService(id: string, data: Partial<ServiceFormData>) 
     },
   });
 
+  await autoPublishIfComplete(businessId);
   revalidatePath("/business/services");
+  revalidatePath("/search");
 }
 
 export async function deleteService(id: string) {

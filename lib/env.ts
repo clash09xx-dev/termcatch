@@ -26,6 +26,11 @@ export const env = {
   STRIPE_SECRET_KEY: requireEnv("STRIPE_SECRET_KEY"),
   STRIPE_PUBLISHABLE_KEY: requireEnv("NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY"),
   STRIPE_WEBHOOK_SECRET: process.env.STRIPE_WEBHOOK_SECRET,
+  // Subscription Price IDs (7-day-trial plans) — see lib/subscription.ts.
+  STRIPE_PRICE_SOLO: process.env.STRIPE_PRICE_SOLO,
+  STRIPE_PRICE_TEAM: process.env.STRIPE_PRICE_TEAM,
+  STRIPE_PRICE_PRO: process.env.STRIPE_PRICE_PRO,
+  STRIPE_PRICE_ULTIMATE: process.env.STRIPE_PRICE_ULTIMATE,
 
   // OpenAI
   OPENAI_API_KEY: process.env.OPENAI_API_KEY,

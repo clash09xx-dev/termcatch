@@ -6,6 +6,7 @@ import { getServerUser } from "@/lib/supabase/server";
 import { ServiceCategory, DayOfWeek } from "@prisma/client";
 import { redirect } from "next/navigation";
 import { SPECIALTY_TAGS } from "@/lib/discovery";
+import { autoPublishIfComplete } from "@/lib/publish";
 
 const DAY_OF_WEEK_MAP: Record<number, DayOfWeek> = {
   0: DayOfWeek.MONDAY,
@@ -93,9 +94,9 @@ export async function createBusiness(data: OnboardingInput) {
       address: data.address,
       city: data.city,
       postalCode: data.postalCode,
-      // New salons are NOT public until reviewed. Owner completes the profile and
-      // submits for verification; an admin publishes (→ ACTIVE). This is what
-      // keeps unfinished/test salons out of search & discovery.
+      // New salons start non-public. They AUTO-PUBLISH (→ ACTIVE) below the
+      // moment onboarding is complete — no manual admin approval. An incomplete
+      // profile simply stays PENDING_VERIFICATION (hidden from all discovery).
       status: "PENDING_VERIFICATION",
       workingHours: {
         create: data.workingHours.map((wh) => ({
@@ -141,8 +142,12 @@ export async function createBusiness(data: OnboardingInput) {
     });
   }
 
+  // Auto-publish immediately if onboarding produced a complete, bookable profile.
+  const published = await autoPublishIfComplete(business.id);
+
   revalidatePath("/business/dashboard");
-  return { success: true };
+  revalidatePath("/search");
+  return { success: true, published };
 }
 
 // ─── Helper ───────────────────────────────────────────────────
@@ -204,7 +209,10 @@ export async function updateBusinessProfile(data: BusinessProfileData) {
     },
   });
 
+  // Completing contact/address details may make the profile publishable.
+  await autoPublishIfComplete(business.id);
   revalidatePath("/business/profile");
+  revalidatePath("/search");
 }
 
 // ─── Working Hours ─────────────────────────────────────────────
@@ -243,7 +251,9 @@ export async function updateWorkingHours(data: WorkingHoursUpdateData) {
     )
   );
 
+  await autoPublishIfComplete(business.id);
   revalidatePath("/business/hours");
+  revalidatePath("/search");
 }
 
 // ─── Settings ─────────────────────────────────────────────────
