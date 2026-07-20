@@ -5,7 +5,8 @@ import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { LandingNav } from "@/components/layout/landing-nav";
 import { formatCurrency, formatDate, formatDuration, getInitials, cn } from "@/lib/utils";
-import { BusinessStatus, ReviewStatus } from "@prisma/client";
+import { ReviewStatus } from "@prisma/client";
+import { isPubliclyVisible } from "@/lib/publication";
 import { PlaceholderCover } from "@/components/ui/placeholder-cover";
 import { mapsBrowserKey, embedUrl, navigationUrl, addressSearchUrl } from "@/lib/maps";
 import BookingWidget from "./booking-widget";
@@ -167,10 +168,11 @@ export async function generateMetadata({
       metaTitle: true,
       metaDescription: true,
       status: true,
+      isActive: true,
     },
   });
 
-  if (!business || business.status !== "ACTIVE") {
+  if (!business || !isPubliclyVisible(business)) {
     return { title: "Salon nie znaleziony" };
   }
 
@@ -181,7 +183,7 @@ export async function generateMetadata({
   const description =
     business.metaDescription ??
     business.shortDescription ??
-    `Umów wizytę online w ${business.name} (${categoryLabel}, ${business.city}). Sprawdź usługi, ceny i wolne terminy — rezerwacja 24/7 przez Termcatch.`;
+    `Umów wizytę online w ${business.name} (${categoryLabel}, ${business.city}). Sprawdź usługi, ceny i wolne terminy — rezerwacja 24/7 przez TermCatch.`;
 
   return {
     title,
@@ -230,7 +232,7 @@ export default async function BusinessProfilePage({
     },
   });
 
-  if (!business || business.status !== BusinessStatus.ACTIVE) {
+  if (!business || !isPubliclyVisible(business)) {
     notFound();
   }
 

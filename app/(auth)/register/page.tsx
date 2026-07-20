@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useState } from "react";
+import { useActionState, useEffect, useState } from "react";
 import Link from "next/link";
 import { registerAction, signInWithGoogleAction, signInWithAppleAction } from "@/actions/auth";
 import type { AuthState } from "@/actions/auth";
@@ -18,6 +18,13 @@ const inputCls =
 export default function RegisterPage() {
   const [state, formAction, isPending] = useActionState(registerAction, initialState);
   const [role, setRole] = useState<"CUSTOMER" | "BUSINESS_OWNER">("CUSTOMER");
+
+  // Preselect the business-owner role when arriving via ?role=business (all the
+  // "Załóż konto salonu" CTAs), so the correct onboarding flow follows.
+  useEffect(() => {
+    const r = new URLSearchParams(window.location.search).get("role");
+    if (r === "business" || r === "BUSINESS_OWNER") setRole("BUSINESS_OWNER");
+  }, []);
 
   return (
     <div>
@@ -98,7 +105,7 @@ export default function RegisterPage() {
       </div>
 
       <p className="mt-2.5 text-[11px] text-gray-400 leading-relaxed">
-        Kontynuując przez Google lub Apple, akceptujesz{" "}
+        Kontynuując przez {APPLE_SIGNIN_ENABLED ? "Google lub Apple" : "Google"}, akceptujesz{" "}
         <Link href="/terms" target="_blank" className="underline underline-offset-2 hover:text-gray-600">Regulamin</Link>{" "}
         i{" "}
         <Link href="/privacy" target="_blank" className="underline underline-offset-2 hover:text-gray-600">Politykę prywatności</Link>.
@@ -186,7 +193,7 @@ export default function RegisterPage() {
             <Link href="/privacy" target="_blank" className="text-gray-900 underline underline-offset-2 hover:no-underline">
               Politykę prywatności
             </Link>{" "}
-            Termcatch.
+            TermCatch.
           </span>
         </label>
         {state.fieldErrors?.acceptTerms && (

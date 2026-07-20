@@ -104,3 +104,80 @@ export function parseCategoryParam(value?: string): ServiceCategory | undefined 
 export function categoryLabel(value: string): string {
   return CATEGORY_LABELS[value] ?? value;
 }
+
+// ─── Medical categories — hidden from public discovery until launch-ready ─────
+// These require professional verification and are not part of the initial public
+// launch. The enum values stay in the schema (existing records are untouched);
+// they are simply not discoverable while the flag is off. Physiotherapy stays
+// visible (initial scope). Toggle with NEXT_PUBLIC_ENABLE_MEDICAL_CATEGORIES=true.
+export const MEDICAL_CATEGORY_VALUES: ServiceCategory[] = [
+  "GENERAL_PHYSICIAN", "DENTIST", "DERMATOLOGIST", "GYNECOLOGIST", "OPHTHALMOLOGIST",
+  "ORTHOPEDIST", "PEDIATRICIAN", "CARDIOLOGIST", "NEUROLOGIST", "UROLOGIST", "ENT",
+  "ENDOCRINOLOGIST", "ALLERGOLOGIST", "RHEUMATOLOGIST", "RADIOLOGIST",
+  "DENTAL_HYGIENIST", "PSYCHOLOGIST", "PSYCHIATRIST",
+];
+
+const MEDICAL_SET = new Set<string>(MEDICAL_CATEGORY_VALUES);
+
+/** Whether medical categories are publicly discoverable (default: false). */
+export function medicalCategoriesEnabled(): boolean {
+  return process.env.NEXT_PUBLIC_ENABLE_MEDICAL_CATEGORIES === "true";
+}
+
+export function isMedicalCategory(value: string): boolean {
+  return MEDICAL_SET.has(value);
+}
+
+/** Category values that must NOT appear in public discovery right now. */
+export function hiddenCategoryValues(): ServiceCategory[] {
+  return medicalCategoriesEnabled() ? [] : MEDICAL_CATEGORY_VALUES;
+}
+
+/** The category picker, minus medical entries when the flag is off. */
+export function visibleCategories(): CategoryDef[] {
+  if (medicalCategoriesEnabled()) return CATEGORIES;
+  return CATEGORIES.filter((c) => !MEDICAL_SET.has(c.value));
+}
+
+// ─── Text → category synonyms (centralized; shared by search + assistant) ─────
+// Diacritic-insensitive stems (see normalizeSearchText). A typed word like
+// "fryzjer" resolves to HAIR_SALON so ordinary search finds a hair salon even
+// when the literal word is absent from its name/services.
+const CATEGORY_SYNONYMS: { stems: string[]; category: ServiceCategory }[] = [
+  { stems: ["fryzjer", "wlos", "strzyzenie", "koloryzacj", "farbowan", "loki", "krecone", "curly", "baleyage", "balayage", "ombre"], category: "HAIR_SALON" },
+  { stems: ["barber", "barbershop", "broda", "brody", "zarost", "meskie strzyzenie", "golenie"], category: "BARBER" },
+  { stems: ["paznokc", "manicure", "pedicure", "hybryd", "zelowe", "tips"], category: "NAIL_SALON" },
+  { stems: ["masaz", "masazyst", "relaksacyjny", "sportowy", "leczniczy", "kregoslup"], category: "MASSAGE" },
+  { stems: ["spa", "wellness", "sauna"], category: "SPA" },
+  { stems: ["kosmetyczk", "salon urody", "uroda", "twarz", "oczyszczanie", "peeling", "mezoterapi"], category: "BEAUTY_CLINIC" },
+  { stems: ["brwi", "rzes", "laminacj", "henna", "lash", "brow"], category: "EYEBROWS_LASHES" },
+  { stems: ["makijaz", "makeup", "wizaz"], category: "MAKEUP" },
+  { stems: ["tatuaz", "tattoo", "dziara"], category: "TATTOO" },
+  { stems: ["piercing", "kolczyk"], category: "PIERCING" },
+  { stems: ["solarium", "opalanie", "tanning"], category: "TANNING" },
+  { stems: ["fizjoterapi", "fizjoterapeut", "rehabilitacj"], category: "PHYSIOTHERAPY" },
+  { stems: ["trener", "trening", "personalny"], category: "PERSONAL_TRAINER" },
+  { stems: ["joga", "yoga"], category: "YOGA" },
+  { stems: ["pilates"], category: "PILATES" },
+  { stems: ["dietetyk", "dieta", "zywienie"], category: "NUTRITIONIST" },
+  { stems: ["psycholog", "psychoterapi", "terapeut"], category: "PSYCHOLOGIST" },
+  { stems: ["dentyst", "stomatolog", "zeby", "zab"], category: "DENTIST" },
+  { stems: ["dermatolog", "skora"], category: "DERMATOLOGIST" },
+  { stems: ["lekarz", "internist"], category: "GENERAL_PHYSICIAN" },
+];
+
+/**
+ * Resolve free text to matching category enum values via the synonym dictionary,
+ * dropping any that are currently hidden (medical off). Never throws; returns []
+ * when nothing matches. Input should be pre-normalized with normalizeSearchText.
+ */
+export function resolveQueryCategories(normalizedQuery: string): ServiceCategory[] {
+  if (!normalizedQuery) return [];
+  const hidden = new Set<string>(hiddenCategoryValues());
+  const out = new Set<ServiceCategory>();
+  for (const { stems, category } of CATEGORY_SYNONYMS) {
+    if (hidden.has(category)) continue;
+    if (stems.some((s) => normalizedQuery.includes(s))) out.add(category);
+  }
+  return [...out];
+}

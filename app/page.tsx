@@ -335,8 +335,8 @@ const fade = {
 const HOME_JSON_LD = {
   "@context": "https://schema.org",
   "@graph": [
-    { "@type": "Organization", name: "Termcatch", url: "https://termcatch.com", logo: "https://termcatch.com/opengraph-image", email: "hello@termcatch.com", description: "Polska platforma rezerwacji online dla salonów beauty i wellness.", areaServed: "PL" },
-    { "@type": "WebSite", name: "Termcatch", url: "https://termcatch.com", inLanguage: "pl-PL", potentialAction: { "@type": "SearchAction", target: "https://termcatch.com/search?q={search_term_string}", "query-input": "required name=search_term_string" } },
+    { "@type": "Organization", name: "TermCatch", url: "https://termcatch.com", logo: "https://termcatch.com/opengraph-image", email: "hello@termcatch.com", description: "Polska platforma rezerwacji online dla salonów beauty i wellness.", areaServed: "PL" },
+    { "@type": "WebSite", name: "TermCatch", url: "https://termcatch.com", inLanguage: "pl-PL", potentialAction: { "@type": "SearchAction", target: "https://termcatch.com/search?q={search_term_string}", "query-input": "required name=search_term_string" } },
   ],
 };
 
@@ -468,11 +468,11 @@ export default function HomePage() {
         <div className="marquee-track gap-3 px-3">
           {[
             "Fryzjer", "Barber", "Masaż", "Manicure", "Kosmetyczka", "Tatuaż",
-            "Spa & wellness", "Fizjoterapia", "Joga", "Pilates", "Dermatolog",
-            "Stomatolog", "Trener personalny", "Makijaż", "Brwi & Rzęsy",
+            "Spa & wellness", "Fizjoterapia", "Joga", "Pilates", "Solarium",
+            "Dietetyk", "Trener personalny", "Makijaż", "Brwi & Rzęsy",
             "Fryzjer", "Barber", "Masaż", "Manicure", "Kosmetyczka", "Tatuaż",
-            "Spa & wellness", "Fizjoterapia", "Joga", "Pilates", "Dermatolog",
-            "Stomatolog", "Trener personalny", "Makijaż", "Brwi & Rzęsy",
+            "Spa & wellness", "Fizjoterapia", "Joga", "Pilates", "Solarium",
+            "Dietetyk", "Trener personalny", "Makijaż", "Brwi & Rzęsy",
           ].map((label, i) => (
             <span
               key={i}
@@ -586,10 +586,10 @@ export default function HomePage() {
 
             {/* Feature cards */}
             <motion.div initial="hidden" whileInView="show" viewport={{ once: true }} variants={fade} className="space-y-4 lg:pt-2">
-              <h3 className="text-2xl font-bold mb-6 text-slate-900">Dlaczego Termcatch?</h3>
+              <h3 className="text-2xl font-bold mb-6 text-slate-900">Dlaczego TermCatch?</h3>
               {[
-                { n: "01", title: "Zero no-show", desc: "Automatyczne przypomnienia SMS i e-mail przed każdą wizytą drastycznie redukują nieobecności." },
-                { n: "02", title: "Rezerwacje o każdej porze", desc: "Klienci bookują o 2 w nocy, w weekend, w czasie pracy — bez Twojego udziału." },
+                { n: "01", title: "Mniej nieobecności", desc: "Automatyczne przypomnienia SMS i e-mail przed każdą wizytą pomagają ograniczyć nieobecności." },
+                { n: "02", title: "Rezerwacje o każdej porze", desc: "Klienci rezerwują o 2 w nocy, w weekend, w czasie pracy — bez Twojego udziału." },
                 { n: "03", title: "Jeden link", desc: "Twoja strona rezerwacji gotowa od razu. Wystarczy wysłać link klientom lub dodać go do bio." },
               ].map((f, i) => (
                 <motion.div
@@ -631,8 +631,8 @@ export default function HomePage() {
           <div className="absolute inset-0 bg-gradient-to-b from-white/60 to-transparent pointer-events-none" />
           <div className="relative flex flex-col sm:flex-row items-center justify-center gap-6 sm:gap-10 text-center">
             {[
-              "Bez karty kredytowej",
-              "0% prowizji od wizyt",
+              "Darmowa rejestracja konta",
+              "Prowizja 20% tylko od 1. wizyty nowego klienta",
               "Wsparcie w języku polskim",
             ].map((claim) => (
               <div key={claim} className="flex items-center gap-2 text-sm font-semibold text-slate-700">

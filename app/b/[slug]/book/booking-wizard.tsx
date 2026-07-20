@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback, useMemo } from "react";
+import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
@@ -325,6 +325,8 @@ export default function BookingWizard({
   const [selectedTime, setSelectedTime] = useState<string>("");
   const [availableSlots, setAvailableSlots] = useState<string[]>([]);
   const [loadingSlots, setLoadingSlots] = useState(false);
+  const [slotsError, setSlotsError] = useState(false);
+  const slotsAbortRef = useRef<AbortController | null>(null);
   const [notes, setNotes] = useState<string>("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string>("");
@@ -414,7 +416,14 @@ export default function BookingWizard({
   const fetchSlots = useCallback(
     async (date: string) => {
       if (!date || !selectedServiceId) return;
+      // Cancel any in-flight request so a fast date change can't let a stale
+      // response overwrite the current one.
+      slotsAbortRef.current?.abort();
+      const controller = new AbortController();
+      slotsAbortRef.current = controller;
+
       setLoadingSlots(true);
+      setSlotsError(false);
       setAvailableSlots([]);
       setSelectedTime("");
       try {
@@ -425,13 +434,17 @@ export default function BookingWizard({
           ...(selectedEmployeeId ? { employeeId: selectedEmployeeId } : {}),
           ...(addonParam ? { addons: addonParam } : {}),
         });
-        const res = await fetch(`/api/availability?${params.toString()}`);
+        const res = await fetch(`/api/availability?${params.toString()}`, { signal: controller.signal });
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const data = (await res.json()) as { slots?: string[] };
+        if (controller.signal.aborted) return;
         setAvailableSlots(data.slots ?? []);
-      } catch {
+      } catch (err) {
+        if ((err as Error)?.name === "AbortError") return; // superseded — ignore
+        setSlotsError(true);
         setAvailableSlots([]);
       } finally {
-        setLoadingSlots(false);
+        if (!controller.signal.aborted) setLoadingSlots(false);
       }
     },
     [business.id, selectedServiceId, selectedEmployeeId, addonParam]
@@ -441,6 +454,7 @@ export default function BookingWizard({
     if (step === 3 && selectedDate) {
       fetchSlots(selectedDate);
     }
+    return () => slotsAbortRef.current?.abort();
   }, [step, selectedDate, fetchSlots]);
 
   const goNext = () => {
@@ -898,14 +912,31 @@ export default function BookingWizard({
                         Godzina
                       </p>
                       {loadingSlots ? (
-                        <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
-                          {Array.from({ length: 8 }).map((_, i) => (
-                            <div
-                              key={i}
-                              className="h-10 rounded-xl animate-pulse"
-                              style={{ background: "rgba(203,213,225,0.30)" }}
-                            />
-                          ))}
+                        <>
+                          <p className="text-sm text-slate-500 mb-2">Sprawdzamy dostępność…</p>
+                          <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
+                            {Array.from({ length: 8 }).map((_, i) => (
+                              <div
+                                key={i}
+                                className="h-10 rounded-xl animate-pulse"
+                                style={{ background: "rgba(203,213,225,0.30)" }}
+                              />
+                            ))}
+                          </div>
+                        </>
+                      ) : slotsError ? (
+                        <div
+                          className="text-center py-8 rounded-xl"
+                          style={{ border: "1px dashed rgba(244,63,94,0.35)", background: "rgba(254,242,242,0.60)" }}
+                        >
+                          <p className="text-sm text-slate-700">Nie udało się sprawdzić dostępności.</p>
+                          <button
+                            type="button"
+                            onClick={() => fetchSlots(selectedDate)}
+                            className="mt-2 text-sm font-semibold text-slate-900 underline underline-offset-4"
+                          >
+                            Spróbuj ponownie
+                          </button>
                         </div>
                       ) : availableSlots.length === 0 ? (
                         <div

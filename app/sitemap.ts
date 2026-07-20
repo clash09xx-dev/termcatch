@@ -1,5 +1,6 @@
 import type { MetadataRoute } from "next";
 import { prisma } from "@/lib/prisma";
+import { publicDiscoveryWhere } from "@/lib/publication";
 
 export const dynamic = "force-dynamic";
 
@@ -29,7 +30,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   let businessPages: MetadataRoute.Sitemap = [];
   try {
     const businesses = await prisma.business.findMany({
-      where: { status: "ACTIVE" },
+      where: publicDiscoveryWhere(),
       select: { slug: true, updatedAt: true },
       take: 5000,
     });

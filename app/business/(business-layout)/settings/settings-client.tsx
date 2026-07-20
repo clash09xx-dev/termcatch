@@ -637,7 +637,7 @@ export function SettingsClient({ settings: initialSettings, notificationSettings
         open={showInvite}
         onOpenChange={(o) => { if (!o) closeInviteModal(); }}
         title="Zaproś znajomego"
-        description="Podaj adres e-mail właściciela salonu. Dostanie zaproszenie do Termcatch."
+        description="Podaj adres e-mail właściciela salonu. Dostanie zaproszenie do TermCatch."
       >
         {inviteState === "sent" ? (
           <div className="text-center py-4">

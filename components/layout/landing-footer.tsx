@@ -62,7 +62,7 @@ export function LandingFooter() {
 
         <div className="border-t border-gray-100 mt-12 pt-8 flex flex-col sm:flex-row items-center justify-between gap-4">
           <p className="text-xs text-gray-400">
-            &copy; {new Date().getFullYear()} Termcatch. Wszelkie prawa zastrzeżone.
+            &copy; {new Date().getFullYear()} TermCatch. Wszelkie prawa zastrzeżone.
           </p>
           <p className="text-xs text-gray-400 flex items-center gap-1.5">
             Zbudowane w Polsce

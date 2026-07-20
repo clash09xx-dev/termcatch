@@ -44,7 +44,8 @@ export const env = {
   TWILIO_WHATSAPP_FROM: process.env.TWILIO_WHATSAPP_FROM,
 
   // Google Maps
-  GOOGLE_MAPS_API_KEY: process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY,
+  GOOGLE_MAPS_API_KEY: process.env.GOOGLE_MAPS_API_KEY,
+  NEXT_PUBLIC_GOOGLE_MAPS_API_KEY: process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY,
 
   // Upstash Redis (rate limiting, caching)
   UPSTASH_REDIS_URL: process.env.UPSTASH_REDIS_REST_URL,

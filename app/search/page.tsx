@@ -12,8 +12,11 @@ import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { LandingNav } from "@/components/layout/landing-nav";
 import { formatCurrency, cn } from "@/lib/utils";
-import { ServiceCategory, BusinessStatus } from "@prisma/client";
+import { ServiceCategory } from "@prisma/client";
 import { parseCategoryParam, categoryLabel } from "@/lib/categories";
+import { buildBusinessSearchWhere } from "@/lib/search";
+import { getBusinessesEarliest, warsawYmdPlusDays } from "@/lib/availability";
+import { warsawTodayYmd } from "@/lib/calendar-utils";
 import { PlaceholderCover } from "@/components/ui/placeholder-cover";
 import { FilterPanel, MobileFilters } from "./search-filters";
 import { DiscoveryAssistant } from "@/components/search/discovery-assistant";
@@ -61,6 +64,8 @@ type BusinessWithServices = {
   averageRating: number;
   totalReviews: number;
   services: { price: number; discountedPrice: number | null }[];
+  /** Real earliest-slot label for the availability filter, e.g. "dziś 14:30". */
+  _availabilityLabel?: string | null;
 };
 
 function minServicePrice(business: BusinessWithServices): number | null {
@@ -121,6 +126,19 @@ function BusinessCard({ business }: { business: BusinessWithServices }) {
           </svg>
           <span className="text-xs text-slate-500">{business.city}</span>
         </div>
+
+        {/* Real earliest availability (only when the availability filter is on) */}
+        {business._availabilityLabel && (
+          <div className="mt-2 inline-flex items-center gap-1.5">
+            <span
+              className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold"
+              style={{ background: "rgba(16,185,129,0.10)", border: "1px solid rgba(16,185,129,0.30)", color: "#047857" }}
+            >
+              <span className="w-1.5 h-1.5 rounded-full" style={{ background: "#10B981" }} aria-hidden="true" />
+              Najbliższy termin: {business._availabilityLabel}
+            </span>
+          </div>
+        )}
 
         {/* Rating — single star + number, or honest "Nowy salon" chip */}
         <div className="mt-2.5 flex items-center justify-between gap-2">
@@ -199,51 +217,97 @@ type SearchParams = {
   category?: string;
   city?: string;
   date?: string;
+  available?: string;
   sort?: string;
   page?: string;
 };
 
+// Preserves q / category / city / availability / date / sort across sorting +
+// pagination so filters never silently drop.
 function buildSearchUrl(params: SearchParams, overrides: Partial<SearchParams>): string {
   const merged = { ...params, ...overrides };
   const url = new URLSearchParams();
   if (merged.q) url.set("q", merged.q);
   if (merged.category) url.set("category", merged.category);
   if (merged.city) url.set("city", merged.city);
+  if (merged.available) url.set("available", merged.available);
+  if (merged.date) url.set("date", merged.date);
   if (merged.sort && merged.sort !== "rating") url.set("sort", merged.sort);
   if (merged.page && merged.page !== "1") url.set("page", merged.page);
   const qs = url.toString();
   return `/search${qs ? `?${qs}` : ""}`;
 }
 
+const YMD_RE = /^\d{4}-\d{2}-\d{2}$/;
+
+/** Resolve the availability filter (today / tomorrow / exact date) to a date. */
+function resolveAvailability(
+  params: SearchParams
+): { dateYmd: string; label: string } | null {
+  const today = warsawTodayYmd();
+  if (params.date && YMD_RE.test(params.date)) {
+    const label =
+      params.date === today ? "dziś" : params.date === warsawYmdPlusDays(today, 1) ? "jutro" : params.date;
+    return { dateYmd: params.date, label };
+  }
+  const a = params.available;
+  if (a === "today" || a === "now") return { dateYmd: today, label: "dziś" };
+  if (a === "tomorrow") return { dateYmd: warsawYmdPlusDays(today, 1), label: "jutro" };
+  return null;
+}
+
+function hhmmToMin(hhmm: string): number {
+  return Number(hhmm.slice(0, 2)) * 60 + Number(hhmm.slice(3, 5));
+}
+
 async function SearchResults({ searchParams }: { searchParams: SearchParams }) {
   const page = Math.max(1, parseInt(searchParams.page ?? "1", 10));
   const skip = (page - 1) * PAGE_SIZE;
   const sort = searchParams.sort === "price" ? "price" : "rating";
+  const availability = resolveAvailability(searchParams);
 
-  // Accepts enum names, canonical slugs, and legacy lowercase slugs —
-  // old category links filter correctly instead of silently no-opping.
-  const categoryFilter = parseCategoryParam(searchParams.category);
-
-  const where = {
-    status: BusinessStatus.ACTIVE,
-    ...(categoryFilter ? { category: categoryFilter } : {}),
-    ...(searchParams.city ? { city: { contains: searchParams.city, mode: "insensitive" as const } } : {}),
-    ...(searchParams.q
-      ? {
-          OR: [
-            { name: { contains: searchParams.q, mode: "insensitive" as const } },
-            { description: { contains: searchParams.q, mode: "insensitive" as const } },
-            { shortDescription: { contains: searchParams.q, mode: "insensitive" as const } },
-          ],
-        }
-      : {}),
-  };
+  // Single synonym-aware, publication-gated, medical-filtered where clause —
+  // shared with category pages. "fryzjer" now resolves to HAIR_SALON businesses.
+  const where = buildBusinessSearchWhere({
+    q: searchParams.q,
+    city: searchParams.city,
+    category: searchParams.category,
+  });
 
   let businesses: BusinessWithServices[] = [];
   let totalCount = 0;
 
   try {
-    if (sort === "price") {
+    if (availability) {
+      // "Available today/tomorrow/date": fetch the candidate set, then keep only
+      // businesses the booking engine confirms have a real free slot that day.
+      const candidates = await prisma.business.findMany({
+        where,
+        include: {
+          services: { where: { isActive: true }, select: { price: true, discountedPrice: true } },
+        },
+        orderBy: { averageRating: "desc" },
+        take: PRICE_SORT_CAP,
+      });
+      const earliest = await getBusinessesEarliest(
+        candidates.map((c) => c.id),
+        availability.dateYmd
+      );
+      const bookable = candidates
+        .map((c) => ({ c, e: earliest.get(c.id) }))
+        .filter((x): x is { c: (typeof candidates)[number]; e: { open: boolean; earliest: string } } =>
+          Boolean(x.e && x.e.earliest)
+        )
+        .map((x) => ({
+          ...x.c,
+          _availabilityLabel: `${availability.label} ${x.e.earliest}`,
+          _earliestMin: hhmmToMin(x.e.earliest),
+        }));
+      // 1. earliest available (a "now-ish" slot ranks first) 2. rating.
+      bookable.sort((a, b) => a._earliestMin - b._earliestMin || b.averageRating - a.averageRating);
+      totalCount = bookable.length;
+      businesses = bookable.slice(skip, skip + PAGE_SIZE);
+    } else if (sort === "price") {
       // Cheapest-first needs the min service price — computed here, so fetch
       // the (capped) matching set and paginate after sorting.
       const all = await prisma.business.findMany({
@@ -274,7 +338,9 @@ async function SearchResults({ searchParams }: { searchParams: SearchParams }) {
   }
 
   const totalPages = Math.ceil(totalCount / PAGE_SIZE);
-  const hasFilters = Boolean(searchParams.q || searchParams.category || searchParams.city);
+  const hasFilters = Boolean(
+    searchParams.q || searchParams.category || searchParams.city || availability
+  );
 
   if (businesses.length === 0) {
     return (
@@ -293,9 +359,13 @@ async function SearchResults({ searchParams }: { searchParams: SearchParams }) {
             <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
           </svg>
         </div>
-        <p className="text-slate-900 font-semibold">Nie znaleziono salonów</p>
+        <p className="text-slate-900 font-semibold">
+          {availability ? `Brak salonów z wolnym terminem ${availability.label}` : "Nie znaleziono salonów"}
+        </p>
         <p className="text-slate-500 text-sm mt-1 mb-5">
-          Spróbuj zmienić filtry lub wyszukaj inną frazę.
+          {availability
+            ? "Spróbuj innego dnia albo wyłącz filtr dostępności."
+            : "Spróbuj zmienić filtry lub wyszukaj inną frazę."}
         </p>
         {hasFilters && (
           <Link
@@ -327,6 +397,9 @@ async function SearchResults({ searchParams }: { searchParams: SearchParams }) {
         <p className="text-sm text-slate-500 tabular-nums">
           {totalCount} {totalCount === 1 ? "wynik" : totalCount < 5 ? "wyniki" : "wyników"}
         </p>
+        {availability ? (
+          <span className="text-xs font-medium text-slate-500">Sortowanie: najbliższy termin</span>
+        ) : (
         <div
           className="inline-flex items-center gap-0.5 p-0.5 rounded-xl"
           style={{
@@ -355,6 +428,7 @@ async function SearchResults({ searchParams }: { searchParams: SearchParams }) {
             );
           })}
         </div>
+        )}
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
@@ -438,6 +512,8 @@ export default async function SearchPage({
             currentQ={params.q}
             currentCategory={categoryFilter ?? params.category}
             currentCity={params.city}
+            currentAvailable={params.available}
+            currentDate={params.date}
           />
         </div>
 
@@ -449,6 +525,8 @@ export default async function SearchPage({
                 currentQ={params.q}
                 currentCategory={categoryFilter ?? params.category}
                 currentCity={params.city}
+                currentAvailable={params.available}
+                currentDate={params.date}
               />
             </div>
           </aside>

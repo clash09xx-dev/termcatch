@@ -1,11 +1,12 @@
 import Link from "next/link";
 import { LandingNav } from "@/components/layout/landing-nav";
 import { LandingFooter } from "@/components/layout/landing-footer";
+import { visibleCategories } from "@/lib/categories";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "Kategorie — Termcatch",
-  description: "Przeglądaj wszystkie kategorie salonów i specjalistów na Termcatch.",
+  title: "Kategorie — TermCatch",
+  description: "Przeglądaj wszystkie kategorie salonów i specjalistów na TermCatch.",
 };
 
 const BG = [
@@ -28,28 +29,10 @@ const cardStyle: React.CSSProperties = {
 
 import React from "react";
 
-const CATEGORIES = [
-  { label: "Fryzjer", slug: "hair_salon" },
-  { label: "Barber", slug: "barbershop" },
-  { label: "Masaż", slug: "massage" },
-  { label: "Manicure & Pedicure", slug: "nail_salon" },
-  { label: "Kosmetyczka", slug: "beauty_salon" },
-  { label: "Tatuaż", slug: "tattoo" },
-  { label: "Spa & Wellness", slug: "spa" },
-  { label: "Makijaż", slug: "makeup" },
-  { label: "Brwi & Rzęsy", slug: "brows_lashes" },
-  { label: "Depilacja", slug: "hair_removal" },
-  { label: "Fizjoterapia", slug: "physiotherapy" },
-  { label: "Podolog", slug: "podology" },
-  { label: "Dietetyk", slug: "dietician" },
-  { label: "Trener personalny", slug: "personal_trainer" },
-  { label: "Medycyna estetyczna", slug: "aesthetic_medicine" },
-  { label: "Solarium", slug: "tanning" },
-  { label: "Pielęgnacja brody", slug: "beard_care" },
-  { label: "Inne", slug: "other" },
-];
-
 export default function CategoriesPage() {
+  // Single source of truth (lib/categories) — canonical slugs that /search
+  // actually resolves, with medical categories hidden until launch-ready.
+  const categories = visibleCategories();
   return (
     <div className="min-h-screen" style={{ background: BG }}>
       <LandingNav />
@@ -79,7 +62,7 @@ export default function CategoriesPage() {
           </div>
 
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
-            {CATEGORIES.map((cat) => (
+            {categories.map((cat) => (
               <Link
                 key={cat.slug}
                 href={`/search?category=${cat.slug}`}

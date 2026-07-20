@@ -15,6 +15,7 @@ import {
 import { earliestFreeSlot, type BusySpan } from "@/lib/slots";
 import { warsawTodayYmd } from "@/lib/calendar-utils";
 import { warsawDayStartUtc, warsawDayEndUtc } from "@/lib/timezone";
+import { publicDiscoveryWhere } from "@/lib/publication";
 import { AppointmentStatus, DayOfWeek } from "@prisma/client";
 
 const DOW: DayOfWeek[] = ["SUNDAY", "MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY", "SATURDAY"];
@@ -28,7 +29,7 @@ const DOW: DayOfWeek[] = ["SUNDAY", "MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY"
  */
 async function getProvider(): Promise<CustomerAssistantProvider> {
   const cities = await prisma.business.findMany({
-    where: { status: "ACTIVE", isActive: true },
+    where: publicDiscoveryWhere(),
     select: { city: true },
     distinct: ["city"],
     take: 200,
@@ -63,11 +64,9 @@ export async function discoverSalons(userMessages: string[]): Promise<AssistantR
   if (question) return { kind: "question", text: question };
 
   const businesses = await prisma.business.findMany({
-    where: {
-      status: "ACTIVE",
-      isActive: true,
+    where: publicDiscoveryWhere({
       city: { equals: filters.cityQuery, mode: "insensitive" },
-    },
+    }),
     select: {
       id: true,
       slug: true,

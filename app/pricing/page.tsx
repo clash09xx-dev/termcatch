@@ -6,7 +6,7 @@ import type { Metadata } from "next";
 export const metadata: Metadata = {
   title: "Cennik — tańsza alternatywa dla salonów",
   description:
-    "Przejrzysty cennik Termcatch: cztery plany od 99 zł/mies. Pierwsze 100 salonów — 3 miesiące bez opłat.",
+    "Przejrzysty cennik TermCatch: cztery plany od 99 zł/mies. Pierwsze 100 salonów — 3 miesiące bez opłat.",
   alternates: { canonical: "/pricing" },
 };
 
@@ -86,7 +86,7 @@ const PLANS = [
     price: "99 zł",
     period: "miesiąc",
     desc: "Dla specjalisty prowadzącego jednoosobowy salon.",
-    cta: "Wypróbuj 14 dni za darmo",
+    cta: "Załóż konto salonu",
     href: "/register?role=business&plan=solo",
     highlight: false,
     features: [
@@ -105,7 +105,7 @@ const PLANS = [
     price: "199 zł",
     period: "miesiąc",
     desc: "Dla małych zespołów w jednej lokalizacji.",
-    cta: "Wypróbuj 14 dni za darmo",
+    cta: "Załóż konto salonu",
     href: "/register?role=business&plan=team",
     highlight: false,
     features: [
@@ -123,7 +123,7 @@ const PLANS = [
     price: "369 zł",
     period: "miesiąc",
     desc: "Dla rozwijających się salonów z większym zespołem.",
-    cta: "Wypróbuj 14 dni za darmo",
+    cta: "Załóż konto salonu",
     href: "/register?role=business&plan=pro",
     highlight: true,
     features: [
@@ -141,7 +141,7 @@ const PLANS = [
     price: "499 zł",
     period: "miesiąc",
     desc: "Dla sieci salonów i zespołów bez limitów.",
-    cta: "Wypróbuj 14 dni za darmo",
+    cta: "Załóż konto salonu",
     href: "/register?role=business&plan=ultimate",
     highlight: false,
     features: [
@@ -158,10 +158,10 @@ const PLANS = [
 const FAQ = [
   {
     q: "Na czym polega oferta startowa?",
-    a: "Pierwsze 100 salonów, które zarejestrują się w Termcatch, korzysta z pełnego planu przez 3 miesiące całkowicie bez opłat — bez karty, bez zobowiązań.",
+    a: "Pierwsze 100 salonów, które zarejestrują się w TermCatch, korzysta z pełnego planu przez 3 miesiące całkowicie bez opłat — bez karty, bez zobowiązań.",
   },
   {
-    q: "Dlaczego Termcatch?",
+    q: "Dlaczego TermCatch?",
     a: "Płacisz jedną przewidywalną stawkę za plan. Nie pobieramy opłat za pozyskanie klienta, którego już masz, a wszystkie najważniejsze narzędzia salonu są w jednym miejscu.",
   },
   {
@@ -258,7 +258,7 @@ export default function PricingPage() {
               </div>
               <div className="flex-1">
                 <p className="font-bold text-base" style={{ color: "#0F172A", letterSpacing: "-0.02em" }}>
-                  Oferta startowa: pierwsze 100 salonów — 3 miesiące bez opłat
+                  Pierwsze 100 salonów otrzymuje 3 miesiące bez opłat.
                 </p>
                 <p className="text-sm mt-0.5" style={{ color: "#64748B" }}>
                   Pełny plan, zero kosztów, bez karty. Wystarczy rejestracja salonu.
@@ -399,7 +399,7 @@ export default function PricingPage() {
 
             <div className="mt-12 text-center">
               <p className="text-sm mb-4" style={{ color: "#94A3B8" }}>
-                Masz pytania? Odpiszemy w ciągu godziny.
+                Masz pytania? Odpowiemy tak szybko, jak to możliwe.
               </p>
               <Link
                 href="/contact"

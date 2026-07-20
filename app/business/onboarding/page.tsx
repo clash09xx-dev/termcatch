@@ -6,7 +6,7 @@ import { OnboardingClient } from "./onboarding-client";
 export const dynamic = "force-dynamic";
 
 export const metadata = {
-  title: "Konfiguracja salonu — Termcatch",
+  title: "Konfiguracja salonu — TermCatch",
 };
 
 // Focused full-screen flow — deliberately OUTSIDE the dashboard shell:

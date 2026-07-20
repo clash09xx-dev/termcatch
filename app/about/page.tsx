@@ -3,8 +3,8 @@ import { LandingFooter } from "@/components/layout/landing-footer";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "O nas — Termcatch",
-  description: "Poznaj historię i misję Termcatch — platformy rezerwacji online dla polskiego rynku beauty.",
+  title: "O nas — TermCatch",
+  description: "Poznaj historię i misję TermCatch — platformy rezerwacji online dla polskiego rynku beauty.",
 };
 
 const G = {
@@ -66,14 +66,14 @@ const VALUES = [
     desc: "Odbieramy telefon. Rozumiemy lokalny rynek i specyfikę polskich salonów beauty.",
   },
   {
-    title: "Fair pricing",
-    desc: "Zaczynasz za darmo. Płacisz tylko gdy Twój biznes rośnie razem z nami. 0% prowizji od wizyt.",
+    title: "Uczciwe ceny",
+    desc: "Zakładasz konto za darmo. Płacisz miesięczny abonament, a prowizję 20% tylko od pierwszej wizyty nowego klienta pozyskanego przez TermCatch.",
   },
 ];
 
 const STATS = [
   { value: "24/7", label: "Rezerwacje online" },
-  { value: "0%", label: "Prowizji od wizyt" },
+  { value: "20%", label: "Prowizja tylko od 1. wizyty" },
   { value: "5 min", label: "Czas konfiguracji" },
   { value: "100%", label: "Polskie wsparcie" },
 ];
@@ -114,7 +114,7 @@ export default function AboutPage() {
             </span>
           </h1>
           <p className="text-lg leading-relaxed max-w-2xl mx-auto" style={{ color: "#64748B" }}>
-            Termcatch powstał z prostej obserwacji: właściciele salonów tracą godziny dziennie
+            TermCatch powstał z prostej obserwacji: właściciele salonów tracą godziny dziennie
             na odbieranie telefonów, a klienci frustrują się brakiem dostępności online.
             Postanowiliśmy to zmienić.
           </p>
@@ -260,7 +260,7 @@ export default function AboutPage() {
             Masz pytania?
           </h2>
           <p className="mb-8 text-sm" style={{ color: "#64748B" }}>
-            Napisz do nas — odpiszemy w ciągu kilku godzin.
+            Napisz do nas — odpowiemy tak szybko, jak to możliwe.
           </p>
           <a
             href="mailto:hello@termcatch.com"

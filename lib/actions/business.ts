@@ -93,7 +93,10 @@ export async function createBusiness(data: OnboardingInput) {
       address: data.address,
       city: data.city,
       postalCode: data.postalCode,
-      status: "ACTIVE",
+      // New salons are NOT public until reviewed. Owner completes the profile and
+      // submits for verification; an admin publishes (→ ACTIVE). This is what
+      // keeps unfinished/test salons out of search & discovery.
+      status: "PENDING_VERIFICATION",
       workingHours: {
         create: data.workingHours.map((wh) => ({
           dayOfWeek: DAY_OF_WEEK_MAP[wh.dayOfWeek],

@@ -1,7 +1,7 @@
 import { ImageResponse } from "next/og";
 
 export const runtime = "edge";
-export const alt = "Termcatch — Rezerwacje online dla salonów i usług";
+export const alt = "TermCatch — Rezerwacje online dla salonów i usług";
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 

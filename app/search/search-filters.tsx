@@ -5,7 +5,7 @@ import { useState, useCallback, useTransition, useEffect } from "react";
 import { createPortal } from "react-dom";
 import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
 import { cn } from "@/lib/utils";
-import { CATEGORIES } from "@/lib/categories";
+import { visibleCategories } from "@/lib/categories";
 
 // ─── Shared styles ────────────────────────────────────────────────────────────
 
@@ -32,6 +32,7 @@ interface SearchFiltersProps {
   currentQ?: string;
   currentCategory?: string;
   currentCity?: string;
+  currentAvailable?: string;
   currentDate?: string;
   onApplied?: () => void;
 }
@@ -42,6 +43,8 @@ export default function SearchFilters({
   currentQ,
   currentCategory,
   currentCity,
+  currentAvailable,
+  currentDate,
   onApplied,
 }: SearchFiltersProps) {
   const router = useRouter();
@@ -51,36 +54,45 @@ export default function SearchFilters({
   const [q, setQ] = useState(currentQ ?? "");
   const [category, setCategory] = useState(currentCategory ?? "");
   const [city, setCity] = useState(currentCity ?? "");
+  const [available, setAvailable] = useState(currentAvailable ?? "");
+  const [date, setDate] = useState(currentDate ?? "");
 
   const applyFilters = useCallback(
-    (overrides: { q?: string; category?: string; city?: string }) => {
+    (overrides: { q?: string; category?: string; city?: string; available?: string; date?: string }) => {
       const newQ = overrides.q !== undefined ? overrides.q : q;
       const newCategory = overrides.category !== undefined ? overrides.category : category;
       const newCity = overrides.city !== undefined ? overrides.city : city;
+      const newAvailable = overrides.available !== undefined ? overrides.available : available;
+      const newDate = overrides.date !== undefined ? overrides.date : date;
 
       const params = new URLSearchParams();
       if (newQ) params.set("q", newQ);
       if (newCategory) params.set("category", newCategory);
       if (newCity) params.set("city", newCity);
+      // An exact date wins over the today/tomorrow shortcut.
+      if (newDate) params.set("date", newDate);
+      else if (newAvailable) params.set("available", newAvailable);
 
       startTransition(() => {
         router.push(`${pathname}${params.size > 0 ? `?${params.toString()}` : ""}`);
       });
     },
-    [q, category, city, pathname, router]
+    [q, category, city, available, date, pathname, router]
   );
 
   const handleReset = () => {
     setQ("");
     setCategory("");
     setCity("");
+    setAvailable("");
+    setDate("");
     startTransition(() => {
       router.push(pathname);
     });
     onApplied?.();
   };
 
-  const hasFilters = Boolean(q || category || city);
+  const hasFilters = Boolean(q || category || city || available || date);
 
   return (
     <div
@@ -176,7 +188,7 @@ export default function SearchFilters({
             className="input-glass w-full appearance-none pl-3 pr-9 py-2.5 text-sm rounded-xl outline-none text-slate-800 transition-shadow cursor-pointer"
           >
             <option value="">Wszystkie kategorie</option>
-            {CATEGORIES.map((cat) => (
+            {visibleCategories().map((cat) => (
               <option key={cat.value} value={cat.value}>
                 {cat.label}
               </option>
@@ -189,6 +201,55 @@ export default function SearchFilters({
             <path strokeLinecap="round" strokeLinejoin="round" d="m19 9-7 7-7-7" />
           </svg>
         </div>
+      </div>
+
+      {/* Availability — real free-slot filter (today / tomorrow / exact date) */}
+      <div>
+        <label
+          className="block text-[11px] font-semibold text-slate-500 uppercase mb-2"
+          style={{ letterSpacing: "0.08em" }}
+        >
+          Dostępność
+        </label>
+        <div className="flex flex-wrap gap-2">
+          {[
+            { key: "", label: "Dowolny termin" },
+            { key: "today", label: "Dostępne dziś" },
+            { key: "tomorrow", label: "Dostępne jutro" },
+          ].map((opt) => {
+            const active = !date && (available || "") === opt.key;
+            return (
+              <button
+                key={opt.key || "any"}
+                type="button"
+                onClick={() => {
+                  setAvailable(opt.key);
+                  setDate("");
+                  applyFilters({ available: opt.key, date: "" });
+                }}
+                aria-pressed={active}
+                className={cn(
+                  "px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors border",
+                  active ? "text-white border-transparent" : "text-slate-600 border-slate-200 hover:text-slate-900"
+                )}
+                style={active ? INK_BTN : { background: "rgba(255,255,255,0.70)" }}
+              >
+                {opt.label}
+              </button>
+            );
+          })}
+        </div>
+        <input
+          type="date"
+          value={date}
+          onChange={(e) => {
+            setDate(e.target.value);
+            setAvailable("");
+            applyFilters({ date: e.target.value, available: "" });
+          }}
+          aria-label="Dostępne w konkretnym dniu"
+          className="input-glass w-full mt-2 px-3 py-2.5 text-sm rounded-xl outline-none text-slate-800"
+        />
       </div>
 
       {/* Reset */}
@@ -224,9 +285,12 @@ export function MobileFilters(props: SearchFiltersProps) {
 
   useEffect(() => setMounted(true), []);
 
-  const activeCount = [props.currentQ, props.currentCategory, props.currentCity].filter(
-    Boolean
-  ).length;
+  const activeCount = [
+    props.currentQ,
+    props.currentCategory,
+    props.currentCity,
+    props.currentAvailable || props.currentDate,
+  ].filter(Boolean).length;
 
   // Lock body scroll while the sheet is open
   useEffect(() => {

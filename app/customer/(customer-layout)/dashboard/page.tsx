@@ -7,6 +7,7 @@ import { formatDate, formatTime, formatCurrency, cn } from "@/lib/utils";
 import { AppointmentStatus } from "@prisma/client";
 import { cancelAppointment } from "@/lib/actions/appointments";
 import { isFavourite } from "@/lib/actions/favourites";
+import { navigationUrl, addressSearchUrl } from "@/lib/maps";
 import RescheduleButton from "./reschedule-button";
 import FavouriteButton from "@/components/booking/favourite-button";
 import {
@@ -66,9 +67,19 @@ function relativeLabel(start: Date, now: Date): string {
   return `za ${Math.round(dayDiff / 7)} tyg.`;
 }
 
-function mapUrl(b: { latitude: number | null; longitude: number | null; address: string; city: string }): string {
-  const q = b.latitude != null && b.longitude != null ? `${b.latitude},${b.longitude}` : `${b.address}, ${b.city}`;
-  return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(q)}`;
+// Reuse the shared, name-free maps helpers so the customer ticket and the public
+// profile build identical Google Maps links (coords when verified, else address).
+function mapUrl(b: {
+  latitude: number | null;
+  longitude: number | null;
+  placeId: string | null;
+  address: string;
+  postalCode: string;
+  city: string;
+}): string {
+  return b.latitude != null && b.longitude != null
+    ? navigationUrl({ latitude: b.latitude, longitude: b.longitude, placeId: b.placeId })
+    : addressSearchUrl(b.address, b.postalCode, b.city);
 }
 
 const TERMINAL: AppointmentStatus[] = [
@@ -94,7 +105,7 @@ export default async function CustomerDashboardPage() {
         business: {
           select: {
             name: true, slug: true, logoUrl: true,
-            address: true, city: true, latitude: true, longitude: true,
+            address: true, city: true, postalCode: true, latitude: true, longitude: true, placeId: true,
             phone: true, cancellationHours: true,
           },
         },

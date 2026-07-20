@@ -84,7 +84,7 @@ export function CookieConsentBanner() {
       <div className="max-w-xl mx-auto rounded-[20px] p-5 sm:p-6" style={ELEV_OVERLAY}>
         <h2 className="text-sm font-semibold text-slate-900 mb-1.5">Pliki cookie</h2>
         <p className="text-xs text-slate-500 leading-relaxed mb-4">
-          Używamy niezbędnych plików cookie, aby Termcatch działał (logowanie, sesja).
+          Używamy niezbędnych plików cookie, aby TermCatch działał (logowanie, sesja).
           Za Twoją zgodą użyjemy też cookie analitycznych, żeby rozumieć ruch na stronie.
           Szczegóły w{" "}
           <Link href="/cookies" className="underline underline-offset-2 hover:text-slate-700">
@@ -114,7 +114,7 @@ export function CookieConsentBanner() {
               <span>
                 <span className="block text-xs font-semibold text-slate-900">Analityczne</span>
                 <span className="block text-xs text-slate-500">
-                  Anonimowe statystyki odwiedzin — pomagają nam ulepszać Termcatch.
+                  Anonimowe statystyki odwiedzin — pomagają nam ulepszać TermCatch.
                 </span>
               </span>
             </label>

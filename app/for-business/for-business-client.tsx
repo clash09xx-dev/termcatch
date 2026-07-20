@@ -116,7 +116,7 @@ function DashboardPreview() {
               <p className="text-[10px] text-slate-400 mt-0.5">Panel zarządzania</p>
             </div>
           </div>
-          <span className="text-[10px] font-medium px-2.5 py-1 rounded-full text-slate-500" style={G.pill}>Dziś</span>
+          <span className="text-[10px] font-medium px-2.5 py-1 rounded-full text-slate-500" style={G.pill}>Przykład</span>
         </div>
 
         {/* Bookings */}
@@ -205,8 +205,8 @@ const FEATURES = [
   },
   {
     n: "02",
-    title: "Zero no-show",
-    desc: "Automatyczne przypomnienia SMS i e-mail przed każdą wizytą. Mniej pustych slotów, więcej realnych spotkań i spokojny dzień pracy.",
+    title: "Mniej nieobecności",
+    desc: "Automatyczne przypomnienia SMS i e-mail przed każdą wizytą. Mniej pustych slotów, więcej realnych spotkań i spokojniejszy dzień pracy.",
     icon: (
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
         <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
@@ -378,7 +378,7 @@ export function ForBusinessClient() {
               transition={{ delay: 0.6 }}
               className="mt-5 text-xs text-slate-500"
             >
-              Bez karty kredytowej · Instalacja w 5 minut · Plan Starter bezpłatnie na zawsze
+              Bez karty kredytowej · Instalacja w 5 minut · Pierwsze 100 salonów: 3 miesiące bez opłat
             </motion.p>
           </div>
 
@@ -402,10 +402,10 @@ export function ForBusinessClient() {
       >
         <div className="max-w-4xl mx-auto grid grid-cols-2 md:grid-cols-4 gap-4">
           {[
-            { num: "−80%", label: "mniej telefonów od klientów" },
+            { num: "Mniej", label: "telefonów dzięki rezerwacjom online" },
             { num: "24/7", label: "dostępność kalendarza" },
             { num: "5 min", label: "konfiguracja salonu" },
-            { num: "0 zł", label: "koszt startu" },
+            { num: "3 mies.", label: "bez opłat — pierwsze 100 salonów" },
           ].map((s, i) => (
             <motion.div
               key={s.label}

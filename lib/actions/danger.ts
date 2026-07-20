@@ -41,7 +41,7 @@ export async function requestDangerCode(): Promise<DangerState> {
     subject: "Kod potwierdzający usunięcie profilu salonu",
     heading: "Potwierdź operację usunięcia",
     lines: [
-      `Otrzymaliśmy prośbę o usunięcie danych salonu <strong>${business.name}</strong> w Termcatch.`,
+      `Otrzymaliśmy prośbę o usunięcie danych salonu <strong>${business.name}</strong> w TermCatch.`,
       `Twój kod potwierdzający: <strong style="font-size:24px;letter-spacing:6px;">${created.code}</strong>`,
       "Kod wygasa po 10 minutach i działa tylko raz.",
       "Jeśli to nie Ty — zignoruj tę wiadomość i jak najszybciej zmień hasło do konta.",

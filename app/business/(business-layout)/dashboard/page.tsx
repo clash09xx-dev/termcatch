@@ -4,6 +4,8 @@ import { prisma } from "@/lib/prisma";
 import { getOrCreateDbUser } from "@/lib/auth-user";
 import { getBusinessNotificationSettings } from "@/lib/notification-settings";
 import { NotificationsPrompt } from "@/components/business/notifications-prompt";
+import { PublicationStatus } from "@/components/business/publication-status";
+import { validateForPublication } from "@/lib/publication";
 import { formatCurrency, formatTime, formatDate, formatRelativeTime } from "@/lib/utils";
 import { warsawDateString, warsawDayStartUtc, warsawDayEndUtc, warsawTimeString } from "@/lib/timezone";
 import { redirect } from "next/navigation";
@@ -69,6 +71,23 @@ export default async function BusinessDashboardPage() {
     prisma.employee.count({ where: { businessId: business.id, isActive: true } }),
   ]);
 
+  // Publication readiness (owner-facing) — authoritative, presence-based.
+  const activeServices = await prisma.service.findMany({
+    where: { businessId: business.id, isActive: true },
+    select: { price: true, duration: true },
+  });
+  const publication = validateForPublication({
+    name: business.name,
+    category: business.category,
+    city: business.city,
+    address: business.address,
+    phone: business.phone,
+    email: business.email,
+    activeServices,
+    activeEmployees: staffCount,
+    openDays: business.workingHours.filter((w) => w.isOpen).length,
+  });
+
   const monthRevenue = monthRevenueAgg._sum.price ?? 0;
   const monthCompleted = monthRevenueAgg._count;
   const plannedToday = todayAppointments.reduce((s, a) => s + a.price, 0);
@@ -131,6 +150,14 @@ export default async function BusinessDashboardPage() {
   return (
     <div className="max-w-6xl mx-auto space-y-5">
       <NotificationsPrompt configured={notifConfigured} />
+
+      {business.status !== "ACTIVE" && (
+        <PublicationStatus
+          status={business.status}
+          slug={business.slug}
+          requirements={publication.requirements}
+        />
+      )}
 
       {/* Greeting — a spoken sentence, not a stat grid */}
       <div className="fade-rise">

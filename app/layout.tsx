@@ -15,8 +15,8 @@ const inter = Inter({
 
 export const metadata: Metadata = {
   title: {
-    template: "%s | Termcatch",
-    default: "Termcatch — Rezerwacje online dla salonów beauty | Fryzjer, barber, masaż",
+    template: "%s | TermCatch",
+    default: "TermCatch — Rezerwacje online dla salonów beauty | Fryzjer, barber, masaż",
   },
   description:
     "Rezerwacja wizyt online w salonach beauty: fryzjer, barber, paznokcie, masaż. Umów wizytę 24/7 w Krakowie i całej Polsce. Tańsza alternatywa dla salonów.",
@@ -38,8 +38,8 @@ export const metadata: Metadata = {
     "beauty salon booking",
   ],
   alternates: { canonical: "/" },
-  authors: [{ name: "Termcatch" }],
-  creator: "Termcatch",
+  authors: [{ name: "TermCatch" }],
+  creator: "TermCatch",
   metadataBase: new URL(
     process.env.NEXT_PUBLIC_APP_URL ?? "https://termcatch.com"
   ),
@@ -47,14 +47,14 @@ export const metadata: Metadata = {
     type: "website",
     locale: "pl_PL",
     url: "https://termcatch.com",
-    siteName: "Termcatch",
-    title: "Termcatch — Rezerwacje online dla salonów i usług",
+    siteName: "TermCatch",
+    title: "TermCatch — Rezerwacje online dla salonów i usług",
     description:
       "Zarezerwuj wizytę w najlepszych salonach i u specjalistów w Polsce.",
   },
   twitter: {
     card: "summary_large_image",
-    title: "Termcatch",
+    title: "TermCatch",
     description: "Rezerwacje online dla salonów i usług w Polsce.",
   },
   robots: {

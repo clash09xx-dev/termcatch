@@ -2,7 +2,7 @@ import { LandingNav } from "@/components/layout/landing-nav";
 import { LandingFooter } from "@/components/layout/landing-footer";
 import type { Metadata } from "next";
 
-export const metadata: Metadata = { title: "Polityka prywatności — Termcatch" };
+export const metadata: Metadata = { title: "Polityka prywatności — TermCatch" };
 
 const BG = [
   "radial-gradient(ellipse 100% 60% at 80% 0%, rgba(203,213,225,0.55) 0%, transparent 50%)",
@@ -13,7 +13,7 @@ const BG = [
 const sections = [
   {
     title: "1. Administrator danych",
-    body: `Administratorem danych osobowych jest Termcatch z siedzibą w Krakowie. Kontakt: hello@termcatch.com`,
+    body: `Administratorem danych osobowych jest TermCatch z siedzibą w Krakowie. Kontakt: hello@termcatch.com`,
   },
   {
     title: "2. Jakie dane zbieramy",
@@ -29,7 +29,7 @@ const sections = [
   },
   {
     title: "5. Udostępnianie danych",
-    body: `Dane nie są sprzedawane stronom trzecim. Udostępniamy je wyłącznie: Salonowi, u którego dokonano rezerwacji, dostawcom usług technicznych (Supabase, Stripe), organom państwowym gdy wymagają tego przepisy prawa.`,
+    body: `Dane nie są sprzedawane stronom trzecim. Udostępniamy je wyłącznie: Salonowi, u którego dokonano rezerwacji, dostawcom usług technicznych działającym jako podmioty przetwarzające (m.in. Supabase — baza danych i uwierzytelnianie, Stripe — płatności, Twilio — powiadomienia SMS, Resend — powiadomienia e-mail, dostawcy hostingu), oraz organom państwowym gdy wymagają tego przepisy prawa.`,
   },
   {
     title: "6. Prawa użytkownika",
@@ -41,7 +41,7 @@ const sections = [
   },
   {
     title: "8. Bezpieczeństwo",
-    body: `Stosujemy szyfrowanie SSL/TLS, bezpieczne przechowywanie haseł (bcrypt), regularne audyty bezpieczeństwa i ograniczony dostęp do danych tylko dla uprawnionych pracowników.`,
+    body: `Połączenie z serwisem jest szyfrowane (SSL/TLS). Uwierzytelnianie i przechowywanie haseł obsługuje nasz dostawca tożsamości (Supabase Auth) — nie przechowujemy haseł w postaci jawnej. Dostęp do danych jest ograniczony do osób uprawnionych. Pracujemy nad dalszym podnoszeniem poziomu bezpieczeństwa.`,
   },
 ];
 

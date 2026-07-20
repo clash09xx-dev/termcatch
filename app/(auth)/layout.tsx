@@ -58,7 +58,7 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
           color: "#94A3B8",
         }}
       >
-        &copy; {new Date().getFullYear()} Termcatch &middot;{" "}
+        &copy; {new Date().getFullYear()} TermCatch &middot;{" "}
         <Link href="/terms" className="hover:opacity-70 transition-opacity" style={{ color: "#94A3B8" }}>
           Regulamin
         </Link>

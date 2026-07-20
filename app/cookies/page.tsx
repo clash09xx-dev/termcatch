@@ -4,9 +4,9 @@ import CookieSettingsButton from "./cookie-settings-button";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "Polityka cookies — Termcatch",
+  title: "Polityka cookies — TermCatch",
   description:
-    "Jakich plików cookie używa Termcatch, do czego służą i jak zarządzać swoimi preferencjami.",
+    "Jakich plików cookie używa TermCatch, do czego służą i jak zarządzać swoimi preferencjami.",
   alternates: { canonical: "/cookies" },
 };
 
@@ -35,7 +35,7 @@ const SECTIONS = [
       border: "1px solid rgba(203,213,225,0.45)",
       color: "#64748B",
     },
-    body: "Bez nich Termcatch nie działa. Obsługują logowanie i sesję użytkownika (Supabase Auth), zapamiętują Twoje preferencje zgody oraz chronią przed nadużyciami. Podstawą prawną jest niezbędność do świadczenia usługi (art. 6 ust. 1 lit. b RODO) — nie wymagają zgody.",
+    body: "Bez nich TermCatch nie działa. Obsługują logowanie i sesję użytkownika (Supabase Auth), zapamiętują Twoje preferencje zgody oraz chronią przed nadużyciami. Podstawą prawną jest niezbędność do świadczenia usługi (art. 6 ust. 1 lit. b RODO) — nie wymagają zgody.",
     examples: "sb-*-auth-token (sesja logowania), tc_consent (Twoje preferencje cookie)",
   },
   {
@@ -46,7 +46,7 @@ const SECTIONS = [
       border: "1px solid rgba(203,213,225,0.40)",
       color: "#64748B",
     },
-    body: "Pomagają nam zrozumieć, jak używasz Termcatch — które strony odwiedzasz i skąd do nas trafiasz. Używamy własnego, anonimowego systemu statystyk: identyfikator odwiedzającego jest losowy, nie łączymy go z Twoim imieniem, nazwiskiem ani adresem e-mail.",
+    body: "Pomagają nam zrozumieć, jak używasz TermCatch — które strony odwiedzasz i skąd do nas trafiasz. Używamy własnego, anonimowego systemu statystyk: identyfikator odwiedzającego jest losowy, nie łączymy go z Twoim imieniem, nazwiskiem ani adresem e-mail.",
     examples: "tc_vid (losowy identyfikator odwiedzającego), tc_sid (identyfikator sesji, wygasa po 30 min)",
   },
   {
@@ -57,7 +57,7 @@ const SECTIONS = [
       border: "1px solid rgba(226,232,240,0.60)",
       color: "#94A3B8",
     },
-    body: "Termcatch nie używa obecnie żadnych cookie marketingowych ani reklamowych. Jeśli to się zmieni, zapytamy Cię o osobną zgodę zanim jakikolwiek skrypt marketingowy zostanie załadowany.",
+    body: "TermCatch nie używa obecnie żadnych cookie marketingowych ani reklamowych. Jeśli to się zmieni, zapytamy Cię o osobną zgodę zanim jakikolwiek skrypt marketingowy zostanie załadowany.",
     examples: "brak",
   },
 ];
@@ -84,7 +84,7 @@ export default function CookiesPage() {
               className="text-4xl font-bold mb-5"
               style={{ letterSpacing: "-0.04em", color: "#0F172A" }}
             >
-              Pliki cookie w Termcatch
+              Pliki cookie w TermCatch
             </h1>
             <p className="text-sm leading-relaxed" style={{ color: "#64748B" }}>
               Poniżej znajdziesz pełną listę kategorii plików cookie, których używamy,

@@ -105,7 +105,7 @@ function renderHtml(params: Pick<SendEmailParams, "heading" | "lines" | "ctaLabe
             : ""
         }
         <tr><td style="padding:28px 32px 28px;">
-          <p style="margin:0;font-size:12px;color:#9ca3af;">Ta wiadomość została wysłana automatycznie przez Termcatch. Odpowiedzi trafiają do naszego zespołu wsparcia.</p>
+          <p style="margin:0;font-size:12px;color:#9ca3af;">Ta wiadomość została wysłana automatycznie przez TermCatch. Odpowiedzi trafiają do naszego zespołu wsparcia.</p>
         </td></tr>
       </table>
     </td></tr>
@@ -189,10 +189,10 @@ export async function sendPasswordResetEmail(
 ): Promise<{ sent: boolean }> {
   return sendEmail({
     to,
-    subject: "Zresetuj hasło — Termcatch",
+    subject: "Zresetuj hasło — TermCatch",
     heading: "Reset hasła",
     lines: [
-      "Otrzymaliśmy prośbę o zresetowanie hasła do Twojego konta Termcatch.",
+      "Otrzymaliśmy prośbę o zresetowanie hasła do Twojego konta TermCatch.",
       "Kliknij poniższy przycisk, aby ustawić nowe hasło. Link wygasa po 60 minutach.",
       "Jeśli to nie Ty — zignoruj tę wiadomość.",
     ],
@@ -211,10 +211,10 @@ export async function sendEmailVerificationEmail(
 ): Promise<{ sent: boolean }> {
   return sendEmail({
     to,
-    subject: "Potwierdź swój adres e-mail — Termcatch",
+    subject: "Potwierdź swój adres e-mail — TermCatch",
     heading: "Potwierdź adres e-mail",
     lines: [
-      "Dziękujemy za rejestrację w Termcatch.",
+      "Dziękujemy za rejestrację w TermCatch.",
       "Kliknij poniższy przycisk, aby potwierdzić swój adres e-mail i aktywować konto.",
     ],
     ctaLabel: "Potwierdź e-mail",

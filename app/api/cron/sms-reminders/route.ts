@@ -51,7 +51,7 @@ export async function POST(request: NextRequest) {
     const slot = `${formatDate(a.startTime, { day: "numeric", month: "long" })} o ${warsawTimeString(a.startTime)}`;
     const res = await sendTransactionalSms({
       toPhone: a.customer.phone,
-      body: `Termcatch: przypomnienie — jutro ${a.service.name} w ${a.business.name}, ${slot}. Jeśli nie możesz przyjść, przełóż wizytę w panelu.`,
+      body: `TermCatch: przypomnienie — jutro ${a.service.name} w ${a.business.name}, ${slot}. Jeśli nie możesz przyjść, przełóż wizytę w panelu.`,
       template: "reminder",
       dedupeKey: `sms:reminder:${a.id}`,
       appointmentId: a.id,

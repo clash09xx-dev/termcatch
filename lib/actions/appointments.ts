@@ -16,6 +16,7 @@ import {
 import { sendSms, sendWhatsApp } from "@/lib/messaging";
 import { sendTransactionalSms, type SmsTemplate } from "@/lib/sms";
 import { getBusinessNotificationSettings } from "@/lib/notification-settings";
+import { isPubliclyVisible } from "@/lib/publication";
 import { resolveBookingAddons, type AddonSelection } from "@/lib/booking-addons";
 import { computeBookingTotals, evaluateCoupon } from "@/lib/booking-pricing";
 
@@ -136,13 +137,13 @@ export async function createAppointment(data: CreateAppointmentInput) {
   if (isNaN(start.getTime())) throw new Error("Nieprawidłowa data wizyty.");
   if (start <= new Date()) throw new Error("Data wizyty musi być w przyszłości.");
 
-  // Validate business is active
+  // Validate business is published (authoritative gate — same as public surfaces)
   const business = await prisma.business.findUnique({
     where: { id: data.businessId },
-    select: { id: true, status: true, name: true, slug: true, ownerId: true, email: true },
+    select: { id: true, status: true, isActive: true, name: true, slug: true, ownerId: true, email: true },
   });
   if (!business) throw new Error("Nie znaleziono salonu.");
-  if (business.status !== "ACTIVE")
+  if (!isPubliclyVisible(business))
     throw new Error("Salon jest obecnie niedostępny.");
 
   // Fetch service — validates it's active and belongs to this business
@@ -297,13 +298,13 @@ export async function createAppointment(data: CreateAppointmentInput) {
       : Promise.resolve(),
     notifySalonChannels(
       business.id,
-      `Termcatch: nowa rezerwacja — ${service.name}, ${slotLabel}, ${customer.firstName} ${customer.lastName}. Potwierdź w panelu: ${process.env.NEXT_PUBLIC_APP_URL ?? "https://termcatch.com"}/business/dashboard`
+      `TermCatch: nowa rezerwacja — ${service.name}, ${slotLabel}, ${customer.firstName} ${customer.lastName}. Potwierdź w panelu: ${process.env.NEXT_PUBLIC_APP_URL ?? "https://termcatch.com"}/business/dashboard`
     ),
     customerBookingSms({
       customer,
       appointmentId: appointment.id,
       template: "booked",
-      body: `Termcatch: prośba o rezerwację wysłana — ${service.name} w ${business.name}, ${slotLabel}. Salon potwierdzi wizytę.`,
+      body: `TermCatch: prośba o rezerwację wysłana — ${service.name} w ${business.name}, ${slotLabel}. Salon potwierdzi wizytę.`,
     }),
   ]);
 
@@ -429,13 +430,13 @@ export async function rescheduleAppointment(input: {
       : Promise.resolve(),
     notifySalonChannels(
       appointment.business.id,
-      `Termcatch: wizyta przełożona — ${appointment.service.name} z ${oldSlotLabel} na ${newSlotLabel}. Potwierdź nowy termin w panelu.`
+      `TermCatch: wizyta przełożona — ${appointment.service.name} z ${oldSlotLabel} na ${newSlotLabel}. Potwierdź nowy termin w panelu.`
     ),
     customerBookingSms({
       customer,
       appointmentId: appointment.id,
       template: "rescheduled",
-      body: `Termcatch: wizyta przełożona — ${appointment.service.name} w ${appointment.business.name}, nowy termin: ${newSlotLabel}. Salon potwierdzi zmianę.`,
+      body: `TermCatch: wizyta przełożona — ${appointment.service.name} w ${appointment.business.name}, nowy termin: ${newSlotLabel}. Salon potwierdzi zmianę.`,
       dedupeSuffix: `:${newStart.toISOString()}`,
     }),
   ]);
@@ -518,13 +519,13 @@ export async function cancelAppointment(appointmentId: string) {
       : Promise.resolve(),
     notifySalonChannels(
       appointment.business.id,
-      `Termcatch: klient anulował wizytę — ${appointment.service.name}, ${describeSlot(appointment.startTime)}. Termin jest znów wolny.`
+      `TermCatch: klient anulował wizytę — ${appointment.service.name}, ${describeSlot(appointment.startTime)}. Termin jest znów wolny.`
     ),
     customerBookingSms({
       customer,
       appointmentId,
       template: "cancelled",
-      body: `Termcatch: Twoja wizyta ${appointment.service.name} w ${appointment.business.name}, ${describeSlot(appointment.startTime)} została anulowana.`,
+      body: `TermCatch: Twoja wizyta ${appointment.service.name} w ${appointment.business.name}, ${describeSlot(appointment.startTime)} została anulowana.`,
     }),
   ]);
 
@@ -579,7 +580,7 @@ export async function confirmAppointment(appointmentId: string) {
       customer: appointment.customer,
       appointmentId,
       template: "confirmed",
-      body: `Termcatch: wizyta potwierdzona — ${appointment.service.name} w ${appointment.business.name}, ${slotLabel}. Do zobaczenia!`,
+      body: `TermCatch: wizyta potwierdzona — ${appointment.service.name} w ${appointment.business.name}, ${slotLabel}. Do zobaczenia!`,
     }),
   ]);
 
@@ -644,7 +645,7 @@ export async function declineAppointment(appointmentId: string) {
       customer: appointment.customer,
       appointmentId,
       template: "declined",
-      body: `Termcatch: salon ${appointment.business.name} odwołał wizytę ${appointment.service.name}, ${slotLabel}. Zarezerwuj inny termin w aplikacji.`,
+      body: `TermCatch: salon ${appointment.business.name} odwołał wizytę ${appointment.service.name}, ${slotLabel}. Zarezerwuj inny termin w aplikacji.`,
     }),
   ]);
 

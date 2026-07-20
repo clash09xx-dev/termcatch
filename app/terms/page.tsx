@@ -2,7 +2,7 @@ import { LandingNav } from "@/components/layout/landing-nav";
 import { LandingFooter } from "@/components/layout/landing-footer";
 import type { Metadata } from "next";
 
-export const metadata: Metadata = { title: "Regulamin — Termcatch" };
+export const metadata: Metadata = { title: "Regulamin — TermCatch" };
 
 const BG = [
   "radial-gradient(ellipse 100% 60% at 80% 0%, rgba(203,213,225,0.55) 0%, transparent 50%)",
@@ -13,15 +13,15 @@ const BG = [
 const sections = [
   {
     title: "1. Postanowienia ogólne",
-    body: `Niniejszy Regulamin określa zasady korzystania z platformy Termcatch, dostępnej pod adresem termcatch.com, świadczącej usługi pośrednictwa w rezerwacjach online między klientami a usługodawcami z branży beauty i wellness.`,
+    body: `Niniejszy Regulamin określa zasady korzystania z platformy TermCatch, dostępnej pod adresem termcatch.com, świadczącej usługi pośrednictwa w rezerwacjach online między klientami a usługodawcami z branży beauty i wellness.`,
   },
   {
     title: "2. Definicje",
-    body: `Platforma — serwis internetowy Termcatch dostępny pod adresem termcatch.com. Użytkownik — osoba fizyczna korzystająca z Platformy w celu dokonania rezerwacji. Salon / Specjalista — podmiot świadczący usługi zarejestrowany na Platformie. Rezerwacja — potwierdzenie terminu usługi dokonane za pośrednictwem Platformy.`,
+    body: `Platforma — serwis internetowy TermCatch dostępny pod adresem termcatch.com. Użytkownik — osoba fizyczna korzystająca z Platformy w celu dokonania rezerwacji. Salon / Specjalista — podmiot świadczący usługi zarejestrowany na Platformie. Rezerwacja — potwierdzenie terminu usługi dokonane za pośrednictwem Platformy.`,
   },
   {
     title: "3. Warunki korzystania",
-    body: `Korzystanie z Platformy jest bezpłatne dla Użytkowników. Rejestracja wymaga podania prawdziwych danych osobowych. Użytkownik ponosi odpowiedzialność za zachowanie poufności danych dostępowych do konta. Termcatch zastrzega sobie prawo do usunięcia konta naruszającego niniejszy Regulamin.`,
+    body: `Korzystanie z Platformy jest bezpłatne dla Użytkowników. Rejestracja wymaga podania prawdziwych danych osobowych. Użytkownik ponosi odpowiedzialność za zachowanie poufności danych dostępowych do konta. TermCatch zastrzega sobie prawo do usunięcia konta naruszającego niniejszy Regulamin.`,
   },
   {
     title: "4. Rezerwacje",
@@ -29,15 +29,15 @@ const sections = [
   },
   {
     title: "5. Płatności",
-    body: `Opłaty za usługi są pobierane przez Salon według własnego cennika. Termcatch może pobierać prowizję od transakcji online zgodnie z obowiązującym cennikiem. Płatności online są obsługiwane przez operatora płatności Stripe.`,
+    body: `Opłaty za usługi są pobierane przez Salon według własnego cennika. TermCatch może pobierać prowizję od transakcji online zgodnie z obowiązującym cennikiem. Płatności online są obsługiwane przez operatora płatności Stripe.`,
   },
   {
     title: "6. Odpowiedzialność",
-    body: `Termcatch nie ponosi odpowiedzialności za jakość usług świadczonych przez Salony. Platforma pełni wyłącznie rolę pośrednika w procesie rezerwacji. Wszelkie reklamacje dotyczące usług należy kierować bezpośrednio do Salonu.`,
+    body: `TermCatch nie ponosi odpowiedzialności za jakość usług świadczonych przez Salony. Platforma pełni wyłącznie rolę pośrednika w procesie rezerwacji. Wszelkie reklamacje dotyczące usług należy kierować bezpośrednio do Salonu.`,
   },
   {
     title: "7. Postanowienia końcowe",
-    body: `Termcatch zastrzega sobie prawo do zmiany niniejszego Regulaminu z 14-dniowym wyprzedzeniem. W sprawach nieregulowanych niniejszym Regulaminem stosuje się przepisy prawa polskiego. Wszelkie spory rozstrzyga właściwy sąd powszechny.`,
+    body: `TermCatch zastrzega sobie prawo do zmiany niniejszego Regulaminu z 14-dniowym wyprzedzeniem. W sprawach nieregulowanych niniejszym Regulaminem stosuje się przepisy prawa polskiego. Wszelkie spory rozstrzyga właściwy sąd powszechny.`,
   },
 ];
 

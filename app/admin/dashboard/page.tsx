@@ -12,7 +12,11 @@ import {
   adminBanBusiness,
   adminRestoreBusiness,
   adminDeleteBusiness,
+  adminPublishBusiness,
+  adminSuspendBusiness,
+  adminReturnToDraft,
 } from "@/lib/actions/admin";
+import { STATUS_LABELS } from "@/lib/publication";
 
 function parseAdminEmails(): string[] {
   return (process.env.ADMIN_EMAILS ?? "")
@@ -276,11 +280,16 @@ export default async function AdminDashboardPage() {
             ) : (
               <div className="divide-y divide-gray-100">
                 {recentBusinesses.map((b) => {
+                  const publishAction = adminPublishBusiness.bind(null, b.id);
+                  const suspendAction = adminSuspendBusiness.bind(null, b.id);
+                  const draftAction = adminReturnToDraft.bind(null, b.id);
                   const banAction = adminBanBusiness.bind(null, b.id);
                   const restoreAction = adminRestoreBusiness.bind(null, b.id);
                   const deleteAction = adminDeleteBusiness.bind(null, b.id);
                   const isActive = b.status === "ACTIVE";
                   const canDelete = b._count.appointments === 0;
+                  const ghost =
+                    "text-[11px] font-medium px-2.5 py-1.5 border border-gray-200 hover:bg-gray-50 text-gray-600 rounded-lg transition-colors";
                   return (
                     <div key={b.id} className="px-6 py-3 flex items-center justify-between gap-3">
                       <div className="min-w-0 flex-1">
@@ -293,37 +302,45 @@ export default async function AdminDashboardPage() {
                         className={
                           isActive
                             ? "text-[10px] font-medium px-2 py-0.5 rounded-full bg-green-50 text-green-700 flex-shrink-0"
+                            : b.status === "PENDING_VERIFICATION"
+                            ? "text-[10px] font-medium px-2 py-0.5 rounded-full bg-amber-50 text-amber-700 flex-shrink-0"
                             : "text-[10px] font-medium px-2 py-0.5 rounded-full bg-red-50 text-red-600 flex-shrink-0"
                         }
                       >
-                        {isActive ? "Aktywny" : b.status === "BANNED" ? "Zablokowany" : b.status}
+                        {STATUS_LABELS[b.status] ?? b.status}
                       </span>
-                      <div className="flex items-center gap-1.5 flex-shrink-0">
-                        {isActive ? (
-                          <form action={banAction}>
-                            <button
-                              type="submit"
-                              className="text-[11px] font-medium px-2.5 py-1.5 border border-gray-200 hover:border-red-200 hover:text-red-600 text-gray-600 rounded-lg transition-colors"
-                            >
-                              Zablokuj
+                      <div className="flex items-center gap-1.5 flex-shrink-0 flex-wrap justify-end">
+                        {b.status !== "ACTIVE" && b.status !== "BANNED" && (
+                          <form action={publishAction}>
+                            <button type="submit" className="text-[11px] font-medium px-2.5 py-1.5 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors">
+                              Opublikuj
                             </button>
                           </form>
-                        ) : (
+                        )}
+                        {isActive && (
+                          <form action={suspendAction}>
+                            <button type="submit" className={ghost}>Zawieś</button>
+                          </form>
+                        )}
+                        {(isActive || b.status === "SUSPENDED") && (
+                          <form action={draftAction}>
+                            <button type="submit" className={ghost}>Do weryfikacji</button>
+                          </form>
+                        )}
+                        {b.status === "BANNED" ? (
                           <form action={restoreAction}>
-                            <button
-                              type="submit"
-                              className="text-[11px] font-medium px-2.5 py-1.5 border border-gray-200 hover:bg-gray-50 text-gray-600 rounded-lg transition-colors"
-                            >
-                              Przywróć
+                            <button type="submit" className={ghost}>Przywróć</button>
+                          </form>
+                        ) : (
+                          <form action={banAction}>
+                            <button type="submit" className="text-[11px] font-medium px-2.5 py-1.5 border border-gray-200 hover:border-red-200 hover:text-red-600 text-gray-600 rounded-lg transition-colors">
+                              Zablokuj
                             </button>
                           </form>
                         )}
                         {canDelete && (
                           <form action={deleteAction}>
-                            <button
-                              type="submit"
-                              className="text-[11px] font-medium px-2.5 py-1.5 bg-red-50 hover:bg-red-100 text-red-600 rounded-lg transition-colors"
-                            >
+                            <button type="submit" className="text-[11px] font-medium px-2.5 py-1.5 bg-red-50 hover:bg-red-100 text-red-600 rounded-lg transition-colors">
                               Usuń
                             </button>
                           </form>

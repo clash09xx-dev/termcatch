@@ -3,7 +3,7 @@ export const dynamic = "force-dynamic";
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { LandingNav } from "@/components/layout/landing-nav";
-import { BusinessStatus } from "@prisma/client";
+import { isPubliclyVisible } from "@/lib/publication";
 import BookingWizard from "./booking-wizard";
 
 // Ambient chrome mesh — same recipe as the marketing hero
@@ -46,7 +46,7 @@ export default async function BookPage({
     },
   });
 
-  if (!business || business.status !== BusinessStatus.ACTIVE) {
+  if (!business || !isPubliclyVisible(business)) {
     notFound();
   }
 

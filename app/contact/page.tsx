@@ -4,8 +4,8 @@ import ContactForm from "./contact-form";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "Kontakt — Termcatch",
-  description: "Skontaktuj się z Termcatch — jesteśmy tu, żeby pomóc.",
+  title: "Kontakt — TermCatch",
+  description: "Skontaktuj się z TermCatch — jesteśmy tu, żeby pomóc.",
 };
 
 const BG = [
@@ -49,8 +49,8 @@ export default function ContactPage() {
                 Jesteśmy tutaj.
               </h1>
               <p className="leading-relaxed mb-10 text-sm" style={{ color: "#64748B" }}>
-                Masz pytanie o Termcatch? Chcesz omówić wdrożenie dla sieci salonów?
-                Piszesz do nas — odpiszemy w ciągu kilku godzin.
+                Masz pytanie o TermCatch? Chcesz omówić wdrożenie dla sieci salonów?
+                Piszesz do nas — odpowiemy tak szybko, jak to możliwe.
               </p>
 
               <div className="space-y-4">
