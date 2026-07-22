@@ -76,6 +76,47 @@ export default function CareersPage() {
           </div>
         </div>
       </div>
+
+      {/* Affiliate / referral — target of the "Zaproś i zarób" nav CTA */}
+      <section id="zaros-i-zarob" className="px-6 pb-24 scroll-mt-28">
+        <div
+          className="max-w-2xl mx-auto rounded-3xl p-8 sm:p-10 text-center"
+          style={{
+            background: "rgba(255,255,255,0.72)",
+            backdropFilter: "blur(40px) saturate(200%)",
+            WebkitBackdropFilter: "blur(40px) saturate(200%)",
+            border: "1px solid rgba(203,213,225,0.55)",
+            boxShadow:
+              "0 1px 2px rgba(0,0,0,0.04), 0 6px 20px rgba(100,116,139,0.09), inset 0 1px 0 rgba(255,255,255,0.95)",
+          }}
+        >
+          <div
+            className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full mb-5 text-xs font-semibold uppercase tracking-widest"
+            style={{ background: "rgba(203,213,225,0.28)", border: "1px solid rgba(203,213,225,0.50)", color: "#64748B" }}
+          >
+            Program poleceń
+          </div>
+          <h2 className="text-3xl font-bold mb-3" style={{ letterSpacing: "-0.03em", color: "#0F172A" }}>
+            Zaproś i zarób
+          </h2>
+          <p className="mb-7 leading-relaxed text-sm max-w-lg mx-auto" style={{ color: "#64748B" }}>
+            Znasz właścicieli salonów, którym przyda się TermCatch? Poleć nas dalej. Przygotowujemy
+            program nagród za polecenia — napisz do nas, a przekażemy Ci szczegóły i Twój link polecający.
+          </p>
+          <Link
+            href="/contact"
+            className="btn-spring inline-flex items-center px-6 py-2.5 text-sm font-semibold rounded-xl text-white"
+            style={{
+              background: "linear-gradient(180deg, #1E293B 0%, #0F172A 100%)",
+              border: "1px solid #0F172A",
+              boxShadow: "0 1px 2px rgba(0,0,0,0.20), inset 0 1px 0 rgba(255,255,255,0.15)",
+            }}
+          >
+            Dołącz do programu
+          </Link>
+        </div>
+      </section>
+
       <LandingFooter />
     </div>
   );

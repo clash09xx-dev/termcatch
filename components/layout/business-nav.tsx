@@ -39,6 +39,7 @@ const ClientsIcon = svg(<><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
 const ServicesIcon = svg(<><path d="M4 6h16M4 12h16M4 18h10" /><circle cx="19" cy="18" r="2" /></>);
 const TeamIcon = svg(<><circle cx="9" cy="8" r="3.2" /><path d="M3.5 20a5.5 5.5 0 0 1 11 0" /><path d="M16.5 5.5a3 3 0 0 1 0 6M17 20a5.5 5.5 0 0 0-2.2-4.4" /></>);
 const HoursIcon = svg(<><circle cx="12" cy="12" r="9" /><path d="M12 7v5l3.5 2" /></>);
+const HistoryIcon = svg(<><path d="M3 3v5h5" /><path d="M3.05 13A9 9 0 1 0 6 5.3L3 8" /><path d="M12 7.5v5l3 2" /></>);
 const AiIcon = svg(<><path d="M12 3v2m0 14v2M3 12h2m14 0h2M5.6 5.6l1.4 1.4m10 10 1.4 1.4m0-12.8-1.4 1.4m-10 10-1.4 1.4" /><circle cx="12" cy="12" r="3.4" /></>);
 const MarketingIcon = svg(<><path d="M3 11v2a1 1 0 0 0 1 1h2l4 4V6L6 10H4a1 1 0 0 0-1 1Z" /><path d="M15 8a4 4 0 0 1 0 8" /><path d="M18.5 5.5a8 8 0 0 1 0 13" /></>);
 const CouponIcon = svg(<><path d="M4 7a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v2a2 2 0 0 0 0 6v2a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2v-2a2 2 0 0 0 0-6Z" /><path d="M14 5v14" strokeDasharray="2 2.4" /></>);
@@ -55,6 +56,7 @@ export const NAV_GROUPS: NavGroup[] = [
       { href: "/business/dashboard", label: "Dziś", icon: TodayIcon },
       { href: "/business/calendar", label: "Kalendarz", icon: CalendarIcon },
       { href: "/business/crm", label: "Klienci", icon: ClientsIcon },
+      { href: "/business/history", label: "Historia", icon: HistoryIcon },
     ],
   },
   {
@@ -95,6 +97,7 @@ export const PAGE_META: Record<string, { title: string; action?: PageAction }> =
   "/business/dashboard": { title: "Dziś", action: { label: "Nowa wizyta", href: "/business/calendar?action=new", plus: true } },
   "/business/calendar": { title: "Kalendarz", action: { label: "Nowa wizyta", href: "/business/calendar?action=new", plus: true } },
   "/business/crm": { title: "Klienci", action: { label: "Nowa wizyta", href: "/business/calendar?action=new", plus: true } },
+  "/business/history": { title: "Historia" },
   "/business/services": { title: "Usługi", action: { label: "Dodaj usługę", href: "/business/services?action=new", plus: true } },
   "/business/staff": { title: "Zespół", action: { label: "Dodaj osobę", href: "/business/staff?action=new", plus: true } },
   "/business/hours": { title: "Godziny" },

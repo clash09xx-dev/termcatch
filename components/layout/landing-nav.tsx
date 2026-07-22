@@ -25,13 +25,21 @@ const NAV_SHADOW_REST =
 const NAV_SHADOW_SCROLLED =
   "0 0 0 0.5px rgba(203,213,225,0.45), 0 2px 4px rgba(0,0,0,0.05), 0 8px 32px rgba(100,116,139,0.10), 0 20px 48px rgba(100,116,139,0.05), inset 0 1px 0 rgba(255,255,255,0.95)";
 
+// Stronger (graphite) CTA — used for "Zaproś i zarób".
+const AFFILIATE_CTA: React.CSSProperties = {
+  background: "linear-gradient(180deg, #1E293B 0%, #0F172A 100%)",
+  border: "1px solid #0F172A",
+  boxShadow: "0 1px 2px rgba(0,0,0,0.20), 0 8px 20px rgba(15,23,42,0.22), inset 0 1px 0 rgba(255,255,255,0.15)",
+};
+
 export type LandingNavVariant = "marketing" | "customer-discovery";
 
 export function LandingNav({
   variant = "customer-discovery",
 }: {
-  /** "marketing" (homepage marketing context) additionally shows "Dla salonów".
-   *  The default customer-discovery/booking variant shows only "Szukaj". */
+  /** "marketing" (homepage) shows the full nav (Szukaj, Zarejestruj salon,
+   *  Cennik, Kariera, O nas + the "Zaproś i zarób" CTA). The default
+   *  customer-discovery/booking variant stays minimal ("Szukaj" only). */
   variant?: LandingNavVariant;
 }) {
   const [isScrolled, setIsScrolled] = useState(false);
@@ -59,12 +67,24 @@ export function LandingNav({
       .catch(() => setAuth({ status: "guest" }));
   }, []);
 
-  // Customer discovery/booking contexts stay minimal ("Szukaj" only); the
-  // homepage marketing variant also offers the B2B entry point.
-  const links = [
-    { href: "/search", label: "Szukaj" },
-    ...(variant === "marketing" ? [{ href: "/for-business", label: "Dla salonów" }] : []),
-  ];
+  // Marketing (homepage) shows the full B2B/discovery nav; customer discovery /
+  // booking contexts stay intentionally minimal ("Szukaj" only).
+  const isMarketing = variant === "marketing";
+  const links = isMarketing
+    ? [
+        { href: "/search", label: "Szukaj" },
+        { href: "/register?role=business", label: "Zarejestruj salon" },
+        { href: "/pricing", label: "Cennik" },
+        { href: "/careers", label: "Kariera" },
+        { href: "/about", label: "O nas" },
+      ]
+    : [{ href: "/search", label: "Szukaj" }];
+  // "Zaproś i zarób" — the stronger CTA → affiliate section under Careers.
+  const affiliateHref = "/careers#zaros-i-zarob";
+  // Fuller marketing nav needs a later breakpoint so it never overflows the pill.
+  const desktopNavCls = isMarketing ? "hidden lg:flex items-center gap-0.5" : "hidden md:flex items-center gap-0.5";
+  const desktopActionsCls = isMarketing ? "hidden lg:flex items-center gap-1.5" : "hidden md:flex items-center gap-1.5";
+  const toggleCls = isMarketing ? "lg:hidden p-2 rounded-xl nav-link" : "md:hidden p-2 rounded-xl nav-link";
 
   return (
     <header className="fixed top-0 inset-x-0 z-50 px-4 pt-3">
@@ -87,7 +107,7 @@ export function LandingNav({
           </Link>
 
           {/* Desktop nav */}
-          <nav className="hidden md:flex items-center gap-0.5">
+          <nav className={desktopNavCls}>
             {links.map((link) => (
               <NavLink key={link.href} href={link.href}>
                 {link.label}
@@ -96,7 +116,12 @@ export function LandingNav({
           </nav>
 
           {/* Actions */}
-          <div className="hidden md:flex items-center gap-1.5">
+          <div className={desktopActionsCls}>
+            {isMarketing && (
+              <Link href={affiliateHref} className="px-3.5 py-2 text-sm font-semibold rounded-xl text-white transition-transform hover:-translate-y-px" style={AFFILIATE_CTA}>
+                Zaproś i zarób
+              </Link>
+            )}
             {auth.status === "authed" ? (
               <ChromeBtn href={auth.dashboardHref}>Mój panel</ChromeBtn>
             ) : auth.status === "guest" ? (
@@ -111,7 +136,7 @@ export function LandingNav({
 
           {/* Mobile toggle */}
           <button
-            className="md:hidden p-2 rounded-xl nav-link"
+            className={toggleCls}
             onClick={() => setIsMobileOpen(!isMobileOpen)}
             aria-label="Menu"
             aria-expanded={isMobileOpen}
@@ -160,6 +185,16 @@ export function LandingNav({
                 ))}
               </div>
               <div className="px-3 pb-3 pt-2 space-y-1.5" style={{ borderTop: "1px solid rgba(203,213,225,0.25)" }}>
+                {isMarketing && (
+                  <Link
+                    href={affiliateHref}
+                    onClick={() => setIsMobileOpen(false)}
+                    className="block w-full text-center px-4 py-2.5 text-sm font-semibold rounded-xl text-white"
+                    style={AFFILIATE_CTA}
+                  >
+                    Zaproś i zarób
+                  </Link>
+                )}
                 {auth.status === "authed" ? (
                   <Link
                     href={auth.dashboardHref}

@@ -4,7 +4,7 @@ import { LandingFooter } from "@/components/layout/landing-footer";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "Cennik — tańsza alternatywa dla salonów",
+  title: "Cennik — System, który zarabia sam na siebie",
   description:
     "Przejrzysty cennik TermCatch: cztery plany od 99 zł/mies. 7 dni za darmo na start. Pierwsze 100 salonów — dodatkowo 3 miesiące bez opłat.",
   alternates: { canonical: "/pricing" },
@@ -220,7 +220,7 @@ export default function PricingPage() {
               className="text-5xl font-bold mb-4"
               style={{ letterSpacing: "-0.04em", color: "#0F172A" }}
             >
-              Tańsza alternatywa{" "}
+              System, który{" "}
               <span
                 style={{
                   background: "linear-gradient(135deg, #1E293B 0%, #334155 50%, #1E293B 100%)",
@@ -229,7 +229,7 @@ export default function PricingPage() {
                   backgroundClip: "text",
                 }}
               >
-                dla salonów.
+                zarabia sam na siebie.
               </span>
             </h1>
             <p className="text-lg" style={{ color: "#64748B" }}>
@@ -262,7 +262,7 @@ export default function PricingPage() {
               </div>
               <div className="flex-1">
                 <p className="font-bold text-base" style={{ color: "#0F172A", letterSpacing: "-0.02em" }}>
-                  Pierwsze 100 salonów otrzymuje 3 miesiące bez opłat.
+                  Pierwsze 3 miesiące bez opłat z kodem WELCOME — dla pierwszych 100 salonów.
                 </p>
                 <p className="text-sm mt-0.5" style={{ color: "#64748B" }}>
                   Pełny plan, zero kosztów, bez karty. Wystarczy rejestracja salonu.

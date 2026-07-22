@@ -19,7 +19,7 @@ export const metadata: Metadata = {
     default: "TermCatch — Rezerwacje online dla salonów beauty | Fryzjer, barber, masaż",
   },
   description:
-    "Rezerwacja wizyt online w salonach beauty: fryzjer, barber, paznokcie, masaż. Umów wizytę 24/7 w Krakowie i całej Polsce. Tańsza alternatywa dla salonów.",
+    "Rezerwacja wizyt online w salonach beauty: fryzjer, barber, paznokcie, masaż. Umów wizytę 24/7 w Krakowie i całej Polsce. System, który zarabia sam na siebie.",
   keywords: [
     "rezerwacja wizyt online",
     "umów wizytę online",

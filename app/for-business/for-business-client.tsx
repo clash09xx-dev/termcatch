@@ -314,8 +314,7 @@ export function ForBusinessClient() {
               className="text-6xl sm:text-7xl xl:text-8xl font-bold leading-[0.95] text-slate-900"
               style={{ letterSpacing: "-0.04em" }}
             >
-              Mniej<br />
-              telefonów.<br />
+              Mniej administracji.<br />
               <span className="italic font-bold" style={{
                 background: "linear-gradient(135deg, #1E293B 0%, #334155 50%, #1E293B 100%)",
                 WebkitBackgroundClip: "text",
@@ -355,19 +354,6 @@ export function ForBusinessClient() {
                   <svg className="ml-2 w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
                     <path d="m9 18 6-6-6-6" />
                   </svg>
-                </Link>
-              </motion.div>
-              <motion.div
-                whileHover={{ scale: 1.015, y: -1 }}
-                whileTap={{ scale: 0.978 }}
-                transition={{ type: "spring", stiffness: 420, damping: 26 }}
-              >
-                <Link
-                  href="/search"
-                  className="inline-flex items-center justify-center px-7 py-3.5 font-semibold text-sm rounded-xl text-slate-600"
-                  style={G.innerBtn}
-                >
-                  Obejrzyj demo
                 </Link>
               </motion.div>
             </motion.div>

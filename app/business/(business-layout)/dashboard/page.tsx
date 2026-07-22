@@ -344,7 +344,9 @@ export default async function BusinessDashboardPage() {
           {/* Booking link */}
           <GlassCard className="p-4">
             <Overline className="mb-2">Link do rezerwacji</Overline>
-            <div className="px-3 py-2 rounded-xl text-xs text-slate-600 truncate tabular-nums mb-2.5" style={CHIP}>/b/{business.slug}</div>
+            <div className="px-3 py-2 rounded-xl text-xs text-slate-600 truncate mb-2.5" style={CHIP}>
+              {(process.env.NEXT_PUBLIC_APP_URL ?? "https://termcatch.com")}/b/{business.slug}
+            </div>
             <GlassLink href={`/b/${business.slug}`} size="sm" className="w-full">Podgląd profilu</GlassLink>
           </GlassCard>
         </div>

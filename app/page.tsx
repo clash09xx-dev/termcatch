@@ -460,6 +460,30 @@ export default function HomePage() {
         </motion.div>
       </section>
 
+      {/* ── "Prowadzisz salon?" — business CTA above the category ticker ── */}
+      <section className="px-4 sm:px-6 pt-10 pb-3">
+        <div
+          className="max-w-4xl mx-auto rounded-2xl px-6 py-6 sm:px-8 sm:py-7 flex flex-col sm:flex-row items-center gap-4 sm:gap-6"
+          style={G.panel}
+        >
+          <div className="flex-1 text-center sm:text-left">
+            <p className="text-lg font-bold text-slate-900" style={{ letterSpacing: "-0.02em" }}>
+              Prowadzisz salon?
+            </p>
+            <p className="text-sm text-slate-500 mt-1 leading-relaxed">
+              Zarejestruj salon już teraz. Pierwsze 3 miesiące bez opłat z kodem WELCOME.
+            </p>
+          </div>
+          <Link
+            href="/register?role=business&promo=WELCOME"
+            className="btn-spring whitespace-nowrap inline-flex items-center justify-center px-6 py-3 text-sm font-semibold rounded-xl"
+            style={G.inkBtn}
+          >
+            Zarejestruj salon
+          </Link>
+        </div>
+      </section>
+
       {/* ── MARQUEE TICKER ───────────────────────────────────────── */}
       <div
         className="py-4 marquee-wrap"

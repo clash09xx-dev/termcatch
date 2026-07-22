@@ -13,6 +13,41 @@ const EMPTY: Form = { name: "", description: "", duration: "60", price: "", disc
 const toForm = (s: Service): Form => ({ name: s.name, description: s.description ?? "", duration: String(s.duration), price: String(s.price), discountedPrice: s.discountedPrice ? String(s.discountedPrice) : "", isActive: s.isActive });
 const INPUT = "input-glass w-full px-3.5 py-2.5 text-sm rounded-xl outline-none text-slate-800 placeholder:text-slate-400";
 
+// Restrained, consistent service-FAMILY icons (not one per service). Picks a
+// glyph from the service name's family with a safe generic fallback.
+function serviceGlyphPath(name: string): React.ReactNode {
+  const n = name.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/ł/g, "l");
+  const has = (...ks: string[]) => ks.some((k) => n.includes(k));
+  if (has("fryzj", "strzy", "wlos", "koloryz", "farbowan", "barber", "broda", "zarost", "golen"))
+    return (<><circle cx="6" cy="6" r="3" /><circle cx="6" cy="18" r="3" /><path d="M20 4 8.12 15.88" /><path d="M14.47 14.48 20 20" /><path d="M8.12 8.12 12 12" /></>);
+  if (has("paznok", "manicure", "pedicure", "hybryd", "zel", "tips"))
+    return (<><path d="M6 3h12l4 6-10 12L2 9l4-6z" /><path d="M2 9h20" /></>);
+  if (has("masaz", "relaks", "joga", "yoga", "pilates", "fizjo", "rehab", "trener", "trening"))
+    return (<><path d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.48 19 2c1 2 2 4.18 2 8 0 5.5-4.78 10-10 10Z" /><path d="M2 21c0-3 1.85-5.36 5.08-6C9.5 14.52 12 13 13 12" /></>);
+  if (has("brwi", "rzes", "lash", "brow", "henna", "laminac"))
+    return (<><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z" /><circle cx="12" cy="12" r="3" /></>);
+  if (has("makijaz", "makeup", "wizaz", "twarz", "peeling", "oczyszcz", "kosmetolog", "mezoterapi", "depilac", "wosk", "spa"))
+    return (<path d="M12 3l1.9 5.6a2 2 0 0 0 1.3 1.3L21 12l-5.8 2.1a2 2 0 0 0-1.3 1.3L12 21l-1.9-5.6a2 2 0 0 0-1.3-1.3L3 12l5.8-2.1a2 2 0 0 0 1.3-1.3L12 3z" />);
+  if (has("tatuaz", "tattoo", "piercing", "kolczyk", "dziar"))
+    return (<><path d="M12 20h9" /><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z" /></>);
+  // Generic fallback — a tag.
+  return (<><path d="M20.59 13.41 13.42 20.6a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82Z" /><circle cx="7" cy="7" r="1.5" /></>);
+}
+
+function ServiceGlyph({ name, active }: { name: string; active: boolean }) {
+  return (
+    <span
+      className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0"
+      style={{ background: active ? "rgba(148,163,184,0.16)" : "rgba(203,213,225,0.14)", border: "1px solid rgba(203,213,225,0.45)" }}
+      aria-hidden="true"
+    >
+      <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke={active ? "#334155" : "#94A3B8"} strokeWidth={1.7} strokeLinecap="round" strokeLinejoin="round">
+        {serviceGlyphPath(name)}
+      </svg>
+    </span>
+  );
+}
+
 export function ServicesClient({ services: initial }: Props) {
   const searchParams = useSearchParams();
   const [services, setServices] = useState(initial);
@@ -127,7 +162,7 @@ export function ServicesClient({ services: initial }: Props) {
                   className="card-hover-lift rounded-2xl px-4 py-3.5 flex items-center gap-4"
                   style={{ background: "rgba(255,255,255,0.8)", border: "1px solid rgba(203,213,225,0.45)", boxShadow: "0 0 0 0.5px rgba(203,213,225,0.2), inset 0 1px 0 rgba(255,255,255,0.92)" }}
                 >
-                  <div className="w-[3px] h-10 rounded-full flex-shrink-0" style={{ background: s.isActive ? "linear-gradient(180deg,#1E293B,#0F172A)" : "rgba(203,213,225,0.6)" }} />
+                  <ServiceGlyph name={s.name} active={s.isActive} />
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2">
                       <p className="text-[15px] font-semibold text-slate-900 truncate">{s.name}</p>
