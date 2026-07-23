@@ -1,8 +1,47 @@
-import { ServiceCategory } from "@prisma/client";
+import type { ServiceCategory } from "@prisma/client";
 
 // ─── Single source of truth: enum ↔ slug ↔ label ────────────────────────────
 // Every category link, filter, and label on the public site goes through
 // this module so URLs, the Prisma enum, and Polish labels can never drift.
+//
+// IMPORTANT: this module is imported by CLIENT components (search filters,
+// onboarding, profile). It therefore imports ServiceCategory as a TYPE ONLY —
+// pulling the Prisma enum *value* into a client bundle makes Turbopack try to
+// resolve `.prisma/client/index-browser` and crashes `/search` in dev. The
+// runtime membership check uses SERVICE_CATEGORY_VALUES below instead, which a
+// compile-time guard keeps exactly in sync with the Prisma enum.
+
+// Client-safe list of every ServiceCategory enum member (plain string literals,
+// no @prisma/client runtime import). Keep in the schema's order.
+export const SERVICE_CATEGORY_VALUES = [
+  "HAIR_SALON", "BARBER", "NAIL_SALON", "MASSAGE", "SPA", "BEAUTY_CLINIC", "TATTOO",
+  "PIERCING", "EYEBROWS_LASHES", "MAKEUP", "TANNING",
+  "PHYSIOTHERAPY", "PERSONAL_TRAINER", "YOGA", "PILATES", "NUTRITIONIST",
+  "PSYCHOLOGIST", "PSYCHIATRIST", "DIETICIAN",
+  "GENERAL_PHYSICIAN", "DENTIST", "DERMATOLOGIST", "GYNECOLOGIST", "OPHTHALMOLOGIST",
+  "ORTHOPEDIST", "PEDIATRICIAN", "CARDIOLOGIST", "NEUROLOGIST", "UROLOGIST", "ENT",
+  "ENDOCRINOLOGIST", "ALLERGOLOGIST", "RHEUMATOLOGIST", "RADIOLOGIST", "VETERINARIAN",
+  "DENTAL_HYGIENIST",
+  "CAR_WASH", "CAR_DETAILING", "MECHANIC", "TIRE_SERVICE", "CAR_INSPECTION", "PARKING",
+  "TENNIS_COURT", "FOOTBALL_PITCH", "BASKETBALL_COURT", "SWIMMING_POOL", "GYM", "GOLF",
+  "SQUASH", "BADMINTON", "CLIMBING_WALL",
+  "TUTOR", "LANGUAGE_SCHOOL", "DRIVING_SCHOOL", "MUSIC_SCHOOL", "ART_CLASSES",
+  "CLEANING", "PLUMBER", "ELECTRICIAN", "HANDYMAN",
+  "PHOTOGRAPHY", "PET_GROOMING", "OTHER",
+] as const;
+
+const SERVICE_CATEGORY_SET = new Set<string>(SERVICE_CATEGORY_VALUES);
+
+// Compile-time drift guard (both directions). If the Prisma enum and the list
+// above diverge, one of these type aliases resolves to a non-`true` type and
+// the build fails — no runtime cost, no client bundle impact.
+type AssertTrue<T extends true> = T;
+type _NoExtraCategory = AssertTrue<
+  [Exclude<(typeof SERVICE_CATEGORY_VALUES)[number], ServiceCategory>] extends [never] ? true : false
+>;
+type _NoMissingCategory = AssertTrue<
+  [Exclude<ServiceCategory, (typeof SERVICE_CATEGORY_VALUES)[number]>] extends [never] ? true : false
+>;
 
 export interface CategoryDef {
   value: ServiceCategory;
@@ -97,7 +136,8 @@ const SLUG_TO_VALUE: Record<string, ServiceCategory> = {
 export function parseCategoryParam(value?: string): ServiceCategory | undefined {
   if (!value) return undefined;
   const upper = value.toUpperCase();
-  if (upper in ServiceCategory) return upper as ServiceCategory;
+  // Client-safe membership check (no Prisma enum value at runtime).
+  if (SERVICE_CATEGORY_SET.has(upper)) return upper as ServiceCategory;
   return SLUG_TO_VALUE[value.toLowerCase()];
 }
 
