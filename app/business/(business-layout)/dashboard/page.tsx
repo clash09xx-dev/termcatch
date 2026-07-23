@@ -8,6 +8,7 @@ import { PublicationStatus } from "@/components/business/publication-status";
 import { validateForPublication } from "@/lib/publication";
 import { bookingUrl } from "@/lib/app-url";
 import { CopyLink } from "@/components/business/copy-link";
+import { OnboardingChecklist, type ChecklistStep } from "@/components/business/onboarding-checklist";
 import { formatCurrency, formatTime, formatDate, formatRelativeTime } from "@/lib/utils";
 import { warsawDateString, warsawDayStartUtc, warsawDayEndUtc, warsawTimeString } from "@/lib/timezone";
 import { redirect } from "next/navigation";
@@ -103,16 +104,15 @@ export default async function BusinessDashboardPage() {
   });
   const weekRevenue = dayRevenue.reduce((a, b) => a + b, 0);
 
-  // Setup completeness (real detection)
-  const setup = [
-    { label: "Godziny otwarcia", done: business.workingHours.some((w) => w.isOpen), href: "/business/hours" },
-    { label: "Pierwsza usługa", done: serviceCount > 0, href: "/business/services?action=new" },
-    { label: "Dodaj zespół", done: staffCount > 0, href: "/business/staff?action=new" },
-    { label: "Udostępnij link", done: false, href: `/b/${business.slug}` },
+  // Guided onboarding checklist (Wave 7) — DB-derived step completion.
+  const hasOpenHours = business.workingHours.some((w) => w.isOpen);
+  const profileComplete = Boolean(business.description?.trim() && business.logoUrl && business.address?.trim());
+  const checklistSteps: ChecklistStep[] = [
+    { key: "service", label: "Dodaj pierwszą usługę", hint: "Klienci rezerwują konkretne usługi.", done: serviceCount > 0, href: "/business/services?action=new" },
+    { key: "employee", label: "Dodaj pierwszego specjalistę", hint: "Przypisz osobę, która obsłuży wizyty.", done: staffCount > 0, href: "/business/staff?action=new" },
+    { key: "hours", label: "Ustaw godziny pracy", hint: "Kiedy przyjmujesz klientów.", done: hasOpenHours, href: "/business/hours" },
+    { key: "profile", label: "Uzupełnij profil salonu", hint: "Logo, opis i adres budują zaufanie.", done: profileComplete, href: "/business/profile" },
   ];
-  const setupDone = setup.filter((s) => s.done).length;
-  // "New" = cannot take bookings yet (no active service or no open hours)
-  const isNew = serviceCount === 0 || !business.workingHours.some((w) => w.isOpen);
 
   // Today's working window → gap-aware timeline (weekday in Warsaw)
   const todayDowIdx = new Date(`${todayStr}T12:00:00Z`).getUTCDay(); // 0=Sun
@@ -159,6 +159,8 @@ export default async function BusinessDashboardPage() {
         requirements={publication.requirements}
       />
 
+      <OnboardingChecklist steps={checklistSteps} bookingUrl={bookingUrl(business.slug)} />
+
       {/* Greeting — a spoken sentence, not a stat grid */}
       <div className="fade-rise">
         <h1 className="text-2xl font-semibold text-slate-900" style={{ letterSpacing: "-0.025em" }}>
@@ -182,37 +184,7 @@ export default async function BusinessDashboardPage() {
       <div className="grid lg:grid-cols-3 gap-5 items-start">
         {/* ── Focal: today (or setup for a new salon) ── */}
         <div className="lg:col-span-2 fade-rise fade-rise-d1">
-          {isNew ? (
-            <GlassCard className="overflow-hidden">
-              <CardHeader title="Zacznij tutaj" action={<span className="text-xs text-slate-400 tabular-nums">{setupDone}/{setup.length}</span>} />
-              <div className="p-5">
-                <div className="flex items-center gap-4 mb-5">
-                  <div className="relative w-14 h-14 flex-shrink-0">
-                    <svg viewBox="0 0 36 36" className="w-14 h-14 -rotate-90">
-                      <circle cx="18" cy="18" r="15" fill="none" stroke="rgba(203,213,225,0.4)" strokeWidth="3" />
-                      <circle cx="18" cy="18" r="15" fill="none" stroke="#0F172A" strokeWidth="3" strokeLinecap="round" strokeDasharray={`${(setupDone / setup.length) * 94.2} 94.2`} />
-                    </svg>
-                    <span className="absolute inset-0 flex items-center justify-center text-xs font-bold text-slate-900 tabular-nums">{setupDone}/{setup.length}</span>
-                  </div>
-                  <div>
-                    <p className="text-[15px] font-semibold text-slate-900">Twój salon jest prawie gotowy</p>
-                    <p className="text-xs text-slate-500 mt-0.5">Dokończ konfigurację, żeby klienci mogli rezerwować online.</p>
-                  </div>
-                </div>
-                <div className="space-y-1.5">
-                  {setup.map((s) => (
-                    <Link key={s.label} href={s.href} className="row-hover flex items-center gap-3 px-3 py-2.5 rounded-xl">
-                      <span className="w-5 h-5 rounded-md flex items-center justify-center flex-shrink-0" style={s.done ? { background: "rgba(16,185,129,0.12)", border: "1px solid rgba(16,185,129,0.3)" } : { background: "rgba(255,255,255,0.7)", border: "1px solid rgba(148,163,184,0.5)" }}>
-                        {s.done && <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="#047857" strokeWidth={3}><path strokeLinecap="round" strokeLinejoin="round" d="m5 13 4 4L19 7" /></svg>}
-                      </span>
-                      <span className={s.done ? "text-sm text-slate-400 line-through" : "text-sm font-medium text-slate-800"}>{s.label}</span>
-                      {!s.done && <svg className="w-3.5 h-3.5 text-slate-300 ml-auto" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}><path d="m9 18 6-6-6-6" /></svg>}
-                    </Link>
-                  ))}
-                </div>
-              </div>
-            </GlassCard>
-          ) : (
+          {(
             <GlassCard className="overflow-hidden">
               <CardHeader title="Dziś" action={<Link href="/business/calendar" className="text-xs font-semibold text-slate-500 hover:text-slate-900 transition-colors">Pełny kalendarz →</Link>} />
               {todayAppointments.length === 0 ? (

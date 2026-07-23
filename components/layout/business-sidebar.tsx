@@ -6,7 +6,7 @@ import { useState } from "react";
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { Wordmark } from "@/components/brand/wordmark";
-import { NAV_GROUPS } from "./business-nav";
+import { navGroupsFor } from "./business-nav";
 import { INK_GRADIENT } from "@/components/ui/glass/tokens";
 
 const PLAN_LABELS: Record<string, string> = {
@@ -19,15 +19,18 @@ const PLAN_LABELS: Record<string, string> = {
 export function BusinessSidebar({
   businessName,
   plan,
+  multiLocation = false,
 }: {
   businessName?: string;
   plan?: string;
+  multiLocation?: boolean;
 } = {}) {
   const pathname = usePathname();
   const [collapsed, setCollapsed] = useState(false);
   const name = businessName ?? "Twój salon";
   const initial = (businessName ?? "T").charAt(0).toUpperCase();
   const planLabel = (plan && PLAN_LABELS[plan]) || "Wczesny dostęp";
+  const navGroups = navGroupsFor({ multiLocation });
 
   return (
     <motion.aside
@@ -70,7 +73,7 @@ export function BusinessSidebar({
 
       {/* Nav */}
       <nav className={cn("flex-1 overflow-y-auto no-scrollbar pb-3", collapsed ? "px-2" : "px-3")}>
-        {NAV_GROUPS.map((group, gi) => (
+        {navGroups.map((group, gi) => (
           <div key={group.label} className={gi > 0 ? "mt-5" : "mt-1"}>
             {collapsed ? (
               <div className="mx-2 mb-2 h-px" style={{ background: "linear-gradient(90deg,transparent,rgba(148,163,184,0.28),transparent)" }} />

@@ -35,6 +35,8 @@ export type EmployeeFormData = {
   avatarUrl?: string;
   color?: string;
   isActive?: boolean;
+  /** Public booking visibility — offered for new online bookings. */
+  isAccepting?: boolean;
   serviceIds?: string[];
 };
 
@@ -70,6 +72,7 @@ export async function createEmployee(data: EmployeeFormData): Promise<StaffMutat
           avatarUrl: data.avatarUrl || null,
           color: data.color ?? "#111827",
           isActive: active,
+          isAccepting: data.isAccepting ?? true,
         },
       });
       const ids = await ownedServiceIds(tx, businessId, data.serviceIds ?? []);
@@ -113,6 +116,7 @@ export async function updateEmployee(id: string, data: Partial<EmployeeFormData>
           ...(data.avatarUrl !== undefined ? { avatarUrl: data.avatarUrl || null } : {}),
           color: data.color,
           isActive: data.isActive,
+          isAccepting: data.isAccepting,
         },
       });
       if (data.serviceIds !== undefined) {

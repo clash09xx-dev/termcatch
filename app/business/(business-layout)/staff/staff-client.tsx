@@ -4,6 +4,7 @@ import { useState, useEffect, useTransition } from "react";
 import { useSearchParams } from "next/navigation";
 import { getInitials, cn } from "@/lib/utils";
 import { createEmployee, updateEmployee, deleteEmployee } from "@/lib/actions/staff";
+import { uploadBusinessImage } from "@/lib/actions/upload";
 import type { Employee, EmployeeService, Service } from "@prisma/client";
 import { PageHeader, GlassCard, EmptyState, InkButton, GlassButton, FormField, HAIRLINE, CHIP } from "@/components/ui/glass";
 import { GlassModal } from "@/components/ui/glass-modal";
@@ -12,11 +13,11 @@ import type { PlanLimitInfo } from "@/lib/entitlements";
 
 type EmpWithServices = Employee & { services: (EmployeeService & { service: Service })[] };
 type Props = { employees: EmpWithServices[]; availableServices: Service[]; weekLoad: Record<string, number> };
-type Form = { firstName: string; lastName: string; email: string; phone: string; title: string; bio: string; color: string; isActive: boolean; serviceIds: string[] };
+type Form = { firstName: string; lastName: string; email: string; phone: string; title: string; bio: string; avatarUrl: string; color: string; isActive: boolean; isAccepting: boolean; serviceIds: string[] };
 
 const COLORS = ["#334155", "#2563eb", "#0891b2", "#16a34a", "#65a30d", "#d97706", "#dc2626", "#db2777", "#7c3aed", "#0f766e", "#b45309", "#64748B"];
-const EMPTY: Form = { firstName: "", lastName: "", email: "", phone: "", title: "", bio: "", color: COLORS[0], isActive: true, serviceIds: [] };
-const toForm = (e: EmpWithServices): Form => ({ firstName: e.firstName, lastName: e.lastName, email: e.email ?? "", phone: e.phone ?? "", title: e.title ?? "", bio: e.bio ?? "", color: e.color, isActive: e.isActive, serviceIds: e.services.map((s) => s.serviceId) });
+const EMPTY: Form = { firstName: "", lastName: "", email: "", phone: "", title: "", bio: "", avatarUrl: "", color: COLORS[0], isActive: true, isAccepting: true, serviceIds: [] };
+const toForm = (e: EmpWithServices): Form => ({ firstName: e.firstName, lastName: e.lastName, email: e.email ?? "", phone: e.phone ?? "", title: e.title ?? "", bio: e.bio ?? "", avatarUrl: e.avatarUrl ?? "", color: e.color, isActive: e.isActive, isAccepting: e.isAccepting, serviceIds: e.services.map((s) => s.serviceId) });
 const INPUT = "input-glass w-full px-3.5 py-2.5 text-sm rounded-xl outline-none text-slate-800 placeholder:text-slate-400";
 
 export function StaffClient({ employees, availableServices, weekLoad }: Props) {
@@ -27,6 +28,25 @@ export function StaffClient({ employees, availableServices, weekLoad }: Props) {
   const [isPending, start] = useTransition();
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [limitInfo, setLimitInfo] = useState<PlanLimitInfo | null>(null);
+  const [uploading, setUploading] = useState(false);
+  const [uploadErr, setUploadErr] = useState("");
+
+  async function onAvatar(file: File | null) {
+    if (!file) return;
+    setUploadErr("");
+    setUploading(true);
+    try {
+      const fd = new FormData();
+      fd.append("file", file);
+      const res = await uploadBusinessImage(fd);
+      if (res.error) setUploadErr(res.error);
+      else if (res.url) set("avatarUrl", res.url);
+    } catch {
+      setUploadErr("Nie udało się przesłać zdjęcia.");
+    } finally {
+      setUploading(false);
+    }
+  }
 
   useEffect(() => { if (searchParams.get("action") === "new") openAdd(); /* eslint-disable-next-line */ }, [searchParams]);
 
@@ -37,7 +57,7 @@ export function StaffClient({ employees, availableServices, weekLoad }: Props) {
 
   function save(e: React.FormEvent) {
     e.preventDefault();
-    const data = { firstName: form.firstName, lastName: form.lastName, email: form.email || undefined, phone: form.phone || undefined, title: form.title || undefined, bio: form.bio || undefined, color: form.color, isActive: form.isActive, serviceIds: form.serviceIds };
+    const data = { firstName: form.firstName, lastName: form.lastName, email: form.email || undefined, phone: form.phone || undefined, title: form.title || undefined, bio: form.bio || undefined, avatarUrl: form.avatarUrl || "", color: form.color, isActive: form.isActive, isAccepting: form.isAccepting, serviceIds: form.serviceIds };
     start(async () => {
       const res = editingId ? await updateEmployee(editingId, data) : await createEmployee(data);
       if (!res.ok) { setLimitInfo(res.limit); return; } // blocked by plan limit — show upgrade dialog
@@ -124,11 +144,33 @@ export function StaffClient({ employees, availableServices, weekLoad }: Props) {
       {/* Editor modal */}
       <GlassModal open={open} onOpenChange={setOpen} title={editingId ? "Edytuj osobę" : "Nowa osoba"} className="max-w-lg">
         <form onSubmit={save} className="space-y-4 mt-2 max-h-[64vh] overflow-y-auto pr-1 -mr-1">
+          {/* Avatar — reuses the secured business-media upload flow */}
+          <div className="flex items-center gap-3">
+            <span className="w-16 h-16 rounded-2xl overflow-hidden flex items-center justify-center flex-shrink-0 text-white font-semibold" style={{ background: form.color }}>
+              {form.avatarUrl ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={form.avatarUrl} alt="" className="w-full h-full object-cover" />
+              ) : (
+                getInitials(form.firstName || "?", form.lastName || "")
+              )}
+            </span>
+            <div>
+              <label className="btn-spring inline-flex items-center px-3 py-1.5 rounded-lg text-xs font-semibold cursor-pointer" style={{ background: "rgba(255,255,255,0.7)", border: "1px solid rgba(203,213,225,0.55)", color: "#334155" }}>
+                {uploading ? "Wgrywanie…" : form.avatarUrl ? "Zmień zdjęcie" : "Dodaj zdjęcie"}
+                <input type="file" accept="image/jpeg,image/png,image/webp" className="hidden" disabled={uploading} onChange={(e) => onAvatar(e.target.files?.[0] ?? null)} />
+              </label>
+              {form.avatarUrl && (
+                <button type="button" onClick={() => set("avatarUrl", "")} className="ml-2 text-xs text-slate-400 hover:text-rose-600">Usuń</button>
+              )}
+              {uploadErr && <p className="text-[11px] mt-1" style={{ color: "#BE123C" }}>{uploadErr}</p>}
+            </div>
+          </div>
           <div className="grid grid-cols-2 gap-3">
             <FormField label="Imię" htmlFor="e-fn"><input id="e-fn" required value={form.firstName} onChange={(ev) => set("firstName", ev.target.value)} className={INPUT} /></FormField>
             <FormField label="Nazwisko" htmlFor="e-ln"><input id="e-ln" required value={form.lastName} onChange={(ev) => set("lastName", ev.target.value)} className={INPUT} /></FormField>
           </div>
           <FormField label="Stanowisko" htmlFor="e-title"><input id="e-title" value={form.title} onChange={(ev) => set("title", ev.target.value)} placeholder="np. Barber, Stylistka" className={INPUT} /></FormField>
+          <FormField label="Opis / bio" htmlFor="e-bio"><textarea id="e-bio" rows={3} value={form.bio} onChange={(ev) => set("bio", ev.target.value)} placeholder="Krótki opis specjalisty — widoczny w publicznym profilu salonu." className={cn(INPUT, "resize-none")} /></FormField>
           <div className="grid grid-cols-2 gap-3">
             <FormField label="E-mail" htmlFor="e-email"><input id="e-email" type="email" value={form.email} onChange={(ev) => set("email", ev.target.value)} className={INPUT} /></FormField>
             <FormField label="Telefon" htmlFor="e-phone"><input id="e-phone" type="tel" value={form.phone} onChange={(ev) => set("phone", ev.target.value)} className={cn(INPUT, "tabular-nums")} /></FormField>
@@ -157,8 +199,17 @@ export function StaffClient({ employees, availableServices, weekLoad }: Props) {
           )}
           <label className="flex items-center justify-between p-3.5 rounded-xl" style={CHIP}>
             <span className="text-sm font-medium text-slate-800">Aktywny</span>
-            <button type="button" role="switch" aria-checked={form.isActive} onClick={() => set("isActive", !form.isActive)} className="relative inline-flex h-6 w-11 items-center rounded-full transition-colors" style={{ background: form.isActive ? "#0F172A" : "rgba(148,163,184,0.45)" }}>
+            <button type="button" role="switch" aria-checked={form.isActive} onClick={() => set("isActive", !form.isActive)} className="relative inline-flex h-6 w-11 items-center rounded-full transition-colors flex-shrink-0" style={{ background: form.isActive ? "#0F172A" : "rgba(148,163,184,0.45)" }}>
               <span className={cn("inline-block h-4 w-4 rounded-full bg-white shadow transition-transform", form.isActive ? "translate-x-6" : "translate-x-1")} />
+            </button>
+          </label>
+          <label className="flex items-center justify-between p-3.5 rounded-xl gap-3" style={CHIP}>
+            <span>
+              <span className="text-sm font-medium text-slate-800">Widoczny przy rezerwacji online</span>
+              <span className="block text-xs text-slate-500 mt-0.5">Klienci mogą wybrać tę osobę w publicznym profilu i rezerwacji.</span>
+            </span>
+            <button type="button" role="switch" aria-checked={form.isAccepting} onClick={() => set("isAccepting", !form.isAccepting)} className="relative inline-flex h-6 w-11 items-center rounded-full transition-colors flex-shrink-0" style={{ background: form.isAccepting ? "#0F172A" : "rgba(148,163,184,0.45)" }}>
+              <span className={cn("inline-block h-4 w-4 rounded-full bg-white shadow transition-transform", form.isAccepting ? "translate-x-6" : "translate-x-1")} />
             </button>
           </label>
           <div className="flex gap-3 pt-1">

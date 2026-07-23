@@ -25,6 +25,16 @@ export type Entitlements = {
   label: string;
 };
 
+/**
+ * Master switch for server-side limit enforcement. OFF by default: until Stripe
+ * is connected and plans are explicitly assigned, NO business is limited — so
+ * existing salons (all currently FREE) keep working exactly as before. Prompt 3
+ * flips ENTITLEMENTS_ENFORCED=true once billing assigns real plans.
+ */
+export function entitlementsEnforced(): boolean {
+  return process.env.ENTITLEMENTS_ENFORCED === "true";
+}
+
 export const PLAN_ENTITLEMENTS: Record<PlanKey, Entitlements> = {
   FREE: { maxEmployees: 1, maxLocations: 1, aiAssistant: "none", label: "Darmowy" },
   SOLO: { maxEmployees: 1, maxLocations: 1, aiAssistant: "none", label: "Solo" },

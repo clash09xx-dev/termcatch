@@ -165,6 +165,9 @@ export default async function AdminDashboardPage() {
         <span className="text-xs font-semibold text-white bg-gray-900 px-2 py-0.5 rounded-full">
           Panel właściciela
         </span>
+        <Link href="/admin/accounts" className="ml-auto text-xs font-medium text-gray-500 hover:text-gray-900">
+          Konta →
+        </Link>
       </header>
 
       <main className="max-w-6xl mx-auto px-4 sm:px-6 py-8 space-y-6">

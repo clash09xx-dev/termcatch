@@ -7,6 +7,7 @@ import { BusinessMobileNav } from "@/components/layout/business-mobile-nav";
 import { AdminViewSwitcher } from "@/components/admin-view-switcher";
 import { CommandPalette } from "@/components/command-palette";
 import { isPlatformAdmin } from "@/lib/is-admin";
+import { multiLocationEnabled } from "@/lib/multi-location";
 
 export default async function BusinessDashboardLayout({
   children,
@@ -31,6 +32,7 @@ export default async function BusinessDashboardLayout({
   const business = dbUser?.ownedBusinesses[0] ?? null;
   const initials =
     `${dbUser?.firstName?.[0] ?? ""}${dbUser?.lastName?.[0] ?? ""}`.toUpperCase() || undefined;
+  const multiLocation = multiLocationEnabled();
 
   return (
     <div className="flex h-screen overflow-hidden" style={{ background: "radial-gradient(ellipse 90% 60% at 10% 0%, rgba(226,232,240,0.40) 0%, transparent 50%), radial-gradient(ellipse 70% 55% at 92% 100%, rgba(203,213,225,0.28) 0%, transparent 55%), radial-gradient(ellipse 50% 40% at 50% 50%, rgba(241,245,249,0.50) 0%, transparent 65%), #F2F7FC" }}>
@@ -38,6 +40,7 @@ export default async function BusinessDashboardLayout({
       <BusinessSidebar
         businessName={business?.name}
         plan={business?.subscriptionPlan}
+        multiLocation={multiLocation}
       />
 
       {/* Main content */}
@@ -48,7 +51,7 @@ export default async function BusinessDashboardLayout({
         </main>
       </div>
 
-      <BusinessMobileNav />
+      <BusinessMobileNav multiLocation={multiLocation} />
       <CommandPalette businessSlug={business?.slug} />
       {(await isPlatformAdmin()) && <AdminViewSwitcher />}
     </div>

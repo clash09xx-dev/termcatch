@@ -213,7 +213,8 @@ export default async function BusinessProfilePage({
         orderBy: { displayOrder: "asc" },
       },
       employees: {
-        where: { isActive: true },
+        // Public visibility: active AND opted-in to online booking (default true).
+        where: { isActive: true, isAccepting: true },
         orderBy: { displayOrder: "asc" },
       },
       workingHours: {
@@ -612,10 +613,11 @@ export default async function BusinessProfilePage({
                         <p className="text-sm font-semibold text-slate-900 truncate">
                           {employee.firstName} {employee.lastName}
                         </p>
-                        {(employee.title || employee.bio) && (
-                          <p className="text-xs text-slate-500 mt-0.5 line-clamp-2">
-                            {employee.title ?? employee.bio}
-                          </p>
+                        {employee.title && (
+                          <p className="text-xs font-medium text-slate-600 mt-0.5 truncate">{employee.title}</p>
+                        )}
+                        {employee.bio && (
+                          <p className="text-xs text-slate-500 mt-0.5 line-clamp-2">{employee.bio}</p>
                         )}
                       </div>
                     </div>

@@ -8,7 +8,7 @@ import type { CSSProperties } from "react";
 type IconProps = { className?: string; style?: CSSProperties };
 type IconFn = (p: IconProps) => React.JSX.Element;
 
-export type NavItem = { href: string; label: string; icon: IconFn };
+export type NavItem = { href: string; label: string; icon: IconFn; flag?: "multiLocation" };
 export type NavGroup = { label: string; items: NavItem[] };
 
 const svg = (children: React.ReactNode): IconFn =>
@@ -48,6 +48,7 @@ const AnalyticsIcon = svg(<><path d="M4 20V4" /><path d="M4 20h16" /><path d="M8
 const ReviewIcon = svg(<><path d="M12 3.5l2.4 4.9 5.4.8-3.9 3.8.9 5.4-4.8-2.5-4.8 2.5.9-5.4L3.2 9.2l5.4-.8Z" /></>);
 const PaymentsIcon = svg(<><rect x="2.5" y="5" width="19" height="14" rx="2.5" /><path d="M2.5 9.5h19" /><path d="M6 15h3" /></>);
 const SettingsIcon = svg(<><circle cx="12" cy="12" r="3" /><path d="M12 2.5v2.2M12 19.3v2.2M4.2 7l1.9 1.1M17.9 15.9l1.9 1.1M4.2 17l1.9-1.1M17.9 8.1l1.9-1.1" /></>);
+const LocationsIcon = svg(<><path d="M12 21s-6-5.686-6-10a6 6 0 0 1 12 0c0 4.314-6 10-6 10Z" /><circle cx="12" cy="11" r="2" /></>);
 
 export const NAV_GROUPS: NavGroup[] = [
   {
@@ -82,10 +83,24 @@ export const NAV_GROUPS: NavGroup[] = [
       { href: "/business/analytics", label: "Analityka", icon: AnalyticsIcon },
       { href: "/business/reviews", label: "Opinie", icon: ReviewIcon },
       { href: "/business/payments", label: "Płatności", icon: PaymentsIcon },
+      // Gated by MULTI_LOCATION_ENABLED — hidden (filtered) unless the flag is on.
+      { href: "/business/locations", label: "Lokalizacje", icon: LocationsIcon, flag: "multiLocation" },
       { href: "/business/settings", label: "Ustawienia", icon: SettingsIcon },
     ],
   },
 ];
+
+/**
+ * Nav groups with flag-gated items filtered out. Items carrying `flag:
+ * "multiLocation"` appear only when multi-location is enabled, so with the flag
+ * off the nav is byte-identical to before.
+ */
+export function navGroupsFor(flags: { multiLocation: boolean }): NavGroup[] {
+  return NAV_GROUPS.map((g) => ({
+    ...g,
+    items: g.items.filter((i) => (i.flag === "multiLocation" ? flags.multiLocation : true)),
+  })).filter((g) => g.items.length > 0);
+}
 
 export const ALL_NAV_ITEMS: NavItem[] = NAV_GROUPS.flatMap((g) => g.items);
 
@@ -108,6 +123,7 @@ export const PAGE_META: Record<string, { title: string; action?: PageAction }> =
   "/business/analytics": { title: "Analityka" },
   "/business/reviews": { title: "Opinie" },
   "/business/payments": { title: "Płatności" },
+  "/business/locations": { title: "Lokalizacje", action: { label: "Dodaj lokalizację", href: "/business/locations?action=new", plus: true } },
   "/business/settings": { title: "Ustawienia" },
   "/business/profile": { title: "Profil salonu" },
 };

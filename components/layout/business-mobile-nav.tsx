@@ -5,18 +5,18 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
-import { NAV_GROUPS } from "./business-nav";
+import { navGroupsFor } from "./business-nav";
 import { sheetUp, overlayFade, useReducedMotion } from "@/lib/motion";
 import { INK_GRADIENT } from "@/components/ui/glass/tokens";
 
-// Bottom bar = the three daily-work destinations + a "Więcej" sheet for the rest.
-const PRIMARY = NAV_GROUPS[0].items; // Praca: Dziś, Kalendarz, Klienci
-const MORE_GROUPS = NAV_GROUPS.slice(1); // Oferta, Narzędzia, Firma
-
-export function BusinessMobileNav() {
+export function BusinessMobileNav({ multiLocation = false }: { multiLocation?: boolean } = {}) {
   const pathname = usePathname();
   const reduceMotion = useReducedMotion();
   const [moreOpen, setMoreOpen] = useState(false);
+  const navGroups = navGroupsFor({ multiLocation });
+  // Bottom bar = the three daily-work destinations + a "Więcej" sheet for the rest.
+  const PRIMARY = navGroups[0].items; // Praca: Dziś, Kalendarz, Klienci
+  const MORE_GROUPS = navGroups.slice(1); // Oferta, Narzędzia, Firma
 
   return (
     <>

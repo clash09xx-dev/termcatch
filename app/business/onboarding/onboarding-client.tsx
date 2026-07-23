@@ -141,8 +141,10 @@ export function OnboardingClient({ ownerName }: { ownerName: string }) {
     startTransition(async () => {
       try {
         await createBusiness(data);
-        // Hard navigation — the client router cache would bounce back here
-        window.location.assign("/business/dashboard");
+        // Hard navigation — the client router cache would bounce back here.
+        // Plan selection is the next step (Wave 7); it hands off to Stripe when
+        // billing is configured, otherwise continues to the dashboard.
+        window.location.assign("/business/onboarding/plan");
       } catch (err) {
         const e = err as { message?: string };
         setError(e.message ?? "Coś poszło nie tak. Spróbuj ponownie.");

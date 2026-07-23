@@ -82,8 +82,13 @@ export async function uploadBusinessImage(
   // referenced by the saved logo/cover are always protected; beyond that we
   // keep a few newest leftovers so a not-yet-saved re-upload can't be lost.
   try {
+    // Also protect employee avatars stored under this business (reused flow).
+    const empAvatars = await prisma.employee.findMany({
+      where: { businessId: business.id, NOT: { avatarUrl: null } },
+      select: { avatarUrl: true },
+    });
     const referenced = new Set(
-      [business.logoUrl, business.coverImageUrl, publicUrl]
+      [business.logoUrl, business.coverImageUrl, publicUrl, ...empAvatars.map((e) => e.avatarUrl)]
         .filter((u): u is string => !!u)
         .map((u) => u.split(`/${BUCKET}/`)[1])
         .filter(Boolean)

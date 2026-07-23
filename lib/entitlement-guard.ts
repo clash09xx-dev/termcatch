@@ -4,17 +4,30 @@
 // serializes concurrent create/reactivate requests for the SAME business, so two
 // simultaneous requests cannot both slip past the limit.
 
-import type { Prisma } from "@prisma/client";
-import { planKeyFromEnum, withinLimit, planLimitInfo, PlanLimitError } from "@/lib/entitlements";
+import type { Prisma, PrismaPromise } from "@prisma/client";
+import { entitlementsEnforced, planKeyFromEnum, withinLimit, planLimitInfo, PlanLimitError, type PlanKey } from "@/lib/entitlements";
 
-async function lockAndPlan(tx: Prisma.TransactionClient, businessId: string) {
+/**
+ * The plan to enforce for this business, or `null` to SKIP enforcement entirely.
+ * Enforcement is skipped unless (1) the ENTITLEMENTS_ENFORCED flag is on AND
+ * (2) the business has an explicitly-assigned Stripe subscription. This is the
+ * billing-safety guard: existing FREE salons (no subscription) are never blocked.
+ * Only acquires the row lock when it will actually enforce.
+ */
+async function planToEnforce(tx: Prisma.TransactionClient, businessId: string): Promise<PlanKey | null> {
+  if (!entitlementsEnforced()) return null;
   // Row lock — serializes concurrent limit checks for this business.
-  await tx.$queryRaw`SELECT id FROM businesses WHERE id = ${businessId} FOR UPDATE`;
+  await (tx.$queryRaw`SELECT id FROM businesses WHERE id = ${businessId} FOR UPDATE` as PrismaPromise<unknown>);
   const biz = await tx.business.findUnique({
     where: { id: businessId },
-    select: { subscriptionPlan: true },
+    select: {
+      subscriptionPlan: true,
+      // An explicitly-assigned plan == a real Stripe subscription exists.
+      subscriptions: { where: { NOT: { stripeSubscriptionId: null } }, select: { id: true }, take: 1 },
+    },
   });
-  return planKeyFromEnum(biz?.subscriptionPlan ?? null);
+  if (!biz || biz.subscriptions.length === 0) return null; // no assigned plan → grandfathered
+  return planKeyFromEnum(biz.subscriptionPlan);
 }
 
 /**
@@ -27,7 +40,8 @@ export async function assertCanAddEmployee(
   businessId: string,
   excludeId?: string
 ) {
-  const plan = await lockAndPlan(tx, businessId);
+  const plan = await planToEnforce(tx, businessId);
+  if (!plan) return; // enforcement skipped (flag off or no assigned plan)
   const activeCount = await tx.employee.count({
     where: { businessId, isActive: true, ...(excludeId ? { id: { not: excludeId } } : {}) },
   });
@@ -43,11 +57,10 @@ export async function assertCanAddEmployee(
 export async function assertCanAddLocation(
   tx: Prisma.TransactionClient,
   businessId: string,
-  countActive: (tx: Prisma.TransactionClient) => Promise<number>,
-  excludeId?: string
+  countActive: (tx: Prisma.TransactionClient) => Promise<number>
 ) {
-  const plan = await lockAndPlan(tx, businessId);
-  void excludeId;
+  const plan = await planToEnforce(tx, businessId);
+  if (!plan) return; // enforcement skipped (flag off or no assigned plan)
   const activeCount = await countActive(tx);
   if (!withinLimit(plan, "location", activeCount + 1)) {
     throw new PlanLimitError(planLimitInfo("location", plan, activeCount));

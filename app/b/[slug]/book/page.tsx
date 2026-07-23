@@ -32,7 +32,8 @@ export default async function BookPage({
         orderBy: { displayOrder: "asc" },
       },
       employees: {
-        where: { isActive: true },
+        // Only staff opted-in to online booking are selectable publicly.
+        where: { isActive: true, isAccepting: true },
         orderBy: { displayOrder: "asc" },
       },
       workingHours: {
