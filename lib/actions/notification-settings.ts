@@ -7,7 +7,10 @@ import { getServerUser } from "@/lib/supabase/server";
 import { normalizePhone } from "@/lib/messaging";
 import {
   saveBusinessNotificationSettings,
+  SALON_EVENTS,
   type BusinessNotificationSettings,
+  type EventChannels,
+  type SalonEventKey,
 } from "@/lib/notification-settings";
 
 export type NotificationSettingsState = {
@@ -41,12 +44,23 @@ export async function updateNotificationSettingsAction(
     return { error: "Podaj prawidłowy numer telefonu dla WhatsApp." };
   }
 
+  // Per-event × channel matrix — field names: `ev_<eventKey>_<channel>`.
+  const events = SALON_EVENTS.reduce((acc, e) => {
+    acc[e.key] = {
+      inApp: formData.get(`ev_${e.key}_inApp`) === "on",
+      email: formData.get(`ev_${e.key}_email`) === "on",
+      sms: formData.get(`ev_${e.key}_sms`) === "on",
+    };
+    return acc;
+  }, {} as Record<SalonEventKey, EventChannels>);
+
   const settings: BusinessNotificationSettings = {
     emailEnabled: formData.get("emailEnabled") === "on",
     smsEnabled,
     smsPhone,
     whatsappEnabled,
     whatsappPhone,
+    events,
   };
 
   const ok = await saveBusinessNotificationSettings(business.id, settings);

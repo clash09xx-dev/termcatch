@@ -15,25 +15,49 @@ import {
 } from "@/lib/email";
 import { sendSms, sendWhatsApp } from "@/lib/messaging";
 import { sendTransactionalSms, type SmsTemplate } from "@/lib/sms";
-import { getBusinessNotificationSettings } from "@/lib/notification-settings";
+import { getBusinessNotificationSettings, salonWants, type SalonEventKey } from "@/lib/notification-settings";
 import { isPubliclyVisible } from "@/lib/publication";
+import { getAppUrl } from "@/lib/app-url";
 import { resolveBookingAddons, type AddonSelection } from "@/lib/booking-addons";
 import { computeBookingTotals, evaluateCoupon } from "@/lib/booking-pricing";
 
-/** SMS/WhatsApp do salonu zgodnie z jego preferencjami — nigdy nie rzuca. */
-async function notifySalonChannels(businessId: string, message: string) {
+/** SMS/WhatsApp to the salon per its per-event preferences — never throws. */
+async function notifySalonChannels(businessId: string, message: string, event: SalonEventKey) {
   try {
     const { settings } = await getBusinessNotificationSettings(businessId);
     const jobs: Promise<boolean>[] = [];
-    if (settings.smsEnabled && settings.smsPhone) {
-      jobs.push(sendSms(settings.smsPhone, message));
-    }
+    if (salonWants(settings, event, "sms")) jobs.push(sendSms(settings.smsPhone, message));
     if (settings.whatsappEnabled && settings.whatsappPhone) {
       jobs.push(sendWhatsApp(settings.whatsappPhone, message));
     }
     if (jobs.length) await Promise.allSettled(jobs);
   } catch (err) {
     console.error("[notifySalonChannels]", err);
+  }
+}
+
+/** Salon email per its per-event preference (previously emailEnabled was never
+ *  consulted). `send` builds the actual email. Never throws. */
+async function notifySalonEmail(businessId: string, event: SalonEventKey, send: () => Promise<unknown>) {
+  try {
+    const { settings } = await getBusinessNotificationSettings(businessId);
+    if (salonWants(settings, event, "email")) await send();
+  } catch (err) {
+    console.error("[notifySalonEmail]", err);
+  }
+}
+
+/** Owner in-app notification per its per-event preference. Never throws. */
+async function notifySalonInApp(
+  businessId: string,
+  event: SalonEventKey,
+  params: { userId: string; type: NotificationType; title: string; body: string; data?: Record<string, string> }
+) {
+  try {
+    const { settings } = await getBusinessNotificationSettings(businessId);
+    if (salonWants(settings, event, "inApp")) await notify({ ...params, businessId });
+  } catch (err) {
+    console.error("[notifySalonInApp]", err);
   }
 }
 import { formatDate, formatCurrency } from "@/lib/utils";
@@ -64,7 +88,7 @@ async function getOwnedBusinessId(): Promise<string> {
   return business.id;
 }
 
-function notify(params: {
+async function notify(params: {
   userId: string;
   businessId?: string;
   type: NotificationType;
@@ -72,6 +96,24 @@ function notify(params: {
   body: string;
   data?: Record<string, string>;
 }) {
+  // Soft idempotency: skip an identical in-app notification created in the last
+  // 5 minutes so a retried event can't duplicate the row. (A hardened unique
+  // dedupeKey column is a future schema addition.)
+  const recent = await prisma.notification
+    .findFirst({
+      where: {
+        userId: params.userId,
+        type: params.type,
+        channel: "IN_APP",
+        title: params.title,
+        body: params.body,
+        createdAt: { gte: new Date(Date.now() - 5 * 60_000) },
+      },
+      select: { id: true },
+    })
+    .catch(() => null);
+  if (recent) return recent;
+
   return prisma.notification.create({
     data: {
       userId: params.userId,
@@ -272,13 +314,12 @@ export async function createAppointment(data: CreateAppointmentInput) {
       body: `${service.name} w ${business.name}, ${slotLabel}. Salon potwierdzi Twoją wizytę.`,
       data: { appointmentId: appointment.id },
     }),
-    notify({
+    notifySalonInApp(business.id, "newBooking", {
       userId: business.ownerId,
-      businessId: business.id,
       type: "APPOINTMENT_BOOKED",
       title: "Nowa rezerwacja",
       body: `${customer.firstName} ${customer.lastName} — ${service.name}, ${slotLabel}.`,
-      data: { appointmentId: appointment.id },
+      data: { appointmentId: appointment.id, link: "/business/calendar" },
     }),
     sendBookingRequestEmail({
       to: customer.email,
@@ -287,18 +328,21 @@ export async function createAppointment(data: CreateAppointmentInput) {
       slotLabel,
       priceLabel: formatCurrency(appointment.price),
     }),
-    business.email
-      ? sendNewBookingNotificationEmail({
-          to: business.email,
-          businessName: business.name,
-          serviceName: service.name,
-          slotLabel,
-          customerName: `${customer.firstName} ${customer.lastName}`,
-        })
-      : Promise.resolve(),
+    notifySalonEmail(business.id, "newBooking", () =>
+      business.email
+        ? sendNewBookingNotificationEmail({
+            to: business.email,
+            businessName: business.name,
+            serviceName: service.name,
+            slotLabel,
+            customerName: `${customer.firstName} ${customer.lastName}`,
+          })
+        : Promise.resolve()
+    ),
     notifySalonChannels(
       business.id,
-      `TermCatch: nowa rezerwacja — ${service.name}, ${slotLabel}, ${customer.firstName} ${customer.lastName}. Potwierdź w panelu: ${process.env.NEXT_PUBLIC_APP_URL ?? "https://termcatch.com"}/business/dashboard`
+      `TermCatch: nowa rezerwacja — ${service.name}, ${slotLabel}, ${customer.firstName} ${customer.lastName}. Potwierdź w panelu: ${getAppUrl()}/business/dashboard`,
+      "newBooking"
     ),
     customerBookingSms({
       customer,
@@ -402,13 +446,12 @@ export async function rescheduleAppointment(input: {
   const newSlotLabel = describeSlot(newStart);
 
   await Promise.allSettled([
-    notify({
+    notifySalonInApp(appointment.business.id, "reschedule", {
       userId: appointment.business.ownerId,
-      businessId: appointment.business.id,
       type: "APPOINTMENT_BOOKED",
       title: "Wizyta przełożona",
       body: `${customer.firstName} ${customer.lastName} przełożył(a) wizytę (${appointment.service.name}) z ${oldSlotLabel} na ${newSlotLabel}. Potwierdź nowy termin.`,
-      data: { appointmentId: appointment.id },
+      data: { appointmentId: appointment.id, link: "/business/calendar" },
     }),
     notify({
       userId: customer.id,
@@ -418,19 +461,22 @@ export async function rescheduleAppointment(input: {
       body: `${appointment.service.name} w ${appointment.business.name} — nowy termin: ${newSlotLabel}. Salon potwierdzi zmianę.`,
       data: { appointmentId: appointment.id },
     }),
-    appointment.business.email
-      ? sendBookingRescheduleEmail({
-          to: appointment.business.email,
-          businessName: appointment.business.name,
-          serviceName: appointment.service.name,
-          slotLabel: newSlotLabel,
-          oldSlotLabel,
-          customerName: `${customer.firstName} ${customer.lastName}`,
-        })
-      : Promise.resolve(),
+    notifySalonEmail(appointment.business.id, "reschedule", () =>
+      appointment.business.email
+        ? sendBookingRescheduleEmail({
+            to: appointment.business.email,
+            businessName: appointment.business.name,
+            serviceName: appointment.service.name,
+            slotLabel: newSlotLabel,
+            oldSlotLabel,
+            customerName: `${customer.firstName} ${customer.lastName}`,
+          })
+        : Promise.resolve()
+    ),
     notifySalonChannels(
       appointment.business.id,
-      `TermCatch: wizyta przełożona — ${appointment.service.name} z ${oldSlotLabel} na ${newSlotLabel}. Potwierdź nowy termin w panelu.`
+      `TermCatch: wizyta przełożona — ${appointment.service.name} z ${oldSlotLabel} na ${newSlotLabel}. Potwierdź nowy termin w panelu.`,
+      "reschedule"
     ),
     customerBookingSms({
       customer,
@@ -500,26 +546,28 @@ export async function cancelAppointment(appointmentId: string) {
   });
 
   await Promise.allSettled([
-    notify({
+    notifySalonInApp(appointment.business.id, "cancellation", {
       userId: appointment.business.ownerId,
-      businessId: appointment.business.id,
       type: "APPOINTMENT_CANCELLED",
       title: "Rezerwacja anulowana",
       body: `${customer.firstName} ${customer.lastName} anulował(a) wizytę: ${appointment.service.name}, ${describeSlot(appointment.startTime)}.`,
-      data: { appointmentId },
+      data: { appointmentId, link: "/business/calendar" },
     }),
-    appointment.business.email
-      ? sendBookingCancellationEmail({
-          to: appointment.business.email,
-          businessName: appointment.business.name,
-          serviceName: appointment.service.name,
-          slotLabel: describeSlot(appointment.startTime),
-          cancelledBy: "customer",
-        })
-      : Promise.resolve(),
+    notifySalonEmail(appointment.business.id, "cancellation", () =>
+      appointment.business.email
+        ? sendBookingCancellationEmail({
+            to: appointment.business.email,
+            businessName: appointment.business.name,
+            serviceName: appointment.service.name,
+            slotLabel: describeSlot(appointment.startTime),
+            cancelledBy: "customer",
+          })
+        : Promise.resolve()
+    ),
     notifySalonChannels(
       appointment.business.id,
-      `TermCatch: klient anulował wizytę — ${appointment.service.name}, ${describeSlot(appointment.startTime)}. Termin jest znów wolny.`
+      `TermCatch: klient anulował wizytę — ${appointment.service.name}, ${describeSlot(appointment.startTime)}. Termin jest znów wolny.`,
+      "cancellation"
     ),
     customerBookingSms({
       customer,

@@ -7,6 +7,8 @@ import { createEmployee, updateEmployee, deleteEmployee } from "@/lib/actions/st
 import type { Employee, EmployeeService, Service } from "@prisma/client";
 import { PageHeader, GlassCard, EmptyState, InkButton, GlassButton, FormField, HAIRLINE, CHIP } from "@/components/ui/glass";
 import { GlassModal } from "@/components/ui/glass-modal";
+import { PlanLimitDialog } from "@/components/business/plan-limit-dialog";
+import type { PlanLimitInfo } from "@/lib/entitlements";
 
 type EmpWithServices = Employee & { services: (EmployeeService & { service: Service })[] };
 type Props = { employees: EmpWithServices[]; availableServices: Service[]; weekLoad: Record<string, number> };
@@ -24,6 +26,7 @@ export function StaffClient({ employees, availableServices, weekLoad }: Props) {
   const [form, setForm] = useState<Form>(EMPTY);
   const [isPending, start] = useTransition();
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [limitInfo, setLimitInfo] = useState<PlanLimitInfo | null>(null);
 
   useEffect(() => { if (searchParams.get("action") === "new") openAdd(); /* eslint-disable-next-line */ }, [searchParams]);
 
@@ -35,10 +38,20 @@ export function StaffClient({ employees, availableServices, weekLoad }: Props) {
   function save(e: React.FormEvent) {
     e.preventDefault();
     const data = { firstName: form.firstName, lastName: form.lastName, email: form.email || undefined, phone: form.phone || undefined, title: form.title || undefined, bio: form.bio || undefined, color: form.color, isActive: form.isActive, serviceIds: form.serviceIds };
-    start(async () => { if (editingId) await updateEmployee(editingId, data); else await createEmployee(data); window.location.href = "/business/staff"; });
+    start(async () => {
+      const res = editingId ? await updateEmployee(editingId, data) : await createEmployee(data);
+      if (!res.ok) { setLimitInfo(res.limit); return; } // blocked by plan limit — show upgrade dialog
+      window.location.href = "/business/staff";
+    });
   }
   function remove(id: string) { if (!confirm("Usunąć tego pracownika?")) return; setDeletingId(id); start(async () => { await deleteEmployee(id); window.location.href = "/business/staff"; }); }
-  function toggle(e: EmpWithServices) { start(async () => { await updateEmployee(e.id, { isActive: !e.isActive }); window.location.href = "/business/staff"; }); }
+  function toggle(e: EmpWithServices) {
+    start(async () => {
+      const res = await updateEmployee(e.id, { isActive: !e.isActive });
+      if (!res.ok) { setLimitInfo(res.limit); return; }
+      window.location.href = "/business/staff";
+    });
+  }
 
   return (
     <div className="max-w-5xl mx-auto space-y-5">
@@ -154,6 +167,8 @@ export function StaffClient({ employees, availableServices, weekLoad }: Props) {
           </div>
         </form>
       </GlassModal>
+
+      {limitInfo && <PlanLimitDialog info={limitInfo} onClose={() => setLimitInfo(null)} />}
     </div>
   );
 }

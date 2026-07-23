@@ -5,7 +5,7 @@ import {
   updateNotificationSettingsAction,
   type NotificationSettingsState,
 } from "@/lib/actions/notification-settings";
-import type { BusinessNotificationSettings } from "@/lib/notification-settings";
+import { SALON_EVENTS, type BusinessNotificationSettings } from "@/lib/notification-settings";
 import { ELEV_RAISED, CHIP, INK_BTN } from "@/components/ui/glass/tokens";
 
 const initialState: NotificationSettingsState = {};
@@ -122,6 +122,42 @@ export function NotificationSettingsForm({
           // Preserve a previously saved number when SMS is toggled off.
           <input type="hidden" name="smsPhone" value={smsPhone} />
         )}
+      </div>
+
+      {/* Per-event × channel matrix. E-mail/SMS rows take effect only when the
+          matching master channel above is on. In-app is always available. */}
+      <div className="p-4 rounded-xl" style={CHIP}>
+        <p className="text-sm font-medium text-slate-800 mb-1">Dla których zdarzeń</p>
+        <p className="text-xs text-slate-500 mb-3">
+          Wybierz kanały dla każdego typu powiadomienia. E-mail i SMS działają, gdy dany kanał jest włączony powyżej.
+        </p>
+        <div className="space-y-2">
+          <div className="hidden sm:grid grid-cols-[1fr_3rem_3rem_3rem] gap-2 text-[11px] font-semibold text-slate-400 px-1">
+            <span />
+            <span className="text-center">Aplikacja</span>
+            <span className="text-center">E-mail</span>
+            <span className="text-center">SMS</span>
+          </div>
+          {SALON_EVENTS.map((ev) => {
+            const e = initial.events?.[ev.key] ?? { inApp: true, email: true, sms: false };
+            return (
+              <div key={ev.key} className="grid grid-cols-[1fr_3rem_3rem_3rem] items-center gap-2">
+                <span className="text-sm text-slate-700">{ev.label}</span>
+                {(["inApp", "email", "sms"] as const).map((ch) => (
+                  <label key={ch} className="flex justify-center">
+                    <input
+                      type="checkbox"
+                      name={`ev_${ev.key}_${ch}`}
+                      defaultChecked={e[ch]}
+                      aria-label={`${ev.label} — ${ch}`}
+                      className="h-4 w-4 rounded accent-slate-900 cursor-pointer"
+                    />
+                  </label>
+                ))}
+              </div>
+            );
+          })}
+        </div>
       </div>
 
       {state.error && (

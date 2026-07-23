@@ -3,7 +3,7 @@ export const dynamic = "force-dynamic";
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { getOrCreateDbUser } from "@/lib/auth-user";
-import { markAllNotificationsRead } from "@/lib/actions/notifications";
+import { markAllNotificationsRead, markNotificationRead } from "@/lib/actions/notifications";
 import { formatRelativeTime, cn } from "@/lib/utils";
 import { NotificationType } from "@prisma/client";
 import { PageHeader, GlassCard, EmptyState, GlassButton, ChromeAvatar, HAIRLINE, CHIP } from "@/components/ui/glass";
@@ -87,43 +87,60 @@ export default async function NotificationsPage() {
       ) : (
         <GlassCard className="fade-rise fade-rise-d1 overflow-hidden">
           {notifications.map((n, i) => {
-            const data = (n.data ?? {}) as { businessSlug?: string; appointmentId?: string };
+            const data = (n.data ?? {}) as { businessSlug?: string; appointmentId?: string; link?: string };
+            // Prefer an explicit target link (e.g. business notifications →
+            // /business/reviews), then the review-request deep link, else dashboard.
             const href =
-              n.type === "REVIEW_REQUEST" && data.businessSlug && data.appointmentId
+              typeof data.link === "string" && data.link.startsWith("/")
+                ? data.link
+                : n.type === "REVIEW_REQUEST" && data.businessSlug && data.appointmentId
                 ? `/b/${data.businessSlug}?review=${data.appointmentId}`
                 : "/customer/dashboard";
             return (
-              <Link
+              <div
                 key={n.id}
-                href={href}
-                className="row-hover flex gap-3.5 px-5 py-4"
+                className="flex items-stretch"
                 style={{
                   ...(i > 0 ? { borderTop: HAIRLINE } : {}),
                   ...(!n.isRead ? { background: "rgba(203,213,225,0.10)" } : {}),
                 }}
               >
-                <span className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0" style={CHIP}>
-                  <TypeIcon type={n.type} />
-                </span>
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-start justify-between gap-2">
-                    <p className={cn("text-sm text-slate-900", !n.isRead ? "font-semibold" : "font-medium")}>
-                      {n.title}
-                    </p>
-                    <div className="flex items-center gap-2 flex-shrink-0">
-                      {!n.isRead && (
-                        <span
-                          className="w-2 h-2 rounded-full"
-                          style={{ background: "linear-gradient(180deg, #1E293B, #0F172A)" }}
-                          aria-label="Nieprzeczytane"
-                        />
-                      )}
-                      <span className="text-xs text-slate-400">{formatRelativeTime(n.createdAt)}</span>
+                <Link href={href} className="row-hover flex gap-3.5 px-5 py-4 flex-1 min-w-0">
+                  <span className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0" style={CHIP}>
+                    <TypeIcon type={n.type} />
+                  </span>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-start justify-between gap-2">
+                      <p className={cn("text-sm text-slate-900", !n.isRead ? "font-semibold" : "font-medium")}>
+                        {n.title}
+                      </p>
+                      <div className="flex items-center gap-2 flex-shrink-0">
+                        {!n.isRead && (
+                          <span
+                            className="w-2 h-2 rounded-full"
+                            style={{ background: "linear-gradient(180deg, #1E293B, #0F172A)" }}
+                            aria-label="Nieprzeczytane"
+                          />
+                        )}
+                        <span className="text-xs text-slate-400">{formatRelativeTime(n.createdAt)}</span>
+                      </div>
                     </div>
+                    <p className="text-xs text-slate-500 mt-0.5 leading-relaxed">{n.body}</p>
                   </div>
-                  <p className="text-xs text-slate-500 mt-0.5 leading-relaxed">{n.body}</p>
-                </div>
-              </Link>
+                </Link>
+                {!n.isRead && (
+                  <form action={markNotificationRead.bind(null, n.id)} className="flex items-center pr-3">
+                    <button
+                      type="submit"
+                      className="text-xs font-medium text-slate-400 hover:text-slate-800 px-2 py-1 rounded-lg transition-colors"
+                      aria-label="Oznacz jako przeczytane"
+                      title="Oznacz jako przeczytane"
+                    >
+                      ✓
+                    </button>
+                  </form>
+                )}
+              </div>
             );
           })}
         </GlassCard>

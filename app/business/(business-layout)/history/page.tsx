@@ -6,33 +6,50 @@ import { getOrCreateDbUser } from "@/lib/auth-user";
 import { AppointmentStatus } from "@prisma/client";
 import { HistoryClient } from "./history-client";
 
-// Permanent home for past appointments (completed / cancelled / no-show) — the
-// calendar is date-focused and the CRM is per-client; neither is a filterable
-// history list. Read-only, real appointment data.
-const HISTORY_STATUSES = [
-  AppointmentStatus.COMPLETED,
-  AppointmentStatus.CANCELLED_CUSTOMER,
-  AppointmentStatus.CANCELLED_BUSINESS,
-  AppointmentStatus.NO_SHOW,
-];
+// Permanent, owner-scoped home for past appointments (completed / cancelled /
+// no-show). Server-side filtered + PAGINATED — never loads a salon's entire
+// lifetime history into one payload.
+const PAGE_SIZE = 25;
+const CANCELLED = [AppointmentStatus.CANCELLED_CUSTOMER, AppointmentStatus.CANCELLED_BUSINESS];
+const ALL_PAST = [AppointmentStatus.COMPLETED, ...CANCELLED, AppointmentStatus.NO_SHOW];
 
-export default async function HistoryPage() {
+const FILTER_STATUS: Record<string, AppointmentStatus[]> = {
+  all: ALL_PAST,
+  completed: [AppointmentStatus.COMPLETED],
+  cancelled: CANCELLED,
+  noshow: [AppointmentStatus.NO_SHOW],
+};
+
+export default async function HistoryPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ filter?: string; page?: string }>;
+}) {
+  const sp = await searchParams;
+  const filter = sp.filter && FILTER_STATUS[sp.filter] ? sp.filter : "all";
+  const page = Math.max(1, parseInt(sp.page ?? "1", 10) || 1);
+
   const dbUser = await getOrCreateDbUser();
   const business = (
     await prisma.business.findMany({ where: { ownerId: dbUser.id }, take: 1, select: { id: true } })
   )[0];
   if (!business) redirect("/business/onboarding");
 
-  const appts = await prisma.appointment.findMany({
-    where: { businessId: business.id, status: { in: HISTORY_STATUSES } },
-    orderBy: { startTime: "desc" },
-    take: 200,
-    include: {
-      customer: { select: { firstName: true, lastName: true } },
-      service: { select: { name: true } },
-      employee: { select: { firstName: true, lastName: true } },
-    },
-  });
+  const where = { businessId: business.id, status: { in: FILTER_STATUS[filter] } };
+  const [total, appts] = await Promise.all([
+    prisma.appointment.count({ where }),
+    prisma.appointment.findMany({
+      where,
+      orderBy: { startTime: "desc" },
+      skip: (page - 1) * PAGE_SIZE,
+      take: PAGE_SIZE,
+      include: {
+        customer: { select: { firstName: true, lastName: true } },
+        service: { select: { name: true } },
+        employee: { select: { firstName: true, lastName: true } },
+      },
+    }),
+  ]);
 
   const rows = appts.map((a) => ({
     id: a.id,
@@ -45,5 +62,13 @@ export default async function HistoryPage() {
     employee: a.employee ? `${a.employee.firstName} ${a.employee.lastName}`.trim() : null,
   }));
 
-  return <HistoryClient rows={rows} />;
+  return (
+    <HistoryClient
+      rows={rows}
+      filter={filter}
+      page={page}
+      totalPages={Math.max(1, Math.ceil(total / PAGE_SIZE))}
+      total={total}
+    />
+  );
 }

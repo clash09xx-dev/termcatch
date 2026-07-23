@@ -5,6 +5,9 @@ import { prisma } from "@/lib/prisma";
 import { getServerUser } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import { sendEmail } from "@/lib/email";
+import { getAppUrl } from "@/lib/app-url";
+import { getBusinessNotificationSettings, salonWants } from "@/lib/notification-settings";
+import { sendTransactionalSms } from "@/lib/sms";
 
 async function getBusinessId(): Promise<string> {
   const user = await getServerUser();
@@ -82,20 +85,37 @@ export async function createReview(input: {
     },
   });
 
-  // Notify the salon owner
-  await prisma.notification
-    .create({
-      data: {
-        userId: appointment.business.ownerId,
-        businessId: appointment.businessId,
-        type: "REVIEW_RECEIVED",
-        channel: "IN_APP",
-        title: "Nowa opinia",
-        body: `${customer.firstName} ${customer.lastName} wystawił(a) ocenę ${rating}/5.`,
-        sentAt: new Date(),
-      },
-    })
-    .catch(() => {});
+  // Notify the salon owner — in-app + optional SMS, both preference-gated and
+  // non-blocking (a failing notification must never break review submission).
+  // SMS is deduped per appointment (retries can't double-send). createReview
+  // itself can't double-fire (appointmentId is @unique — already guarded above).
+  const { settings } = await getBusinessNotificationSettings(appointment.businessId);
+  const reviewsLink = `${getAppUrl()}/business/reviews`;
+  await Promise.allSettled([
+    salonWants(settings, "newReview", "inApp")
+      ? prisma.notification.create({
+          data: {
+            userId: appointment.business.ownerId,
+            businessId: appointment.businessId,
+            type: "REVIEW_RECEIVED",
+            channel: "IN_APP",
+            title: "Nowa opinia",
+            body: `${customer.firstName} ${customer.lastName} wystawił(a) ocenę ${rating}/5.`,
+            data: { link: "/business/reviews" },
+            sentAt: new Date(),
+          },
+        })
+      : Promise.resolve(null),
+    // Concise Polish; rating + safe dashboard link only — no private customer detail.
+    salonWants(settings, "newReview", "sms")
+      ? sendTransactionalSms({
+          toPhone: settings.smsPhone,
+          template: "salon",
+          dedupeKey: `sms:salon:review:${appointment.id}`,
+          body: `TermCatch: nowa opinia ${rating}/5 dla Twojego salonu. Szczegóły: ${reviewsLink}`,
+        })
+      : Promise.resolve(null),
+  ]);
 
   revalidatePath(`/b/${appointment.business.slug}`);
   revalidatePath("/customer/dashboard");

@@ -6,6 +6,8 @@ import { getBusinessNotificationSettings } from "@/lib/notification-settings";
 import { NotificationsPrompt } from "@/components/business/notifications-prompt";
 import { PublicationStatus } from "@/components/business/publication-status";
 import { validateForPublication } from "@/lib/publication";
+import { bookingUrl } from "@/lib/app-url";
+import { CopyLink } from "@/components/business/copy-link";
 import { formatCurrency, formatTime, formatDate, formatRelativeTime } from "@/lib/utils";
 import { warsawDateString, warsawDayStartUtc, warsawDayEndUtc, warsawTimeString } from "@/lib/timezone";
 import { redirect } from "next/navigation";
@@ -345,9 +347,12 @@ export default async function BusinessDashboardPage() {
           <GlassCard className="p-4">
             <Overline className="mb-2">Link do rezerwacji</Overline>
             <div className="px-3 py-2 rounded-xl text-xs text-slate-600 truncate mb-2.5" style={CHIP}>
-              {(process.env.NEXT_PUBLIC_APP_URL ?? "https://termcatch.com")}/b/{business.slug}
+              {bookingUrl(business.slug)}
             </div>
-            <GlassLink href={`/b/${business.slug}`} size="sm" className="w-full">Podgląd profilu</GlassLink>
+            <div className="space-y-1.5">
+              <CopyLink url={bookingUrl(business.slug)} />
+              <GlassLink href={`/b/${business.slug}`} size="sm" className="w-full">Podgląd profilu</GlassLink>
+            </div>
           </GlassCard>
         </div>
       </div>

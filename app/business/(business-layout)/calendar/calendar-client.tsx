@@ -119,6 +119,8 @@ export function CalendarClient(props: Props) {
   const isClosedToday = windowFor(cursor) === null;
   const gridHours = Array.from({ length: Math.ceil((closeMin - openMin) / 60) + 1 }, (_, i) => openMin + i * 60).filter((m) => m <= closeMin);
   const dayAppts = apptsForDay(cursor);
+  // Mobile agenda honors the specialist filter (desktop uses lanes instead).
+  const dayApptsForView = empFilter === "all" ? dayAppts : dayAppts.filter((a) => a.employeeId === empFilter);
 
   // Lanes for the day view (desktop). Columns = employees (when unfiltered) else
   // single. Appointments booked with "Dowolny specjalista" have employeeId=null —
@@ -153,11 +155,20 @@ export function CalendarClient(props: Props) {
         <p className="text-[15px] font-semibold text-slate-900 capitalize tabular-nums">{dateLabel}</p>
         <div className="ml-auto flex items-center gap-2">
           {employees.length > 0 && view === "day" && (
-            <Segmented
-              size="sm" ariaLabel="Filtr pracownika" idBase="cal-emp"
-              value={empFilter} onChange={setEmpFilter}
-              options={[{ value: "all", label: "Wszyscy" }, ...employees.map((e) => ({ value: e.id, label: e.firstName }))]}
-            />
+            // A dropdown (not a per-employee segmented row) so 15–25 specialists
+            // never overflow the toolbar / page horizontally.
+            <select
+              aria-label="Filtr specjalisty"
+              value={empFilter}
+              onChange={(e) => setEmpFilter(e.target.value)}
+              className="text-xs font-semibold rounded-lg px-2.5 py-1.5 max-w-[168px] outline-none cursor-pointer"
+              style={{ background: "rgba(255,255,255,0.7)", border: "1px solid rgba(203,213,225,0.55)", color: "#334155" }}
+            >
+              <option value="all">Wszyscy specjaliści</option>
+              {employees.map((e) => (
+                <option key={e.id} value={e.id}>{e.firstName} {e.lastName}</option>
+              ))}
+            </select>
           )}
           <button
             onClick={() => setPendingOnly((v) => !v)}
@@ -199,61 +210,76 @@ export function CalendarClient(props: Props) {
         <div className="rounded-[20px] overflow-hidden" style={{ background: "rgba(255,255,255,0.72)", border: "1px solid rgba(203,213,225,0.45)", boxShadow: "0 0 0 0.5px rgba(203,213,225,0.25), 0 6px 20px rgba(100,116,139,0.07), inset 0 1px 0 rgba(255,255,255,0.92)" }}>
           {view === "day" ? (
             <>
-              {/* Desktop lanes */}
-              <div className="hidden sm:block">
-                {isClosedToday && (
-                  <div className="px-5 py-2 text-xs text-slate-500" style={{ borderBottom: HAIRLINE, background: "rgba(203,213,225,0.12)" }}>
-                    Salon zamknięty w tym dniu — pokazujemy 8:00–20:00 do ręcznych wpisów.
-                  </div>
-                )}
-                {/* Lane headers */}
-                {laneEmps.length > 1 && (
-                  <div className="flex" style={{ borderBottom: HAIRLINE }}>
-                    <div className="w-14 flex-shrink-0" />
-                    {laneEmps.map((e, i) => (
-                      <div key={e?.id ?? i} className="flex-1 min-w-0 px-3 py-2.5 flex items-center gap-2" style={{ borderLeft: HAIRLINE }}>
-                        <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: e?.color ?? "#94A3B8" }} />
-                        <span className="text-xs font-semibold text-slate-700 truncate">{e ? e.firstName : "Bez przypisania"}</span>
+              {/* Desktop lanes — header + body share ONE grid template inside a
+                  single horizontal-scroll container, so they can never drift and
+                  the whole page never gains a horizontal scrollbar. */}
+              <div className="hidden sm:block overflow-x-auto">
+                {(() => {
+                  // 56px time gutter + one lane per specialist (min 140px, readable).
+                  const cols = `56px repeat(${laneEmps.length}, minmax(140px, 1fr))`;
+                  const minW = 56 + laneEmps.length * 140;
+                  return (
+                    <div style={{ minWidth: `${minW}px` }}>
+                      {isClosedToday && (
+                        <div className="px-5 py-2 text-xs text-slate-500" style={{ borderBottom: HAIRLINE, background: "rgba(203,213,225,0.12)" }}>
+                          Salon zamknięty w tym dniu — pokazujemy 8:00–20:00 do ręcznych wpisów.
+                        </div>
+                      )}
+                      {/* Lane headers — sticky, same template as the body */}
+                      {laneEmps.length > 1 && (
+                        <div
+                          className="grid sticky top-0 z-10"
+                          style={{ gridTemplateColumns: cols, borderBottom: HAIRLINE, background: "rgba(255,255,255,0.92)", backdropFilter: "blur(8px)" }}
+                        >
+                          <div className="w-14" />
+                          {laneEmps.map((e, i) => (
+                            <div key={e?.id ?? i} className="min-w-0 px-3 py-2.5 flex items-center gap-2" style={{ borderLeft: HAIRLINE }}>
+                              <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: e?.color ?? "#94A3B8" }} />
+                              <span className="text-xs font-semibold text-slate-700 truncate">{e ? e.firstName : "Bez przypisania"}</span>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                      {/* Body — same template; vertical scroll only (no independent x-scroll) */}
+                      <div className="grid overflow-y-auto" style={{ gridTemplateColumns: cols, maxHeight: "calc(100vh - 240px)" }}>
+                        {/* time gutter */}
+                        <div className="w-14">
+                          {gridHours.map((m) => (
+                            <div key={m} className="relative" style={{ height: HOUR_H }}>
+                              <span className="absolute -top-1.5 right-2 text-[10px] text-slate-400 tabular-nums">{hm(m)}</span>
+                            </div>
+                          ))}
+                        </div>
+                        {/* lanes */}
+                        {laneEmps.map((emp, li) => {
+                          const laneAppts = emp ? dayAppts.filter((a) => a.employeeId === emp.id) : dayAppts.filter((a) => !a.employeeId);
+                          return (
+                            <LaneColumn
+                              key={emp?.id ?? li}
+                              openMin={openMin} closeMin={closeMin} gridHours={gridHours}
+                              appts={laneAppts} isToday={sameDay(cursor, now)} nowMin={localMin(now)}
+                              onEmpty={(min) => openNewAt(cursor, min, emp?.id)}
+                              onSelect={(a) => { setActionError(""); setSelected(a); }}
+                              blockStyle={blockStyle}
+                            />
+                          );
+                        })}
                       </div>
-                    ))}
-                  </div>
-                )}
-                <div className="flex overflow-y-auto" style={{ maxHeight: "calc(100vh - 240px)" }}>
-                  {/* time gutter */}
-                  <div className="w-14 flex-shrink-0">
-                    {gridHours.map((m) => (
-                      <div key={m} className="relative" style={{ height: HOUR_H }}>
-                        <span className="absolute -top-1.5 right-2 text-[10px] text-slate-400 tabular-nums">{hm(m)}</span>
-                      </div>
-                    ))}
-                  </div>
-                  {/* lanes */}
-                  {laneEmps.map((emp, li) => {
-                    const laneAppts = emp ? dayAppts.filter((a) => a.employeeId === emp.id) : dayAppts.filter((a) => !a.employeeId);
-                    return (
-                      <LaneColumn
-                        key={emp?.id ?? li}
-                        openMin={openMin} closeMin={closeMin} gridHours={gridHours}
-                        appts={laneAppts} isToday={sameDay(cursor, now)} nowMin={localMin(now)}
-                        onEmpty={(min) => openNewAt(cursor, min, emp?.id)}
-                        onSelect={(a) => { setActionError(""); setSelected(a); }}
-                        blockStyle={blockStyle}
-                      />
-                    );
-                  })}
-                </div>
+                    </div>
+                  );
+                })()}
               </div>
 
               {/* Mobile single column */}
               <div className="sm:hidden p-4">
-                {dayAppts.length === 0 ? (
+                {dayApptsForView.length === 0 ? (
                   <div className="py-16 text-center">
                     <p className="text-sm font-semibold text-slate-700">Brak wizyt</p>
                     <p className="text-xs text-slate-500 mt-1">Dotknij „+", aby dodać wizytę na ten dzień.</p>
                   </div>
                 ) : (
                   <div className="space-y-2">
-                    {[...dayAppts].sort((a, b) => a.startTime.getTime() - b.startTime.getTime()).map((a) => {
+                    {[...dayApptsForView].sort((a, b) => a.startTime.getTime() - b.startTime.getTime()).map((a) => {
                       const rail = STATUS_META[a.status]?.rail ?? "#94A3B8";
                       return (
                         <button key={a.id} onClick={() => { setActionError(""); setSelected(a); }} className="w-full text-left rounded-2xl px-3.5 py-3 flex items-center gap-3" style={{ background: "rgba(255,255,255,0.85)", border: "1px solid rgba(203,213,225,0.5)", borderLeft: `3px solid ${a.employee?.color ?? rail}` }}>
@@ -348,7 +374,7 @@ function LaneColumn({ openMin, closeMin, gridHours, appts, isToday, nowMin, onEm
   return (
     <div
       ref={ref}
-      className="flex-1 min-w-[120px] relative cursor-pointer"
+      className="relative cursor-pointer min-w-0"
       style={{ height: total, borderLeft: HAIRLINE }}
       onClick={(e) => {
         if ((e.target as HTMLElement).closest("[data-appt]")) return;
