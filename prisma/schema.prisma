@@ -410,6 +410,8 @@ model Business {
   analyticsEvents     AnalyticsEvent[]
   favouritedBy        FavouriteBusiness[]
   locations           Location[]           // multi-location (Wave 4, flag-gated)
+  billingCustomer     BillingCustomer?     // Stripe billing (one customer per business)
+  promoRedemptions    PromoRedemption[]    // WELCOME etc.
 
   @@index([city, category])
   @@index([slug])
@@ -1351,5 +1353,65 @@ model LocationService {
   @@unique([locationId, serviceId])
   @@index([serviceId])
   @@map("location_services")
+}
+
+// ============================================================
+// BILLING (Stripe subscriptions + WELCOME promo)
+// ============================================================
+// ADDITIVE-ONLY: three brand-new tables + virtual back-relations on Business.
+// No scalar column is added to any existing model, so every existing query is
+// unchanged against a database that has not applied these tables. Create them
+// with `prisma db push` BEFORE deploying billing; existing businesses without a
+// Stripe subscription are completely unaffected.
+
+// Exactly one Stripe Customer per business (unique on both sides). Created at
+// first checkout and reused forever, so a business never has duplicate customers.
+model BillingCustomer {
+  id               String   @id @default(cuid())
+  businessId       String   @unique @map("business_id")
+  stripeCustomerId String   @unique @map("stripe_customer_id")
+  createdAt        DateTime @default(now()) @map("created_at")
+  updatedAt        DateTime @updatedAt @map("updated_at")
+
+  business Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+
+  @@map("billing_customers")
+}
+
+// Server-side promotion redemption ledger — the security boundary for WELCOME
+// (NOT a public Stripe promotion code). A slot counts against the cap while
+// PENDING or REDEEMED; RELEASED frees it (abandoned checkout). The three unique
+// constraints enforce "once per business / owner / Stripe customer". The unique
+// stripeSubscriptionId + status transitions make webhook redemption idempotent.
+model PromoRedemption {
+  id                   String   @id @default(cuid())
+  code                 String
+  businessId           String   @map("business_id")
+  ownerId              String   @map("owner_id")
+  stripeCustomerId     String?  @map("stripe_customer_id")
+  stripeSubscriptionId String?  @unique @map("stripe_subscription_id")
+  checkoutSessionId    String?  @unique @map("checkout_session_id")
+  status               String   @default("PENDING") // PENDING | REDEEMED | RELEASED
+  createdAt            DateTime @default(now()) @map("created_at")
+  updatedAt            DateTime @updatedAt @map("updated_at")
+
+  business Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+
+  @@unique([code, businessId])
+  @@unique([code, ownerId])
+  @@unique([code, stripeCustomerId])
+  @@index([code, status])
+  @@map("promo_redemptions")
+}
+
+// Webhook idempotency ledger — each Stripe event id is processed at most once,
+// so retries/replays never double-apply state or redemptions.
+model ProcessedWebhookEvent {
+  id        String   @id @default(cuid())
+  eventId   String   @unique @map("event_id")
+  type      String
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@map("processed_webhook_events")
 }
 

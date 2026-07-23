@@ -13,12 +13,16 @@ export const TRIAL_DAYS = 7;
 export type PlanKey = "SOLO" | "TEAM" | "PRO" | "ULTIMATE";
 export const PLAN_KEYS: PlanKey[] = ["SOLO", "TEAM", "PRO", "ULTIMATE"];
 
-/** Map a ?plan= query value / plan key to the env var holding its Stripe Price ID. */
-const PLAN_PRICE_ENV: Record<PlanKey, string> = {
-  SOLO: "STRIPE_PRICE_SOLO",
-  TEAM: "STRIPE_PRICE_TEAM",
-  PRO: "STRIPE_PRICE_PRO",
-  ULTIMATE: "STRIPE_PRICE_ULTIMATE",
+/**
+ * Env var(s) holding each plan's Stripe Price ID. PRO reads STRIPE_PRICE_SALON_PRO
+ * (canonical) with a STRIPE_PRICE_PRO fallback for backward compatibility.
+ * Price IDs are ONLY ever read from env — never hardcoded/invented.
+ */
+const PLAN_PRICE_ENV: Record<PlanKey, string[]> = {
+  SOLO: ["STRIPE_PRICE_SOLO"],
+  TEAM: ["STRIPE_PRICE_TEAM"],
+  PRO: ["STRIPE_PRICE_SALON_PRO", "STRIPE_PRICE_PRO"],
+  ULTIMATE: ["STRIPE_PRICE_ULTIMATE"],
 };
 
 export function normalizePlanKey(raw?: string | null): PlanKey | null {
@@ -41,8 +45,17 @@ export function planKeyToEnum(plan: PlanKey): SubscriptionPlan {
 
 /** The configured Stripe Price ID for a plan, or null if not set (never invented). */
 export function priceIdForPlan(plan: PlanKey): string | null {
-  const v = process.env[PLAN_PRICE_ENV[plan]];
-  return v && v.startsWith("price_") ? v : null;
+  for (const name of PLAN_PRICE_ENV[plan]) {
+    const v = process.env[name];
+    if (v && v.startsWith("price_")) return v;
+  }
+  return null;
+}
+
+/** Reverse lookup: which plan a configured Stripe Price ID belongs to (or null). */
+export function planKeyFromPriceId(priceId: string | null | undefined): PlanKey | null {
+  if (!priceId) return null;
+  return PLAN_KEYS.find((p) => priceIdForPlan(p) === priceId) ?? null;
 }
 
 function stripeKeyLive(): boolean {
@@ -86,50 +99,52 @@ export function mapStripeStatus(stripeStatus: string): SubscriptionStatus {
   }
 }
 
-export type CheckoutResult = { url?: string; error?: "unconfigured" | "stripe_error" };
+// ─── WELCOME promotion — first 3 months free, capped, server-enforced ───────
+// The 100-redemption cap + per-business/owner/customer uniqueness are enforced
+// by our own PromoRedemption ledger (see lib/billing/promo.ts), NEVER by a
+// public Stripe promotion code. The 3-months-free DISCOUNT is applied with a
+// Stripe COUPON whose id comes from env (created once in the Dashboard: 100%
+// off, duration=repeating, duration_in_months=3). Never invented.
+
+export const WELCOME_CODE = "WELCOME";
+export const WELCOME_MAX_REDEMPTIONS = 100;
+export const WELCOME_FREE_MONTHS = 3;
+
+/** The configured WELCOME Stripe coupon id, or null (never invented). */
+export function welcomeCouponId(): string | null {
+  const v = (process.env.STRIPE_COUPON_WELCOME ?? "").trim();
+  return v && !v.includes("...") ? v : null;
+}
+
+/** WELCOME is usable only when billing AND its coupon are configured. */
+export function welcomeConfigured(): boolean {
+  return billingConfigured() && welcomeCouponId() !== null;
+}
+
+/** Is the entered code the WELCOME code (case-insensitive, trimmed)? */
+export function isWelcomeCode(raw?: string | null): boolean {
+  return (raw ?? "").trim().toUpperCase() === WELCOME_CODE;
+}
+
+export type WelcomeEligibility =
+  | { eligible: true }
+  | { eligible: false; reason: "bad_code" | "not_configured" | "sold_out" | "already_redeemed" };
 
 /**
- * Create a Stripe Checkout Session for a 7-day-trial subscription.
- * - Reuses one Stripe customer per owner email (no duplicate customers).
- * - Applies trial_period_days only for a first-time trial (abuse guard).
- * Returns { error: "unconfigured" } when billing/Price IDs are not set up yet
- * (honest fallback — never a fake success). Stripe is loaded lazily.
+ * Pure eligibility decision (no I/O) — unit-tested. The caller supplies the
+ * current PENDING+REDEEMED slot count and whether this business/owner already
+ * holds a slot; this function applies the rules deterministically.
  */
-export async function createSubscriptionCheckout(input: {
-  businessId: string;
-  ownerEmail: string;
-  plan: PlanKey;
-  hasUsedTrial: boolean;
-  appUrl: string;
-}): Promise<CheckoutResult> {
-  const priceId = priceIdForPlan(input.plan);
-  if (!priceId || !stripeKeyLive()) return { error: "unconfigured" };
-
-  try {
-    const { stripe } = await import("@/lib/stripe");
-
-    // Reuse an existing Stripe customer for this owner, else create one.
-    const found = await stripe.customers.list({ email: input.ownerEmail, limit: 1 });
-    const customerId =
-      found.data[0]?.id ??
-      (await stripe.customers.create({ email: input.ownerEmail, metadata: { businessId: input.businessId } })).id;
-
-    const trialDays = trialDaysFor(input.hasUsedTrial);
-
-    const session = await stripe.checkout.sessions.create({
-      mode: "subscription",
-      customer: customerId,
-      line_items: [{ price: priceId, quantity: 1 }],
-      subscription_data: {
-        ...(trialDays > 0 ? { trial_period_days: trialDays } : {}),
-        metadata: { businessId: input.businessId, plan: input.plan },
-      },
-      metadata: { businessId: input.businessId, plan: input.plan },
-      success_url: `${input.appUrl}/business/payments?subscription=success`,
-      cancel_url: `${input.appUrl}/business/payments?subscription=cancelled`,
-    });
-    return { url: session.url ?? undefined };
-  } catch {
-    return { error: "stripe_error" };
-  }
+export function evaluateWelcomeEligibility(input: {
+  configured: boolean;
+  codeMatches: boolean;
+  slotsUsed: number;
+  cap: number;
+  alreadyRedeemed: boolean;
+}): WelcomeEligibility {
+  if (!input.codeMatches) return { eligible: false, reason: "bad_code" };
+  if (!input.configured) return { eligible: false, reason: "not_configured" };
+  if (input.alreadyRedeemed) return { eligible: false, reason: "already_redeemed" };
+  if (input.slotsUsed >= input.cap) return { eligible: false, reason: "sold_out" };
+  return { eligible: true };
 }

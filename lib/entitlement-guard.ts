@@ -6,6 +6,7 @@
 
 import type { Prisma, PrismaPromise } from "@prisma/client";
 import { entitlementsEnforced, planKeyFromEnum, withinLimit, planLimitInfo, PlanLimitError, type PlanKey } from "@/lib/entitlements";
+import { planKeyFromPriceId } from "@/lib/subscription";
 
 /**
  * The plan to enforce for this business, or `null` to SKIP enforcement entirely.
@@ -22,12 +23,20 @@ async function planToEnforce(tx: Prisma.TransactionClient, businessId: string): 
     where: { id: businessId },
     select: {
       subscriptionPlan: true,
-      // An explicitly-assigned plan == a real Stripe subscription exists.
-      subscriptions: { where: { NOT: { stripeSubscriptionId: null } }, select: { id: true }, take: 1 },
+      // An explicitly-assigned plan == a LIVE Stripe subscription. A cancelled
+      // subscription no longer constrains limits (data is preserved regardless).
+      subscriptions: {
+        where: { NOT: { stripeSubscriptionId: null }, status: { in: ["ACTIVE", "TRIALING", "PAST_DUE"] } },
+        select: { stripePriceId: true },
+        orderBy: { createdAt: "desc" },
+        take: 1,
+      },
     },
   });
-  if (!biz || biz.subscriptions.length === 0) return null; // no assigned plan → grandfathered
-  return planKeyFromEnum(biz.subscriptionPlan);
+  const live = biz?.subscriptions[0];
+  if (!biz || !live) return null; // no live assigned plan → grandfathered
+  // Precise plan from the Price ID (distinguishes SOLO vs TEAM); enum fallback.
+  return planKeyFromPriceId(live.stripePriceId) ?? planKeyFromEnum(biz.subscriptionPlan);
 }
 
 /**

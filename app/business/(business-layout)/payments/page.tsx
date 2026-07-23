@@ -7,7 +7,9 @@ import { prisma } from "@/lib/prisma";
 import { cn } from "@/lib/utils";
 import { PLATFORM_FEE_PERCENT } from "@/lib/stripe";
 import { billingConfigured } from "@/lib/subscription";
+import { planKeyFromEnum, PLAN_ENTITLEMENTS } from "@/lib/entitlements";
 import { SubscribeButtons } from "@/components/business/subscribe-buttons";
+import { BillingManageButton } from "@/components/business/billing-manage-button";
 import {
   PageHeader,
   GlassCard,
@@ -33,6 +35,7 @@ function fmtDate(d: Date | null): string {
 
 type SubRow = {
   status: string;
+  plan: string;
   stripeSubscriptionId: string | null;
   trialEndsAt: Date | null;
   currentPeriodEnd: Date | null;
@@ -40,24 +43,41 @@ type SubRow = {
 } | null;
 
 // Real subscription/trial status from synced Stripe data — never a hardcoded "7 dni".
+// When access has expired (cancelled/past-due) we show a billing-required state
+// but NEVER touch the salon's data.
 function SubscriptionCard({ sub }: { sub: SubRow }) {
   const active = Boolean(sub?.stripeSubscriptionId);
+  const planLabel = sub ? PLAN_ENTITLEMENTS[planKeyFromEnum(sub.plan as never)].label : null;
+  const billingRequired = sub && (sub.status === "PAST_DUE" || sub.status === "CANCELLED");
   return (
     <GlassCard className="p-5 fade-rise fade-rise-d1">
       <Overline>Subskrypcja TermCatch</Overline>
       {active && sub ? (
         <div className="mt-2">
-          <p className="text-sm font-semibold text-slate-900">
-            Status: {SUB_STATUS_LABEL[sub.status] ?? sub.status}
-          </p>
-          {sub.status === "TRIALING" && sub.trialEndsAt && (
-            <p className="text-sm text-slate-600 mt-1">Okres próbny trwa do {fmtDate(sub.trialEndsAt)}.</p>
-          )}
-          {sub.status !== "TRIALING" && sub.currentPeriodEnd && (
-            <p className="text-sm text-slate-600 mt-1">
-              {sub.cancelAtPeriodEnd ? "Subskrypcja zakończy się" : "Kolejne odnowienie"}: {fmtDate(sub.currentPeriodEnd)}.
-            </p>
-          )}
+          <div className="flex items-center justify-between gap-3 flex-wrap">
+            <div>
+              <p className="text-sm font-semibold text-slate-900">
+                Plan {planLabel} · {SUB_STATUS_LABEL[sub.status] ?? sub.status}
+              </p>
+              {sub.status === "TRIALING" && sub.trialEndsAt && (
+                <p className="text-sm text-slate-600 mt-1">Okres próbny trwa do {fmtDate(sub.trialEndsAt)}.</p>
+              )}
+              {sub.status !== "TRIALING" && sub.currentPeriodEnd && (
+                <p className="text-sm text-slate-600 mt-1">
+                  {sub.cancelAtPeriodEnd ? "Subskrypcja zakończy się" : "Kolejne odnowienie"}: {fmtDate(sub.currentPeriodEnd)}.
+                </p>
+              )}
+              {billingRequired && (
+                <p className="text-sm mt-1" style={{ color: "#B45309" }}>
+                  Dostęp wymaga aktualizacji płatności. Twoje dane są bezpieczne — nic nie usunęliśmy.
+                </p>
+              )}
+            </div>
+          </div>
+          <div className="mt-3">
+            {/* Portal handles upgrade, downgrade, payment method + cancellation. */}
+            <BillingManageButton />
+          </div>
         </div>
       ) : billingConfigured() ? (
         <div className="mt-2">
@@ -68,7 +88,7 @@ function SubscriptionCard({ sub }: { sub: SubRow }) {
         </div>
       ) : (
         <p className="text-sm text-slate-500 mt-2">
-          Płatności abonamentowe będą dostępne wkrótce. 7 dni za darmo na start.
+          Płatności są jeszcze konfigurowane. 7 dni za darmo na start, gdy tylko je uruchomimy.
         </p>
       )}
     </GlassCard>
@@ -93,6 +113,7 @@ async function getPaymentsData(supabaseId: string) {
             take: 1,
             select: {
               status: true,
+              plan: true,
               stripeSubscriptionId: true,
               trialEndsAt: true,
               currentPeriodEnd: true,
