@@ -10,7 +10,7 @@ import { cn } from "@/lib/utils";
 import { Wordmark } from "@/components/brand/wordmark";
 import { createBusiness, type OnboardingInput, type WorkingHourInput } from "@/lib/actions/business";
 import { visibleCategories } from "@/lib/categories";
-import { ServiceCategory } from "@prisma/client";
+import type { ServiceCategory } from "@prisma/client";
 import { stepSlide, stepFade, SPRING, useReducedMotion } from "@/lib/motion";
 
 // ─── Style tokens ─────────────────────────────────────────────

@@ -14,6 +14,7 @@ const FOOTER_LINKS = {
   ],
   Firma: [
     { label: "O nas", href: "/about" },
+    { label: "Pomoc i FAQ", href: "/faq" },
     { label: "Kontakt", href: "/contact" },
     { label: "Kariera", href: "/careers" },
   ],
