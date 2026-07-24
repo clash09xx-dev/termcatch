@@ -5,6 +5,7 @@ import { prisma } from "@/lib/prisma";
 import { getServerUser } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import { autoPublishIfComplete } from "@/lib/publish";
+import { validateServicePricing } from "@/lib/service-validation";
 
 async function getBusinessId(): Promise<string> {
   const user = await getServerUser();
@@ -34,6 +35,10 @@ export type ServiceFormData = {
 export async function createService(data: ServiceFormData) {
   const businessId = await getBusinessId();
 
+  // Server-side pricing guard (backstop for the client; blocks a direct call).
+  const invalid = validateServicePricing(data);
+  if (invalid) throw new Error(invalid);
+
   await prisma.service.create({
     data: {
       businessId,
@@ -57,6 +62,10 @@ export async function createService(data: ServiceFormData) {
 
 export async function updateService(id: string, data: Partial<ServiceFormData>) {
   const businessId = await getBusinessId();
+
+  // Validate only the fields present (a status-only toggle sends no price).
+  const invalid = validateServicePricing(data);
+  if (invalid) throw new Error(invalid);
 
   await prisma.service.updateMany({
     where: { id, businessId },

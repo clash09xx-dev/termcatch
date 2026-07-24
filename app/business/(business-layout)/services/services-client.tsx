@@ -68,21 +68,32 @@ export function ServicesClient({ services: initial }: Props) {
   function save(e: React.FormEvent) {
     e.preventDefault();
     if (!form.name.trim()) return setErr("Podaj nazwę usługi.");
-    if (!(parseFloat(form.price) > 0)) return setErr("Cena musi być większa niż 0 zł.");
+    const price = parseFloat(form.price);
+    const duration = parseInt(form.duration, 10);
+    if (!(price > 0)) return setErr("Cena musi być większa niż 0 zł.");
+    if (!(duration > 0)) return setErr("Czas trwania musi być większy niż 0 minut.");
+    const discountedPrice = form.discountedPrice ? parseFloat(form.discountedPrice) : undefined;
+    if (discountedPrice !== undefined) {
+      if (!(discountedPrice > 0)) return setErr("Cena promocyjna musi być większa niż 0 zł.");
+      if (discountedPrice > price) return setErr("Cena promocyjna nie może być wyższa niż cena regularna.");
+    }
     const data = {
       name: form.name.trim(), description: form.description || undefined,
-      duration: parseInt(form.duration, 10), price: parseFloat(form.price),
-      discountedPrice: form.discountedPrice ? parseFloat(form.discountedPrice) : undefined,
+      duration, price, discountedPrice,
       isActive: form.isActive,
     };
     start(async () => {
-      if (editingId) {
-        await updateService(editingId, data);
-        setServices((prev) => prev.map((s) => s.id === editingId ? { ...s, ...data, description: data.description ?? null, discountedPrice: data.discountedPrice ?? null } : s));
-        close();
-      } else {
-        await createService(data);
-        window.location.href = "/business/services"; // refresh to get new id
+      try {
+        if (editingId) {
+          await updateService(editingId, data);
+          setServices((prev) => prev.map((s) => s.id === editingId ? { ...s, ...data, description: data.description ?? null, discountedPrice: data.discountedPrice ?? null } : s));
+          close();
+        } else {
+          await createService(data);
+          window.location.href = "/business/services"; // refresh to get new id
+        }
+      } catch (err) {
+        setErr(err instanceof Error ? err.message : "Nie udało się zapisać usługi.");
       }
     });
   }

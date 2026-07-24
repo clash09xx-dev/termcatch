@@ -20,6 +20,7 @@ import { isPubliclyVisible } from "@/lib/publication";
 import { getAppUrl } from "@/lib/app-url";
 import { resolveBookingAddons, type AddonSelection } from "@/lib/booking-addons";
 import { computeBookingTotals, evaluateCoupon } from "@/lib/booking-pricing";
+import { isFutureStart, changeAllowedByPolicy } from "@/lib/appointment-rules";
 
 /** SMS/WhatsApp to the salon per its per-event preferences — never throws. */
 async function notifySalonChannels(businessId: string, message: string, event: SalonEventKey) {
@@ -177,7 +178,7 @@ export async function createAppointment(data: CreateAppointmentInput) {
   // Compute the UTC instant from Warsaw-local date + time
   const start = warsawDateTimeToUtc(data.date, data.time);
   if (isNaN(start.getTime())) throw new Error("Nieprawidłowa data wizyty.");
-  if (start <= new Date()) throw new Error("Data wizyty musi być w przyszłości.");
+  if (!isFutureStart(start)) throw new Error("Data wizyty musi być w przyszłości.");
 
   // Validate business is published (authoritative gate — same as public surfaces)
   const business = await prisma.business.findUnique({
@@ -396,8 +397,7 @@ export async function rescheduleAppointment(input: {
     select: { cancellationHours: true, phone: true },
   });
   const limitHours = policy?.cancellationHours ?? 24;
-  const hoursLeft = (appointment.startTime.getTime() - Date.now()) / 3_600_000;
-  if (hoursLeft < limitHours) {
+  if (!changeAllowedByPolicy(appointment.startTime, new Date(), limitHours)) {
     throw new Error(
       `Wizytę można przełożyć najpóźniej ${limitHours} godz. przed terminem.${policy?.phone ? ` W nagłych przypadkach zadzwoń do salonu: ${policy.phone}.` : " W nagłych przypadkach skontaktuj się z salonem."}`
     );
@@ -405,7 +405,7 @@ export async function rescheduleAppointment(input: {
 
   const newStart = warsawDateTimeToUtc(input.date, input.time);
   if (isNaN(newStart.getTime())) throw new Error("Nieprawidłowa data wizyty.");
-  if (newStart <= new Date())
+  if (!isFutureStart(newStart))
     throw new Error("Nowy termin musi być w przyszłości.");
 
   const newEnd = new Date(newStart.getTime() + appointment.duration * 60_000);
@@ -528,8 +528,7 @@ export async function cancelAppointment(appointmentId: string) {
       select: { cancellationHours: true, phone: true },
     });
     const limitHours = policy?.cancellationHours ?? 24;
-    const hoursLeft = (appointment.startTime.getTime() - Date.now()) / 3_600_000;
-    if (hoursLeft < limitHours) {
+    if (!changeAllowedByPolicy(appointment.startTime, new Date(), limitHours)) {
       throw new Error(
         `Potwierdzoną wizytę można anulować najpóźniej ${limitHours} godz. przed terminem.${policy?.phone ? ` W nagłych przypadkach zadzwoń do salonu: ${policy.phone}.` : ""}`
       );
