@@ -163,6 +163,29 @@ async function getOwnedBusiness() {
   return business;
 }
 
+/**
+ * Owner-facing public-profile visibility toggle. Flips Business.isActive — one
+ * half of the authoritative public gate (status ACTIVE && isActive) — so
+ * disabling instantly removes the salon from search, categories, recommendations
+ * and the sitemap, and makes the direct /b/[slug] URL return not-found, WITHOUT
+ * deleting the salon, services, appointments or account. Re-enabling restores it
+ * (provided the salon is otherwise published/ACTIVE). Owner-scoped: touches only
+ * the caller's own business. Does NOT override an admin SUSPENDED state (that
+ * also requires status ACTIVE to be public).
+ */
+export async function setPublicProfileActive(active: boolean): Promise<{ ok: true; active: boolean }> {
+  const business = await getOwnedBusiness();
+  await prisma.business.update({
+    where: { id: business.id },
+    data: { isActive: active },
+  });
+  revalidatePath("/business/settings");
+  revalidatePath("/business/dashboard");
+  revalidatePath("/search");
+  revalidatePath(`/b/${business.slug}`);
+  return { ok: true, active };
+}
+
 // ─── Profile ──────────────────────────────────────────────────
 export type BusinessProfileData = {
   name?: string;

@@ -1,6 +1,6 @@
 import { test, describe } from "node:test";
 import assert from "node:assert/strict";
-import { validateForPublication, type PublicationCheckInput } from "../lib/publication";
+import { validateForPublication, isPubliclyVisible, PUBLIC_BUSINESS_WHERE, type PublicationCheckInput } from "../lib/publication";
 
 const complete: PublicationCheckInput = {
   name: "Salon Testowy",
@@ -51,5 +51,25 @@ describe("validateForPublication — the auto-publish gate", () => {
   test("missing address → not publishable (incomplete profiles can't leak)", () => {
     const r = validateForPublication({ ...complete, address: null });
     assert.equal(r.ok, false);
+  });
+});
+
+describe("isPubliclyVisible — the public gate (owner visibility toggle relies on this)", () => {
+  test("ACTIVE + isActive true → visible", () => {
+    assert.equal(isPubliclyVisible({ status: "ACTIVE", isActive: true }), true);
+  });
+  test("owner-hidden (ACTIVE + isActive false) → NOT visible", () => {
+    // This is exactly what the 'Profil publiczny aktywny' toggle sets.
+    assert.equal(isPubliclyVisible({ status: "ACTIVE", isActive: false }), false);
+  });
+  test("admin-suspended (SUSPENDED + isActive true) → NOT visible", () => {
+    assert.equal(isPubliclyVisible({ status: "SUSPENDED", isActive: true }), false);
+  });
+  test("not-yet-published (PENDING_VERIFICATION) → NOT visible", () => {
+    assert.equal(isPubliclyVisible({ status: "PENDING_VERIFICATION", isActive: true }), false);
+  });
+  test("PUBLIC_BUSINESS_WHERE requires both ACTIVE and isActive", () => {
+    assert.equal(PUBLIC_BUSINESS_WHERE.status, "ACTIVE");
+    assert.equal(PUBLIC_BUSINESS_WHERE.isActive, true);
   });
 });

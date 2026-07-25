@@ -4,6 +4,7 @@ import { useState, useMemo, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { updateBusinessSettings } from "@/lib/actions/business";
 import { NotificationSettingsForm } from "@/components/business/notification-settings-form";
+import { PublicVisibilityToggle } from "@/components/business/public-visibility-toggle";
 import { requestDangerCode, confirmBusinessDeletion, confirmSalonDeletion } from "@/lib/actions/danger";
 import { sendInvite } from "@/actions/invite";
 import type { BusinessNotificationSettings } from "@/lib/notification-settings";
@@ -462,6 +463,7 @@ export function SettingsClient({ settings: initialSettings, notificationSettings
           {activeSection === "profil" && (
             <GlassCard className="p-5 sm:p-6">
               <Overline className="mb-4">Profil publiczny</Overline>
+              <PublicVisibilityToggle initialActive={business.isActive} published={business.status === "ACTIVE"} />
               <ProfileClient business={business} embedded />
             </GlassCard>
           )}
