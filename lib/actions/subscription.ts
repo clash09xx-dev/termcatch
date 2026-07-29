@@ -205,7 +205,8 @@ export async function openBillingPortal(): Promise<{ error?: string }> {
     const { stripe } = await import("@/lib/stripe");
     const portal = await stripe.billingPortal.sessions.create({
       customer: row.stripeCustomerId, // server-derived, never from the client
-      return_url: `${getAppUrl()}/business/payments`,
+      // Return to the in-app billing screen (server-built origin — no open redirect).
+      return_url: `${getAppUrl()}/business/settings`,
     });
     redirect(portal.url);
     return {};
