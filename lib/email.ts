@@ -271,9 +271,10 @@ export async function sendBookingConfirmationEmail(
 
 /** Booking cancelled (by salon or customer — pass the right recipient). */
 export async function sendBookingCancellationEmail(
-  params: BookingEmailBase & { cancelledBy: "business" | "customer" }
+  params: BookingEmailBase & { cancelledBy: "business" | "customer"; reason?: string }
 ): Promise<{ sent: boolean }> {
   const bySalon = params.cancelledBy === "business";
+  const reason = params.reason?.trim();
   return sendEmail({
     to: params.to,
     subject: `Wizyta odwołana — ${params.businessName}`,
@@ -284,9 +285,29 @@ export async function sendBookingCancellationEmail(
       bySalon
         ? "Salon odwołał tę wizytę. Możesz zarezerwować inny termin."
         : "Klient anulował tę wizytę — termin jest znów dostępny.",
+      ...(bySalon && reason ? [`Powód odwołania: <strong>${escapeHtml(reason)}</strong>`] : []),
     ],
     ctaLabel: bySalon ? "Zarezerwuj ponownie" : "Otwórz kalendarz",
     ctaUrl: bySalon ? `${APP_URL}/customer/dashboard` : `${APP_URL}/business/calendar`,
+  });
+}
+
+/** Salon changed the appointment time — notify the CUSTOMER (shows both times). */
+export async function sendBookingTimeChangedEmail(
+  params: BookingEmailBase & { oldSlotLabel: string }
+): Promise<{ sent: boolean }> {
+  return sendEmail({
+    to: params.to,
+    subject: `Zmiana godziny wizyty — ${params.businessName}`,
+    heading: "Salon zmienił godzinę Twojej wizyty",
+    lines: [
+      `<strong>${params.serviceName}</strong> w <strong>${params.businessName}</strong>`,
+      `Poprzedni termin: ${params.oldSlotLabel}`,
+      `Nowy termin: <strong>${params.slotLabel}</strong>`,
+      "Jeśli nowy termin Ci nie odpowiada, przełóż lub anuluj wizytę w panelu.",
+    ],
+    ctaLabel: "Moje rezerwacje",
+    ctaUrl: `${APP_URL}/customer/dashboard`,
   });
 }
 

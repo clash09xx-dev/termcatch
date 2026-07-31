@@ -42,38 +42,79 @@ type SubRow = {
   cancelAtPeriodEnd: boolean;
 } | null;
 
+type Usage = {
+  employees: number;
+  employeeLimit: number | null; // null = unlimited
+  locations: number;
+  locationLimit: number | null;
+  /** WELCOME promo redeemed for this business (3 months free), when present. */
+  welcome: boolean;
+};
+
+const limitText = (limit: number | null) => (limit === null ? "∞" : String(limit));
+
+/** One usage-vs-limit meter (e.g. "Specjaliści 3 / 4"). Over-limit is flagged amber. */
+function UsageRow({ label, used, limit }: { label: string; used: number; limit: number | null }) {
+  const over = limit !== null && used > limit;
+  return (
+    <div className="flex items-center justify-between py-1.5">
+      <span className="text-sm text-slate-600">{label}</span>
+      <span className="text-sm font-semibold tabular-nums" style={{ color: over ? "#B45309" : "#0F172A" }}>
+        {used} / {limitText(limit)}
+      </span>
+    </div>
+  );
+}
+
 // Real subscription/trial status from synced Stripe data — never a hardcoded "7 dni".
 // When access has expired (cancelled/past-due) we show a billing-required state
-// but NEVER touch the salon's data.
-function SubscriptionCard({ sub }: { sub: SubRow }) {
+// but NEVER touch the salon's data. Only display-safe values reach the browser —
+// no Stripe secret ids (the subscription id is used server-side as a boolean only).
+function SubscriptionCard({ sub, usage }: { sub: SubRow; usage: Usage }) {
   const active = Boolean(sub?.stripeSubscriptionId);
   const planLabel = sub ? PLAN_ENTITLEMENTS[planKeyFromEnum(sub.plan as never)].label : null;
-  const billingRequired = sub && (sub.status === "PAST_DUE" || sub.status === "CANCELLED");
+  const pastDue = sub?.status === "PAST_DUE";
+  const cancelled = sub?.status === "CANCELLED";
   return (
     <GlassCard className="p-5 fade-rise fade-rise-d1">
       <Overline>Subskrypcja TermCatch</Overline>
       {active && sub ? (
         <div className="mt-2">
-          <div className="flex items-center justify-between gap-3 flex-wrap">
-            <div>
-              <p className="text-sm font-semibold text-slate-900">
-                Plan {planLabel} · {SUB_STATUS_LABEL[sub.status] ?? sub.status}
-              </p>
-              {sub.status === "TRIALING" && sub.trialEndsAt && (
-                <p className="text-sm text-slate-600 mt-1">Okres próbny trwa do {fmtDate(sub.trialEndsAt)}.</p>
-              )}
-              {sub.status !== "TRIALING" && sub.currentPeriodEnd && (
-                <p className="text-sm text-slate-600 mt-1">
-                  {sub.cancelAtPeriodEnd ? "Subskrypcja zakończy się" : "Kolejne odnowienie"}: {fmtDate(sub.currentPeriodEnd)}.
-                </p>
-              )}
-              {billingRequired && (
-                <p className="text-sm mt-1" style={{ color: "#B45309" }}>
-                  Dostęp wymaga aktualizacji płatności. Twoje dane są bezpieczne — nic nie usunęliśmy.
-                </p>
-              )}
-            </div>
+          <div className="flex items-center justify-between gap-2 flex-wrap">
+            <p className="text-sm font-semibold text-slate-900">
+              Plan {planLabel} · {SUB_STATUS_LABEL[sub.status] ?? sub.status}
+            </p>
+            {usage.welcome && (
+              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-semibold" style={EMERALD_SOFT}>
+                WELCOME · 3 miesiące gratis
+              </span>
+            )}
           </div>
+          {sub.status === "TRIALING" && sub.trialEndsAt && (
+            <p className="text-sm text-slate-600 mt-1">Okres próbny trwa do {fmtDate(sub.trialEndsAt)}.</p>
+          )}
+          {sub.status !== "TRIALING" && !pastDue && !cancelled && sub.currentPeriodEnd && (
+            <p className="text-sm text-slate-600 mt-1">
+              {sub.cancelAtPeriodEnd ? "Subskrypcja zakończy się" : "Kolejne odnowienie"}: {fmtDate(sub.currentPeriodEnd)}.
+            </p>
+          )}
+          {pastDue && (
+            <p className="text-sm mt-1" style={{ color: "#B45309" }}>
+              Zaległa płatność — zaktualizuj metodę płatności w panelu, aby zachować dostęp. Twoje dane są bezpieczne, nic nie usunęliśmy.
+            </p>
+          )}
+          {cancelled && (
+            <p className="text-sm mt-1" style={{ color: "#B45309" }}>
+              Subskrypcja została anulowana. Wznów ją w panelu, aby odzyskać pełny dostęp — Twoje dane są bezpieczne.
+            </p>
+          )}
+
+          {/* Usage against the current plan's limits */}
+          <div className="mt-3 pt-3" style={{ borderTop: HAIRLINE }}>
+            <UsageRow label="Specjaliści" used={usage.employees} limit={usage.employeeLimit} />
+            <UsageRow label="Lokalizacje" used={usage.locations} limit={usage.locationLimit} />
+          </div>
+
           <div className="mt-3">
             {/* Portal handles upgrade, downgrade, payment method + cancellation. */}
             <BillingManageButton />
@@ -84,6 +125,10 @@ function SubscriptionCard({ sub }: { sub: SubRow }) {
           <p className="text-sm text-slate-600 mb-3">
             Rozpocznij subskrypcję z 7-dniowym okresem próbnym — bez opłat na start.
           </p>
+          <div className="mb-3 pb-3" style={{ borderBottom: HAIRLINE }}>
+            <UsageRow label="Specjaliści" used={usage.employees} limit={usage.employeeLimit} />
+            <UsageRow label="Lokalizacje" used={usage.locations} limit={usage.locationLimit} />
+          </div>
           <SubscribeButtons />
         </div>
       ) : (
@@ -231,6 +276,25 @@ export default async function PaymentsPage() {
   const business = dbUser?.ownedBusinesses[0];
   if (!business) redirect("/business/onboarding");
 
+  // Live usage against the effective plan (the subscription's plan when active,
+  // else the conservative FREE baseline). Single-location salons have no Location
+  // rows yet, so they count as one location (the main branch).
+  const sub = business.subscriptions[0] ?? null;
+  const planKey = planKeyFromEnum((sub?.plan ?? null) as never);
+  const planLimits = PLAN_ENTITLEMENTS[planKey];
+  const [activeEmployees, activeLocations, welcomeRedemption] = await Promise.all([
+    prisma.employee.count({ where: { businessId: business.id, isActive: true } }),
+    prisma.location.count({ where: { businessId: business.id, isActive: true } }),
+    prisma.promoRedemption.findFirst({ where: { businessId: business.id, status: "REDEEMED" }, select: { id: true } }),
+  ]);
+  const usage: Usage = {
+    employees: activeEmployees,
+    employeeLimit: planLimits.maxEmployees,
+    locations: Math.max(1, activeLocations),
+    locationLimit: planLimits.maxLocations,
+    welcome: Boolean(welcomeRedemption) && (sub?.status === "ACTIVE" || sub?.status === "TRIALING"),
+  };
+
   const state: ConnectState = !business.stripeAccountId
     ? "NOT_CONNECTED"
     : business.stripeOnboarded
@@ -247,7 +311,7 @@ export default async function PaymentsPage() {
         actions={<GlassLink href="/business/settings" size="sm">Ustawienia</GlassLink>}
       />
 
-      <SubscriptionCard sub={business.subscriptions[0] ?? null} />
+      <SubscriptionCard sub={sub} usage={usage} />
 
       {state === "NOT_CONNECTED" && (
         <GlassCard className="fade-rise fade-rise-d1 overflow-hidden">

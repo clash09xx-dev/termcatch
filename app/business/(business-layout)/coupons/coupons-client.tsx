@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useTransition } from "react";
+import { useState, useEffect, useRef, useTransition } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { formatCurrency, cn } from "@/lib/utils";
 import { createCoupon, updateCoupon, toggleCoupon, deleteCoupon, type CouponInput } from "@/lib/actions/coupons";
@@ -41,15 +41,32 @@ export function CouponsClient({ coupons }: { coupons: CouponRow[] }) {
   const [form, setForm] = useState<Form>(EMPTY);
   const [err, setErr] = useState("");
   const [isPending, start] = useTransition();
+  // Snapshot of the form when the editor was opened — the baseline for dirty
+  // detection. Accidental interactions (backdrop click, Escape) must never
+  // silently discard typed values, so we compare against this before closing.
+  const baselineRef = useRef<Form>(EMPTY);
 
   useEffect(() => { if (searchParams.get("action") === "new") openCreate(); /* eslint-disable-next-line */ }, [searchParams]);
 
-  function openCreate() { setEditingId(null); setForm(EMPTY); setErr(""); setOpen(true); }
-  function openEdit(c: CouponRow) { setEditingId(c.id); setForm(toForm(c)); setErr(""); setOpen(true); }
+  function openCreate() { setEditingId(null); setForm(EMPTY); baselineRef.current = EMPTY; setErr(""); setOpen(true); }
+  function openEdit(c: CouponRow) { const f = toForm(c); setEditingId(c.id); setForm(f); baselineRef.current = f; setErr(""); setOpen(true); }
   const set = (k: keyof Form, v: Form[keyof Form]) => setForm((p) => ({ ...p, [k]: v }));
+
+  const isDirty = () => JSON.stringify(form) !== JSON.stringify(baselineRef.current);
+
+  // The single close path for user-initiated dismissals (backdrop, Escape, the
+  // X button, and "Anuluj"). A successful save closes via setOpen(false)
+  // directly, so it never triggers this guard. Radix only calls onOpenChange on
+  // its own dismiss gestures — a controlled setOpen(false) does not.
+  function requestClose() {
+    if (isPending) return; // never abandon a form mid-save
+    if (isDirty() && !confirm("Masz niezapisane zmiany. Zamknąć edytor bez zapisywania?")) return;
+    setOpen(false);
+  }
 
   function save(e: React.FormEvent) {
     e.preventDefault();
+    if (isPending) return; // guard against duplicate submissions
     setErr("");
     const input: CouponInput = {
       code: form.code, name: form.name, type: form.type, value: parseFloat(form.value),
@@ -111,7 +128,7 @@ export function CouponsClient({ coupons }: { coupons: CouponRow[] }) {
         </GlassCard>
       )}
 
-      <GlassModal open={open} onOpenChange={setOpen} title={editingId ? "Edytuj kupon" : "Nowy kupon"} className="max-w-md">
+      <GlassModal open={open} onOpenChange={(o) => { if (o) setOpen(true); else requestClose(); }} title={editingId ? "Edytuj kupon" : "Nowy kupon"} className="max-w-md">
         <form onSubmit={save} className="space-y-4 mt-2">
           <div className="grid grid-cols-2 gap-3">
             <FormField label="Kod" htmlFor="c-code"><input id="c-code" value={form.code} onChange={(e) => set("code", e.target.value.toUpperCase())} placeholder="WELCOME20" className={cn(INPUT, "font-mono uppercase")} autoFocus /></FormField>
@@ -145,7 +162,7 @@ export function CouponsClient({ coupons }: { coupons: CouponRow[] }) {
           </label>
           {err && <p className="text-xs font-medium" style={{ color: "#BE123C" }}>{err}</p>}
           <div className="flex gap-3 pt-1">
-            <GlassButton onClick={() => setOpen(false)} className="flex-1">Anuluj</GlassButton>
+            <GlassButton onClick={requestClose} className="flex-1">Anuluj</GlassButton>
             <InkButton type="submit" disabled={isPending} className="flex-1">{isPending ? "Zapisywanie…" : editingId ? "Zapisz" : "Utwórz kupon"}</InkButton>
           </div>
         </form>

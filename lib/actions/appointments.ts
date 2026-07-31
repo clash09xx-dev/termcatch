@@ -7,10 +7,10 @@ import { redirect } from "next/navigation";
 import { AppointmentStatus, NotificationType } from "@prisma/client";
 import { warsawDateTimeToUtc, warsawTimeString } from "@/lib/timezone";
 import {
-  sendBookingRequestEmail,
   sendBookingConfirmationEmail,
   sendBookingCancellationEmail,
   sendBookingRescheduleEmail,
+  sendBookingTimeChangedEmail,
   sendNewBookingNotificationEmail,
 } from "@/lib/email";
 import { sendSms, sendWhatsApp } from "@/lib/messaging";
@@ -61,7 +61,7 @@ async function notifySalonInApp(
     console.error("[notifySalonInApp]", err);
   }
 }
-import { formatDate, formatCurrency } from "@/lib/utils";
+import { formatDate } from "@/lib/utils";
 
 // ─── Helpers ──────────────────────────────────────────────────
 
@@ -279,7 +279,9 @@ export async function createAppointment(data: CreateAppointmentInput) {
         startTime: start,
         endTime: end,
         duration: totals.totalDuration,
-        status: AppointmentStatus.PENDING,
+        // New customer bookings are auto-confirmed — no manual salon approval.
+        // The transactional conflict guard above still prevents double-booking.
+        status: AppointmentStatus.CONFIRMED,
         price: totals.finalTotal,
         basePrice: totals.basePrice,
         addonsTotal: totals.addonsTotal,
@@ -305,14 +307,16 @@ export async function createAppointment(data: CreateAppointmentInput) {
 
   const slotLabel = describeSlot(start);
 
-  // In-app notifications (customer + salon owner) — non-blocking
+  // In-app notifications (customer + salon owner) — non-blocking.
+  // The booking is already confirmed: the customer is told so, the salon is
+  // notified of the new (confirmed) booking.
   await Promise.allSettled([
     notify({
       userId: customer.id,
       businessId: business.id,
-      type: "APPOINTMENT_BOOKED",
-      title: "Rezerwacja wysłana",
-      body: `${service.name} w ${business.name}, ${slotLabel}. Salon potwierdzi Twoją wizytę.`,
+      type: "APPOINTMENT_CONFIRMED",
+      title: "Wizyta potwierdzona",
+      body: `${service.name} w ${business.name}, ${slotLabel}. Twoja wizyta jest potwierdzona.`,
       data: { appointmentId: appointment.id },
     }),
     notifySalonInApp(business.id, "newBooking", {
@@ -322,12 +326,11 @@ export async function createAppointment(data: CreateAppointmentInput) {
       body: `${customer.firstName} ${customer.lastName} — ${service.name}, ${slotLabel}.`,
       data: { appointmentId: appointment.id, link: "/business/calendar" },
     }),
-    sendBookingRequestEmail({
+    sendBookingConfirmationEmail({
       to: customer.email,
       businessName: business.name,
       serviceName: service.name,
       slotLabel,
-      priceLabel: formatCurrency(appointment.price),
     }),
     notifySalonEmail(business.id, "newBooking", () =>
       business.email
@@ -342,14 +345,14 @@ export async function createAppointment(data: CreateAppointmentInput) {
     ),
     notifySalonChannels(
       business.id,
-      `TermCatch: nowa rezerwacja — ${service.name}, ${slotLabel}, ${customer.firstName} ${customer.lastName}. Potwierdź w panelu: ${getAppUrl()}/business/dashboard`,
+      `TermCatch: nowa rezerwacja (potwierdzona) — ${service.name}, ${slotLabel}, ${customer.firstName} ${customer.lastName}. Zobacz w panelu: ${getAppUrl()}/business/calendar`,
       "newBooking"
     ),
     customerBookingSms({
       customer,
       appointmentId: appointment.id,
-      template: "booked",
-      body: `TermCatch: prośba o rezerwację wysłana — ${service.name} w ${business.name}, ${slotLabel}. Salon potwierdzi wizytę.`,
+      template: "confirmed",
+      body: `TermCatch: wizyta potwierdzona — ${service.name} w ${business.name}, ${slotLabel}. Do zobaczenia!`,
     }),
   ]);
 
@@ -638,13 +641,19 @@ export async function confirmAppointment(appointmentId: string) {
 
 // ─── Business: Decline / Cancel ───────────────────────────────
 
-export async function declineAppointment(appointmentId: string) {
+export async function declineAppointment(appointmentId: string, reasonRaw: string) {
   const businessId = await getOwnedBusinessId();
+
+  // A salon cancellation ALWAYS requires a reason — it is stored and shown to
+  // the customer. Private salon notes are never used for this.
+  const reason = (reasonRaw ?? "").trim();
+  if (reason.length < 3) throw new Error("Podaj powód odwołania wizyty (min. 3 znaki).");
+  if (reason.length > 500) throw new Error("Powód odwołania jest zbyt długi (maks. 500 znaków).");
 
   const appointment = await prisma.appointment.findUnique({
     where: { id: appointmentId },
     include: {
-      business: { select: { id: true, name: true } },
+      business: { select: { id: true, name: true, slug: true, ownerId: true } },
       service: { select: { name: true } },
       customer: { select: { id: true, email: true, firstName: true, phone: true, smsNotifications: true } },
     },
@@ -662,15 +671,19 @@ export async function declineAppointment(appointmentId: string) {
     throw new Error("Można odwołać tylko oczekujące lub potwierdzone wizyty.");
   }
 
+  // Audit trail: who cancelled (the salon owner), when, and the stored reason.
   await prisma.appointment.update({
     where: { id: appointmentId },
     data: {
       status: AppointmentStatus.CANCELLED_BUSINESS,
       cancelledAt: new Date(),
+      cancelledBy: appointment.business.ownerId,
+      cancellationReason: reason,
     },
   });
 
   const slotLabel = describeSlot(appointment.startTime);
+  const rebookLink = `/b/${appointment.business.slug}`;
 
   await Promise.allSettled([
     notify({
@@ -678,8 +691,8 @@ export async function declineAppointment(appointmentId: string) {
       businessId: appointment.business.id,
       type: "APPOINTMENT_CANCELLED",
       title: "Wizyta odwołana przez salon",
-      body: `${appointment.service.name} w ${appointment.business.name}, ${slotLabel}. Przepraszamy — zarezerwuj inny termin.`,
-      data: { appointmentId },
+      body: `${appointment.service.name} w ${appointment.business.name}, ${slotLabel}. Powód: ${reason}. Możesz zarezerwować inny termin.`,
+      data: { appointmentId, reason, rebookLink },
     }),
     sendBookingCancellationEmail({
       to: appointment.customer.email,
@@ -687,12 +700,119 @@ export async function declineAppointment(appointmentId: string) {
       serviceName: appointment.service.name,
       slotLabel,
       cancelledBy: "business",
+      reason,
     }),
     customerBookingSms({
       customer: appointment.customer,
       appointmentId,
       template: "declined",
-      body: `TermCatch: salon ${appointment.business.name} odwołał wizytę ${appointment.service.name}, ${slotLabel}. Zarezerwuj inny termin w aplikacji.`,
+      body: `TermCatch: salon ${appointment.business.name} odwołał wizytę ${appointment.service.name}, ${slotLabel}. Powód: ${reason}. Zarezerwuj inny termin w aplikacji.`,
+    }),
+  ]);
+
+  revalidatePath("/business/dashboard");
+  revalidatePath("/business/calendar");
+  revalidatePath("/customer/dashboard");
+  revalidatePath("/customer/history");
+}
+
+// ─── Business: Change time (salon-proposed) ───────────────────
+//
+// Decision: the domain model has no "proposed / awaiting-customer-acceptance"
+// state, so building a two-way acceptance flow would be a large new workflow.
+// Per the requirement, we instead apply the salon's change IMMEDIATELY with a
+// full audit trail (original time, new time, actor, timestamp) and a clear
+// customer notification that shows BOTH times. The customer can always reschedule
+// or cancel from their dashboard if the new time doesn't suit them.
+export async function businessRescheduleAppointment(input: {
+  appointmentId: string;
+  /** Warsaw-local date "YYYY-MM-DD" */
+  date: string;
+  /** Warsaw-local time "HH:MM" */
+  time: string;
+}) {
+  const businessId = await getOwnedBusinessId();
+
+  const appointment = await prisma.appointment.findUnique({
+    where: { id: input.appointmentId },
+    include: {
+      business: { select: { id: true, name: true, ownerId: true } },
+      service: { select: { name: true } },
+      customer: { select: { id: true, email: true, firstName: true, phone: true, smsNotifications: true } },
+    },
+  });
+
+  if (!appointment) throw new Error("Nie znaleziono rezerwacji.");
+  if (appointment.businessId !== businessId)
+    throw new Error("Nie masz uprawnień do tej rezerwacji.");
+
+  const allowedStatuses: AppointmentStatus[] = [
+    AppointmentStatus.PENDING,
+    AppointmentStatus.CONFIRMED,
+  ];
+  if (!allowedStatuses.includes(appointment.status)) {
+    throw new Error("Termin można zmienić tylko dla oczekujących lub potwierdzonych wizyt.");
+  }
+
+  const newStart = warsawDateTimeToUtc(input.date, input.time);
+  if (isNaN(newStart.getTime())) throw new Error("Nieprawidłowa data wizyty.");
+  if (!isFutureStart(newStart)) throw new Error("Nowy termin musi być w przyszłości.");
+  if (newStart.getTime() === appointment.startTime.getTime())
+    throw new Error("Wybierz inny termin niż obecny.");
+
+  const newEnd = new Date(newStart.getTime() + appointment.duration * 60_000);
+
+  // Availability / double-booking guard for the new slot (excludes this appt).
+  const conflict = await prisma.appointment.findFirst({
+    where: {
+      id: { not: appointment.id },
+      businessId: appointment.businessId,
+      ...(appointment.employeeId ? { employeeId: appointment.employeeId } : {}),
+      status: { notIn: [AppointmentStatus.CANCELLED_CUSTOMER, AppointmentStatus.CANCELLED_BUSINESS] },
+      startTime: { lt: newEnd },
+      endTime: { gt: newStart },
+    },
+    select: { id: true },
+  });
+  if (conflict) throw new Error("Ten termin koliduje z inną wizytą. Wybierz inną godzinę.");
+
+  const originalStart = appointment.startTime;
+  await prisma.appointment.update({
+    where: { id: appointment.id },
+    data: { startTime: newStart, endTime: newEnd }, // updatedAt is bumped automatically (audit timestamp)
+  });
+
+  const oldSlotLabel = describeSlot(originalStart);
+  const newSlotLabel = describeSlot(newStart);
+
+  await Promise.allSettled([
+    notify({
+      userId: appointment.customer.id,
+      businessId: appointment.business.id,
+      type: "APPOINTMENT_CONFIRMED",
+      title: "Salon zmienił godzinę wizyty",
+      body: `${appointment.service.name} w ${appointment.business.name}: nowy termin ${newSlotLabel} (poprzednio ${oldSlotLabel}).`,
+      // Audit payload: original + new time + who changed it.
+      data: {
+        appointmentId: appointment.id,
+        actor: "business",
+        originalStart: originalStart.toISOString(),
+        newStart: newStart.toISOString(),
+      },
+    }),
+    sendBookingTimeChangedEmail({
+      to: appointment.customer.email,
+      businessName: appointment.business.name,
+      serviceName: appointment.service.name,
+      slotLabel: newSlotLabel,
+      oldSlotLabel,
+    }),
+    customerBookingSms({
+      customer: appointment.customer,
+      appointmentId: appointment.id,
+      template: "rescheduled",
+      body: `TermCatch: salon ${appointment.business.name} zmienił godzinę wizyty ${appointment.service.name} na ${newSlotLabel} (poprzednio ${oldSlotLabel}).`,
+      dedupeSuffix: `:${newStart.toISOString()}`,
     }),
   ]);
 

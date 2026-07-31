@@ -1147,10 +1147,10 @@ export default function BookingWizard({
                   </motion.div>
 
                   <h2 className="text-xl font-bold text-slate-900 mb-1" style={{ letterSpacing: "-0.02em" }}>
-                    Rezerwacja wysłana!
+                    Rezerwacja potwierdzona!
                   </h2>
                   <p className="text-sm text-slate-500 mb-6 max-w-xs mx-auto">
-                    Salon potwierdzi Twoją wizytę — damy Ci znać e-mailem i w powiadomieniach.
+                    Twoja wizyta jest potwierdzona — szczegóły wysłaliśmy e-mailem i w powiadomieniach.
                   </p>
 
                   {/* Appointment card */}

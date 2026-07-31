@@ -246,8 +246,23 @@ export type WorkingHoursUpdateData = {
   closeTime: string;
 }[];
 
+const HHMM = /^([01]\d|2[0-3]):([0-5]\d)$/;
+const hmToMin = (t: string): number => { const [h, m] = t.split(":").map(Number); return h * 60 + m; };
+
 export async function updateWorkingHours(data: WorkingHoursUpdateData) {
   const business = await getOwnedBusiness();
+
+  // Server-side guard (never trust the client): every open day must have a valid
+  // 24-hour "HH:MM" range that closes strictly after it opens.
+  for (const day of data) {
+    if (!day.isOpen) continue;
+    if (!HHMM.test(day.openTime) || !HHMM.test(day.closeTime)) {
+      throw new Error("Nieprawidłowy format godziny. Użyj formatu 24-godzinnego (np. 09:00).");
+    }
+    if (hmToMin(day.closeTime) <= hmToMin(day.openTime)) {
+      throw new Error("Godzina zamknięcia musi być późniejsza niż godzina otwarcia.");
+    }
+  }
 
   await Promise.all(
     data.map((day) =>

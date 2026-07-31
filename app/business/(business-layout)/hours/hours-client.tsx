@@ -15,12 +15,18 @@ const ORDER: DayOfWeek[] = ["MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDA
 const FULL: Record<DayOfWeek, string> = { MONDAY: "Poniedziałek", TUESDAY: "Wtorek", WEDNESDAY: "Środa", THURSDAY: "Czwartek", FRIDAY: "Piątek", SATURDAY: "Sobota", SUNDAY: "Niedziela" };
 const SHORT: Record<DayOfWeek, string> = { MONDAY: "pon", TUESDAY: "wt", WEDNESDAY: "śr", THURSDAY: "czw", FRIDAY: "pt", SATURDAY: "sob", SUNDAY: "ndz" };
 
+// 24-hour clock, half-hour steps. Values are fixed "HH:MM" strings, so the times
+// render identically ("09:00", "18:00") regardless of the browser's locale —
+// never a 12-hour AM/PM rendering.
 const TIMES: string[] = [];
 for (let h = 0; h < 24; h++) for (let m = 0; m < 60; m += 30) TIMES.push(`${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`);
 
+const toMin = (t: string): number => { const [h, m] = t.split(":").map(Number); return h * 60 + (m || 0); };
+/** A day is only valid when closing strictly after opening (no zero/negative spans). */
+const dayInvalid = (h: DayHours): boolean => h.isOpen && toMin(h.closeTime) <= toMin(h.openTime);
+
 function dur(open: string, close: string): string {
-  const [oh, om] = open.split(":").map(Number), [ch, cm] = close.split(":").map(Number);
-  const d = (ch * 60 + cm) - (oh * 60 + om);
+  const d = toMin(close) - toMin(open);
   if (d <= 0) return "0 h";
   return `${Math.floor(d / 60)}${d % 60 ? `:${String(d % 60).padStart(2, "0")}` : ""} h`;
 }
@@ -49,14 +55,30 @@ export function HoursClient({ initialHours }: Props) {
   const reduce = useReducedMotion();
 
   const dirty = useMemo(() => JSON.stringify(hours) !== JSON.stringify(ordered), [hours, ordered]);
+  const hasInvalid = useMemo(() => hours.some(dayInvalid), [hours]);
 
   const upd = (d: DayOfWeek, patch: Partial<DayHours>) => setHours((prev) => prev.map((h) => h.dayOfWeek === d ? { ...h, ...patch } : h));
+  // Changing the opening time keeps the range valid: if it lands at/after the
+  // current closing time, nudge closing to the next half-hour slot (never leaves
+  // an impossible end-before-start range on screen).
+  const setOpenTime = (d: DayOfWeek, openTime: string) => setHours((prev) => prev.map((h) => {
+    if (h.dayOfWeek !== d) return h;
+    let closeTime = h.closeTime;
+    if (toMin(closeTime) <= toMin(openTime)) {
+      const next = TIMES.find((t) => toMin(t) > toMin(openTime));
+      closeTime = next ?? h.closeTime;
+    }
+    return { ...h, openTime, closeTime };
+  }));
   function copyToAll() {
     const src = hours.find((h) => h.isOpen);
     if (!src) return;
     setHours((prev) => prev.map((h) => h.dayOfWeek === "SUNDAY" ? h : { ...h, isOpen: true, openTime: src.openTime, closeTime: src.closeTime }));
   }
-  function save() { start(async () => { await updateWorkingHours(hours); setSaved(true); setTimeout(() => setSaved(false), 2000); }); }
+  function save() {
+    if (hasInvalid) return; // guard: never persist an end-before-start range
+    start(async () => { await updateWorkingHours(hours); setSaved(true); setTimeout(() => setSaved(false), 2000); });
+  }
 
   return (
     <div className="max-w-4xl mx-auto space-y-5 pb-20">
@@ -83,14 +105,25 @@ export function HoursClient({ initialHours }: Props) {
               </button>
             </div>
             {h.isOpen ? (
-              <div className="space-y-2">
-                <div className="flex items-center gap-1.5">
-                  <select value={h.openTime} onChange={(e) => upd(h.dayOfWeek, { openTime: e.target.value })} aria-label="Otwarcie" className="input-glass flex-1 rounded-lg px-2 py-1.5 text-sm outline-none text-slate-800 tabular-nums">{TIMES.map((t) => <option key={t} value={t}>{t}</option>)}</select>
-                  <span className="text-slate-400 text-xs">–</span>
-                  <select value={h.closeTime} onChange={(e) => upd(h.dayOfWeek, { closeTime: e.target.value })} aria-label="Zamknięcie" className="input-glass flex-1 rounded-lg px-2 py-1.5 text-sm outline-none text-slate-800 tabular-nums">{TIMES.map((t) => <option key={t} value={t}>{t}</option>)}</select>
-                </div>
-                <p className="text-[11px] text-slate-400 tabular-nums text-center">{dur(h.openTime, h.closeTime)} otwarte</p>
-              </div>
+              (() => {
+                const invalid = dayInvalid(h);
+                return (
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-1.5">
+                      <select value={h.openTime} onChange={(e) => setOpenTime(h.dayOfWeek, e.target.value)} aria-label={`${FULL[h.dayOfWeek]} — otwarcie`} className="input-glass flex-1 rounded-lg px-2 py-1.5 text-sm outline-none text-slate-800 tabular-nums">{TIMES.map((t) => <option key={t} value={t}>{t}</option>)}</select>
+                      <span className="text-slate-400 text-xs">–</span>
+                      {/* Closing options are limited to times after opening, so an
+                          end ≤ start can't be selected in the first place. */}
+                      <select value={h.closeTime} onChange={(e) => upd(h.dayOfWeek, { closeTime: e.target.value })} aria-label={`${FULL[h.dayOfWeek]} — zamknięcie`} aria-invalid={invalid} className="input-glass flex-1 rounded-lg px-2 py-1.5 text-sm outline-none text-slate-800 tabular-nums" style={invalid ? { border: "1px solid rgba(190,18,60,0.5)" } : undefined}>{TIMES.filter((t) => toMin(t) > toMin(h.openTime)).map((t) => <option key={t} value={t}>{t}</option>)}</select>
+                    </div>
+                    {invalid ? (
+                      <p role="alert" className="text-[11px] font-medium text-center" style={{ color: "#BE123C" }}>Zamknięcie musi być po otwarciu</p>
+                    ) : (
+                      <p className="text-[11px] text-slate-400 tabular-nums text-center">{dur(h.openTime, h.closeTime)} otwarte</p>
+                    )}
+                  </div>
+                );
+              })()
             ) : (
               <p className="text-sm text-slate-400 italic py-2">Nieczynne</p>
             )}
@@ -100,7 +133,7 @@ export function HoursClient({ initialHours }: Props) {
 
       {/* Sticky dirty-state save bar */}
       <AnimatePresence>
-        {(dirty || saved) && (
+        {(dirty || saved || hasInvalid) && (
           <motion.div
             initial={reduce ? { opacity: 0 } : { opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -108,8 +141,10 @@ export function HoursClient({ initialHours }: Props) {
             className="fixed bottom-4 lg:bottom-6 left-1/2 -translate-x-1/2 z-40 flex items-center gap-3 pl-5 pr-2 py-2 rounded-2xl"
             style={{ background: "rgba(255,255,255,0.92)", backdropFilter: "blur(24px) saturate(200%)", WebkitBackdropFilter: "blur(24px) saturate(200%)", border: "1px solid rgba(203,213,225,0.5)", boxShadow: "0 8px 32px rgba(15,23,42,0.14), inset 0 1px 0 rgba(255,255,255,0.95)" }}
           >
-            <span className="text-[13px] font-medium text-slate-700">{saved ? "Zapisano zmiany ✓" : "Masz niezapisane zmiany"}</span>
-            {!saved && <InkButton size="sm" onClick={save} disabled={isPending}>{isPending ? "Zapisywanie…" : "Zapisz"}</InkButton>}
+            <span className="text-[13px] font-medium" style={{ color: hasInvalid ? "#BE123C" : "#334155" }}>
+              {saved ? "Zapisano zmiany ✓" : hasInvalid ? "Popraw godziny otwarcia" : "Masz niezapisane zmiany"}
+            </span>
+            {!saved && <InkButton size="sm" onClick={save} disabled={isPending || hasInvalid}>{isPending ? "Zapisywanie…" : "Zapisz"}</InkButton>}
           </motion.div>
         )}
       </AnimatePresence>

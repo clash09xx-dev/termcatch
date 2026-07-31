@@ -1,10 +1,11 @@
 "use client";
 
-import { useState, useMemo, useRef } from "react";
+import { useState, useMemo, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import type { Appointment, AppointmentAddon, Service, Employee, User, WorkingHours } from "@prisma/client";
 import {
   confirmAppointment, declineAppointment, completeAppointment, markNoShow,
+  businessRescheduleAppointment,
 } from "@/lib/actions/appointments";
 import { GlassModal, ModalInkButton, ModalGlassButton } from "@/components/ui/glass-modal";
 import { NewAppointmentSheet } from "@/components/business/new-appointment-sheet";
@@ -60,6 +61,12 @@ export function CalendarClient(props: Props) {
   const [selected, setSelected] = useState<ApptR | null>(null);
   const [actionError, setActionError] = useState("");
   const [isPending, setPending] = useState(false);
+  // Detail-modal sub-panels: the default action row, the mandatory-reason
+  // cancellation form, or the salon time-change form.
+  const [detailMode, setDetailMode] = useState<"actions" | "cancel" | "reschedule">("actions");
+  const [cancelReason, setCancelReason] = useState("");
+  const [reDate, setReDate] = useState("");
+  const [reTime, setReTime] = useState("");
   const [sheetOpen, setSheetOpen] = useState(!!props.openNewOnLoad);
   const [prefill, setPrefill] = useState<{ date?: string; time?: string }>({ date: props.prefillDate, time: props.prefillTime });
 
@@ -114,11 +121,81 @@ export function CalendarClient(props: Props) {
       .finally(() => setPending(false));
   }
 
-  const dayWin = windowFor(cursor) ?? [8 * 60, 20 * 60];
-  const [openMin, closeMin] = dayWin;
-  const isClosedToday = windowFor(cursor) === null;
-  const gridHours = Array.from({ length: Math.ceil((closeMin - openMin) / 60) + 1 }, (_, i) => openMin + i * 60).filter((m) => m <= closeMin);
+  // Reset the sub-panel + prefill the time-change form whenever a new
+  // appointment is opened (or the modal closes).
+  useEffect(() => {
+    setDetailMode("actions");
+    setCancelReason("");
+    setActionError("");
+    if (selected) {
+      const d = new Date(selected.startTime);
+      setReDate(ymd(d));
+      setReTime(hm(localMin(d)));
+    }
+  }, [selected]);
+
+  function submitCancel() {
+    if (!selected || isPending) return;
+    const reason = cancelReason.trim();
+    if (reason.length < 3) { setActionError("Podaj powód odwołania (min. 3 znaki)."); return; }
+    setActionError(""); setPending(true);
+    declineAppointment(selected.id, reason)
+      .then(() => { setSelected(null); router.refresh(); })
+      .catch((e: { message?: string }) => setActionError(e.message ?? "Wystąpił błąd."))
+      .finally(() => setPending(false));
+  }
+
+  function submitReschedule() {
+    if (!selected || isPending) return;
+    if (!reDate || !reTime) { setActionError("Podaj nową datę i godzinę."); return; }
+    setActionError(""); setPending(true);
+    businessRescheduleAppointment({ appointmentId: selected.id, date: reDate, time: reTime })
+      .then(() => { setSelected(null); router.refresh(); })
+      .catch((e: { message?: string }) => setActionError(e.message ?? "Wystąpił błąd."))
+      .finally(() => setPending(false));
+  }
+
   const dayAppts = apptsForDay(cursor);
+  // The visible timeline starts from the salon's working hours, then EXPANDS to
+  // include every appointment on the day — manual/out-of-hours bookings must
+  // never be clipped or pushed off the grid. Rounded to whole hours, clamped to
+  // a real 24-hour day. workOpen/workClose keep the salon's actual hours so the
+  // out-of-hours regions can be shaded as "closed".
+  const workWin = windowFor(cursor);
+  const isClosedToday = workWin === null;
+  const [workOpen, workClose] = workWin ?? [8 * 60, 20 * 60];
+  let rangeStart = workOpen;
+  let rangeEnd = workClose;
+  for (const a of dayAppts) {
+    const s = localMin(new Date(a.startTime));
+    const e = s + a.duration; // may exceed 24:00 for overnight — clamped below
+    rangeStart = Math.min(rangeStart, Math.floor(s / 60) * 60);
+    rangeEnd = Math.max(rangeEnd, Math.ceil(e / 60) * 60);
+  }
+  rangeStart = Math.max(0, rangeStart);
+  rangeEnd = Math.min(24 * 60, rangeEnd);
+  if (rangeEnd - rangeStart < 120) rangeEnd = Math.min(24 * 60, rangeStart + 120); // readable minimum
+  const openMin = rangeStart;
+  const closeMin = rangeEnd;
+  const gridHours = Array.from({ length: Math.ceil((closeMin - openMin) / 60) + 1 }, (_, i) => openMin + i * 60).filter((m) => m <= closeMin);
+
+  // Auto-scroll the day grid to a useful position: the current time when viewing
+  // today, otherwise the first appointment, otherwise the salon's opening hour.
+  const dayScrollRef = useRef<HTMLDivElement | null>(null);
+  useEffect(() => {
+    if (view !== "day") return;
+    const el = dayScrollRef.current;
+    if (!el) return;
+    const nowMin = localMin(new Date());
+    const isToday = sameDay(cursor, new Date());
+    let target: number;
+    if (isToday && nowMin >= openMin && nowMin <= closeMin) target = nowMin;
+    else if (dayAppts.length) target = Math.min(...dayAppts.map((a) => localMin(new Date(a.startTime))));
+    else target = isClosedToday ? openMin : workOpen;
+    const y = ((target - openMin) / 60) * HOUR_H - el.clientHeight * 0.3;
+    el.scrollTop = Math.max(0, y);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [view, props.focusDate, cursor, openMin, closeMin, appointments]);
   // Mobile agenda honors the specialist filter (desktop uses lanes instead).
   const dayApptsForView = empFilter === "all" ? dayAppts : dayAppts.filter((a) => a.employeeId === empFilter);
 
@@ -222,7 +299,7 @@ export function CalendarClient(props: Props) {
                     <div style={{ minWidth: `${minW}px` }}>
                       {isClosedToday && (
                         <div className="px-5 py-2 text-xs text-slate-500" style={{ borderBottom: HAIRLINE, background: "rgba(203,213,225,0.12)" }}>
-                          Salon zamknięty w tym dniu — pokazujemy 8:00–20:00 do ręcznych wpisów.
+                          Salon zamknięty w tym dniu — pokazujemy pełny dzień do ręcznych wpisów.
                         </div>
                       )}
                       {/* Lane headers — sticky, same template as the body */}
@@ -240,8 +317,10 @@ export function CalendarClient(props: Props) {
                           ))}
                         </div>
                       )}
-                      {/* Body — same template; vertical scroll only (no independent x-scroll) */}
-                      <div className="grid overflow-y-auto" style={{ gridTemplateColumns: cols, maxHeight: "calc(100vh - 240px)" }}>
+                      {/* Body — same template; vertical scroll only (no independent x-scroll).
+                          overscroll-contain keeps the wheel inside the timeline so the page
+                          never traps or steals the scroll. */}
+                      <div ref={dayScrollRef} className="grid overflow-y-auto" style={{ gridTemplateColumns: cols, maxHeight: "calc(100vh - 240px)", overscrollBehavior: "contain" }}>
                         {/* time gutter */}
                         <div className="w-14">
                           {gridHours.map((m) => (
@@ -257,6 +336,7 @@ export function CalendarClient(props: Props) {
                             <LaneColumn
                               key={emp?.id ?? li}
                               openMin={openMin} closeMin={closeMin} gridHours={gridHours}
+                              workOpen={workOpen} workClose={workClose} closed={isClosedToday}
                               appts={laneAppts} isToday={sameDay(cursor, now)} nowMin={localMin(now)}
                               onEmpty={(min) => openNewAt(cursor, min, emp?.id)}
                               onSelect={(a) => { setActionError(""); setSelected(a); }}
@@ -332,17 +412,51 @@ export function CalendarClient(props: Props) {
                 <span className="text-xs px-2.5 py-1 rounded-full font-semibold" style={statusMeta?.style}>{statusMeta?.label ?? selected.status}</span>
               </div>
               {selected.customerNotes && <Row label="Notatki" value={selected.customerNotes} />}
+              {selected.status === "CANCELLED_BUSINESS" && selected.cancellationReason && (
+                <Row label="Powód odwołania" value={selected.cancellationReason} />
+              )}
             </div>
             {actionError && <div role="alert" className="mt-4 px-3 py-2.5 rounded-xl" style={{ background: "rgba(244,63,94,0.08)", border: "1px solid rgba(244,63,94,0.25)" }}><p className="text-xs font-medium" style={{ color: "#BE123C" }}>{actionError}</p></div>}
             {(selected.status === "PENDING" || selected.status === "CONFIRMED" || selected.status === "IN_PROGRESS") && (
-              <div className="mt-5 pt-4 flex flex-wrap gap-2" style={{ borderTop: HAIRLINE }}>
-                {selected.status === "PENDING" && <ModalInkButton onClick={() => runAction(confirmAppointment)} disabled={isPending}>Potwierdź</ModalInkButton>}
-                {(selected.status === "CONFIRMED" || selected.status === "IN_PROGRESS") && <ModalInkButton onClick={() => runAction(completeAppointment)} disabled={isPending}>Zakończ</ModalInkButton>}
-                {(selected.status === "PENDING" || selected.status === "CONFIRMED") && (
-                  <>
-                    <ModalGlassButton onClick={() => runAction(markNoShow)} disabled={isPending}>No-show</ModalGlassButton>
-                    <ModalGlassButton onClick={() => runAction(declineAppointment)} disabled={isPending}>Odwołaj</ModalGlassButton>
-                  </>
+              <div className="mt-5 pt-4" style={{ borderTop: HAIRLINE }}>
+                {detailMode === "actions" && (
+                  <div className="flex flex-wrap gap-2">
+                    {selected.status === "PENDING" && <ModalInkButton onClick={() => runAction(confirmAppointment)} disabled={isPending}>Potwierdź</ModalInkButton>}
+                    {(selected.status === "CONFIRMED" || selected.status === "IN_PROGRESS") && <ModalInkButton onClick={() => runAction(completeAppointment)} disabled={isPending}>Zakończ</ModalInkButton>}
+                    {(selected.status === "PENDING" || selected.status === "CONFIRMED") && (
+                      <>
+                        <ModalGlassButton onClick={() => setDetailMode("reschedule")} disabled={isPending}>Zmień godzinę</ModalGlassButton>
+                        <ModalGlassButton onClick={() => runAction(markNoShow)} disabled={isPending}>No-show</ModalGlassButton>
+                        <ModalGlassButton onClick={() => setDetailMode("cancel")} disabled={isPending}>Odwołaj</ModalGlassButton>
+                      </>
+                    )}
+                  </div>
+                )}
+
+                {detailMode === "cancel" && (
+                  <div className="space-y-2.5">
+                    <label htmlFor="cancel-reason" className="block text-sm font-medium text-slate-700">Powód odwołania <span className="text-slate-400 font-normal">(zobaczy go klient)</span></label>
+                    <textarea id="cancel-reason" value={cancelReason} onChange={(e) => setCancelReason(e.target.value)} rows={3} maxLength={500} autoFocus placeholder="np. Nagła nieobecność specjalisty" className="input-glass w-full rounded-xl px-3 py-2 text-sm outline-none text-slate-800 placeholder:text-slate-400" />
+                    <div className="flex gap-2">
+                      <ModalGlassButton onClick={() => { setDetailMode("actions"); setActionError(""); }} disabled={isPending}>Wróć</ModalGlassButton>
+                      <ModalInkButton onClick={submitCancel} disabled={isPending || cancelReason.trim().length < 3}>{isPending ? "Odwoływanie…" : "Odwołaj wizytę"}</ModalInkButton>
+                    </div>
+                  </div>
+                )}
+
+                {detailMode === "reschedule" && (
+                  <div className="space-y-2.5">
+                    <label className="block text-sm font-medium text-slate-700">Nowy termin wizyty</label>
+                    <div className="flex gap-2">
+                      <input aria-label="Nowa data" type="date" value={reDate} onChange={(e) => setReDate(e.target.value)} className="input-glass flex-1 rounded-xl px-3 py-2 text-sm outline-none text-slate-800 tabular-nums" />
+                      <input aria-label="Nowa godzina" type="time" step={900} value={reTime} onChange={(e) => setReTime(e.target.value)} className="input-glass rounded-xl px-3 py-2 text-sm outline-none text-slate-800 tabular-nums" />
+                    </div>
+                    <p className="text-[11px] text-slate-400 leading-relaxed">Klient zostanie powiadomiony o zmianie — zobaczy poprzedni i nowy termin.</p>
+                    <div className="flex gap-2">
+                      <ModalGlassButton onClick={() => { setDetailMode("actions"); setActionError(""); }} disabled={isPending}>Wróć</ModalGlassButton>
+                      <ModalInkButton onClick={submitReschedule} disabled={isPending}>{isPending ? "Zapisywanie…" : "Zapisz nowy termin"}</ModalInkButton>
+                    </div>
+                  </div>
                 )}
               </div>
             )}
@@ -364,13 +478,23 @@ function Row({ label, value }: { label: string; value: string }) {
   );
 }
 
-function LaneColumn({ openMin, closeMin, gridHours, appts, isToday, nowMin, onEmpty, onSelect, blockStyle }: {
-  openMin: number; closeMin: number; gridHours: number[]; appts: ApptR[]; isToday: boolean; nowMin: number;
+function LaneColumn({ openMin, closeMin, gridHours, workOpen, workClose, closed, appts, isToday, nowMin, onEmpty, onSelect, blockStyle }: {
+  openMin: number; closeMin: number; gridHours: number[]; workOpen: number; workClose: number; closed: boolean;
+  appts: ApptR[]; isToday: boolean; nowMin: number;
   onEmpty: (min: number) => void; onSelect: (a: ApptR) => void; blockStyle: (a: ApptR) => { top: number; height: number };
 }) {
   const ref = useRef<HTMLDivElement | null>(null);
   const total = ((closeMin - openMin) / 60) * HOUR_H;
   const showNow = isToday && nowMin >= openMin && nowMin <= closeMin;
+  const CLOSED_BG = "rgba(203,213,225,0.16)";
+  // Closed-hours shading — the whole column when the salon is closed that day,
+  // otherwise the out-of-working-hours bands before opening / after closing.
+  const closedBands = closed
+    ? [{ top: 0, height: total }]
+    : [
+        { top: 0, height: ((Math.max(openMin, workOpen) - openMin) / 60) * HOUR_H },
+        { top: ((workClose - openMin) / 60) * HOUR_H, height: ((closeMin - Math.min(closeMin, workClose)) / 60) * HOUR_H },
+      ].filter((b) => b.height > 0);
   return (
     <div
       ref={ref}
@@ -383,6 +507,9 @@ function LaneColumn({ openMin, closeMin, gridHours, appts, isToday, nowMin, onEm
         onEmpty(Math.min(Math.max(min, openMin), closeMin - 15));
       }}
     >
+      {closedBands.map((b, i) => (
+        <div key={`closed-${i}`} className="absolute inset-x-0 pointer-events-none" style={{ top: b.top, height: b.height, background: CLOSED_BG }} aria-hidden="true" />
+      ))}
       {gridHours.map((m, i) => (
         <div key={m} className="absolute inset-x-0 group" style={{ top: i * HOUR_H, height: HOUR_H, borderBottom: "1px solid rgba(203,213,225,0.22)" }}>
           <span className="opacity-0 group-hover:opacity-100 transition-opacity absolute inset-1 rounded-md flex items-center justify-center pointer-events-none" style={{ background: "rgba(203,213,225,0.14)", border: "1px dashed rgba(148,163,184,0.4)" }}>

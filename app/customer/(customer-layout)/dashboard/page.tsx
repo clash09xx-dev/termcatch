@@ -363,6 +363,11 @@ export default async function CustomerDashboardPage() {
                     <p className="text-xs text-slate-500 truncate tabular-nums">
                       {apt.business.name} · {formatDate(apt.startTime, { day: "numeric", month: "short", year: "numeric" })}
                     </p>
+                    {apt.status === AppointmentStatus.CANCELLED_BUSINESS && apt.cancellationReason && (
+                      <p className="text-xs mt-0.5 truncate" style={{ color: "#B45309" }} title={apt.cancellationReason}>
+                        Odwołane przez salon: {apt.cancellationReason}
+                      </p>
+                    )}
                   </div>
                   {canReview ? (
                     <Link

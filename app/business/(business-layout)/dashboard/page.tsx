@@ -14,7 +14,7 @@ import { warsawDateString, warsawDayStartUtc, warsawDayEndUtc, warsawTimeString 
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import { AppointmentStatus, DayOfWeek } from "@prisma/client";
-import { confirmAppointment, declineAppointment } from "@/lib/actions/appointments";
+import { confirmAppointment } from "@/lib/actions/appointments";
 import {
   GlassCard, CardHeader, EmptyState, StatusBadge, InkLink, GlassLink,
   ChromeAvatar, Overline, Timeline, TimelineRow, HAIRLINE, CHIP, INK_BTN, GLASS_BTN, STATUS_TINT,
@@ -249,7 +249,9 @@ export default async function BusinessDashboardPage() {
               <div>
                 {pendingAppointments.map((apt, i) => {
                   const confirmWith = confirmAppointment.bind(null, apt.id);
-                  const declineWith = declineAppointment.bind(null, apt.id);
+                  // Declining requires a mandatory reason (stored + shown to the
+                  // customer), so decline is handled in the calendar's detail
+                  // panel rather than as a one-click action here.
                   return (
                     <div key={apt.id} className="px-4 py-3" style={i > 0 ? { borderTop: HAIRLINE } : undefined}>
                       <div className="flex items-center gap-2.5">
@@ -261,7 +263,7 @@ export default async function BusinessDashboardPage() {
                       </div>
                       <div className="flex gap-1.5 mt-2">
                         <form action={confirmWith} className="flex-1"><button className="btn-spring w-full py-1.5 rounded-lg text-[11px] font-semibold" style={INK_BTN}>Potwierdź</button></form>
-                        <form action={declineWith}><button className="btn-spring px-3 py-1.5 rounded-lg text-[11px] font-medium" style={GLASS_BTN}>Odmów</button></form>
+                        <Link href={`/business/calendar?date=${apt.startTime.toISOString().slice(0, 10)}`} className="btn-spring px-3 py-1.5 rounded-lg text-[11px] font-medium inline-flex items-center" style={GLASS_BTN}>Odwołaj</Link>
                       </div>
                     </div>
                   );

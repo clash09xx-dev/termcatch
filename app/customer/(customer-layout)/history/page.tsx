@@ -70,6 +70,11 @@ export default async function HistoryPage() {
                   {apt.service.name} ·{" "}
                   {apt.startTime.toLocaleDateString("pl-PL", { day: "numeric", month: "long", year: "numeric" })}
                 </p>
+                {apt.status === "CANCELLED_BUSINESS" && apt.cancellationReason && (
+                  <p className="text-xs mt-0.5" style={{ color: "#B45309" }}>
+                    Odwołane przez salon: {apt.cancellationReason}
+                  </p>
+                )}
               </div>
               <div className="text-right flex-shrink-0">
                 <p className="text-sm font-bold text-slate-900 tabular-nums">{formatCurrency(apt.price)}</p>
