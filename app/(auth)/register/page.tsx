@@ -1,11 +1,18 @@
 "use client";
 
-import { useActionState, useEffect, useState } from "react";
+import { useActionState, useEffect, useRef, useState, useTransition } from "react";
 import Link from "next/link";
-import { registerAction, signInWithGoogleAction, signInWithAppleAction } from "@/actions/auth";
+import {
+  registerAction,
+  signInWithGoogleAction,
+  signInWithAppleAction,
+  verifyEmailOtpAction,
+  resendEmailOtpAction,
+} from "@/actions/auth";
 import type { AuthState } from "@/actions/auth";
 import { cn } from "@/lib/utils";
 import { PasswordInput } from "@/components/ui/password-input";
+import { OtpInput } from "@/components/auth/otp-input";
 
 const initialState: AuthState = {};
 
@@ -25,6 +32,12 @@ export default function RegisterPage() {
     const r = new URLSearchParams(window.location.search).get("role");
     if (r === "business" || r === "BUSINESS_OWNER") setRole("BUSINESS_OWNER");
   }, []);
+
+  // After a successful sign-up a 6-digit code is e-mailed — switch to the
+  // in-app verification step (role is preserved via user_metadata + local state).
+  if (state.step === "verify" && state.email) {
+    return <VerifyEmailStep email={state.email} role={role} initialNotice={state.success} />;
+  }
 
   return (
     <div>
@@ -222,6 +235,164 @@ export default function RegisterPage() {
           ) : role === "BUSINESS_OWNER" ? "Zarejestruj salon" : "Utwórz konto"}
         </button>
       </form>
+    </div>
+  );
+}
+
+// ─── Step 2: verify the 6-digit e-mail code ──────────────────────────────────
+function VerifyEmailStep({
+  email,
+  role,
+  initialNotice,
+}: {
+  email: string;
+  role: "CUSTOMER" | "BUSINESS_OWNER";
+  initialNotice?: string;
+}) {
+  const [code, setCode] = useState("");
+  const [error, setError] = useState<string | null>(null);
+  const [notice, setNotice] = useState<string | null>(initialNotice ?? null);
+  const [cooldown, setCooldown] = useState(45);
+  const [isPending, start] = useTransition();
+  // Blocks duplicate verification submissions (auto-submit-on-complete + button).
+  const submittingRef = useRef(false);
+
+  useEffect(() => {
+    if (cooldown <= 0) return;
+    const t = setInterval(() => setCooldown((c) => (c <= 1 ? 0 : c - 1)), 1000);
+    return () => clearInterval(t);
+  }, [cooldown]);
+
+  const submit = (value: string) => {
+    if (submittingRef.current || isPending) return;
+    if (value.length !== 6) {
+      setError("Wpisz pełny 6-cyfrowy kod.");
+      return;
+    }
+    submittingRef.current = true;
+    setError(null);
+    setNotice(null);
+    start(async () => {
+      // On success the server action redirects (session set) — we only reach the
+      // lines below on failure.
+      const res = await verifyEmailOtpAction(email, value);
+      submittingRef.current = false;
+      if (res?.error) {
+        setError(res.error);
+        setCode(""); // clear the boxes so the user can retype cleanly
+      }
+    });
+  };
+
+  const resend = () => {
+    if (cooldown > 0 || isPending) return;
+    setError(null);
+    setNotice(null);
+    start(async () => {
+      const res = await resendEmailOtpAction(email);
+      if (res?.error) {
+        setError(res.error);
+        // If Supabase enforced its own cooldown, keep the button disabled a bit.
+        setCooldown(45);
+      } else {
+        setNotice(res?.success ?? "Wysłaliśmy nowy kod.");
+        setCode("");
+        setCooldown(45);
+      }
+    });
+  };
+
+  return (
+    <div>
+      <div className="mb-6">
+        <h1 className="text-xl font-semibold text-gray-900 tracking-tight">Potwierdź adres e-mail</h1>
+        <p className="mt-1.5 text-sm text-gray-500 leading-relaxed">
+          Wpisz 6-cyfrowy kod, który wysłaliśmy na{" "}
+          <span className="font-medium text-gray-900 break-all">{email}</span>.
+        </p>
+        <p className="mt-1 text-xs text-gray-400">
+          Zakładasz konto jako {role === "BUSINESS_OWNER" ? "właściciel salonu" : "klient"}.
+        </p>
+      </div>
+
+      <form
+        onSubmit={(e) => {
+          e.preventDefault();
+          submit(code);
+        }}
+        className="space-y-5"
+      >
+        <OtpInput
+          value={code}
+          onChange={(v) => {
+            setCode(v);
+            if (error) setError(null);
+          }}
+          onComplete={submit}
+          disabled={isPending}
+          hasError={!!error}
+          autoFocus
+          ariaDescribedBy="otp-status"
+        />
+
+        {/* Accessible live region — announces success/error to screen readers */}
+        <div id="otp-status" aria-live="polite" className="min-h-[1rem] text-center">
+          {error ? (
+            <p role="alert" className="text-sm font-medium text-red-600">{error}</p>
+          ) : notice ? (
+            <p className="text-sm text-gray-500">{notice}</p>
+          ) : null}
+        </div>
+
+        <button
+          type="submit"
+          disabled={isPending || code.length !== 6}
+          className="w-full py-2.5 px-4 font-semibold text-sm rounded-xl flex items-center justify-center gap-2 btn-spring glass-shimmer-wrap disabled:opacity-50 disabled:cursor-not-allowed"
+          style={{
+            background: "linear-gradient(135deg, #CBD5E1 0%, #94A3B8 50%, #CBD5E1 100%)",
+            color: "#0F172A",
+            border: "1px solid rgba(148,163,184,0.45)",
+            boxShadow: "0 1px 2px rgba(0,0,0,0.10), inset 0 1px 0 rgba(255,255,255,0.40)",
+          }}
+        >
+          {isPending ? (
+            <>
+              <svg className="animate-spin w-4 h-4" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+              </svg>
+              Weryfikacja...
+            </>
+          ) : (
+            "Zweryfikuj i kontynuuj"
+          )}
+        </button>
+      </form>
+
+      {/* Resend with visible countdown + cooldown */}
+      <div className="mt-5 text-center text-sm">
+        {cooldown > 0 ? (
+          <span className="text-gray-400">
+            Nie masz kodu? Wyślij ponownie za <span className="tabular-nums font-medium text-gray-500">{cooldown}s</span>
+          </span>
+        ) : (
+          <button
+            type="button"
+            onClick={resend}
+            disabled={isPending}
+            className="text-gray-900 font-medium underline underline-offset-2 hover:no-underline transition-all disabled:opacity-50"
+          >
+            Wyślij kod ponownie
+          </button>
+        )}
+      </div>
+
+      <div className="mt-6 pt-5 text-center" style={{ borderTop: "1px solid rgba(203,213,225,0.45)" }}>
+        {/* Full reload resets the sign-up state so a different address can be used */}
+        <a href="/register" className="text-xs text-gray-500 hover:text-gray-800 transition-colors">
+          Użyj innego adresu e-mail
+        </a>
+      </div>
     </div>
   );
 }

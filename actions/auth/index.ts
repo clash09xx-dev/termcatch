@@ -2,9 +2,65 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import { cookies } from "next/headers";
 import { createClient } from "@/lib/supabase/server";
 import { prisma } from "@/lib/prisma";
 import { z } from "zod";
+
+/** Server-built app origin (never trusts the client). */
+function appUrl(): string {
+  return (process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000").trim().replace(/\/+$/, "");
+}
+
+// ── E-mail OTP resend cooldown (app-level backstop over Supabase's own limits) ──
+const OTP_COOLDOWN_MS = 45_000;
+const OTP_COOKIE = "tc_otp_sent_at";
+
+async function markOtpSent(): Promise<void> {
+  try {
+    const jar = await cookies();
+    jar.set(OTP_COOKIE, String(Date.now()), { httpOnly: true, sameSite: "lax", secure: process.env.NODE_ENV === "production", maxAge: 120, path: "/" });
+  } catch {
+    // best-effort — the client countdown + Supabase rate limit are the real gates
+  }
+}
+
+async function otpCooldownRemainingMs(): Promise<number> {
+  try {
+    const jar = await cookies();
+    const raw = jar.get(OTP_COOKIE)?.value;
+    const last = raw ? Number(raw) : 0;
+    if (!Number.isFinite(last) || last <= 0) return 0;
+    return Math.max(0, OTP_COOLDOWN_MS - (Date.now() - last));
+  } catch {
+    return 0;
+  }
+}
+
+/** Upsert the local DB user for a confirmed Supabase account. Never throws. */
+async function syncDbUser(
+  supabaseId: string,
+  u: { email: string; firstName: string; lastName: string; role: "CUSTOMER" | "BUSINESS_OWNER" }
+): Promise<void> {
+  try {
+    await prisma.user.upsert({
+      where: { supabaseId },
+      create: {
+        supabaseId,
+        email: u.email,
+        firstName: u.firstName || "Użytkownik",
+        lastName: u.lastName || "",
+        role: u.role,
+        isVerified: true,
+        lastLoginAt: new Date(),
+      },
+      update: { lastLoginAt: new Date(), isVerified: true },
+    });
+  } catch (err) {
+    // Non-fatal — the account exists in Supabase Auth; a later request re-syncs.
+    console.error("[auth] DB sync error:", err);
+  }
+}
 
 const RegisterSchema = z.object({
   firstName: z.string().min(2, "Imię musi mieć min. 2 znaki"),
@@ -28,6 +84,10 @@ export type AuthState = {
   error?: string;
   success?: string;
   fieldErrors?: Record<string, string[]>;
+  /** When set to "verify", the UI switches to the 6-digit code step. */
+  step?: "verify";
+  /** The address the code was sent to (echoed back to the verify step). */
+  email?: string;
 };
 
 export async function registerAction(
@@ -52,17 +112,20 @@ export async function registerAction(
 
   const { firstName, lastName, email, password, role } = parsed.data;
 
-  // ── Step 1: Supabase Auth ──────────────────────────────────────
-  let supabaseUserId: string | null = null;
+  // ── Supabase sign-up — creates a password account and e-mails a 6-digit
+  //    confirmation code (the "Confirm signup" template must render {{ .Token }}).
+  //    The role/name live in user_metadata so they survive the verify step. ──
+  let sessionUserId: string | null = null;
   let hasSession = false;
-
   try {
     const supabase = await createClient();
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
       options: {
-        emailRedirectTo: `${process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000"}/auth/callback`,
+        // Fallback link target if the template also offers a link — the primary
+        // action is the code, verified in-app.
+        emailRedirectTo: `${appUrl()}/auth/callback`,
         data: {
           firstName,
           lastName,
@@ -74,55 +137,113 @@ export async function registerAction(
 
     if (error) {
       const msg = error.message.toLowerCase();
-      if (msg.includes("already registered") || msg.includes("user already exists") || msg.includes("already been registered")) {
-        return { error: "Ten adres e-mail jest już zarejestrowany. Zaloguj się lub użyj innego adresu." };
+      if (msg.includes("rate limit") || msg.includes("too many") || msg.includes("seconds")) {
+        return { error: "Zbyt wiele prób. Poczekaj chwilę i spróbuj ponownie." };
       }
       if (msg.includes("password")) {
         return { error: "Hasło nie spełnia wymagań bezpieczeństwa (min. 8 znaków)." };
       }
-      if (msg.includes("rate limit") || msg.includes("too many")) {
-        return { error: "Zbyt wiele prób. Poczekaj chwilę i spróbuj ponownie." };
+      if (msg.includes("already registered") || msg.includes("already exists") || msg.includes("already been registered")) {
+        // NEVER reveal that the address already exists. Behave exactly like a
+        // fresh sign-up and move to the code step; an existing/confirmed account
+        // simply won't produce a working code (indistinguishable to an attacker).
+        await markOtpSent();
+        return { step: "verify", email, success: `Wysłaliśmy 6-cyfrowy kod na ${email}.` };
       }
-      // Show the actual error for easier debugging
-      return { error: `Błąd: ${error.message}` };
+      if (msg.includes("invalid") && msg.includes("email")) {
+        return { error: "Nieprawidłowy adres e-mail." };
+      }
+      return { error: "Nie udało się utworzyć konta. Spróbuj ponownie." };
     }
 
-    supabaseUserId = data.user?.id ?? null;
-    hasSession = !!data.session;
+    sessionUserId = data.user?.id ?? null;
+    hasSession = Boolean(data.session);
   } catch (err) {
     console.error("[register] Supabase error:", err);
     return { error: "Nie można połączyć z serwerem autoryzacji. Sprawdź połączenie internetowe." };
   }
 
-  // ── Step 2: Sync to DB (non-blocking) ─────────────────────────
-  if (supabaseUserId) {
-    try {
-      await prisma.user.upsert({
-        where: { supabaseId: supabaseUserId },
-        create: {
-          supabaseId: supabaseUserId,
-          email,
-          firstName,
-          lastName,
-          role: role as "CUSTOMER" | "BUSINESS_OWNER",
-        },
-        update: {},
-      });
-    } catch (err) {
-      // Non-fatal — user exists in Supabase Auth, DB sync will happen on next login
-      console.error("[register] DB sync error:", err);
-    }
-
-    // ── Step 3: Redirect if auto-confirmed ────────────────────────
-    if (hasSession) {
-      revalidatePath("/", "layout");
-      redirect(role === "BUSINESS_OWNER" ? "/business/onboarding" : "/customer/dashboard");
-    }
+  // Edge case: if e-mail confirmation is disabled in Supabase, sign-up returns a
+  // live session immediately (no code sent). Sync + route straight in. redirect()
+  // stays OUTSIDE the try above so its control-flow signal isn't swallowed.
+  if (hasSession && sessionUserId) {
+    await syncDbUser(sessionUserId, { email, firstName, lastName, role: role as "CUSTOMER" | "BUSINESS_OWNER" });
+    revalidatePath("/", "layout");
+    redirect(role === "BUSINESS_OWNER" ? "/business/onboarding" : "/customer/dashboard");
   }
 
-  return {
-    success: "Konto utworzone! Sprawdź skrzynkę e-mail, potwierdź rejestrację, a następnie się zaloguj.",
-  };
+  // Normal path: a code was e-mailed — move to the in-app verification step.
+  await markOtpSent();
+  return { step: "verify", email, success: `Wysłaliśmy 6-cyfrowy kod na ${email}.` };
+}
+
+// ─── E-mail OTP: verify the 6-digit code ──────────────────────
+// On success Supabase writes the session cookies (via the SSR client), so the
+// user is authenticated immediately and routed by role — never back to /login.
+export async function verifyEmailOtpAction(emailRaw: string, tokenRaw: string): Promise<AuthState> {
+  const email = (emailRaw ?? "").trim().toLowerCase();
+  const token = (tokenRaw ?? "").replace(/\D/g, "");
+
+  if (!z.string().email().safeParse(email).success) return { error: "Nieprawidłowy adres e-mail." };
+  if (token.length !== 6) return { error: "Wpisz pełny 6-cyfrowy kod." };
+
+  const supabase = await createClient();
+  const { data, error } = await supabase.auth.verifyOtp({ email, token, type: "signup" });
+
+  if (error) {
+    const msg = error.message.toLowerCase();
+    if (msg.includes("expired")) return { error: "Kod wygasł. Wyślij nowy kod i spróbuj ponownie." };
+    if (msg.includes("already") && msg.includes("confirm")) return { error: "Ten kod został już użyty. Zaloguj się lub wyślij nowy kod." };
+    if (msg.includes("invalid") || msg.includes("incorrect") || msg.includes("token") || msg.includes("otp")) {
+      return { error: "Nieprawidłowy kod. Sprawdź cyfry i spróbuj ponownie." };
+    }
+    return { error: "Nie udało się zweryfikować kodu. Spróbuj ponownie." };
+  }
+
+  const user = data.user;
+  if (!user) return { error: "Nie udało się zweryfikować kodu. Spróbuj ponownie." };
+
+  // Role/name come from server-set user_metadata (not from the browser).
+  const meta = (user.user_metadata ?? {}) as Record<string, unknown>;
+  const role: "CUSTOMER" | "BUSINESS_OWNER" = meta.role === "BUSINESS_OWNER" ? "BUSINESS_OWNER" : "CUSTOMER";
+  await syncDbUser(user.id, {
+    email: user.email ?? email,
+    firstName: typeof meta.firstName === "string" ? meta.firstName : "",
+    lastName: typeof meta.lastName === "string" ? meta.lastName : "",
+    role,
+  });
+
+  revalidatePath("/", "layout");
+  redirect(role === "BUSINESS_OWNER" ? "/business/onboarding" : "/customer/dashboard");
+}
+
+// ─── E-mail OTP: resend the code ──────────────────────────────
+export async function resendEmailOtpAction(emailRaw: string): Promise<AuthState> {
+  const email = (emailRaw ?? "").trim().toLowerCase();
+  if (!z.string().email().safeParse(email).success) return { error: "Nieprawidłowy adres e-mail." };
+
+  const remaining = await otpCooldownRemainingMs();
+  if (remaining > 0) {
+    return { error: `Odczekaj ${Math.ceil(remaining / 1000)} s przed ponownym wysłaniem kodu.` };
+  }
+
+  const supabase = await createClient();
+  const { error } = await supabase.auth.resend({
+    type: "signup",
+    email,
+    options: { emailRedirectTo: `${appUrl()}/auth/callback` },
+  });
+  await markOtpSent(); // set cooldown even on failure — blocks hammering
+
+  if (error) {
+    const msg = error.message.toLowerCase();
+    if (msg.includes("rate") || msg.includes("too many") || msg.includes("seconds")) {
+      return { error: "Zbyt wiele prób. Poczekaj chwilę i spróbuj ponownie." };
+    }
+    // Enumeration-safe: never disclose whether this address needs verification.
+    return { success: `Jeśli konto wymaga weryfikacji, wysłaliśmy nowy kod na ${email}.` };
+  }
+  return { success: `Wysłaliśmy nowy kod na ${email}.` };
 }
 
 export async function loginAction(
