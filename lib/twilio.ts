@@ -12,27 +12,25 @@
 import "server-only";
 import twilio from "twilio";
 import { normalizePhone } from "@/lib/phone";
+import {
+  resolveSender,
+  senderParams,
+  smsProviderConfigured,
+  missingSmsEnv,
+} from "@/lib/sms-config";
 
-/** Env vars required for outbound SMS. Missing/placeholder values disable sending. */
-export const REQUIRED_TWILIO_ENV = [
-  "TWILIO_ACCOUNT_SID",
-  "TWILIO_API_KEY_SID",
-  "TWILIO_API_KEY_SECRET",
-  "TWILIO_FROM_NUMBER",
-] as const;
-
-function present(value: string | undefined): boolean {
-  return typeof value === "string" && value.trim().length > 0 && !value.includes("...");
-}
-
-/** Names of the required Twilio env vars that are missing or still placeholders. */
+/**
+ * Names of the required Twilio env vars that are missing or still placeholders,
+ * including the sender requirement (a Messaging Service SID OR a from-number).
+ * Delegates to the single config helper so this never drifts from lib/sms.ts.
+ */
 export function missingTwilioEnv(): string[] {
-  return REQUIRED_TWILIO_ENV.filter((key) => !present(process.env[key]));
+  return missingSmsEnv();
 }
 
-/** True when every required Twilio SMS env var is set to a real value. */
+/** True when Twilio is fully configured to send (credentials + a usable sender). */
 export function twilioSmsConfigured(): boolean {
-  return missingTwilioEnv().length === 0;
+  return smsProviderConfigured();
 }
 
 let cachedClient: ReturnType<typeof twilio> | null = null;
@@ -76,7 +74,9 @@ type TwilioLikeError = { code?: unknown; status?: unknown; message?: unknown };
 /**
  * Send one SMS via the API-key client.
  * - Normalizes Polish numbers to E.164 and refuses invalid ones (no send).
- * - Uses TWILIO_MESSAGING_SERVICE_SID when configured, otherwise TWILIO_FROM_NUMBER.
+ * - Sender is resolved centrally: the "termcatch" Messaging Service SID when set
+ *   (so Poland sees `TermCatch`), otherwise the legacy from-number fallback.
+ *   Exactly one of messagingServiceSid / from is ever sent — never both.
  * - On failure logs only the Twilio error code + HTTP status — never the API key
  *   secret, Auth Token, recipient number, or message body.
  */
@@ -85,6 +85,11 @@ export async function sendSms(to: string, body: string): Promise<SendSmsResult> 
   if (!normalized) return { ok: false, error: "invalid_phone" };
   if (!body || !body.trim()) return { ok: false, error: "empty_body" };
 
+  // Configuration errors are distinct from Twilio API rejections: no sender or no
+  // credentials → "unconfigured" (never reaches the network).
+  const sender = resolveSender();
+  if (!sender) return { ok: false, error: "unconfigured" };
+
   let client: ReturnType<typeof twilio>;
   try {
     client = getTwilioClient();
@@ -92,9 +97,6 @@ export async function sendSms(to: string, body: string): Promise<SendSmsResult> 
     return { ok: false, error: "unconfigured" };
   }
 
-  const messagingServiceSid = present(process.env.TWILIO_MESSAGING_SERVICE_SID)
-    ? process.env.TWILIO_MESSAGING_SERVICE_SID
-    : undefined;
   const appUrl = process.env.NEXT_PUBLIC_APP_URL;
   const statusCallback = appUrl?.startsWith("https://") ? `${appUrl}/api/sms/status` : undefined;
 
@@ -102,9 +104,8 @@ export async function sendSms(to: string, body: string): Promise<SendSmsResult> 
     const message = await client.messages.create({
       to: normalized,
       body,
-      ...(messagingServiceSid
-        ? { messagingServiceSid }
-        : { from: process.env.TWILIO_FROM_NUMBER }),
+      // Exactly one sender field (messagingServiceSid XOR from) — never both.
+      ...senderParams(sender),
       ...(statusCallback ? { statusCallback } : {}),
     });
     return { ok: true, sid: message.sid, status: message.status };

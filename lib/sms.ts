@@ -10,31 +10,13 @@
 import { createHmac, timingSafeEqual } from "crypto";
 import { prisma } from "@/lib/prisma";
 import { normalizePhone } from "@/lib/phone";
+// The flag + readiness live in ONE place (lib/sms-config) so this module and the
+// Twilio client never disagree about whether/how SMS can be sent. Re-exported
+// here so existing importers (tests, cron, lib/messaging) keep their path.
+import { smsFlagEnabled, smsReady } from "@/lib/sms-config";
+export { smsFlagEnabled, smsReady };
 
 export type SmsTemplate = "booked" | "confirmed" | "rescheduled" | "cancelled" | "declined" | "reminder" | "salon" | "marketing";
-
-export function smsFlagEnabled(): boolean {
-  return process.env.SMS_ENABLED === "true";
-}
-
-/**
- * SMS provider is configured for sending: the API-key credentials + a sender
- * number are all present. Mirrors REQUIRED_TWILIO_ENV in lib/twilio.ts — kept as
- * a light, dependency-free check so this module (and the test suite that imports
- * it) never has to load the Twilio SDK just to read a flag.
- */
-function twilioSmsConfigured(): boolean {
-  const required = ["TWILIO_ACCOUNT_SID", "TWILIO_API_KEY_SID", "TWILIO_API_KEY_SECRET", "TWILIO_FROM_NUMBER"];
-  return required.every((key) => {
-    const v = process.env[key];
-    return typeof v === "string" && v.trim().length > 0 && !v.includes("...");
-  });
-}
-
-/** SMS is genuinely available: flag on AND provider configured. */
-export function smsReady(): boolean {
-  return smsFlagEnabled() && twilioSmsConfigured();
-}
 
 /** +48123456789 → +48•••••6789 — safe for logs and the audit table. */
 export function maskPhone(e164: string): string {

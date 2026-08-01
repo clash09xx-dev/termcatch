@@ -1,7 +1,15 @@
 /**
- * SMS i WhatsApp przez Twilio (REST API, bez SDK).
- * Graceful no-op, gdy klucze Twilio nie są skonfigurowane —
- * wysyłka po prostu jest pomijana z logiem, aplikacja działa dalej.
+ * Kanały wiadomości (SMS + WhatsApp).
+ *
+ * WAŻNE — rozdział odpowiedzialności:
+ * - SMS jest wysyłany WYŁĄCZNIE przez rdzeń w lib/sms → lib/twilio (klient
+ *   API-key + Messaging Service SID / `TermCatch`). `sendSms()` tutaj tylko do
+ *   niego deleguje — nie tworzy własnego żądania Twilio.
+ * - `twilioSend()` poniżej (Twilio REST + Auth Token) obsługuje TYLKO WhatsApp,
+ *   który jest domyślnie WYŁĄCZONY (WHATSAPP_ENABLED). Nie wolno go używać do
+ *   SMS-ów, a `TWILIO_WHATSAPP_FROM` nigdy nie jest nadawcą SMS.
+ * Graceful no-op, gdy Twilio nie jest skonfigurowane — wysyłka jest pomijana z
+ * logiem, a aplikacja działa dalej.
  */
 
 import { sendRawSms, smsReady } from "@/lib/sms";
@@ -38,6 +46,8 @@ export function whatsappConfigured(): boolean {
   return twilioConfigured() && from.length > 0 && !from.includes("...");
 }
 
+// WhatsApp-only Twilio REST sender (Auth Token). NEVER used for SMS — the SMS
+// path is lib/sms → lib/twilio (API-key client + Messaging Service).
 async function twilioSend(to: string, from: string, body: string): Promise<boolean> {
   if (!twilioConfigured()) {
     console.log(`[messaging:skipped] ${to} — brak konfiguracji Twilio`);
