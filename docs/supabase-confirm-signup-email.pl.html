@@ -1,9 +1,26 @@
 <!--
-  TermCatch — Supabase Auth "Confirm signup" e-mail template (Polish).
-  Paste into: Supabase Dashboard → Authentication → Emails → "Confirm signup".
-  Uses the Supabase token variable {{ .Token }} to render the 6-digit code.
-  The primary action is the CODE (entered in-app), NOT a magic-link button.
-  Subject line to set: Twój kod weryfikacyjny TermCatch: {{ .Token }}
+  TermCatch — Supabase Auth "Confirm signup" e-mail (Polish, CODE-ONLY).
+  ════════════════════════════════════════════════════════════════════════════
+  This is the fix for "Supabase sends a link/button instead of a 6-digit code".
+  The repository CANNOT change a hosted Supabase template — you must paste this in.
+
+  Dashboard steps (exact):
+    1. Supabase → Project → Authentication → Emails → Templates → "Confirm signup".
+    2. Subject:  Kod weryfikacyjny TermCatch
+    3. Message body: replace the ENTIRE default template with the HTML below.
+       (The default uses {{ .ConfirmationURL }} — a magic-link button. This one
+        uses ONLY {{ .Token }}, so there is no button, no link, no raw URL.)
+    4. Save.
+
+  Sender identity — Supabase → Authentication → Emails → SMTP Settings:
+    • Sender name:  TermCatch
+    • Sender email: notifications@termcatch.com     (NOT no-reply@)
+  Reply-To (hello@termcatch.com): Supabase's SMTP UI has no Reply-To field, so
+  make notifications@termcatch.com a monitored/forwarding inbox (forward → hello@),
+  or set a Reply-To header at the Resend layer if you route SMTP through Resend.
+
+  Code validity: matches Authentication → Providers → Email → "Email OTP Expiration"
+  (Supabase default 3600s = 1 hour). Keep the copy below in sync if you change it.
 -->
 <!DOCTYPE html>
 <html lang="pl">
@@ -24,18 +41,18 @@
             <!-- Heading -->
             <tr>
               <td style="padding:24px 32px 4px;">
-                <h1 style="margin:0;font-size:20px;font-weight:700;color:#111827;">Potwierdź swój adres e-mail</h1>
+                <h1 style="margin:0;font-size:20px;font-weight:700;color:#111827;">Twój kod weryfikacyjny</h1>
               </td>
             </tr>
             <tr>
               <td style="padding:0 32px;">
                 <p style="margin:8px 0;font-size:14px;line-height:1.6;color:#4b5563;">
-                  Dziękujemy za rejestrację w TermCatch. Wpisz poniższy 6-cyfrowy kod w aplikacji, aby dokończyć zakładanie konta.
+                  Wpisz poniższy 6-cyfrowy kod w aplikacji TermCatch, aby dokończyć zakładanie konta.
                 </p>
               </td>
             </tr>
 
-            <!-- The 6-digit code (primary action) -->
+            <!-- The 6-digit code — the ONLY action. No button, no link, no URL. -->
             <tr>
               <td style="padding:20px 32px 8px;">
                 <div style="background-color:#f1f6fb;border:1px solid #e5eaf1;border-radius:12px;padding:20px;text-align:center;">
@@ -44,11 +61,11 @@
               </td>
             </tr>
 
-            <!-- Expiry -->
+            <!-- Validity -->
             <tr>
               <td style="padding:6px 32px 0;">
                 <p style="margin:8px 0;font-size:13px;line-height:1.6;color:#6b7280;">
-                  Kod jest ważny przez 60 minut. Jeśli wygaśnie, poproś o nowy kod w aplikacji.
+                  Kod jest ważny przez 1 godzinę. Jeśli wygaśnie, poproś w aplikacji o nowy kod.
                 </p>
               </td>
             </tr>
@@ -57,7 +74,7 @@
             <tr>
               <td style="padding:8px 32px 0;">
                 <p style="margin:8px 0;font-size:13px;line-height:1.6;color:#6b7280;">
-                  Nie udostępniaj tego kodu nikomu — pracownicy TermCatch nigdy o niego nie proszą. Jeśli to nie Ty próbujesz założyć konto, zignoruj tę wiadomość.
+                  Nie udostępniaj tego kodu nikomu — pracownicy TermCatch nigdy o niego nie proszą. Jeśli to nie Ty zakładasz konto, zignoruj tę wiadomość.
                 </p>
               </td>
             </tr>
@@ -70,7 +87,7 @@
                   Potrzebujesz pomocy? Napisz do nas: <a href="mailto:hello@termcatch.com" style="color:#4b5563;text-decoration:underline;">hello@termcatch.com</a>
                 </p>
                 <p style="margin:0;font-size:12px;color:#9ca3af;">
-                  Ta wiadomość została wysłana automatycznie przez TermCatch.
+                  TermCatch · <a href="https://termcatch.com" style="color:#9ca3af;text-decoration:underline;">termcatch.com</a>
                 </p>
               </td>
             </tr>
@@ -80,3 +97,23 @@
     </table>
   </body>
 </html>
+
+<!--
+  ─── PLAIN-TEXT VERSION (reference) ─────────────────────────────────────────
+  Supabase's dashboard template is HTML-only (no separate plain-text field). Keep
+  this alongside so the copy has a text equivalent; use it if you send this via a
+  provider/template that supports a multipart text/plain part.
+
+  Subject: Kod weryfikacyjny TermCatch
+
+  Twój kod weryfikacyjny TermCatch to: {{ .Token }}
+
+  Wpisz go w aplikacji, aby dokończyć zakładanie konta.
+  Kod jest ważny przez 1 godzinę.
+
+  Nie udostępniaj tego kodu nikomu — pracownicy TermCatch nigdy o niego nie proszą.
+  Jeśli to nie Ty zakładasz konto, zignoruj tę wiadomość.
+
+  Pomoc: hello@termcatch.com
+  TermCatch — https://termcatch.com
+-->

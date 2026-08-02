@@ -12,8 +12,15 @@ function appUrl(): string {
   return (process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000").trim().replace(/\/+$/, "");
 }
 
+/** Only internal paths are allowed as a post-verification destination (no open
+ * redirects, never an absolute URL). */
+function safeNext(raw: unknown): string | undefined {
+  const s = typeof raw === "string" ? raw.trim() : "";
+  return s.startsWith("/") && !s.startsWith("//") ? s : undefined;
+}
+
 // ── E-mail OTP resend cooldown (app-level backstop over Supabase's own limits) ──
-const OTP_COOLDOWN_MS = 45_000;
+const OTP_COOLDOWN_MS = 60_000;
 const OTP_COOKIE = "tc_otp_sent_at";
 
 async function markOtpSent(): Promise<void> {
@@ -88,6 +95,8 @@ export type AuthState = {
   step?: "verify";
   /** The address the code was sent to (echoed back to the verify step). */
   email?: string;
+  /** Safe internal path to continue to after verification (customer flow). */
+  next?: string;
 };
 
 export async function registerAction(
@@ -102,6 +111,8 @@ export async function registerAction(
     role: (formData.get("role") as string) ?? "CUSTOMER",
     acceptTerms: formData.get("acceptTerms") === "on",
   };
+  // Optional intended destination for the customer flow (validated, internal-only).
+  const nextParam = safeNext(formData.get("next"));
 
   const parsed = RegisterSchema.safeParse(raw);
   if (!parsed.success) {
@@ -148,7 +159,7 @@ export async function registerAction(
         // fresh sign-up and move to the code step; an existing/confirmed account
         // simply won't produce a working code (indistinguishable to an attacker).
         await markOtpSent();
-        return { step: "verify", email, success: `Wysłaliśmy 6-cyfrowy kod na ${email}.` };
+        return { step: "verify", email, next: nextParam, success: `Wysłaliśmy 6-cyfrowy kod na ${email}.` };
       }
       if (msg.includes("invalid") && msg.includes("email")) {
         return { error: "Nieprawidłowy adres e-mail." };
@@ -169,20 +180,21 @@ export async function registerAction(
   if (hasSession && sessionUserId) {
     await syncDbUser(sessionUserId, { email, firstName, lastName, role: role as "CUSTOMER" | "BUSINESS_OWNER" });
     revalidatePath("/", "layout");
-    redirect(role === "BUSINESS_OWNER" ? "/business/onboarding" : "/customer/dashboard");
+    redirect(role === "BUSINESS_OWNER" ? "/business/onboarding" : (nextParam ?? "/customer/dashboard"));
   }
 
   // Normal path: a code was e-mailed — move to the in-app verification step.
   await markOtpSent();
-  return { step: "verify", email, success: `Wysłaliśmy 6-cyfrowy kod na ${email}.` };
+  return { step: "verify", email, next: nextParam, success: `Wysłaliśmy 6-cyfrowy kod na ${email}.` };
 }
 
 // ─── E-mail OTP: verify the 6-digit code ──────────────────────
 // On success Supabase writes the session cookies (via the SSR client), so the
 // user is authenticated immediately and routed by role — never back to /login.
-export async function verifyEmailOtpAction(emailRaw: string, tokenRaw: string): Promise<AuthState> {
+export async function verifyEmailOtpAction(emailRaw: string, tokenRaw: string, nextRaw?: string): Promise<AuthState> {
   const email = (emailRaw ?? "").trim().toLowerCase();
   const token = (tokenRaw ?? "").replace(/\D/g, "");
+  const next = safeNext(nextRaw);
 
   if (!z.string().email().safeParse(email).success) return { error: "Nieprawidłowy adres e-mail." };
   if (token.length !== 6) return { error: "Wpisz pełny 6-cyfrowy kod." };
@@ -214,7 +226,9 @@ export async function verifyEmailOtpAction(emailRaw: string, tokenRaw: string): 
   });
 
   revalidatePath("/", "layout");
-  redirect(role === "BUSINESS_OWNER" ? "/business/onboarding" : "/customer/dashboard");
+  // Business always continues into the onboarding/subscription flow (never bypass
+  // it via `next`); customers go to their intended destination or the dashboard.
+  redirect(role === "BUSINESS_OWNER" ? "/business/onboarding" : (next ?? "/customer/dashboard"));
 }
 
 // ─── E-mail OTP: resend the code ──────────────────────────────

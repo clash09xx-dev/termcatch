@@ -16,6 +16,26 @@ import { OtpInput } from "@/components/auth/otp-input";
 
 const initialState: AuthState = {};
 
+// Pending-verification handoff, so a refresh / back-navigation on the code screen
+// keeps the pending e-mail (and role/destination) instead of dropping the user
+// back to an empty form. sessionStorage is per-tab and cleared on success.
+const OTP_STORAGE_KEY = "tc_pending_otp";
+type PendingOtp = { email: string; role: "CUSTOMER" | "BUSINESS_OWNER"; next?: string };
+
+function readPendingOtp(): PendingOtp | null {
+  try {
+    const raw = sessionStorage.getItem(OTP_STORAGE_KEY);
+    if (!raw) return null;
+    const p = JSON.parse(raw);
+    if (p && typeof p.email === "string") {
+      return { email: p.email, role: p.role === "BUSINESS_OWNER" ? "BUSINESS_OWNER" : "CUSTOMER", next: typeof p.next === "string" ? p.next : undefined };
+    }
+  } catch {
+    /* ignore */
+  }
+  return null;
+}
+
 // Włącz po skonfigurowaniu Apple Developer Account (Supabase → Providers → Apple)
 const APPLE_SIGNIN_ENABLED = false;
 
@@ -25,18 +45,42 @@ const inputCls =
 export default function RegisterPage() {
   const [state, formAction, isPending] = useActionState(registerAction, initialState);
   const [role, setRole] = useState<"CUSTOMER" | "BUSINESS_OWNER">("CUSTOMER");
+  const [next, setNext] = useState<string>("");
+  const [pending, setPending] = useState<PendingOtp | null>(null);
 
-  // Preselect the business-owner role when arriving via ?role=business (all the
-  // "Załóż konto salonu" CTAs), so the correct onboarding flow follows.
+  // Preselect the business-owner role via ?role=business, capture an optional
+  // intended destination (?next / ?redirect, internal only), and restore a
+  // pending verification after a refresh / back-navigation.
   useEffect(() => {
-    const r = new URLSearchParams(window.location.search).get("role");
+    const params = new URLSearchParams(window.location.search);
+    const r = params.get("role");
     if (r === "business" || r === "BUSINESS_OWNER") setRole("BUSINESS_OWNER");
+    const n = params.get("next") ?? params.get("redirect") ?? "";
+    if (n.startsWith("/") && !n.startsWith("//")) setNext(n);
+    const restored = readPendingOtp();
+    if (restored) {
+      setRole(restored.role);
+      setPending(restored);
+    }
   }, []);
 
-  // After a successful sign-up a 6-digit code is e-mailed — switch to the
-  // in-app verification step (role is preserved via user_metadata + local state).
-  if (state.step === "verify" && state.email) {
-    return <VerifyEmailStep email={state.email} role={role} initialNotice={state.success} />;
+  // When the sign-up action moves us to the code step, persist it so a refresh
+  // keeps the pending e-mail (and never re-runs sign-up → no duplicate accounts).
+  useEffect(() => {
+    if (state.step === "verify" && state.email) {
+      const p: PendingOtp = { email: state.email, role, next: state.next };
+      try { sessionStorage.setItem(OTP_STORAGE_KEY, JSON.stringify(p)); } catch { /* ignore */ }
+      setPending(p);
+    }
+  }, [state.step, state.email, state.next, role]);
+
+  // Show the code step from either the just-returned action state or a restored
+  // pending record. `state.step` wins on the action-return render (no flash).
+  const verify = (state.step === "verify" && state.email)
+    ? { email: state.email, role, next: state.next }
+    : pending;
+  if (verify) {
+    return <VerifyEmailStep email={verify.email} role={verify.role} next={verify.next} initialNotice={state.success} />;
   }
 
   return (
@@ -143,6 +187,7 @@ export default function RegisterPage() {
 
       <form action={formAction} className="space-y-4">
         <input type="hidden" name="role" value={role} />
+        <input type="hidden" name="next" value={next} />
 
         <div className="grid grid-cols-2 gap-3">
           <div>
@@ -243,16 +288,18 @@ export default function RegisterPage() {
 function VerifyEmailStep({
   email,
   role,
+  next,
   initialNotice,
 }: {
   email: string;
   role: "CUSTOMER" | "BUSINESS_OWNER";
+  next?: string;
   initialNotice?: string;
 }) {
   const [code, setCode] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(initialNotice ?? null);
-  const [cooldown, setCooldown] = useState(45);
+  const [cooldown, setCooldown] = useState(60);
   const [isPending, start] = useTransition();
   // Blocks duplicate verification submissions (auto-submit-on-complete + button).
   const submittingRef = useRef(false);
@@ -274,8 +321,9 @@ function VerifyEmailStep({
     setNotice(null);
     start(async () => {
       // On success the server action redirects (session set) — we only reach the
-      // lines below on failure.
-      const res = await verifyEmailOtpAction(email, value);
+      // lines below on failure. Clear the pending record on success is handled by
+      // the redirect leaving this page (a logged-in user can't return to /register).
+      const res = await verifyEmailOtpAction(email, value, next);
       submittingRef.current = false;
       if (res?.error) {
         setError(res.error);
@@ -293,11 +341,11 @@ function VerifyEmailStep({
       if (res?.error) {
         setError(res.error);
         // If Supabase enforced its own cooldown, keep the button disabled a bit.
-        setCooldown(45);
+        setCooldown(60);
       } else {
         setNotice(res?.success ?? "Wysłaliśmy nowy kod.");
         setCode("");
-        setCooldown(45);
+        setCooldown(60);
       }
     });
   };
@@ -388,8 +436,12 @@ function VerifyEmailStep({
       </div>
 
       <div className="mt-6 pt-5 text-center" style={{ borderTop: "1px solid rgba(203,213,225,0.45)" }}>
-        {/* Full reload resets the sign-up state so a different address can be used */}
-        <a href="/register" className="text-xs text-gray-500 hover:text-gray-800 transition-colors">
+        {/* Clear the pending record + full reload so a different address can be used */}
+        <a
+          href="/register"
+          onClick={() => { try { sessionStorage.removeItem(OTP_STORAGE_KEY); } catch { /* ignore */ } }}
+          className="text-xs text-gray-500 hover:text-gray-800 transition-colors"
+        >
           Użyj innego adresu e-mail
         </a>
       </div>

@@ -39,7 +39,10 @@ function LoginForm() {
         <h1 className="text-xl font-semibold text-gray-900 tracking-tight">Zaloguj się</h1>
         <p className="mt-1 text-sm text-gray-500">
           Nie masz konta?{" "}
-          <Link href="/register" className="text-gray-900 font-medium underline underline-offset-2 hover:no-underline transition-all">
+          <Link
+            href={redirectTo ? `/register?next=${encodeURIComponent(redirectTo)}` : "/register"}
+            className="text-gray-900 font-medium underline underline-offset-2 hover:no-underline transition-all"
+          >
             Zarejestruj się
           </Link>
         </p>
