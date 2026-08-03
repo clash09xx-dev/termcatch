@@ -148,8 +148,13 @@ export async function registerAction(
 
     if (error) {
       const msg = error.message.toLowerCase();
-      if (msg.includes("rate limit") || msg.includes("too many") || msg.includes("seconds")) {
-        return { error: "Zbyt wiele prób. Poczekaj chwilę i spróbuj ponownie." };
+      const status = (error as { status?: number }).status ?? 0;
+      const code = (error as { code?: string }).code;
+      // Safe server-side diagnostic — status + code only (no e-mail, no secrets).
+      console.error(`[auth:signup] supabase error status=${status} code=${code ?? "?"}`);
+
+      if (status === 429 || msg.includes("rate limit") || msg.includes("too many") || msg.includes("seconds")) {
+        return { error: "Zbyt wiele prób. Odczekaj chwilę i spróbuj ponownie." };
       }
       if (msg.includes("password")) {
         return { error: "Hasło nie spełnia wymagań bezpieczeństwa (min. 8 znaków)." };
@@ -162,7 +167,13 @@ export async function registerAction(
         return { step: "verify", email, next: nextParam, success: `Wysłaliśmy 6-cyfrowy kod na ${email}.` };
       }
       if (msg.includes("invalid") && msg.includes("email")) {
-        return { error: "Nieprawidłowy adres e-mail." };
+        return { error: "Nieprawidłowy adres e-mail. Sprawdź go i spróbuj ponownie." };
+      }
+      // SMTP / server / configuration failure while dispatching the code: NEVER
+      // show the code screen or claim success — the code was not sent. Ask the
+      // user to retry shortly (a delivery/config problem, not their fault).
+      if (status >= 500 || msg.includes("smtp") || msg.includes("sending") || msg.includes("unexpected") || msg.includes("confirmation email")) {
+        return { error: "Nie udało się teraz wysłać kodu weryfikacyjnego. Spróbuj ponownie za chwilę." };
       }
       return { error: "Nie udało się utworzyć konta. Spróbuj ponownie." };
     }
@@ -241,21 +252,44 @@ export async function resendEmailOtpAction(emailRaw: string): Promise<AuthState>
     return { error: `Odczekaj ${Math.ceil(remaining / 1000)} s przed ponownym wysłaniem kodu.` };
   }
 
-  const supabase = await createClient();
-  const { error } = await supabase.auth.resend({
-    type: "signup",
-    email,
-    options: { emailRedirectTo: `${appUrl()}/auth/callback` },
-  });
+  type AuthErr = { message: string; status?: number; code?: string };
+  let error: AuthErr | null = null;
+  try {
+    const supabase = await createClient();
+    const res = await supabase.auth.resend({
+      type: "signup",
+      email,
+      options: { emailRedirectTo: `${appUrl()}/auth/callback` },
+    });
+    error = (res.error as AuthErr | null) ?? null;
+  } catch (e) {
+    console.error("[auth:resend] unexpected", (e as Error)?.name ?? "error");
+    await markOtpSent();
+    return { error: "Nie udało się teraz wysłać kodu. Spróbuj ponownie za chwilę." };
+  }
   await markOtpSent(); // set cooldown even on failure — blocks hammering
 
   if (error) {
     const msg = error.message.toLowerCase();
-    if (msg.includes("rate") || msg.includes("too many") || msg.includes("seconds")) {
-      return { error: "Zbyt wiele prób. Poczekaj chwilę i spróbuj ponownie." };
+    const status = error.status ?? 0;
+    // Safe server-side diagnostic — status + code only (no e-mail, no secrets).
+    console.error(`[auth:resend] supabase error status=${status} code=${error.code ?? "?"}`);
+
+    if (status === 429 || msg.includes("rate") || msg.includes("too many") || msg.includes("seconds")) {
+      return { error: "Zbyt wiele prób. Odczekaj chwilę i spróbuj ponownie." };
     }
-    // Enumeration-safe: never disclose whether this address needs verification.
-    return { success: `Jeśli konto wymaga weryfikacji, wysłaliśmy nowy kod na ${email}.` };
+    // SMTP / server / configuration failure → truthful retry error. Do NOT claim
+    // a code was sent when the send actually failed.
+    if (status >= 500 || msg.includes("smtp") || msg.includes("sending") || msg.includes("unexpected") || msg.includes("confirmation email")) {
+      return { error: "Nie udało się teraz wysłać kodu. Spróbuj ponownie za chwilę." };
+    }
+    if (msg.includes("invalid") && msg.includes("email")) {
+      return { error: "Nieprawidłowy adres e-mail." };
+    }
+    // ONLY the account-state case (already confirmed / nothing to resend) stays
+    // enumeration-safe: a conditional message that neither confirms existence nor
+    // claims a delivery that didn't happen.
+    return { success: `Jeśli konto oczekuje na weryfikację, wysłaliśmy nowy kod na ${email}.` };
   }
   return { success: `Wysłaliśmy nowy kod na ${email}.` };
 }
