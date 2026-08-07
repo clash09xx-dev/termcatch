@@ -1,119 +1,89 @@
 <!--
   TermCatch — Supabase Auth "Confirm signup" e-mail (Polish, CODE-ONLY).
   ════════════════════════════════════════════════════════════════════════════
-  This is the fix for "Supabase sends a link/button instead of a 6-digit code".
-  The repository CANNOT change a hosted Supabase template — you must paste this in.
+  Fixes "Supabase sends a confirmation LINK/button" → shows the 6-digit code.
+  The repo CANNOT change a hosted Supabase template — paste this in the dashboard.
 
-  Dashboard steps (exact):
-    1. Supabase → Project → Authentication → Emails → Templates → "Confirm signup".
-    2. Subject:  Kod weryfikacyjny TermCatch
-    3. Message body: replace the ENTIRE default template with the HTML below.
-       (The default uses {{ .ConfirmationURL }} — a magic-link button. This one
-        uses ONLY {{ .Token }}, so there is no button, no link, no raw URL.)
-    4. Save.
+  Where:  Supabase → Authentication → Emails → template "Confirm signup".
+  Subject (set this field):  Twój kod weryfikacyjny TermCatch
+  Body:    click "Source" (next to "Preview"), delete everything, paste the HTML
+           below, then "Save changes".  Do NOT click "Reset template".
 
-  Sender identity — Supabase → Authentication → Emails → SMTP Settings:
-    • Sender name:  TermCatch
-    • Sender email: notifications@termcatch.com     (NOT no-reply@)
-  Reply-To (hello@termcatch.com): Supabase's SMTP UI has no Reply-To field, so
-  make notifications@termcatch.com a monitored/forwarding inbox (forward → hello@),
-  or set a Reply-To header at the Resend layer if you route SMTP through Resend.
+  Why it works with the site:  Supabase generates a random 6-digit code exposed as
+  {{ .Token }}. It is the SAME code the app verifies on the 6-digit screen
+  (verifyOtp type "signup"). No button/link needed — the email shows the code,
+  the user types it in the app, the account is confirmed + auto-logged-in.
 
-  Code validity: matches Authentication → Providers → Email → "Email OTP Expiration"
-  (Supabase default 3600s = 1 hour). Keep the copy below in sync if you change it.
+  For best Gmail delivery, keep the sender as hello@termcatch.com (Authentication →
+  Emails → SMTP Settings), NOT no-reply@. A code-only email (no link) also avoids
+  Gmail's cross-domain-link spam signal.
 -->
-<!DOCTYPE html>
-<html lang="pl">
-  <body style="margin:0;padding:0;background-color:#f1f6fb;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;">
-    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:#f1f6fb;padding:32px 16px;">
-      <tr>
-        <td align="center">
-          <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:520px;background-color:#ffffff;border-radius:16px;border:1px solid #e5eaf1;overflow:hidden;">
-            <!-- Brand -->
-            <tr>
-              <td style="padding:28px 32px 0;">
-                <span style="font-size:18px;letter-spacing:-0.5px;">
-                  <span style="font-weight:400;color:#9ca3af;">term</span><span style="font-weight:800;color:#111827;">catch</span>
-                </span>
-              </td>
-            </tr>
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:#f9fafb;padding:32px 16px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;">
+  <tr>
+    <td align="center">
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:520px;background-color:#ffffff;border-radius:16px;border:1px solid #f3f4f6;">
+        <tr>
+          <td style="padding:28px 32px 0;">
+            <span style="font-size:18px;letter-spacing:-0.5px;">
+              <span style="font-weight:400;color:#9ca3af;">term</span><span style="font-weight:800;color:#111827;">catch</span>
+            </span>
+          </td>
+        </tr>
 
-            <!-- Heading -->
-            <tr>
-              <td style="padding:24px 32px 4px;">
-                <h1 style="margin:0;font-size:20px;font-weight:700;color:#111827;">Twój kod weryfikacyjny</h1>
-              </td>
-            </tr>
-            <tr>
-              <td style="padding:0 32px;">
-                <p style="margin:8px 0;font-size:14px;line-height:1.6;color:#4b5563;">
-                  Wpisz poniższy 6-cyfrowy kod w aplikacji TermCatch, aby dokończyć zakładanie konta.
-                </p>
-              </td>
-            </tr>
+        <tr>
+          <td style="padding:24px 32px 8px;">
+            <h1 style="margin:0;font-size:20px;font-weight:700;color:#111827;">
+              Twój kod weryfikacyjny
+            </h1>
+          </td>
+        </tr>
 
-            <!-- The 6-digit code — the ONLY action. No button, no link, no URL. -->
-            <tr>
-              <td style="padding:20px 32px 8px;">
-                <div style="background-color:#f1f6fb;border:1px solid #e5eaf1;border-radius:12px;padding:20px;text-align:center;">
-                  <div style="font-size:34px;font-weight:800;letter-spacing:10px;color:#0f172a;font-family:'SFMono-Regular',Consolas,'Liberation Mono',Menlo,monospace;">{{ .Token }}</div>
-                </div>
-              </td>
-            </tr>
+        <tr>
+          <td style="padding:0 32px;">
+            <p style="margin:10px 0;font-size:14px;line-height:1.6;color:#4b5563;">
+              Cześć! Dziękujemy za rejestrację w TermCatch.
+            </p>
+            <p style="margin:10px 0;font-size:14px;line-height:1.6;color:#4b5563;">
+              Wpisz poniższy 6-cyfrowy kod w aplikacji, aby potwierdzić swój adres e-mail i aktywować konto.
+            </p>
+          </td>
+        </tr>
 
-            <!-- Validity -->
-            <tr>
-              <td style="padding:6px 32px 0;">
-                <p style="margin:8px 0;font-size:13px;line-height:1.6;color:#6b7280;">
-                  Kod jest ważny przez 1 godzinę. Jeśli wygaśnie, poproś w aplikacji o nowy kod.
-                </p>
-              </td>
-            </tr>
+        <tr>
+          <td style="padding:20px 32px 8px;">
+            <div style="background-color:#f9fafb;border:1px solid #f3f4f6;border-radius:12px;padding:20px;text-align:center;">
+              <span style="font-size:34px;font-weight:800;letter-spacing:10px;color:#111827;font-family:'SFMono-Regular',Consolas,'Liberation Mono',Menlo,monospace;">{{ .Token }}</span>
+            </div>
+          </td>
+        </tr>
 
-            <!-- Security warning -->
-            <tr>
-              <td style="padding:8px 32px 0;">
-                <p style="margin:8px 0;font-size:13px;line-height:1.6;color:#6b7280;">
-                  Nie udostępniaj tego kodu nikomu — pracownicy TermCatch nigdy o niego nie proszą. Jeśli to nie Ty zakładasz konto, zignoruj tę wiadomość.
-                </p>
-              </td>
-            </tr>
+        <tr>
+          <td style="padding:12px 32px 0;">
+            <p style="margin:0;font-size:12px;line-height:1.6;color:#9ca3af;">
+              Kod jest ważny przez 1 godzinę. Nie udostępniaj go nikomu — pracownicy TermCatch nigdy o niego nie proszą.
+            </p>
+          </td>
+        </tr>
 
-            <!-- Support + footer -->
-            <tr>
-              <td style="padding:24px 32px 28px;">
-                <hr style="border:none;border-top:1px solid #eef2f7;margin:0 0 16px;" />
-                <p style="margin:0 0 4px;font-size:12px;line-height:1.6;color:#9ca3af;">
-                  Potrzebujesz pomocy? Napisz do nas: <a href="mailto:hello@termcatch.com" style="color:#4b5563;text-decoration:underline;">hello@termcatch.com</a>
-                </p>
-                <p style="margin:0;font-size:12px;color:#9ca3af;">
-                  TermCatch · <a href="https://termcatch.com" style="color:#9ca3af;text-decoration:underline;">termcatch.com</a>
-                </p>
-              </td>
-            </tr>
-          </table>
-        </td>
-      </tr>
-    </table>
-  </body>
-</html>
+        <tr>
+          <td style="padding:16px 32px 28px;">
+            <p style="margin:0;font-size:12px;color:#9ca3af;">
+              Jeżeli to nie Ty utworzyłeś konto, możesz bezpiecznie zignorować tę wiadomość.
+            </p>
+          </td>
+        </tr>
+      </table>
+    </td>
+  </tr>
+</table>
 
 <!--
   ─── PLAIN-TEXT VERSION (reference) ─────────────────────────────────────────
-  Supabase's dashboard template is HTML-only (no separate plain-text field). Keep
-  this alongside so the copy has a text equivalent; use it if you send this via a
-  provider/template that supports a multipart text/plain part.
+  Supabase's template is HTML-only; keep this text equivalent for reference.
 
-  Subject: Kod weryfikacyjny TermCatch
+  Subject: Twój kod weryfikacyjny TermCatch
 
   Twój kod weryfikacyjny TermCatch to: {{ .Token }}
-
-  Wpisz go w aplikacji, aby dokończyć zakładanie konta.
-  Kod jest ważny przez 1 godzinę.
-
-  Nie udostępniaj tego kodu nikomu — pracownicy TermCatch nigdy o niego nie proszą.
-  Jeśli to nie Ty zakładasz konto, zignoruj tę wiadomość.
-
-  Pomoc: hello@termcatch.com
-  TermCatch — https://termcatch.com
+  Wpisz go w aplikacji, aby potwierdzić adres e-mail. Kod jest ważny przez 1 godzinę.
+  Nie udostępniaj kodu nikomu. Jeżeli to nie Ty utworzyłeś konto, zignoruj tę wiadomość.
 -->
