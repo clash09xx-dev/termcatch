@@ -1,0 +1,12 @@
+# Supabase project configuration.
+# Link to the hosted project with:  supabase link --project-ref stzjnrhfthbiilkffbdx
+project_id = "termcatch"
+
+# ─── Send Email Auth Hook (Edge Function) ────────────────────────────────────
+# JWT verification is DISABLED for this function on purpose: Supabase's Auth Hook
+# calls it as a Standard Webhook (unauthenticated by JWT), and authenticity is
+# enforced inside the function via the Standard Webhooks signature using
+# SEND_EMAIL_HOOK_SECRET. Do NOT enable verify_jwt here or the hook will 401.
+[functions.send-email]
+enabled = true
+verify_jwt = false
