@@ -4,19 +4,25 @@ import { Resend } from "resend";
  * Transactional e-mail via Resend.
  *
  * Rules:
- * - All automated e-mails are sent from EMAIL_FROM (no-reply@termcatch.com).
- * - Every e-mail carries Reply-To: EMAIL_REPLY_TO (hello@termcatch.com),
- *   so replies land in the real support inbox — Resend is never an inbox.
+ * - All automated e-mails are sent from a REAL, monitored mailbox
+ *   (hello@termcatch.com) — never no-reply@. A no-reply sender is a spam signal
+ *   (Resend Insights flags it) and there is no deliverability reason to keep it.
+ * - Every message is sent multipart (HTML + a real plain-text alternative),
+ *   which improves inbox placement and accessibility.
  * - If RESEND_API_KEY is missing, sending is skipped gracefully with a
  *   warning log; the app never crashes because of e-mail.
  *
- * Env:
+ * NOTE: deliverability also depends on domain reputation. termcatch.com is a new
+ * domain, so cold-start spam filtering is expected until it warms up — code can
+ * only remove aggravating signals (no-reply, HTML-only), not buy reputation.
+ *
+ * Env (set EMAIL_FROM to a hello@ sender in production — NOT no-reply@):
  *   RESEND_API_KEY
- *   EMAIL_FROM=TermCatch <no-reply@termcatch.com>
+ *   EMAIL_FROM=TermCatch <hello@termcatch.com>
  *   EMAIL_REPLY_TO=hello@termcatch.com
  */
 
-const FROM = process.env.EMAIL_FROM ?? "TermCatch <no-reply@termcatch.com>";
+const FROM = process.env.EMAIL_FROM ?? "TermCatch <hello@termcatch.com>";
 const REPLY_TO = process.env.EMAIL_REPLY_TO ?? "hello@termcatch.com";
 const SUPPORT_INBOX = process.env.EMAIL_REPLY_TO ?? "hello@termcatch.com";
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? "https://termcatch.com";
@@ -114,6 +120,22 @@ function renderHtml(params: Pick<SendEmailParams, "heading" | "lines" | "ctaLabe
 </html>`;
 }
 
+/** Plain-text alternative — every message ships multipart (better inbox
+ * placement + accessibility). Strips any inline HTML from the lines. */
+function renderText(params: Pick<SendEmailParams, "heading" | "lines" | "ctaLabel" | "ctaUrl">): string {
+  const strip = (s: string) =>
+    s.replace(/<[^>]+>/g, "")
+      .replace(/&amp;/g, "&")
+      .replace(/&lt;/g, "<")
+      .replace(/&gt;/g, ">")
+      .replace(/&quot;/g, '"')
+      .trim();
+  const parts = [params.heading, "", ...params.lines.map(strip)];
+  if (params.ctaLabel && params.ctaUrl) parts.push("", `${strip(params.ctaLabel)}: ${params.ctaUrl}`);
+  parts.push("", "— TermCatch", "Pomoc: hello@termcatch.com");
+  return parts.join("\n");
+}
+
 // ─── Core sender ──────────────────────────────────────────────
 
 /** Low-level sender. All other helpers go through this. Never throws. */
@@ -130,6 +152,7 @@ export async function sendEmail(params: SendEmailParams): Promise<{ sent: boolea
       replyTo: params.replyTo ?? REPLY_TO,
       subject: params.subject,
       html: renderHtml(params),
+      text: renderText(params),
     });
     if (error) {
       console.error("[email:error]", error);
