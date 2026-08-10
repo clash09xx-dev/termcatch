@@ -408,6 +408,23 @@ export async function sendBillingPaymentFailedEmail(
   });
 }
 
+/** Subscription cancelled — confirm to the salon owner (no silent loss of plan). */
+export async function sendSubscriptionCancelledEmail(
+  params: { to: string; businessName: string }
+): Promise<{ sent: boolean }> {
+  return sendEmail({
+    to: params.to,
+    subject: "Subskrypcja anulowana — TermCatch",
+    heading: "Subskrypcja została anulowana",
+    lines: [
+      `Subskrypcja dla <strong>${escapeHtml(params.businessName)}</strong> została anulowana.`,
+      "Twoje dane są bezpieczne. Możesz w każdej chwili wznowić subskrypcję w panelu.",
+    ],
+    ctaLabel: "Wznów subskrypcję",
+    ctaUrl: `${APP_URL}/business/payments`,
+  });
+}
+
 /** Trial ending soon — heads-up before the first charge. */
 export async function sendTrialEndingEmail(
   params: { to: string; businessName: string; endsAtLabel?: string }

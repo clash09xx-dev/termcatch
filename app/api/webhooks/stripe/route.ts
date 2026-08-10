@@ -5,10 +5,13 @@ import { prisma } from "@/lib/prisma";
 import { mapStripeStatus, planKeyFromPriceId, planKeyToEnum } from "@/lib/subscription";
 import { rememberStripeCustomer } from "@/lib/billing/customer";
 import { redeemWelcome, releaseWelcomeBySession } from "@/lib/billing/promo";
-import { sendBillingPaymentFailedEmail, sendTrialEndingEmail } from "@/lib/email";
+import { sendBillingPaymentFailedEmail, sendTrialEndingEmail, sendSubscriptionCancelledEmail } from "@/lib/email";
 
 /** Email the salon a billing alert. Non-blocking (helpers never throw). */
-async function billingAlert(businessId: string | null | undefined, kind: "payment_failed" | "trial_ending") {
+async function billingAlert(
+  businessId: string | null | undefined,
+  kind: "payment_failed" | "trial_ending" | "cancelled"
+) {
   if (!businessId) return;
   const business = await prisma.business.findUnique({
     where: { id: businessId },
@@ -17,6 +20,8 @@ async function billingAlert(businessId: string | null | undefined, kind: "paymen
   if (!business?.email) return;
   if (kind === "payment_failed") {
     await sendBillingPaymentFailedEmail({ to: business.email, businessName: business.name });
+  } else if (kind === "cancelled") {
+    await sendSubscriptionCancelledEmail({ to: business.email, businessName: business.name });
   } else {
     await sendTrialEndingEmail({ to: business.email, businessName: business.name });
   }
@@ -104,6 +109,9 @@ async function handleEvent(event: Stripe.Event) {
     case "customer.subscription.deleted": {
       const sub = event.data.object as Stripe.Subscription;
       await syncFromSubscription(sub, sub.metadata?.businessId);
+      if (event.type === "customer.subscription.deleted") {
+        await billingAlert(sub.metadata?.businessId, "cancelled");
+      }
       break;
     }
     case "customer.subscription.trial_will_end": {

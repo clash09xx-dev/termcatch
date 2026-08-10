@@ -61,9 +61,15 @@ export async function createBusiness(data: OnboardingInput) {
   const authUser = await getServerUser();
   if (!authUser) throw new Error("Unauthorized");
 
-  // A named service must have a real price — 0 zł services were going public
-  if (data.serviceName.trim() && (!data.servicePrice || data.servicePrice <= 0)) {
-    throw new Error("Podaj cenę usługi większą niż 0 zł.");
+  // A named service must have a real price AND a sane duration — 0 zł or
+  // 0/absurd-minute services were going public and breaking the slot grid.
+  if (data.serviceName.trim()) {
+    if (!data.servicePrice || data.servicePrice <= 0) {
+      throw new Error("Podaj cenę usługi większą niż 0 zł.");
+    }
+    if (!data.serviceDuration || data.serviceDuration < 5 || data.serviceDuration > 480) {
+      throw new Error("Czas trwania usługi musi wynosić od 5 do 480 minut.");
+    }
   }
 
   const slug = generateSlug(data.name);
@@ -209,25 +215,44 @@ export type BusinessProfileData = {
 export async function updateBusinessProfile(data: BusinessProfileData) {
   const business = await getOwnedBusiness();
 
+  // Validate before persisting — these render on the PUBLIC profile, so URLs
+  // (logo/cover/socials rendered as <img>/links) must be real http(s) URLs and
+  // free text must be length-bounded.
+  const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  const isHttpUrl = (s: string) => /^https?:\/\//i.test(s) && s.length <= 2048;
+  // string field: undefined → skip; else trim + clamp
+  const s = (v: string | undefined, max: number) => (v === undefined ? undefined : v.trim().slice(0, max));
+  // url field: undefined → skip; "" → clear (null); non-empty → must be http(s)
+  const url = (v: string | undefined, label: string): string | null | undefined => {
+    if (v === undefined) return undefined;
+    const t = v.trim();
+    if (!t) return null;
+    if (!isHttpUrl(t)) throw new Error(`Nieprawidłowy adres ${label} (użyj http/https).`);
+    return t.slice(0, 2048);
+  };
+  if (data.email && data.email.trim() && !EMAIL_RE.test(data.email.trim())) {
+    throw new Error("Nieprawidłowy adres e-mail.");
+  }
+
   await prisma.business.update({
     where: { id: business.id },
     data: {
-      name: data.name,
-      description: data.description,
-      shortDescription: data.shortDescription,
-      subcategory: data.subcategory,
-      phone: data.phone,
-      email: data.email,
-      website: data.website,
-      address: data.address,
-      city: data.city,
-      postalCode: data.postalCode,
-      logoUrl: data.logoUrl,
-      coverImageUrl: data.coverImageUrl,
-      instagramUrl: data.instagramUrl,
-      facebookUrl: data.facebookUrl,
+      name: s(data.name, 120),
+      description: s(data.description, 2000),
+      shortDescription: s(data.shortDescription, 300),
+      subcategory: s(data.subcategory, 80),
+      phone: s(data.phone, 32),
+      email: data.email === undefined ? undefined : data.email.trim().slice(0, 200) || null,
+      website: url(data.website, "strony WWW"),
+      address: s(data.address, 200),
+      city: s(data.city, 100),
+      postalCode: s(data.postalCode, 20),
+      logoUrl: url(data.logoUrl, "logo"),
+      coverImageUrl: url(data.coverImageUrl, "zdjęcia w tle"),
+      instagramUrl: url(data.instagramUrl, "Instagram"),
+      facebookUrl: url(data.facebookUrl, "Facebook"),
       ...(data.specialties
-        ? { specialties: data.specialties.filter((s) => SPECIALTY_TAGS.some((t) => t.slug === s)).slice(0, 6) }
+        ? { specialties: data.specialties.filter((sp) => SPECIALTY_TAGS.some((t) => t.slug === sp)).slice(0, 6) }
         : {}),
     },
   });
