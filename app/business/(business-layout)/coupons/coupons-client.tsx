@@ -68,8 +68,19 @@ export function CouponsClient({ coupons }: { coupons: CouponRow[] }) {
     e.preventDefault();
     if (isPending) return; // guard against duplicate submissions
     setErr("");
+    // Validate the discount value client-side (empty → NaN otherwise, and a
+    // percentage over 100 is nonsensical) before hitting the server action.
+    const value = parseFloat(form.value);
+    if (!Number.isFinite(value) || value <= 0) {
+      setErr("Podaj poprawną wartość rabatu (liczbę większą od zera).");
+      return;
+    }
+    if (form.type === "PERCENTAGE" && value > 100) {
+      setErr("Rabat procentowy nie może przekraczać 100%.");
+      return;
+    }
     const input: CouponInput = {
-      code: form.code, name: form.name, type: form.type, value: parseFloat(form.value),
+      code: form.code, name: form.name, type: form.type, value,
       minOrderValue: form.minOrderValue ? parseFloat(form.minOrderValue) : null,
       maxUses: form.maxUses ? parseInt(form.maxUses, 10) : null,
       validFrom: form.validFrom, validUntil: form.validUntil, isActive: form.isActive,
