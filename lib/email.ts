@@ -390,3 +390,20 @@ export async function sendNewBookingNotificationEmail(
     ctaUrl: `${APP_URL}/business/calendar`,
   });
 }
+
+/** New review — notify the salon (honors the newReview.email preference). */
+export async function sendNewReviewNotificationEmail(
+  params: { to: string; businessName: string; rating: number }
+): Promise<{ sent: boolean }> {
+  return sendEmail({
+    to: params.to,
+    subject: `Nowa opinia — ${params.businessName}`,
+    heading: "Masz nową opinię",
+    lines: [
+      `Twój salon <strong>${escapeHtml(params.businessName)}</strong> otrzymał nową ocenę: <strong>${params.rating}/5</strong>.`,
+      "Zobacz szczegóły i odpowiedz w panelu.",
+    ],
+    ctaLabel: "Zobacz opinie",
+    ctaUrl: `${APP_URL}/business/reviews`,
+  });
+}

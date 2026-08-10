@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import { getServerUser } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
-import { sendEmail } from "@/lib/email";
+import { sendEmail, sendNewReviewNotificationEmail } from "@/lib/email";
 import { getAppUrl } from "@/lib/app-url";
 import { getBusinessNotificationSettings, salonWants } from "@/lib/notification-settings";
 import { sendTransactionalSms } from "@/lib/sms";
@@ -46,7 +46,7 @@ export async function createReview(input: {
     where: { id: input.appointmentId },
     include: {
       review: { select: { id: true } },
-      business: { select: { id: true, slug: true, name: true, ownerId: true } },
+      business: { select: { id: true, slug: true, name: true, ownerId: true, email: true } },
     },
   });
 
@@ -104,6 +104,14 @@ export async function createReview(input: {
             data: { link: "/business/reviews" },
             sentAt: new Date(),
           },
+        })
+      : Promise.resolve(null),
+    // Email (honors the newReview.email preference — default ON, previously never sent).
+    salonWants(settings, "newReview", "email") && appointment.business.email
+      ? sendNewReviewNotificationEmail({
+          to: appointment.business.email,
+          businessName: appointment.business.name,
+          rating,
         })
       : Promise.resolve(null),
     // Concise Polish; rating + safe dashboard link only — no private customer detail.

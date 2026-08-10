@@ -42,12 +42,23 @@ export async function submitContactAction(
     return { success: "Dziękujemy! Otrzymaliśmy Twoją wiadomość." };
   }
 
-  // 1. Support request → hello@termcatch.com (reply-to: the user)
-  // 2. Auto-reply → the user (from no-reply@, reply-to: hello@)
-  await Promise.allSettled([
+  // 1. Support request → hello@termcatch.com (reply-to: the user) — this is the
+  //    one that MUST succeed; the auto-reply is best-effort.
+  // 2. Auto-reply → the user.
+  const [notif, autoReply] = await Promise.allSettled([
     sendSupportNotification({ firstName, lastName, email, topic, message }),
     sendSupportAutoReply(email),
   ]);
+  void autoReply;
+
+  const teamNotified = notif.status === "fulfilled" && notif.value?.sent === true;
+  if (!teamNotified) {
+    // Never claim we received it if the message wasn't actually delivered to us.
+    return {
+      error:
+        "Nie udało się teraz wysłać wiadomości. Napisz bezpośrednio na hello@termcatch.com — odpowiemy najszybciej jak to możliwe.",
+    };
+  }
 
   return {
     success:
