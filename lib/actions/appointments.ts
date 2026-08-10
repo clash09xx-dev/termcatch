@@ -21,6 +21,7 @@ import { getAppUrl } from "@/lib/app-url";
 import { resolveBookingAddons, type AddonSelection } from "@/lib/booking-addons";
 import { computeBookingTotals, evaluateCoupon } from "@/lib/booking-pricing";
 import { isFutureStart, changeAllowedByPolicy } from "@/lib/appointment-rules";
+import { assertCustomerBookableSlot } from "@/lib/availability";
 
 /** SMS/WhatsApp to the salon per its per-event preferences — never throws. */
 async function notifySalonChannels(businessId: string, message: string, event: SalonEventKey) {
@@ -217,6 +218,17 @@ export async function createAppointment(data: CreateAppointmentInput) {
   const basePrice = service.discountedPrice ?? service.price;
   const base = computeBookingTotals({ basePrice, baseDuration: service.duration, addonLines });
   const end = new Date(start.getTime() + base.totalDuration * 60_000);
+
+  // Server-authority: the slot must be within the salon's real open hours for
+  // that date (weekly + SpecialDay, minus breaks) — not just trusted from the
+  // client's slot list.
+  await assertCustomerBookableSlot({
+    businessId: data.businessId,
+    dateYmd: data.date,
+    timeHHMM: data.time,
+    durationMin: base.totalDuration,
+  });
+
   const couponCode = data.couponCode?.trim();
 
   // Conflict guard + coupon claim + create in one transaction: shrinks the
@@ -425,6 +437,14 @@ export async function rescheduleAppointment(input: {
     throw new Error("Nowy termin musi być w przyszłości.");
 
   const newEnd = new Date(newStart.getTime() + appointment.duration * 60_000);
+
+  // Server-authority: the new slot must be within the salon's real open hours.
+  await assertCustomerBookableSlot({
+    businessId: appointment.businessId,
+    dateYmd: input.date,
+    timeHHMM: input.time,
+    durationMin: appointment.duration,
+  });
 
   const oldSlotLabel = describeSlot(appointment.startTime);
 

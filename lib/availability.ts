@@ -131,6 +131,45 @@ export function resolveDayHours(
 }
 
 /**
+ * Server-authority guard for CUSTOMER bookings. Throws (Polish) if a
+ * (dateYmd, timeHHMM) + duration lands on a closed day (weekly or SpecialDay),
+ * outside the open window, or across a break. The /api/availability slot list
+ * enforces this client-side; this re-checks it server-side so a stale slot list
+ * or a crafted request can't book off-hours or on a closed day. Salon-initiated
+ * flows (manual entry / salon reschedule) intentionally skip this — the owner
+ * may book outside their own posted hours.
+ */
+export async function assertCustomerBookableSlot(input: {
+  businessId: string;
+  dateYmd: string;
+  timeHHMM: string;
+  durationMin: number;
+}): Promise<void> {
+  const { businessId, dateYmd, timeHHMM, durationMin } = input;
+  const dow = dowForYmd(dateYmd);
+  const [weekly, special] = await Promise.all([
+    prisma.workingHours.findUnique({
+      where: { businessId_dayOfWeek: { businessId, dayOfWeek: dow } },
+      include: { breaks: { select: { startTime: true, endTime: true } } },
+    }),
+    prisma.specialDay.findFirst({
+      where: { businessId, date: new Date(dateYmd + "T00:00:00.000Z") },
+      select: { isClosed: true, openTime: true, closeTime: true },
+    }),
+  ]);
+  const hours = resolveDayHours(weekly, special);
+  if (!hours.open) throw new Error("Salon jest zamknięty w wybranym dniu.");
+  const startMin = timeToMinutes(timeHHMM);
+  const endMin = startMin + durationMin;
+  if (!Number.isFinite(startMin) || startMin < hours.openMin || endMin > hours.closeMin) {
+    throw new Error("Wybrana godzina jest poza godzinami otwarcia salonu.");
+  }
+  if (hours.breaks.some((b) => startMin < b.endMin && endMin > b.startMin)) {
+    throw new Error("Wybrana godzina wypada w przerwie. Wybierz inną.");
+  }
+}
+
+/**
  * Single-business slot list for a service on a date — the engine behind
  * /api/availability. Honors employee schedule when an employee is requested.
  */
