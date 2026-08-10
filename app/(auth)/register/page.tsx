@@ -50,6 +50,8 @@ export default function RegisterPage() {
   const [role, setRole] = useState<"CUSTOMER" | "BUSINESS_OWNER">("CUSTOMER");
   const [next, setNext] = useState<string>("");
   const [pending, setPending] = useState<PendingOtp | null>(null);
+  const [acceptTerms, setAcceptTerms] = useState(false);
+  const [termsError, setTermsError] = useState(false); // true after a submit attempt without acceptance
 
   // Preselect the business-owner role via ?role=business, capture an optional
   // intended destination (?next / ?redirect, internal only), and restore a
@@ -240,39 +242,73 @@ export default function RegisterPage() {
           )}
         </div>
 
-        <label className="flex items-start gap-2.5 cursor-pointer">
-          <input
-            type="checkbox"
-            name="acceptTerms"
-            required
-            className="mt-0.5 w-4 h-4 accent-gray-900 flex-shrink-0"
-          />
-          <span className="text-xs text-gray-500 leading-relaxed">
+        <div
+          className="flex items-start gap-2.5 cursor-pointer select-none"
+          onClick={() => { setAcceptTerms((v) => !v); setTermsError(false); }}
+        >
+          {/* Custom tickbox: dark when accepted; transparent-red once you try to
+              submit without accepting (no separate error message). */}
+          <span
+            role="checkbox"
+            aria-checked={acceptTerms}
+            aria-label="Akceptuję Regulamin i Politykę prywatności"
+            className="mt-0.5 w-[18px] h-[18px] rounded-[5px] flex-shrink-0 flex items-center justify-center transition-colors"
+            style={
+              acceptTerms
+                ? { background: "#0F172A", border: "1px solid #0F172A" }
+                : termsError
+                ? { background: "rgba(244,63,94,0.12)", border: "1px solid rgba(244,63,94,0.65)" }
+                : { background: "rgba(255,255,255,0.9)", border: "1px solid rgba(148,163,184,0.6)" }
+            }
+          >
+            {acceptTerms && (
+              <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth={3} aria-hidden="true">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M20 6 9 17l-5-5" />
+              </svg>
+            )}
+          </span>
+          <input type="hidden" name="acceptTerms" value={acceptTerms ? "on" : ""} />
+          <span
+            className="text-xs leading-relaxed transition-colors"
+            style={{ color: termsError && !acceptTerms ? "#BE123C" : "#64748B" }}
+          >
             Akceptuję{" "}
-            <Link href="/terms" target="_blank" className="text-gray-900 underline underline-offset-2 hover:no-underline">
+            <Link href="/terms" target="_blank" onClick={(e) => e.stopPropagation()} className="text-gray-900 underline underline-offset-2 hover:no-underline">
               Regulamin
             </Link>{" "}
             oraz{" "}
-            <Link href="/privacy" target="_blank" className="text-gray-900 underline underline-offset-2 hover:no-underline">
+            <Link href="/privacy" target="_blank" onClick={(e) => e.stopPropagation()} className="text-gray-900 underline underline-offset-2 hover:no-underline">
               Politykę prywatności
             </Link>{" "}
             TermCatch.
           </span>
-        </label>
-        {state.fieldErrors?.acceptTerms && (
-          <p className="text-xs text-red-500">{state.fieldErrors.acceptTerms[0]}</p>
-        )}
+        </div>
 
         <button
-          type="submit"
+          // Until terms are accepted this is a plain button that just flags the
+          // checkbox red (no nag message, no submit); once accepted it becomes a
+          // real submit — robust regardless of React action-form internals.
+          type={acceptTerms ? "submit" : "button"}
+          onClick={acceptTerms ? undefined : () => setTermsError(true)}
           disabled={isPending}
-          className="w-full py-2.5 px-4 font-semibold text-sm rounded-xl flex items-center justify-center gap-2 btn-spring glass-shimmer-wrap disabled:opacity-50 disabled:cursor-not-allowed"
-          style={{
-            background: "linear-gradient(135deg, #CBD5E1 0%, #94A3B8 50%, #CBD5E1 100%)",
-            color: "#0F172A",
-            border: "1px solid rgba(148,163,184,0.45)",
-            boxShadow: "0 1px 2px rgba(0,0,0,0.10), inset 0 1px 0 rgba(255,255,255,0.40)",
-          }}
+          className="w-full py-2.5 px-4 font-semibold text-sm rounded-xl flex items-center justify-center gap-2 btn-spring glass-shimmer-wrap disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+          style={
+            acceptTerms
+              ? {
+                  // Accepted → dark "ink" button.
+                  background: "linear-gradient(180deg, #1E293B 0%, #0F172A 100%)",
+                  color: "#F8FAFC",
+                  border: "1px solid #0F172A",
+                  boxShadow: "0 1px 2px rgba(0,0,0,0.20), 0 8px 20px rgba(15,23,42,0.24), inset 0 1px 0 rgba(255,255,255,0.15)",
+                }
+              : {
+                  // Not yet accepted → muted silver.
+                  background: "linear-gradient(135deg, #CBD5E1 0%, #94A3B8 50%, #CBD5E1 100%)",
+                  color: "#0F172A",
+                  border: "1px solid rgba(148,163,184,0.45)",
+                  boxShadow: "0 1px 2px rgba(0,0,0,0.10), inset 0 1px 0 rgba(255,255,255,0.40)",
+                }
+          }
         >
           {isPending ? (
             <>
