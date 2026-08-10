@@ -401,15 +401,19 @@ export async function resetPasswordAction(
   };
 }
 
-export async function signInWithGoogleAction(): Promise<void> {
-  const appUrl = (process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000")
-    .trim()
-    .replace(/\/+$/, "");
+export async function signInWithGoogleAction(formData?: FormData): Promise<void> {
+  // Carry the register page's selected role through the OAuth round-trip so a
+  // business owner signing up with Google is created as BUSINESS_OWNER (and
+  // routed to onboarding) instead of silently becoming a CUSTOMER. Non-sensitive,
+  // and re-validated against the enum in the callback. Absent on the login page.
+  const roleRaw = formData ? String(formData.get("role") ?? "") : "";
+  const role = roleRaw === "BUSINESS_OWNER" || roleRaw === "CUSTOMER" ? roleRaw : "";
+  const callback = role ? `${appUrl()}/auth/callback?role=${role}` : `${appUrl()}/auth/callback`;
   const supabase = await createClient();
   const { data, error } = await supabase.auth.signInWithOAuth({
     provider: "google",
     options: {
-      redirectTo: `${appUrl}/auth/callback`,
+      redirectTo: callback,
       queryParams: { access_type: "offline", prompt: "consent" },
     },
   });

@@ -55,9 +55,19 @@ export async function GET(request: Request) {
     const user = data.user;
     const metadata = user.user_metadata ?? {};
 
+    // Role chosen on the register page, carried via ?role= (validated here).
+    // Only used when CREATING a new user — existing users keep their DB role.
+    const roleParam = searchParams.get("role");
+    const chosenRole: "CUSTOMER" | "BUSINESS_OWNER" =
+      roleParam === "BUSINESS_OWNER"
+        ? "BUSINESS_OWNER"
+        : roleParam === "CUSTOMER"
+        ? "CUSTOMER"
+        : (metadata.role as "CUSTOMER" | "BUSINESS_OWNER") ?? "CUSTOMER";
+
     // Synchronizacja użytkownika z naszą bazą.
     // Błąd DB nie może zerwać logowania — sesja już istnieje.
-    let role: string = (metadata.role as string) ?? "CUSTOMER";
+    let role: string = chosenRole;
     let hasBusiness = false;
 
     try {
@@ -75,7 +85,7 @@ export async function GET(request: Request) {
             metadata.full_name?.split(" ").slice(1).join(" ") ||
             (metadata.family_name ?? metadata.lastName ?? ""),
           avatarUrl: metadata.avatar_url ?? metadata.picture,
-          role: (metadata.role as "CUSTOMER" | "BUSINESS_OWNER") ?? "CUSTOMER",
+          role: chosenRole,
           isVerified: true,
           lastLoginAt: new Date(),
         },

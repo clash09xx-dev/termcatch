@@ -307,17 +307,42 @@ export type BusinessSettingsData = {
 export async function updateBusinessSettings(data: BusinessSettingsData) {
   const business = await getOwnedBusiness();
 
-  await prisma.business.update({
-    where: { id: business.id },
-    data: {
-      advanceBookingDays: data.advanceBookingDays,
-      minAdvanceHours: data.minAdvanceHours,
-      timeSlotDuration: data.timeSlotDuration,
-      cancellationHours: data.cancellationHours,
-      cancellationFeeType: data.cancellationFeeType,
-      cancellationFeeValue: data.cancellationFeeValue,
-    },
-  });
+  // Validate/clamp every field — these feed booking availability + the
+  // cancellation policy, so negative/absurd client values must never persist.
+  const clampInt = (v: unknown, min: number, max: number): number | undefined => {
+    const n = Math.round(Number(v));
+    return Number.isFinite(n) ? Math.min(max, Math.max(min, n)) : undefined;
+  };
+  const update: {
+    advanceBookingDays?: number;
+    minAdvanceHours?: number;
+    timeSlotDuration?: number;
+    cancellationHours?: number;
+    cancellationFeeType?: string | null;
+    cancellationFeeValue?: number;
+  } = {};
 
+  if (data.advanceBookingDays !== undefined) update.advanceBookingDays = clampInt(data.advanceBookingDays, 1, 365);
+  if (data.minAdvanceHours !== undefined) update.minAdvanceHours = clampInt(data.minAdvanceHours, 0, 168);
+  if (data.timeSlotDuration !== undefined) update.timeSlotDuration = clampInt(data.timeSlotDuration, 5, 480);
+  if (data.cancellationHours !== undefined) update.cancellationHours = clampInt(data.cancellationHours, 0, 336);
+
+  const feeType =
+    data.cancellationFeeType === "percentage" || data.cancellationFeeType === "fixed"
+      ? data.cancellationFeeType
+      : data.cancellationFeeType === "" || data.cancellationFeeType === null
+      ? null
+      : undefined; // unknown string → ignore
+  if (feeType !== undefined) update.cancellationFeeType = feeType;
+
+  if (data.cancellationFeeValue !== undefined) {
+    const v = Number(data.cancellationFeeValue);
+    if (Number.isFinite(v) && v >= 0) {
+      const isPct = (feeType ?? data.cancellationFeeType) === "percentage";
+      update.cancellationFeeValue = Math.min(isPct ? 100 : 1_000_000, v);
+    }
+  }
+
+  await prisma.business.update({ where: { id: business.id }, data: update });
   revalidatePath("/business/settings");
 }

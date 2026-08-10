@@ -61,10 +61,14 @@ export async function createPaymentIntent({
   depositAmount?: number;
 }) {
   const chargeAmount = depositOnly && depositAmount ? depositAmount : amount;
-  const platformFee = Math.round(chargeAmount * (PLATFORM_FEE_PERCENT / 100));
+  // Both `amount` and `application_fee_amount` MUST be in minor units (grosze).
+  // The fee is a % of the minor-unit amount — computing it in major units
+  // undercharged the platform fee 100×.
+  const amountMinor = Math.round(chargeAmount * 100);
+  const platformFee = Math.round(amountMinor * (PLATFORM_FEE_PERCENT / 100));
 
   return stripe.paymentIntents.create({
-    amount: Math.round(chargeAmount * 100), // Stripe uses cents
+    amount: amountMinor,
     currency,
     application_fee_amount: platformFee,
     transfer_data: {

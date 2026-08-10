@@ -992,8 +992,10 @@ export async function createManualAppointment(input: ManualAppointmentInput) {
   let isPlatformCustomer = true;
 
   if (input.client.kind === "existing") {
-    const existing = await prisma.user.findUnique({
-      where: { id: input.client.userId },
+    // Must already be a client of THIS business (same scope as searchClients) —
+    // prevents attaching/notifying an arbitrary platform user to this salon.
+    const existing = await prisma.user.findFirst({
+      where: { id: input.client.userId, appointments: { some: { businessId } } },
       select: { id: true, supabaseId: true },
     });
     if (!existing) throw new Error("Nie znaleziono klienta.");
