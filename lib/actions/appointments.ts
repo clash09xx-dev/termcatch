@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import { getServerUser } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
-import { AppointmentStatus, NotificationType } from "@prisma/client";
+import { AppointmentStatus, NotificationType, Prisma } from "@prisma/client";
 import { warsawDateTimeToUtc, warsawTimeString } from "@/lib/timezone";
 import {
   sendBookingConfirmationEmail,
@@ -64,6 +64,18 @@ async function notifySalonInApp(
 import { formatDate } from "@/lib/utils";
 
 // ─── Helpers ──────────────────────────────────────────────────
+
+/**
+ * Serialize slot writes for one business so the "is the slot free? → insert"
+ * sequence is atomic across concurrent requests — the guarantee a plain
+ * SELECT-then-INSERT lacks under READ COMMITTED (which let two simultaneous
+ * bookings take the same slot). Must be the FIRST statement inside the
+ * transaction; the Postgres advisory lock auto-releases at transaction end.
+ * Scoped per business (bookings are low-frequency, so coarse locking is fine).
+ */
+async function lockBusinessForBooking(tx: Prisma.TransactionClient, businessId: string): Promise<void> {
+  await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtextextended(${businessId}, 0))`;
+}
 
 async function getDbUser() {
   const user = await getServerUser();
@@ -210,6 +222,7 @@ export async function createAppointment(data: CreateAppointmentInput) {
   // Conflict guard + coupon claim + create in one transaction: shrinks the
   // double-booking race AND makes coupon usage atomic (no over-limit under races).
   const appointment = await prisma.$transaction(async (tx) => {
+    await lockBusinessForBooking(tx, data.businessId);
     const conflict = await tx.appointment.findFirst({
       where: {
         businessId: data.businessId,
@@ -413,37 +426,39 @@ export async function rescheduleAppointment(input: {
 
   const newEnd = new Date(newStart.getTime() + appointment.duration * 60_000);
 
-  // Double-booking guard for the new slot
-  const conflict = await prisma.appointment.findFirst({
-    where: {
-      id: { not: appointment.id },
-      businessId: appointment.businessId,
-      ...(appointment.employeeId ? { employeeId: appointment.employeeId } : {}),
-      status: {
-        notIn: [
-          AppointmentStatus.CANCELLED_CUSTOMER,
-          AppointmentStatus.CANCELLED_BUSINESS,
-        ],
-      },
-      startTime: { lt: newEnd },
-      endTime: { gt: newStart },
-    },
-    select: { id: true },
-  });
-  if (conflict) {
-    throw new Error("Ten termin jest już zajęty. Wybierz inną godzinę.");
-  }
-
   const oldSlotLabel = describeSlot(appointment.startTime);
 
-  await prisma.appointment.update({
-    where: { id: appointment.id },
-    data: {
-      startTime: newStart,
-      endTime: newEnd,
-      // Salon musi potwierdzić nowy termin
-      status: AppointmentStatus.PENDING,
-    },
+  // Atomic re-check + write under the per-business booking lock (no double-book race).
+  await prisma.$transaction(async (tx) => {
+    await lockBusinessForBooking(tx, appointment.businessId);
+    const conflict = await tx.appointment.findFirst({
+      where: {
+        id: { not: appointment.id },
+        businessId: appointment.businessId,
+        ...(appointment.employeeId ? { employeeId: appointment.employeeId } : {}),
+        status: {
+          notIn: [
+            AppointmentStatus.CANCELLED_CUSTOMER,
+            AppointmentStatus.CANCELLED_BUSINESS,
+          ],
+        },
+        startTime: { lt: newEnd },
+        endTime: { gt: newStart },
+      },
+      select: { id: true },
+    });
+    if (conflict) {
+      throw new Error("Ten termin jest już zajęty. Wybierz inną godzinę.");
+    }
+    await tx.appointment.update({
+      where: { id: appointment.id },
+      data: {
+        startTime: newStart,
+        endTime: newEnd,
+        // Salon musi potwierdzić nowy termin
+        status: AppointmentStatus.PENDING,
+      },
+    });
   });
 
   const newSlotLabel = describeSlot(newStart);
@@ -762,24 +777,27 @@ export async function businessRescheduleAppointment(input: {
 
   const newEnd = new Date(newStart.getTime() + appointment.duration * 60_000);
 
-  // Availability / double-booking guard for the new slot (excludes this appt).
-  const conflict = await prisma.appointment.findFirst({
-    where: {
-      id: { not: appointment.id },
-      businessId: appointment.businessId,
-      ...(appointment.employeeId ? { employeeId: appointment.employeeId } : {}),
-      status: { notIn: [AppointmentStatus.CANCELLED_CUSTOMER, AppointmentStatus.CANCELLED_BUSINESS] },
-      startTime: { lt: newEnd },
-      endTime: { gt: newStart },
-    },
-    select: { id: true },
-  });
-  if (conflict) throw new Error("Ten termin koliduje z inną wizytą. Wybierz inną godzinę.");
-
   const originalStart = appointment.startTime;
-  await prisma.appointment.update({
-    where: { id: appointment.id },
-    data: { startTime: newStart, endTime: newEnd }, // updatedAt is bumped automatically (audit timestamp)
+
+  // Atomic re-check + write under the per-business booking lock (no double-book race).
+  await prisma.$transaction(async (tx) => {
+    await lockBusinessForBooking(tx, appointment.businessId);
+    const conflict = await tx.appointment.findFirst({
+      where: {
+        id: { not: appointment.id },
+        businessId: appointment.businessId,
+        ...(appointment.employeeId ? { employeeId: appointment.employeeId } : {}),
+        status: { notIn: [AppointmentStatus.CANCELLED_CUSTOMER, AppointmentStatus.CANCELLED_BUSINESS] },
+        startTime: { lt: newEnd },
+        endTime: { gt: newStart },
+      },
+      select: { id: true },
+    });
+    if (conflict) throw new Error("Ten termin koliduje z inną wizytą. Wybierz inną godzinę.");
+    await tx.appointment.update({
+      where: { id: appointment.id },
+      data: { startTime: newStart, endTime: newEnd }, // updatedAt bumped automatically (audit timestamp)
+    });
   });
 
   const oldSlotLabel = describeSlot(originalStart);
@@ -969,24 +987,6 @@ export async function createManualAppointment(input: ManualAppointmentInput) {
 
   const end = new Date(start.getTime() + service.duration * 60_000);
 
-  // Double-booking guard — same rule as customer bookings
-  const conflict = await prisma.appointment.findFirst({
-    where: {
-      businessId,
-      ...(input.employeeId ? { employeeId: input.employeeId } : {}),
-      status: {
-        notIn: [
-          AppointmentStatus.CANCELLED_CUSTOMER,
-          AppointmentStatus.CANCELLED_BUSINESS,
-        ],
-      },
-      startTime: { lt: end },
-      endTime: { gt: start },
-    },
-    select: { id: true },
-  });
-  if (conflict) throw new Error("Ten termin koliduje z inną wizytą.");
-
   // Resolve the customer
   let customerId: string;
   let isPlatformCustomer = true;
@@ -1036,22 +1036,39 @@ export async function createManualAppointment(input: ManualAppointmentInput) {
     }
   }
 
-  const appointment = await prisma.appointment.create({
-    data: {
-      businessId,
-      customerId,
-      serviceId: service.id,
-      employeeId: input.employeeId ?? null,
-      startTime: start,
-      endTime: end,
-      duration: service.duration,
-      // Owner created it — no approval round-trip needed
-      status: AppointmentStatus.CONFIRMED,
-      price: service.discountedPrice ?? service.price,
-      currency: service.currency,
-      businessNotes: input.note?.trim() || null,
-    },
-    include: { customer: { select: { id: true, email: true, firstName: true, lastName: true } } },
+  // Atomic double-booking guard + create under the per-business booking lock.
+  const appointment = await prisma.$transaction(async (tx) => {
+    await lockBusinessForBooking(tx, businessId);
+    const conflict = await tx.appointment.findFirst({
+      where: {
+        businessId,
+        ...(input.employeeId ? { employeeId: input.employeeId } : {}),
+        status: {
+          notIn: [AppointmentStatus.CANCELLED_CUSTOMER, AppointmentStatus.CANCELLED_BUSINESS],
+        },
+        startTime: { lt: end },
+        endTime: { gt: start },
+      },
+      select: { id: true },
+    });
+    if (conflict) throw new Error("Ten termin koliduje z inną wizytą.");
+    return tx.appointment.create({
+      data: {
+        businessId,
+        customerId,
+        serviceId: service.id,
+        employeeId: input.employeeId ?? null,
+        startTime: start,
+        endTime: end,
+        duration: service.duration,
+        // Owner created it — no approval round-trip needed
+        status: AppointmentStatus.CONFIRMED,
+        price: service.discountedPrice ?? service.price,
+        currency: service.currency,
+        businessNotes: input.note?.trim() || null,
+      },
+      include: { customer: { select: { id: true, email: true, firstName: true, lastName: true } } },
+    });
   });
 
   const slotLabel = describeSlot(start);
