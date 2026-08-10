@@ -12,6 +12,7 @@ import {
   sendBookingRescheduleEmail,
   sendBookingTimeChangedEmail,
   sendNewBookingNotificationEmail,
+  sendReviewRequestEmail,
 } from "@/lib/email";
 import { sendSms, sendWhatsApp } from "@/lib/messaging";
 import { sendTransactionalSms, type SmsTemplate } from "@/lib/sms";
@@ -876,7 +877,7 @@ export async function completeAppointment(appointmentId: string) {
     where: { id: appointmentId },
     include: {
       business: { select: { id: true, name: true, slug: true } },
-      customer: { select: { id: true } },
+      customer: { select: { id: true, email: true } },
       service: { select: { name: true } },
     },
   });
@@ -898,7 +899,8 @@ export async function completeAppointment(appointmentId: string) {
     data: { status: AppointmentStatus.COMPLETED },
   });
 
-  // Ask the customer for a review
+  // Ask the customer for a review — in-app + email (email was previously missing).
+  const reviewUrl = `${getAppUrl()}/b/${appointment.business.slug}?review=${appointmentId}`;
   await Promise.allSettled([
     notify({
       userId: appointment.customer.id,
@@ -908,6 +910,14 @@ export async function completeAppointment(appointmentId: string) {
       body: `Oceń wizytę: ${appointment.service.name} w ${appointment.business.name}.`,
       data: { appointmentId, businessSlug: appointment.business.slug },
     }),
+    appointment.customer.email
+      ? sendReviewRequestEmail({
+          to: appointment.customer.email,
+          businessName: appointment.business.name,
+          serviceName: appointment.service.name,
+          reviewUrl,
+        })
+      : Promise.resolve(),
   ]);
 
   revalidatePath("/business/dashboard");

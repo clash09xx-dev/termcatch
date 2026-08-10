@@ -442,6 +442,23 @@ export async function sendTrialEndingEmail(
   });
 }
 
+/** Post-visit — ask the customer to leave a review. */
+export async function sendReviewRequestEmail(
+  params: { to: string; businessName: string; serviceName: string; reviewUrl: string }
+): Promise<{ sent: boolean }> {
+  return sendEmail({
+    to: params.to,
+    subject: `Jak było? Oceń wizytę — ${params.businessName}`,
+    heading: "Jak minęła Twoja wizyta?",
+    lines: [
+      `Dziękujemy za wizytę: <strong>${params.serviceName}</strong> w <strong>${params.businessName}</strong>.`,
+      "Twoja opinia zajmie chwilę, a pomaga salonowi i innym klientom.",
+    ],
+    ctaLabel: "Oceń wizytę",
+    ctaUrl: params.reviewUrl,
+  });
+}
+
 /** New review — notify the salon (honors the newReview.email preference). */
 export async function sendNewReviewNotificationEmail(
   params: { to: string; businessName: string; rating: number }

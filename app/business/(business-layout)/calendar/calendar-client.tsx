@@ -258,6 +258,16 @@ export function CalendarClient(props: Props) {
             Do potwierdzenia
           </button>
           <Segmented size="sm" ariaLabel="Widok" idBase="cal-view" value={view} onChange={(v) => setView(v as "day" | "week")} options={[{ value: "day", label: "Dzień" }, { value: "week", label: "Tydzień" }]} />
+          {/* Explicit "new appointment" entry — the only way to add on mobile,
+              where the desktop empty-slot click lanes are hidden. */}
+          <button
+            onClick={() => { setPrefill({ date: ymd(cursor) }); setSheetOpen(true); }}
+            className="btn-spring px-3 py-1.5 rounded-lg text-xs font-semibold inline-flex items-center gap-1"
+            style={{ background: "linear-gradient(180deg,#1E293B,#0F172A)", border: "1px solid #0F172A", color: "#F8FAFC" }}
+          >
+            <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5}><path d="M12 5v14M5 12h14" /></svg>
+            Nowa
+          </button>
         </div>
       </div>
 
