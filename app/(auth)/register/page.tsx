@@ -19,6 +19,9 @@ const initialState: AuthState = {};
 // Pending-verification handoff, so a refresh / back-navigation on the code screen
 // keeps the pending e-mail (and role/destination) instead of dropping the user
 // back to an empty form. sessionStorage is per-tab and cleared on success.
+// Digits in the e-mail code — must match the Supabase "Email OTP Length" setting
+// (currently 8). Change here if that setting changes.
+const OTP_LENGTH = 8;
 const OTP_STORAGE_KEY = "tc_pending_otp";
 type PendingOtp = { email: string; role: "CUSTOMER" | "BUSINESS_OWNER"; next?: string };
 
@@ -314,8 +317,8 @@ function VerifyEmailStep({
 
   const submit = (value: string) => {
     if (submittingRef.current || isPending) return;
-    if (value.length !== 6) {
-      setError("Wpisz pełny 6-cyfrowy kod.");
+    if (value.length !== OTP_LENGTH) {
+      setError(`Wpisz pełny ${OTP_LENGTH}-cyfrowy kod.`);
       return;
     }
     submittingRef.current = true;
@@ -357,7 +360,7 @@ function VerifyEmailStep({
       <div className="mb-6">
         <h1 className="text-xl font-semibold text-gray-900 tracking-tight">Potwierdź adres e-mail</h1>
         <p className="mt-1.5 text-sm text-gray-500 leading-relaxed">
-          Wpisz 6-cyfrowy kod, który wysłaliśmy na{" "}
+          Wpisz {OTP_LENGTH}-cyfrowy kod, który wysłaliśmy na{" "}
           <span className="font-medium text-gray-900 break-all">{email}</span>.
         </p>
         <p className="mt-1 text-xs text-gray-400">
@@ -379,6 +382,7 @@ function VerifyEmailStep({
             if (error) setError(null);
           }}
           onComplete={submit}
+          length={OTP_LENGTH}
           disabled={isPending}
           hasError={!!error}
           autoFocus
@@ -396,7 +400,7 @@ function VerifyEmailStep({
 
         <button
           type="submit"
-          disabled={isPending || code.length !== 6}
+          disabled={isPending || code.length !== OTP_LENGTH}
           className="w-full py-2.5 px-4 font-semibold text-sm rounded-xl flex items-center justify-center gap-2 btn-spring glass-shimmer-wrap disabled:opacity-50 disabled:cursor-not-allowed"
           style={{
             background: "linear-gradient(135deg, #CBD5E1 0%, #94A3B8 50%, #CBD5E1 100%)",

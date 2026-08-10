@@ -108,7 +108,7 @@ export function OtpInput({
   };
 
   return (
-    <div className="flex items-center justify-center gap-2" role="group" aria-label="Sześciocyfrowy kod weryfikacyjny">
+    <div className="flex items-center justify-center gap-1.5 sm:gap-2" role="group" aria-label={`${length}-cyfrowy kod weryfikacyjny`}>
       {Array.from({ length }, (_, i) => (
         <input
           key={i}
@@ -129,7 +129,8 @@ export function OtpInput({
           onPaste={(e) => handlePaste(i, e)}
           onFocus={(e) => e.currentTarget.select()}
           className={cn(
-            "w-11 h-14 sm:w-12 sm:h-14 text-center text-xl font-bold rounded-xl outline-none transition-all input-glass tabular-nums text-[#0F172A] disabled:opacity-50",
+            // Compact enough that 8 boxes still fit a narrow phone.
+            "w-9 h-12 text-lg sm:w-11 sm:h-14 sm:text-xl text-center font-bold rounded-xl outline-none transition-all input-glass tabular-nums text-[#0F172A] disabled:opacity-50",
             hasError && "!border-red-400"
           )}
           style={hasError ? { border: "1px solid rgba(248,113,113,0.9)" } : undefined}

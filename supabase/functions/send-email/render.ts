@@ -40,7 +40,7 @@ export function renderVerificationEmail(token: string): RenderedEmail {
             <h1 style="margin:0;font-size:20px;font-weight:700;color:#111827;">Twój kod weryfikacyjny</h1>
           </td></tr>
           <tr><td style="padding:0 32px;">
-            <p style="margin:8px 0;font-size:14px;line-height:1.6;color:#4b5563;">Wpisz poniższy 6-cyfrowy kod w aplikacji TermCatch, aby dokończyć zakładanie konta.</p>
+            <p style="margin:8px 0;font-size:14px;line-height:1.6;color:#4b5563;">Wpisz poniższy kod w aplikacji TermCatch, aby dokończyć zakładanie konta.</p>
           </td></tr>
           <tr><td style="padding:20px 32px 8px;">
             <div style="background-color:#f1f6fb;border:1px solid #e5eaf1;border-radius:12px;padding:20px;text-align:center;">

@@ -164,7 +164,7 @@ export async function registerAction(
         // fresh sign-up and move to the code step; an existing/confirmed account
         // simply won't produce a working code (indistinguishable to an attacker).
         await markOtpSent();
-        return { step: "verify", email, next: nextParam, success: `Wysłaliśmy 6-cyfrowy kod na ${email}.` };
+        return { step: "verify", email, next: nextParam, success: `Wysłaliśmy kod weryfikacyjny na ${email}.` };
       }
       if (msg.includes("invalid") && msg.includes("email")) {
         return { error: "Nieprawidłowy adres e-mail. Sprawdź go i spróbuj ponownie." };
@@ -196,7 +196,7 @@ export async function registerAction(
 
   // Normal path: a code was e-mailed — move to the in-app verification step.
   await markOtpSent();
-  return { step: "verify", email, next: nextParam, success: `Wysłaliśmy 6-cyfrowy kod na ${email}.` };
+  return { step: "verify", email, next: nextParam, success: `Wysłaliśmy kod weryfikacyjny na ${email}.` };
 }
 
 // ─── E-mail OTP: verify the 6-digit code ──────────────────────
@@ -208,7 +208,9 @@ export async function verifyEmailOtpAction(emailRaw: string, tokenRaw: string, n
   const next = safeNext(nextRaw);
 
   if (!z.string().email().safeParse(email).success) return { error: "Nieprawidłowy adres e-mail." };
-  if (token.length !== 6) return { error: "Wpisz pełny 6-cyfrowy kod." };
+  // Accept the configured e-mail OTP length (6–8 digits) — the UI enforces the
+  // exact count; Supabase is the final authority on the token itself.
+  if (token.length < 6 || token.length > 8) return { error: "Wpisz pełny kod z wiadomości e-mail." };
 
   const supabase = await createClient();
   const { data, error } = await supabase.auth.verifyOtp({ email, token, type: "signup" });
