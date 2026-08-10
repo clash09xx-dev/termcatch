@@ -7,6 +7,7 @@ import { ServiceCategory, DayOfWeek } from "@prisma/client";
 import { redirect } from "next/navigation";
 import { SPECIALTY_TAGS } from "@/lib/discovery";
 import { autoPublishIfComplete } from "@/lib/publish";
+import { isValidPolishPostalCode, normalizePolishPostalCode } from "@/lib/postal-code";
 
 const DAY_OF_WEEK_MAP: Record<number, DayOfWeek> = {
   0: DayOfWeek.MONDAY,
@@ -72,6 +73,13 @@ export async function createBusiness(data: OnboardingInput) {
     }
   }
 
+  // Postal code must be a valid Polish "NN-NNN" (normalized server-side too, so a
+  // frontend bypass can't persist a malformed code).
+  const postalCode = normalizePolishPostalCode(data.postalCode);
+  if (!isValidPolishPostalCode(postalCode)) {
+    throw new Error("Podaj kod pocztowy w formacie NN-NNN (np. 30-001).");
+  }
+
   const slug = generateSlug(data.name);
 
   // Upsert user record in DB
@@ -99,7 +107,7 @@ export async function createBusiness(data: OnboardingInput) {
       email: data.email || null,
       address: data.address,
       city: data.city,
-      postalCode: data.postalCode,
+      postalCode,
       // New salons start non-public. They AUTO-PUBLISH (→ ACTIVE) below the
       // moment onboarding is complete — no manual admin approval. An incomplete
       // profile simply stays PENDING_VERIFICATION (hidden from all discovery).
@@ -233,6 +241,15 @@ export async function updateBusinessProfile(data: BusinessProfileData) {
   if (data.email && data.email.trim() && !EMAIL_RE.test(data.email.trim())) {
     throw new Error("Nieprawidłowy adres e-mail.");
   }
+  // postal field: undefined → skip; else normalize + validate NN-NNN
+  const postal = (v: string | undefined): string | undefined => {
+    if (v === undefined) return undefined;
+    const n = normalizePolishPostalCode(v);
+    if (n && !isValidPolishPostalCode(n)) {
+      throw new Error("Podaj kod pocztowy w formacie NN-NNN (np. 30-001).");
+    }
+    return n;
+  };
 
   await prisma.business.update({
     where: { id: business.id },
@@ -246,7 +263,7 @@ export async function updateBusinessProfile(data: BusinessProfileData) {
       website: url(data.website, "strony WWW"),
       address: s(data.address, 200),
       city: s(data.city, 100),
-      postalCode: s(data.postalCode, 20),
+      postalCode: postal(data.postalCode),
       logoUrl: url(data.logoUrl, "logo"),
       coverImageUrl: url(data.coverImageUrl, "zdjęcia w tle"),
       instagramUrl: url(data.instagramUrl, "Instagram"),

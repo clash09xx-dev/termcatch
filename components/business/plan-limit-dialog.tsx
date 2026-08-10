@@ -1,12 +1,20 @@
 "use client";
 
 import Link from "next/link";
+import { useEffect } from "react";
 import type { PlanLimitInfo } from "@/lib/entitlements";
 
 // Blocking upgrade dialog shown when a plan limit is hit server-side. Honest:
 // it never pretends the upgrade succeeded — the CTA leads to the billing route
-// (Prompt 3 wires the actual Stripe upgrade there).
+// where the Stripe upgrade / Customer Portal is available.
 export function PlanLimitDialog({ info, onClose }: { info: PlanLimitInfo; onClose: () => void }) {
+  // Escape closes the dialog.
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [onClose]);
+
   const title = info.resource === "employee" ? "Osiągnięto limit specjalistów" : "Osiągnięto limit lokalizacji";
   const word = info.resource === "employee" ? "aktywnych specjalistów" : "aktywnych lokalizacji";
 

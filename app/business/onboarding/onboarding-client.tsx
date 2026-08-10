@@ -10,6 +10,7 @@ import { cn } from "@/lib/utils";
 import { Wordmark } from "@/components/brand/wordmark";
 import { createBusiness, type OnboardingInput, type WorkingHourInput } from "@/lib/actions/business";
 import { visibleCategories } from "@/lib/categories";
+import { isValidPolishPostalCode, normalizePolishPostalCode } from "@/lib/postal-code";
 import type { ServiceCategory } from "@prisma/client";
 import { stepSlide, stepFade, SPRING, useReducedMotion } from "@/lib/motion";
 
@@ -96,6 +97,12 @@ export function OnboardingClient({ ownerName }: { ownerName: string }) {
     if (step === 2 && !phone.trim()) return setError("Podaj numer telefonu.");
     if (step === 3 && (!address.trim() || !city.trim() || !postalCode.trim()))
       return setError("Uzupełnij wszystkie pola adresu.");
+    if (step === 3) {
+      const normalized = normalizePolishPostalCode(postalCode);
+      if (!isValidPolishPostalCode(normalized))
+        return setError("Podaj kod pocztowy w formacie NN-NNN (np. 30-001).");
+      if (normalized !== postalCode) setPostalCode(normalized);
+    }
     if (step === 6 && serviceName.trim() && (parseFloat(servicePrice) || 0) <= 0)
       return setError("Podaj cenę usługi większą niż 0 zł.");
 
@@ -129,7 +136,7 @@ export function OnboardingClient({ ownerName }: { ownerName: string }) {
       email: email.trim(),
       address: address.trim(),
       city: city.trim(),
-      postalCode: postalCode.trim(),
+      postalCode: normalizePolishPostalCode(postalCode),
       workingHours: hours,
       serviceName: serviceName.trim(),
       serviceDuration,
@@ -260,8 +267,11 @@ export function OnboardingClient({ ownerName }: { ownerName: string }) {
                               placeholder="Warszawa" className={inputCls} />
                           </Field>
                           <Field label="Kod pocztowy *" htmlFor="ob-postal">
-                            <input id="ob-postal" type="text" value={postalCode} onChange={(e) => setPostalCode(e.target.value)}
-                              placeholder="00-000" maxLength={6} className={cn(inputCls, "tabular-nums")} />
+                            <input id="ob-postal" type="text" inputMode="numeric" value={postalCode}
+                              onChange={(e) => setPostalCode(e.target.value)}
+                              onBlur={(e) => setPostalCode(normalizePolishPostalCode(e.target.value))}
+                              aria-invalid={postalCode.trim().length > 0 && !isValidPolishPostalCode(normalizePolishPostalCode(postalCode))}
+                              placeholder="30-001" maxLength={6} className={cn(inputCls, "tabular-nums")} />
                           </Field>
                         </div>
                       </div>

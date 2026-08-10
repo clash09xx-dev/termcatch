@@ -58,7 +58,9 @@ export function PlanSelectClient({
   }
 
   function checkout() {
-    if (!selected || !billingReady) return;
+    // A plan is mandatory. When billing isn't configured yet, still attempt so
+    // the server returns "unconfigured" and we surface it — we never skip ahead.
+    if (!selected) return;
     start(async () => {
       setError("");
       setAlreadySub(false);
@@ -90,8 +92,7 @@ export function PlanSelectClient({
 
         {!billingReady && (
           <div className="max-w-2xl mx-auto mb-6 px-5 py-3.5 rounded-2xl text-sm" style={{ background: "rgba(255,255,255,0.75)", border: "1px solid rgba(148,163,184,0.40)", color: "#475569" }}>
-            Płatności są jeszcze konfigurowane. Wybierz plan orientacyjnie i przejdź do panelu —
-            subskrypcję skonfigurujesz, gdy płatności będą gotowe. Twój salon działa już w pełni.
+            Płatności są w trakcie konfiguracji. Wybór planu jest wymagany — dokończ go, gdy tylko płatności będą gotowe.
           </div>
         )}
 
@@ -189,28 +190,24 @@ export function PlanSelectClient({
         )}
 
         <div className="flex flex-col items-center gap-3">
-          {billingReady ? (
-            <>
-              {selected && (
-                <p className="text-xs text-center" style={{ color: "#64748B" }}>{freeLabel}</p>
-              )}
-              <button
-                type="button"
-                disabled={!selected || pending}
-                onClick={checkout}
-                className="px-8 py-3 rounded-xl text-sm font-semibold btn-spring disabled:opacity-50"
-                style={INK}
-              >
-                {pending ? "Przekierowanie do płatności…" : "Kontynuuj do płatności"}
-              </button>
-              <a href="/business/dashboard" className="text-sm font-medium" style={{ color: "#64748B" }}>
-                Pomiń teraz — wybiorę plan później
-              </a>
-            </>
-          ) : (
-            <a href="/business/dashboard" className="px-8 py-3 rounded-xl text-sm font-semibold btn-spring" style={INK}>
-              Przejdź do panelu →
-            </a>
+          {selected && billingReady && (
+            <p className="text-xs text-center" style={{ color: "#64748B" }}>{freeLabel}</p>
+          )}
+          {/* Plan selection is mandatory — the only way forward is to choose a
+              plan and continue to checkout. No "skip to dashboard" path. */}
+          <button
+            type="button"
+            disabled={!selected || pending}
+            onClick={checkout}
+            className="px-8 py-3 rounded-xl text-sm font-semibold btn-spring disabled:opacity-50"
+            style={INK}
+          >
+            {pending ? "Przekierowanie do płatności…" : "Kontynuuj do płatności"}
+          </button>
+          {!selected && (
+            <p className="text-xs text-center" style={{ color: "#94A3B8" }}>
+              Wybierz plan, aby kontynuować.
+            </p>
           )}
         </div>
       </div>

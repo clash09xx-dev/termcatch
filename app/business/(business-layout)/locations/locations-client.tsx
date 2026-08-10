@@ -52,7 +52,9 @@ export function LocationsClient({ locations }: { locations: LocationRow[] }) {
 
   function handleResult(res: LocationMutationResult) {
     if (res.ok) { window.location.href = "/business/locations"; return; }
-    if ("limit" in res) { setLimitInfo(res.limit); return; }
+    // Close the form modal first so the upgrade dialog is clickable (Radix
+    // overlay otherwise blocks pointer events on the body).
+    if ("limit" in res) { setOpen(false); setLimitInfo(res.limit); return; }
     if ("error" in res) { setError(res.error); return; }
     setError("Funkcja jest wyłączona."); // disabled — shouldn't happen (page is gated)
   }

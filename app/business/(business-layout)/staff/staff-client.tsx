@@ -60,7 +60,9 @@ export function StaffClient({ employees, availableServices, weekLoad }: Props) {
     const data = { firstName: form.firstName, lastName: form.lastName, email: form.email || undefined, phone: form.phone || undefined, title: form.title || undefined, bio: form.bio || undefined, avatarUrl: form.avatarUrl || "", color: form.color, isActive: form.isActive, isAccepting: form.isAccepting, serviceIds: form.serviceIds };
     start(async () => {
       const res = editingId ? await updateEmployee(editingId, data) : await createEmployee(data);
-      if (!res.ok) { setLimitInfo(res.limit); return; } // blocked by plan limit — show upgrade dialog
+      // Close the form modal first — otherwise its Radix overlay keeps
+      // pointer-events:none on the body and the upgrade dialog is unclickable.
+      if (!res.ok) { setOpen(false); setLimitInfo(res.limit); return; }
       window.location.href = "/business/staff";
     });
   }
@@ -68,7 +70,7 @@ export function StaffClient({ employees, availableServices, weekLoad }: Props) {
   function toggle(e: EmpWithServices) {
     start(async () => {
       const res = await updateEmployee(e.id, { isActive: !e.isActive });
-      if (!res.ok) { setLimitInfo(res.limit); return; }
+      if (!res.ok) { setOpen(false); setLimitInfo(res.limit); return; }
       window.location.href = "/business/staff";
     });
   }
