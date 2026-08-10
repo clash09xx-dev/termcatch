@@ -1,6 +1,5 @@
 export const dynamic = "force-dynamic";
 
-import type { CSSProperties } from "react";
 import { redirect } from "next/navigation";
 import { getServerUser } from "@/lib/supabase/server";
 import { prisma } from "@/lib/prisma";
@@ -11,7 +10,6 @@ import {
   CardHeader,
   StatCard,
   EmptyState,
-  GlassLink,
   InkLink,
   GlassButton,
   ChromeAvatar,
@@ -19,53 +17,14 @@ import {
   CHIP,
 } from "@/components/ui/glass";
 
+// Invoicing will be delivered via the Fakturownia API (not Stripe): connect a
+// Fakturownia account, issue invoices from CRM/customer data, track status,
+// download/send to the customer. Until that lands, this page is the real SALES
+// HISTORY from completed visits + a disabled placeholder for the coming feature.
+// No payment-status pill here — Appointment.paymentStatus is not tracked yet, so
+// showing "Nieopłacone" on every row would be misleading.
+
 const ROW_LIMIT = 100;
-
-// ── Payment status → honest pill (StatusBadge only knows appointment-status
-//    keys, so payment status renders its own tinted pill). Amber is reserved
-//    for stars, so "unpaid" stays neutral slate — never dressed up as urgent.
-const PAYMENT_TINT: Record<string, { label: string; style: CSSProperties }> = {
-  PAID: {
-    label: "Opłacone",
-    style: { background: "rgba(16,185,129,0.10)", border: "1px solid rgba(16,185,129,0.25)", color: "#047857" },
-  },
-  AUTHORIZED: {
-    label: "Zaliczka",
-    style: { background: "rgba(203,213,225,0.25)", border: "1px solid rgba(148,163,184,0.40)", color: "#334155" },
-  },
-  PENDING: {
-    label: "Nieopłacone",
-    style: { background: "rgba(203,213,225,0.18)", border: "1px solid rgba(203,213,225,0.45)", color: "#64748B" },
-  },
-  PARTIALLY_REFUNDED: {
-    label: "Częściowy zwrot",
-    style: { background: "rgba(203,213,225,0.18)", border: "1px solid rgba(203,213,225,0.45)", color: "#64748B" },
-  },
-  REFUNDED: {
-    label: "Zwrócone",
-    style: { background: "rgba(203,213,225,0.18)", border: "1px solid rgba(203,213,225,0.45)", color: "#64748B" },
-  },
-  FAILED: {
-    label: "Nieudane",
-    style: { background: "rgba(244,63,94,0.08)", border: "1px solid rgba(244,63,94,0.22)", color: "#BE123C" },
-  },
-  CANCELLED: {
-    label: "Anulowane",
-    style: { background: "rgba(244,63,94,0.08)", border: "1px solid rgba(244,63,94,0.22)", color: "#BE123C" },
-  },
-};
-
-function PaymentPill({ status }: { status: string }) {
-  const meta = PAYMENT_TINT[status] ?? PAYMENT_TINT.PENDING;
-  return (
-    <span
-      className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-semibold whitespace-nowrap flex-shrink-0"
-      style={meta.style}
-    >
-      {meta.label}
-    </span>
-  );
-}
 
 function initialsOf(first: string, last: string) {
   return `${first?.[0] ?? ""}${last?.[0] ?? ""}`.toUpperCase() || "?";
@@ -116,15 +75,7 @@ export default async function InvoicesPage() {
 
   return (
     <div className="max-w-5xl mx-auto space-y-5">
-      <PageHeader
-        title="Faktury"
-        subtitle="Historia sprzedaży z ukończonych wizyt"
-        actions={
-          <GlassLink href="/business/settings" size="sm">
-            Ustawienia płatności
-          </GlassLink>
-        }
-      />
+      <PageHeader title="Faktury" subtitle="Historia sprzedaży z ukończonych wizyt" />
 
       {/* Real numbers, straight from completed appointments */}
       <div className="fade-rise fade-rise-d1 grid grid-cols-1 sm:grid-cols-3 gap-3">
@@ -185,14 +136,13 @@ export default async function InvoicesPage() {
                   </p>
                   <p className="text-xs text-slate-500 truncate">{r.service.name}</p>
                 </div>
-                <PaymentPill status={r.paymentStatus} />
                 <p className="w-24 flex-shrink-0 text-right text-sm font-bold text-slate-900 tabular-nums">
                   {formatCurrency(r.price)}
                 </p>
                 <GlassButton
                   size="sm"
                   disabled
-                  title="Wystawianie faktur wymaga podłączenia Stripe oraz danych podatkowych firmy (NIP)."
+                  title="Wystawianie faktur przez Fakturownia — wkrótce."
                   className="flex-shrink-0"
                 >
                   <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} aria-hidden="true">
@@ -207,7 +157,7 @@ export default async function InvoicesPage() {
         </GlassCard>
       )}
 
-      {/* Honest limits — no numbering, no PDF, no VAT yet */}
+      {/* Honest note — Fakturownia integration is coming; this is sales history. */}
       <div
         className="fade-rise fade-rise-d3 flex items-start gap-2.5 rounded-2xl px-4 py-3"
         style={CHIP}
@@ -217,9 +167,9 @@ export default async function InvoicesPage() {
           <path d="M12 16v-4M12 8h.01" />
         </svg>
         <p className={cn("text-xs leading-relaxed text-slate-500")}>
-          Formalne faktury VAT z numeracją i PDF wymagają podłączenia Stripe oraz danych
-          podatkowych firmy (plan Salon Pro). Powyższa lista to historia sprzedaży z ukończonych
-          wizyt — nie są to wystawione faktury.
+          Wystawianie formalnych faktur (numeracja, PDF, wysyłka do klienta) przygotowujemy poprzez
+          integrację z <span className="font-medium text-slate-600">Fakturownią</span>. Powyższa
+          lista to historia sprzedaży z ukończonych wizyt — nie są to jeszcze wystawione faktury.
         </p>
       </div>
     </div>
