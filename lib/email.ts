@@ -391,6 +391,40 @@ export async function sendNewBookingNotificationEmail(
   });
 }
 
+/** Subscription payment failed / past-due — alert the salon owner (dunning). */
+export async function sendBillingPaymentFailedEmail(
+  params: { to: string; businessName: string }
+): Promise<{ sent: boolean }> {
+  return sendEmail({
+    to: params.to,
+    subject: "Problem z płatnością subskrypcji — TermCatch",
+    heading: "Nie udało się pobrać płatności",
+    lines: [
+      `Nie udało się pobrać opłaty za subskrypcję dla <strong>${escapeHtml(params.businessName)}</strong>.`,
+      "Zaktualizuj metodę płatności w panelu, aby zachować dostęp — Twoje dane są bezpieczne.",
+    ],
+    ctaLabel: "Zarządzaj subskrypcją",
+    ctaUrl: `${APP_URL}/business/payments`,
+  });
+}
+
+/** Trial ending soon — heads-up before the first charge. */
+export async function sendTrialEndingEmail(
+  params: { to: string; businessName: string; endsAtLabel?: string }
+): Promise<{ sent: boolean }> {
+  return sendEmail({
+    to: params.to,
+    subject: "Twój okres próbny wkrótce się kończy — TermCatch",
+    heading: "Okres próbny dobiega końca",
+    lines: [
+      `Okres próbny dla <strong>${escapeHtml(params.businessName)}</strong>${params.endsAtLabel ? ` kończy się ${params.endsAtLabel}` : " wkrótce się kończy"}.`,
+      "Aby zachować ciągłość działania, upewnij się, że masz aktualną metodę płatności.",
+    ],
+    ctaLabel: "Zarządzaj subskrypcją",
+    ctaUrl: `${APP_URL}/business/payments`,
+  });
+}
+
 /** New review — notify the salon (honors the newReview.email preference). */
 export async function sendNewReviewNotificationEmail(
   params: { to: string; businessName: string; rating: number }

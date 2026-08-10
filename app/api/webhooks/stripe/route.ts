@@ -5,6 +5,22 @@ import { prisma } from "@/lib/prisma";
 import { mapStripeStatus, planKeyFromPriceId, planKeyToEnum } from "@/lib/subscription";
 import { rememberStripeCustomer } from "@/lib/billing/customer";
 import { redeemWelcome, releaseWelcomeBySession } from "@/lib/billing/promo";
+import { sendBillingPaymentFailedEmail, sendTrialEndingEmail } from "@/lib/email";
+
+/** Email the salon a billing alert. Non-blocking (helpers never throw). */
+async function billingAlert(businessId: string | null | undefined, kind: "payment_failed" | "trial_ending") {
+  if (!businessId) return;
+  const business = await prisma.business.findUnique({
+    where: { id: businessId },
+    select: { name: true, email: true },
+  });
+  if (!business?.email) return;
+  if (kind === "payment_failed") {
+    await sendBillingPaymentFailedEmail({ to: business.email, businessName: business.name });
+  } else {
+    await sendTrialEndingEmail({ to: business.email, businessName: business.name });
+  }
+}
 
 // Stripe subscription webhook — the SOURCE OF TRUTH for subscription state.
 // Signature-verified and idempotent: each event id is recorded once
@@ -19,6 +35,7 @@ const HANDLED = new Set<string>([
   "customer.subscription.created",
   "customer.subscription.updated",
   "customer.subscription.deleted",
+  "customer.subscription.trial_will_end",
   "invoice.paid",
   "invoice.payment_failed",
 ]);
@@ -89,6 +106,12 @@ async function handleEvent(event: Stripe.Event) {
       await syncFromSubscription(sub, sub.metadata?.businessId);
       break;
     }
+    case "customer.subscription.trial_will_end": {
+      // Stripe fires ~3 days before trial_end — warn the owner before the charge.
+      const sub = event.data.object as Stripe.Subscription;
+      await billingAlert(sub.metadata?.businessId, "trial_ending");
+      break;
+    }
     case "invoice.paid":
     case "invoice.payment_failed": {
       const inv = event.data.object as Stripe.Invoice & {
@@ -97,6 +120,10 @@ async function handleEvent(event: Stripe.Event) {
       if (inv.subscription) {
         const sub = await stripe.subscriptions.retrieve(String(inv.subscription));
         await syncFromSubscription(sub, sub.metadata?.businessId);
+        // Alert the salon on a failed charge (dunning) — previously silent.
+        if (event.type === "invoice.payment_failed") {
+          await billingAlert(sub.metadata?.businessId, "payment_failed");
+        }
       }
       break;
     }
