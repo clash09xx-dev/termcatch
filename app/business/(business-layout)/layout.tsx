@@ -1,4 +1,5 @@
 import { redirect } from "next/navigation";
+import { headers } from "next/headers";
 import { getServerUser } from "@/lib/supabase/server";
 import { prisma } from "@/lib/prisma";
 import { BusinessSidebar } from "@/components/layout/business-sidebar";
@@ -8,6 +9,7 @@ import { AdminViewSwitcher } from "@/components/admin-view-switcher";
 import { CommandPalette } from "@/components/command-palette";
 import { isPlatformAdmin } from "@/lib/is-admin";
 import { multiLocationEnabled } from "@/lib/multi-location";
+import { billingConfigured } from "@/lib/subscription";
 
 export default async function BusinessDashboardLayout({
   children,
@@ -25,7 +27,7 @@ export default async function BusinessDashboardLayout({
       lastName: true,
       ownedBusinesses: {
         take: 1,
-        select: { name: true, slug: true, subscriptionPlan: true },
+        select: { id: true, name: true, slug: true, subscriptionPlan: true },
       },
     },
   });
@@ -33,6 +35,39 @@ export default async function BusinessDashboardLayout({
   const initials =
     `${dbUser?.firstName?.[0] ?? ""}${dbUser?.lastName?.[0] ?? ""}`.toUpperCase() || undefined;
   const multiLocation = multiLocationEnabled();
+  const isAdmin = await isPlatformAdmin();
+
+  // ── Hard subscription gate ────────────────────────────────────────────────
+  // A business must have an ACTIVE subscription or an ACTIVE free trial to reach
+  // the dashboard — otherwise it's redirected to plan selection / billing, so no
+  // one can manually open /business/dashboard and bypass the flow.
+  //   • Admins bypass (internal access preserved).
+  //   • The billing page (/business/payments) is exempt so a past-due/cancelled
+  //     owner can always reach the Customer Portal to fix payment.
+  //   • Only active when billing is actually configured — with no Stripe env a
+  //     subscription cannot be obtained, so gating would lock everyone out.
+  //   • This gate is INDEPENDENT of ENTITLEMENTS_ENFORCED, which remains the
+  //     sole switch for plan LIMITS.
+  if (business && billingConfigured() && !isAdmin) {
+    const pathname = (await headers()).get("x-tc-pathname") ?? "";
+    const onBilling = pathname.startsWith("/business/payments");
+    // Only gate when we actually know the path (header present) — fail-open
+    // otherwise so a missing header can never cause a redirect loop.
+    if (pathname && !onBilling) {
+      const live = await prisma.businessSubscription.findFirst({
+        where: { businessId: business.id, status: { in: ["ACTIVE", "TRIALING"] } },
+        select: { id: true },
+      });
+      if (!live) {
+        const anySub = await prisma.businessSubscription.findFirst({
+          where: { businessId: business.id },
+          select: { id: true },
+        });
+        // Past-due/cancelled → billing to fix it; never subscribed → plan selection.
+        redirect(anySub ? "/business/payments" : "/business/onboarding/plan");
+      }
+    }
+  }
 
   return (
     <div className="flex h-screen overflow-hidden" style={{ background: "radial-gradient(ellipse 90% 60% at 10% 0%, rgba(226,232,240,0.40) 0%, transparent 50%), radial-gradient(ellipse 70% 55% at 92% 100%, rgba(203,213,225,0.28) 0%, transparent 55%), radial-gradient(ellipse 50% 40% at 50% 50%, rgba(241,245,249,0.50) 0%, transparent 65%), #F2F7FC" }}>
@@ -53,7 +88,7 @@ export default async function BusinessDashboardLayout({
 
       <BusinessMobileNav multiLocation={multiLocation} />
       <CommandPalette businessSlug={business?.slug} />
-      {(await isPlatformAdmin()) && <AdminViewSwitcher />}
+      {isAdmin && <AdminViewSwitcher />}
     </div>
   );
 }

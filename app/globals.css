@@ -71,7 +71,11 @@
   }
 
   html {
-    @apply scroll-smooth;
+    /* NOTE: intentionally NOT scroll-smooth. `scroll-behavior: smooth` on the
+       root turns the App Router's instant scroll-to-top on navigation into an
+       animation that gets interrupted by the incoming route's render, leaving
+       the new page scrolled mid/bottom (worst on mobile / long→short pages).
+       Keep navigation resets instant; use element-level smooth where needed. */
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     text-rendering: optimizeLegibility;
