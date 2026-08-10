@@ -7,9 +7,10 @@ import { formatDate } from "@/lib/utils";
 
 // Appointment-reminder SMS — designed for Railway Cron (hourly).
 // Protected by CRON_SECRET; sends only for CONFIRMED future appointments in
-// the ~24h window, only to opted-in customers, at most once per appointment
-// (reminderSentAt + SmsMessage dedupeKey). Cancelled/completed appointments
-// never match the status filter.
+// the ~24h window, only to opted-in customers. Idempotency is via the
+// SmsMessage dedupeKey ("sms:reminder:<id>") ALONE — deliberately NOT the shared
+// Appointment.reminderSentAt marker, so it can't cannibalize the e-mail/in-app
+// reminder cron (which owns reminderSentAt). Each channel sends independently.
 
 export async function POST(request: NextRequest) {
   const secret = process.env.CRON_SECRET;
@@ -28,7 +29,6 @@ export async function POST(request: NextRequest) {
   const appts = await prisma.appointment.findMany({
     where: {
       status: AppointmentStatus.CONFIRMED,
-      reminderSentAt: null,
       startTime: { gte: windowStart, lte: windowEnd },
     },
     select: {
@@ -56,9 +56,8 @@ export async function POST(request: NextRequest) {
       dedupeKey: `sms:reminder:${a.id}`,
       appointmentId: a.id,
     });
-    if (res.sent || res.reason === "duplicate") {
-      await prisma.appointment.update({ where: { id: a.id }, data: { reminderSentAt: new Date() } });
-    }
+    // No reminderSentAt write — the SmsMessage dedupeKey already guarantees one
+    // SMS per appointment (a re-run returns reason "duplicate" without sending).
     if (res.sent) sent++;
     else skipped++;
   }

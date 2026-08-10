@@ -14,9 +14,13 @@ export const runtime = "nodejs";
  * Railway: osobny serwis cron albo zewnętrzny pinger (np. cron-job.org).
  */
 export async function GET(request: NextRequest) {
-  const key = request.nextUrl.searchParams.get("key");
   const secret = process.env.CRON_SECRET;
-  if (!secret || key !== secret) {
+  // Prefer an Authorization: Bearer header (not logged); keep ?key= as a
+  // backward-compatible fallback for existing cron configs.
+  const auth = request.headers.get("authorization");
+  const key = request.nextUrl.searchParams.get("key");
+  const authorized = Boolean(secret) && (auth === `Bearer ${secret}` || key === secret);
+  if (!authorized) {
     return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   }
 
@@ -42,7 +46,7 @@ export async function GET(request: NextRequest) {
   for (const apt of appointments) {
     const slotLabel = `${formatDate(apt.startTime, { weekday: "long", day: "numeric", month: "long" })} o ${warsawTimeString(apt.startTime)}`;
     try {
-      await Promise.allSettled([
+      const [emailRes, notifRes] = await Promise.allSettled([
         sendBookingReminderEmail({
           to: apt.customer.email,
           businessName: apt.business.name,
@@ -63,11 +67,17 @@ export async function GET(request: NextRequest) {
           },
         }),
       ]);
-      await prisma.appointment.update({
-        where: { id: apt.id },
-        data: { reminderSentAt: new Date() },
-      });
-      sent++;
+      // Only mark reminded when a channel actually landed — otherwise leave it
+      // unset so the next run retries (don't silently drop the reminder).
+      const emailSent = emailRes.status === "fulfilled" && emailRes.value?.sent === true;
+      const notifCreated = notifRes.status === "fulfilled";
+      if (emailSent || notifCreated) {
+        await prisma.appointment.update({
+          where: { id: apt.id },
+          data: { reminderSentAt: new Date() },
+        });
+        sent++;
+      }
     } catch (err) {
       console.error("[cron/reminders] error for", apt.id, err);
     }
