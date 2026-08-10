@@ -65,12 +65,16 @@ export function computeDaySlots(args: {
   bufferBeforeMin?: number;
   bufferAfterMin?: number;
   stepMin?: number;
+  /** Concurrent capacity (number of chairs). A slot is free while fewer than
+   *  `capacity` appointments overlap it. Defaults to 1 (single resource). */
+  capacity?: number;
 }): string[] {
   const step = args.stepMin ?? SLOT_STEP_MIN;
   const duration = Math.max(1, Math.round(args.durationMin));
   const breaks = args.breaks ?? [];
   const bufBeforeMs = (args.bufferBeforeMin ?? 0) * 60_000;
   const bufAfterMs = (args.bufferAfterMin ?? 0) * 60_000;
+  const capacity = Math.max(1, Math.floor(args.capacity ?? 1));
   const slots: string[] = [];
 
   for (let start = args.openMin; start + duration <= args.closeMin; start += step) {
@@ -84,10 +88,13 @@ export function computeDaySlots(args: {
 
     // Buffers belong to the appointment: it effectively occupies
     // [start − bufferBefore, end + bufferAfter], so the next booking keeps its gap.
-    const overlaps = args.busy.some(
-      (b) => startMs < b.endMs + bufAfterMs && endMs > b.startMs - bufBeforeMs
-    );
-    if (!overlaps) slots.push(minutesToTime(start));
+    // A slot stays free while fewer than `capacity` appointments overlap it — so a
+    // multi-chair salon offers an "any specialist" slot until every chair is taken.
+    let overlapCount = 0;
+    for (const b of args.busy) {
+      if (startMs < b.endMs + bufAfterMs && endMs > b.startMs - bufBeforeMs) overlapCount++;
+    }
+    if (overlapCount < capacity) slots.push(minutesToTime(start));
   }
   return slots;
 }
@@ -223,6 +230,17 @@ export async function getBusinessDaySlots(input: {
     }
   }
 
+  // Capacity: a specific employee is one chair; "Dowolny specjalista" (no
+  // employee) has as many chairs as there are active, accepting specialists
+  // (min 1, so a solo salon with no Employee rows still books).
+  let capacity = 1;
+  if (!input.employeeId) {
+    const n = await prisma.employee.count({
+      where: { businessId, isActive: true, isAccepting: true },
+    });
+    capacity = Math.max(1, n);
+  }
+
   const dayStart = warsawDayStartUtc(dateYmd);
   const dayEnd = warsawDayEndUtc(dateYmd);
   const appts = await prisma.appointment.findMany({
@@ -245,6 +263,7 @@ export async function getBusinessDaySlots(input: {
     nowMs,
     bufferBeforeMin: business?.bufferTimeBefore ?? 0,
     bufferAfterMin: business?.bufferTimeAfter ?? 0,
+    capacity,
   });
   return { open: true, slots };
 }
@@ -270,7 +289,7 @@ export async function getBusinessesEarliest(
   const dayStart = warsawDayStartUtc(dateYmd);
   const dayEnd = warsawDayEndUtc(dateYmd);
 
-  const [weeklyRows, specialRows, serviceRows, apptRows, businessRows] = await Promise.all([
+  const [weeklyRows, specialRows, serviceRows, apptRows, businessRows, employeeCounts] = await Promise.all([
     prisma.workingHours.findMany({
       where: { businessId: { in: businessIds }, dayOfWeek: dow },
       include: { breaks: { select: { startTime: true, endTime: true } } },
@@ -295,6 +314,11 @@ export async function getBusinessesEarliest(
       where: { id: { in: businessIds } },
       select: { id: true, bufferTimeBefore: true, bufferTimeAfter: true },
     }),
+    prisma.employee.groupBy({
+      by: ["businessId"],
+      where: { businessId: { in: businessIds }, isActive: true, isAccepting: true },
+      _count: true,
+    }),
   ]);
 
   const weeklyBy = new Map(weeklyRows.map((w) => [w.businessId, w]));
@@ -311,6 +335,9 @@ export async function getBusinessesEarliest(
     if (cur === undefined || s.duration < cur) shortestBy.set(s.businessId, s.duration);
   }
   const bufferBy = new Map(businessRows.map((b) => [b.id, b]));
+  const capacityBy = new Map<string, number>(
+    employeeCounts.map((e) => [e.businessId, Math.max(1, e._count)])
+  );
 
   for (const id of businessIds) {
     const probe = shortestBy.get(id);
@@ -334,6 +361,7 @@ export async function getBusinessesEarliest(
       nowMs,
       bufferBeforeMin: buf?.bufferTimeBefore ?? 0,
       bufferAfterMin: buf?.bufferTimeAfter ?? 0,
+      capacity: capacityBy.get(id) ?? 1,
     });
     result.set(id, { open: true, earliest: slots[0] ?? null });
   }

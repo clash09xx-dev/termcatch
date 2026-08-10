@@ -37,6 +37,28 @@ describe("computeDaySlots — the shared booking+search engine", () => {
     assert.equal(computeDaySlots({ ...base, nowMs: at("14:10") })[0], "14:30");
   });
 
+  describe("capacity — multi-chair 'any specialist'", () => {
+    test("capacity 1 (default): one overlapping appointment blocks the slot", () => {
+      const busy = [{ startMs: at("10:00"), endMs: at("11:00") }];
+      assert.ok(!computeDaySlots({ ...base, busy }).includes("10:00"));
+    });
+    test("capacity 2: one overlap still leaves a free chair", () => {
+      const busy = [{ startMs: at("10:00"), endMs: at("11:00") }];
+      assert.ok(computeDaySlots({ ...base, busy, capacity: 2 }).includes("10:00"));
+    });
+    test("capacity 2: two overlaps fill both chairs → blocked", () => {
+      const busy = [
+        { startMs: at("10:00"), endMs: at("11:00") },
+        { startMs: at("10:00"), endMs: at("11:00") },
+      ];
+      assert.ok(!computeDaySlots({ ...base, busy, capacity: 2 }).includes("10:00"));
+    });
+    test("capacity floors at 1 (0/negative treated as single chair)", () => {
+      const busy = [{ startMs: at("10:00"), endMs: at("11:00") }];
+      assert.ok(!computeDaySlots({ ...base, busy, capacity: 0 }).includes("10:00"));
+    });
+  });
+
   test("duration crossing closing time yields no slot", () => {
     assert.deepEqual(computeDaySlots({ ...base, durationMin: 10 * 60 }), []);
   });

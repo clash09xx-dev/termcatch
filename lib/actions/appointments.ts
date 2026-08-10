@@ -78,6 +78,40 @@ async function lockBusinessForBooking(tx: Prisma.TransactionClient, businessId: 
   await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtextextended(${businessId}, 0))`;
 }
 
+/**
+ * Throw if the [start,end) slot isn't bookable. A SPECIFIC employee is one chair
+ * (blocked by any overlap of theirs). "Dowolny specjalista" (employeeId null) is
+ * blocked only when EVERY chair is taken — capacity = active accepting employees
+ * (min 1, so a solo salon still books). Call inside the locked transaction so
+ * the count + insert are atomic (no double-book / over-capacity race).
+ */
+async function assertSlotAvailable(
+  tx: Prisma.TransactionClient,
+  args: { businessId: string; employeeId: string | null; start: Date; end: Date; excludeId?: string }
+): Promise<void> {
+  const overlap = {
+    ...(args.excludeId ? { id: { not: args.excludeId } } : {}),
+    businessId: args.businessId,
+    status: { notIn: [AppointmentStatus.CANCELLED_CUSTOMER, AppointmentStatus.CANCELLED_BUSINESS] },
+    startTime: { lt: args.end },
+    endTime: { gt: args.start },
+  };
+  if (args.employeeId) {
+    const conflict = await tx.appointment.findFirst({
+      where: { ...overlap, employeeId: args.employeeId },
+      select: { id: true },
+    });
+    if (conflict) throw new Error("Ten termin jest już zajęty. Wybierz inną godzinę.");
+    return;
+  }
+  const capacity = Math.max(
+    1,
+    await tx.employee.count({ where: { businessId: args.businessId, isActive: true, isAccepting: true } })
+  );
+  const concurrent = await tx.appointment.count({ where: overlap });
+  if (concurrent >= capacity) throw new Error("Ten termin jest już zajęty. Wybierz inną godzinę.");
+}
+
 async function getDbUser() {
   const user = await getServerUser();
   if (!user) redirect("/login");
@@ -235,21 +269,12 @@ export async function createAppointment(data: CreateAppointmentInput) {
   // double-booking race AND makes coupon usage atomic (no over-limit under races).
   const appointment = await prisma.$transaction(async (tx) => {
     await lockBusinessForBooking(tx, data.businessId);
-    const conflict = await tx.appointment.findFirst({
-      where: {
-        businessId: data.businessId,
-        ...(data.employeeId ? { employeeId: data.employeeId } : {}),
-        status: {
-          notIn: [AppointmentStatus.CANCELLED_CUSTOMER, AppointmentStatus.CANCELLED_BUSINESS],
-        },
-        startTime: { lt: end },
-        endTime: { gt: start },
-      },
-      select: { id: true },
+    await assertSlotAvailable(tx, {
+      businessId: data.businessId,
+      employeeId: data.employeeId ?? null,
+      start,
+      end,
     });
-    if (conflict) {
-      throw new Error("Ten termin został właśnie zajęty. Wybierz inną godzinę.");
-    }
 
     let discountAmount = 0;
     const couponData: {
@@ -451,25 +476,13 @@ export async function rescheduleAppointment(input: {
   // Atomic re-check + write under the per-business booking lock (no double-book race).
   await prisma.$transaction(async (tx) => {
     await lockBusinessForBooking(tx, appointment.businessId);
-    const conflict = await tx.appointment.findFirst({
-      where: {
-        id: { not: appointment.id },
-        businessId: appointment.businessId,
-        ...(appointment.employeeId ? { employeeId: appointment.employeeId } : {}),
-        status: {
-          notIn: [
-            AppointmentStatus.CANCELLED_CUSTOMER,
-            AppointmentStatus.CANCELLED_BUSINESS,
-          ],
-        },
-        startTime: { lt: newEnd },
-        endTime: { gt: newStart },
-      },
-      select: { id: true },
+    await assertSlotAvailable(tx, {
+      businessId: appointment.businessId,
+      employeeId: appointment.employeeId,
+      start: newStart,
+      end: newEnd,
+      excludeId: appointment.id,
     });
-    if (conflict) {
-      throw new Error("Ten termin jest już zajęty. Wybierz inną godzinę.");
-    }
     await tx.appointment.update({
       where: { id: appointment.id },
       data: {
@@ -802,18 +815,13 @@ export async function businessRescheduleAppointment(input: {
   // Atomic re-check + write under the per-business booking lock (no double-book race).
   await prisma.$transaction(async (tx) => {
     await lockBusinessForBooking(tx, appointment.businessId);
-    const conflict = await tx.appointment.findFirst({
-      where: {
-        id: { not: appointment.id },
-        businessId: appointment.businessId,
-        ...(appointment.employeeId ? { employeeId: appointment.employeeId } : {}),
-        status: { notIn: [AppointmentStatus.CANCELLED_CUSTOMER, AppointmentStatus.CANCELLED_BUSINESS] },
-        startTime: { lt: newEnd },
-        endTime: { gt: newStart },
-      },
-      select: { id: true },
+    await assertSlotAvailable(tx, {
+      businessId: appointment.businessId,
+      employeeId: appointment.employeeId,
+      start: newStart,
+      end: newEnd,
+      excludeId: appointment.id,
     });
-    if (conflict) throw new Error("Ten termin koliduje z inną wizytą. Wybierz inną godzinę.");
     await tx.appointment.update({
       where: { id: appointment.id },
       data: { startTime: newStart, endTime: newEnd }, // updatedAt bumped automatically (audit timestamp)
@@ -1061,19 +1069,12 @@ export async function createManualAppointment(input: ManualAppointmentInput) {
   // Atomic double-booking guard + create under the per-business booking lock.
   const appointment = await prisma.$transaction(async (tx) => {
     await lockBusinessForBooking(tx, businessId);
-    const conflict = await tx.appointment.findFirst({
-      where: {
-        businessId,
-        ...(input.employeeId ? { employeeId: input.employeeId } : {}),
-        status: {
-          notIn: [AppointmentStatus.CANCELLED_CUSTOMER, AppointmentStatus.CANCELLED_BUSINESS],
-        },
-        startTime: { lt: end },
-        endTime: { gt: start },
-      },
-      select: { id: true },
+    await assertSlotAvailable(tx, {
+      businessId,
+      employeeId: input.employeeId ?? null,
+      start,
+      end,
     });
-    if (conflict) throw new Error("Ten termin koliduje z inną wizytą.");
     return tx.appointment.create({
       data: {
         businessId,
