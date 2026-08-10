@@ -1,171 +1,141 @@
-import { LandingNav } from "@/components/layout/landing-nav";
-import { LandingFooter } from "@/components/layout/landing-footer";
-import CookieSettingsButton from "./cookie-settings-button";
 import type { Metadata } from "next";
+import { LegalPage, type LegalSection } from "@/components/legal/legal-page";
+import { LEGAL } from "@/lib/legal";
+import CookieSettingsButton from "./cookie-settings-button";
 
 export const metadata: Metadata = {
-  title: "Polityka cookies — TermCatch",
+  title: "Polityka Cookies TermCatch",
   description:
-    "Jakich plików cookie używa TermCatch, do czego służą i jak zarządzać swoimi preferencjami.",
-  alternates: { canonical: "/cookies" },
+    "Polityka cookies TermCatch — jakich plików cookie i podobnych technologii używamy, w jakim celu, przez jaki czas oraz jak zarządzać zgodą.",
 };
 
-const BG = [
-  "radial-gradient(ellipse 100% 60% at 80% 0%, rgba(203,213,225,0.55) 0%, transparent 50%)",
-  "radial-gradient(ellipse 60% 50% at 10% 90%, rgba(148,163,184,0.20) 0%, transparent 55%)",
-  "linear-gradient(168deg, #EEF3F9 0%, #F4F8FC 40%, #ECF3F9 100%)",
-].join(", ");
+const E = LEGAL.CONTACT_EMAIL;
 
-const cardStyle = {
-  background: "rgba(255,255,255,0.72)",
-  backdropFilter: "blur(40px) saturate(200%)",
-  WebkitBackdropFilter: "blur(40px) saturate(200%)",
-  border: "1px solid rgba(203,213,225,0.55)",
-  borderRadius: "1.125rem",
-  boxShadow:
-    "0 0 0 0.5px rgba(203,213,225,0.40), 0 1px 2px rgba(0,0,0,0.04), 0 6px 20px rgba(100,116,139,0.08), inset 0 1px 0 rgba(255,255,255,0.95)",
-};
+const th = "text-left font-semibold text-slate-700 px-3 py-2";
+const td = "px-3 py-2 align-top text-slate-600";
 
-const SECTIONS = [
-  {
-    title: "Cookie niezbędne",
-    badge: "Zawsze aktywne",
-    badgeStyle: {
-      background: "rgba(203,213,225,0.30)",
-      border: "1px solid rgba(203,213,225,0.45)",
-      color: "#64748B",
-    },
-    body: "Bez nich TermCatch nie działa. Obsługują logowanie i sesję użytkownika (Supabase Auth), zapamiętują Twoje preferencje zgody oraz chronią przed nadużyciami. Podstawą prawną jest niezbędność do świadczenia usługi (art. 6 ust. 1 lit. b RODO) — nie wymagają zgody.",
-    examples: "sb-*-auth-token (sesja logowania), tc_consent (Twoje preferencje cookie)",
-  },
-  {
-    title: "Cookie analityczne",
-    badge: "Wymagają zgody",
-    badgeStyle: {
-      background: "rgba(226,232,240,0.50)",
-      border: "1px solid rgba(203,213,225,0.40)",
-      color: "#64748B",
-    },
-    body: "Pomagają nam zrozumieć, jak używasz TermCatch — które strony odwiedzasz i skąd do nas trafiasz. Używamy własnego, anonimowego systemu statystyk: identyfikator odwiedzającego jest losowy, nie łączymy go z Twoim imieniem, nazwiskiem ani adresem e-mail.",
-    examples: "tc_vid (losowy identyfikator odwiedzającego), tc_sid (identyfikator sesji, wygasa po 30 min)",
-  },
-  {
-    title: "Cookie marketingowe",
-    badge: "Obecnie nieużywane",
-    badgeStyle: {
-      background: "rgba(241,245,249,0.80)",
-      border: "1px solid rgba(226,232,240,0.60)",
-      color: "#94A3B8",
-    },
-    body: "TermCatch nie używa obecnie żadnych cookie marketingowych ani reklamowych. Jeśli to się zmieni, zapytamy Cię o osobną zgodę zanim jakikolwiek skrypt marketingowy zostanie załadowany.",
-    examples: "brak",
-  },
+const COOKIES: { name: string; provider: string; purpose: string; cat: string; ttl: string; necessary: string }[] = [
+  { name: "tc_consent", provider: "TermCatch", purpose: "Zapis Twojego wyboru dotyczącego cookie", cat: "Niezbędny", ttl: "12 miesięcy", necessary: "Tak" },
+  { name: "sb-…-auth-token (i pokrewne)", provider: "Supabase / TermCatch", purpose: "Logowanie i utrzymanie sesji", cat: "Niezbędny", ttl: "Czas trwania sesji / ważności tokenu", necessary: "Tak" },
+  { name: "tc_otp_sent_at", provider: "TermCatch", purpose: "Limit ponownej wysyłki kodu (ochrona przed nadużyciem)", cat: "Niezbędny", ttl: "2 minuty", necessary: "Tak" },
+  { name: "tc_vid", provider: "TermCatch", purpose: "Anonimowy identyfikator odwiedzającego (statystyka)", cat: "Analityczny", ttl: "12 miesięcy", necessary: "Nie — tylko po zgodzie" },
+  { name: "tc_sid", provider: "TermCatch", purpose: "Sesja statystyczna (deduplikacja odsłon)", cat: "Analityczny", ttl: "30 minut", necessary: "Nie — tylko po zgodzie" },
+];
+
+const sections: LegalSection[] = [
+  { id: "c1", title: "1. Czym są pliki cookies", body:
+    `Pliki cookie to niewielkie pliki tekstowe zapisywane na Twoim urządzeniu podczas korzystania z Platformy. Używamy też podobnych technologii, takich jak localStorage i sessionStorage.` },
+  { id: "c2", title: "2. Podstawa korzystania", body:
+    `Cookie niezbędne stosujemy w oparciu o prawnie uzasadniony interes i konieczność świadczenia usługi. Cookie inne niż niezbędne (np. analityczne) stosujemy wyłącznie po wyrażeniu przez Ciebie zgody w bannerze.` },
+  { id: "c-table", title: "Wykaz stosowanych plików cookie", toc: "Wykaz plików cookie", body: (
+    <>
+      <div className="my-3 overflow-x-auto rounded-xl border" style={{ borderColor: "rgba(203,213,225,0.6)" }}>
+        <table className="w-full text-[13px] border-collapse min-w-[640px]">
+          <thead style={{ background: "rgba(203,213,225,0.18)" }}>
+            <tr>
+              <th className={th}>Nazwa</th>
+              <th className={th}>Dostawca</th>
+              <th className={th}>Cel</th>
+              <th className={th}>Kategoria</th>
+              <th className={th}>Czas</th>
+              <th className={th}>Niezbędny</th>
+            </tr>
+          </thead>
+          <tbody>
+            {COOKIES.map((c) => (
+              <tr key={c.name} className="border-t" style={{ borderColor: "rgba(203,213,225,0.5)" }}>
+                <td className={`${td} font-mono text-slate-800 whitespace-nowrap`}>{c.name}</td>
+                <td className={td}>{c.provider}</td>
+                <td className={td}>{c.purpose}</td>
+                <td className={td}>{c.cat}</td>
+                <td className={td}>{c.ttl}</td>
+                <td className={td}>{c.necessary}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      <p className="my-3 leading-relaxed text-[15px] text-slate-600">
+        Dodatkowo w pamięci przeglądarki (localStorage) zapisujemy: <span className="font-mono text-slate-800">tc-consent</span> (Twój wybór cookie),
+        <span className="font-mono text-slate-800"> theme</span> (jasny/ciemny motyw) oraz techniczny stan interfejsu — do czasu wyczyszczenia przez Ciebie.
+        W sessionStorage zapisujemy <span className="font-mono text-slate-800">tc_pending_otp</span> (adres oczekujący na weryfikację) — do zamknięcia karty lub zakończenia rejestracji.
+      </p>
+      <p className="my-3 leading-relaxed text-[15px] text-slate-600">
+        Obecnie nie stosujemy cookie marketingowych ani zewnętrznych narzędzi analityki (np. Google Analytics). Nasza statystyka jest realizowana jako pierwszej strony.
+      </p>
+    </>
+  )},
+  { id: "c3", title: "3. Cookies konieczne", body:
+    `Niezbędne do działania Platformy — logowanie, sesja, bezpieczeństwo, zapamiętanie zgody. Nie można ich wyłączyć bez utraty podstawowych funkcji.` },
+  { id: "c4", title: "4. Cookies bezpieczeństwa", body:
+    `Wspierają bezpieczeństwo i integralność sesji oraz ochronę przed nadużyciami (np. limit ponownej wysyłki kodu).` },
+  { id: "c5", title: "5. Cookies sesyjne", body:
+    `Utrzymują stan sesji użytkownika; część z nich wygasa po zakończeniu sesji lub w krótkim czasie.` },
+  { id: "c6", title: "6. Cookies uwierzytelniające", body:
+    `Umożliwiają rozpoznanie zalogowanego użytkownika (obsługiwane m.in. przez mechanizm sesji Supabase na naszej domenie).` },
+  { id: "c7", title: "7. Cookies preferencji", body:
+    `Zapamiętują ustawienia, np. wybór motywu czy Twoją decyzję dotyczącą cookie.` },
+  { id: "c8", title: "8. Cookies analityczne", body:
+    `Służą do anonimowej statystyki odwiedzin i ulepszania Platformy. Uruchamiamy je dopiero po wyrażeniu zgody; przed zgodą nie są zapisywane.` },
+  { id: "c9", title: "9. Cookies marketingowe", body:
+    `Obecnie nie używamy cookie marketingowych. Kategoria pozostaje w ustawieniach na przyszłość i pozostaje wyłączona do czasu ewentualnej zgody.` },
+  { id: "c10", title: "10. LocalStorage", body:
+    `Wykorzystujemy localStorage do zapisu zgody cookie (tc-consent), motywu (theme) oraz technicznego stanu interfejsu. Dane te pozostają do czasu ich wyczyszczenia.` },
+  { id: "c11", title: "11. SessionStorage", body:
+    `Wykorzystujemy sessionStorage w procesie rejestracji (tc_pending_otp — adres oczekujący na weryfikację). Dane są usuwane po zamknięciu karty lub zakończeniu rejestracji.` },
+  { id: "c12", title: "12. Inne technologie śledzące", body:
+    `Poza powyższymi nie stosujemy pikseli reklamowych, fingerprintingu ani zewnętrznych skryptów śledzących.` },
+  { id: "c13", title: "13. Dostawcy zewnętrzni", body:
+    `Niektóre funkcje realizują dostawcy zewnętrzni, którzy mogą używać własnych cookie na swoich domenach (np. podczas płatności lub logowania Google).` },
+  { id: "c14", title: "14. Google", body:
+    `Jeśli korzystasz z logowania Google (OAuth), Google może stosować własne cookie na swoich stronach w procesie uwierzytelniania. Nie używamy Google Analytics.` },
+  { id: "c15", title: "15. Stripe", body:
+    `Podczas płatności/rozliczeń Stripe może stosować własne cookie (m.in. w celu bezpieczeństwa i przeciwdziałania oszustwom) na stronach Stripe.` },
+  { id: "c16", title: "16. Supabase", body:
+    `Mechanizm uwierzytelniania Supabase zapisuje cookie sesyjne na naszej domenie (first-party), niezbędne do utrzymania logowania.` },
+  { id: "c17", title: "17. Inne technologie wykryte w aplikacji", body:
+    `Na podstawie audytu kodu: statystyka pierwszej strony (tc_vid, tc_sid) uruchamiana po zgodzie, cookie zgody (tc_consent) oraz techniczny cookie ochrony przed nadużyciem (tc_otp_sent_at). Nie wykryto zewnętrznych narzędzi analityczno-marketingowych.` },
+  { id: "c18", title: "18. Czas przechowywania", body:
+    `Czasy przechowywania wskazano w tabeli powyżej. Cookie sesyjne wygasają wraz z sesją; cookie trwałe po upływie wskazanego okresu lub po ich wyczyszczeniu.` },
+  { id: "c19", title: "19. Cookies własne (first-party)", body:
+    `Cookie first-party (tc_consent, tc_otp_sent_at, tc_vid, tc_sid oraz sesja Supabase) są ustawiane w domenie ${LEGAL.DOMAIN}.` },
+  { id: "c20", title: "20. Cookies podmiotów trzecich (third-party)", body:
+    `Cookie podmiotów trzecich mogą pojawić się wyłącznie w kontekście usług zewnętrznych (np. strony Stripe, logowanie Google) i podlegają politykom tych podmiotów.` },
+  { id: "c21", title: "21. Zgoda", body:
+    `Przy pierwszej wizycie wyświetlamy banner umożliwiający: „Akceptuję”, „Tylko niezbędne” oraz szczegółowe „Ustawienia” z osobnym wyborem kategorii opcjonalnych. Do czasu zgody nie uruchamiamy cookie innych niż niezbędne.` },
+  { id: "c22", title: "22. Wycofanie zgody", body:
+    `Zgodę możesz w każdej chwili zmienić lub wycofać — użyj przycisku poniżej albo wyczyść dane witryny w przeglądarce. Wycofanie nie wpływa na zgodność z prawem wcześniejszego przetwarzania.` },
+  { id: "c23", title: "23. Ustawienia cookies", body: (
+    <>
+      <p className="my-3 leading-relaxed text-[15px] text-slate-600">
+        Swoje preferencje możesz zmienić w dowolnym momencie:
+      </p>
+      <div className="my-3"><CookieSettingsButton /></div>
+    </>
+  )},
+  { id: "c24", title: "24. Ustawienia przeglądarki", body:
+    `Możesz też zarządzać cookie w ustawieniach przeglądarki — blokować je lub usuwać. Sposób różni się w zależności od przeglądarki.` },
+  { id: "c25", title: "25. Skutki blokowania cookies niezbędnych", body:
+    `Zablokowanie cookie niezbędnych może uniemożliwić logowanie, utrzymanie sesji i korzystanie z kluczowych funkcji Platformy.` },
+  { id: "c26", title: "26. Zmiany", body:
+    `Politykę Cookies możemy aktualizować; data ostatniej aktualizacji jest wskazana na górze dokumentu.` },
+  { id: "c27", title: "27. Kontakt", body:
+    `Pytania dotyczące cookie: ${E}.` },
 ];
 
 export default function CookiesPage() {
   return (
-    <div className="min-h-screen" style={{ background: BG }}>
-      <LandingNav />
-
-      <div className="pt-32 pb-24 px-6">
-        <div className="max-w-2xl mx-auto">
-          <div className="mb-12">
-            <div
-              className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full mb-6 text-xs font-semibold uppercase tracking-widest"
-              style={{
-                background: "rgba(203,213,225,0.28)",
-                border: "1px solid rgba(203,213,225,0.50)",
-                color: "#64748B",
-              }}
-            >
-              Polityka cookies
-            </div>
-            <h1
-              className="text-4xl font-bold mb-5"
-              style={{ letterSpacing: "-0.04em", color: "#0F172A" }}
-            >
-              Pliki cookie w TermCatch
-            </h1>
-            <p className="text-sm leading-relaxed" style={{ color: "#64748B" }}>
-              Poniżej znajdziesz pełną listę kategorii plików cookie, których używamy,
-              wraz z wyjaśnieniem do czego służą. Skrypty analityczne i marketingowe
-              nie są ładowane, dopóki nie wyrazisz na nie zgody.
-            </p>
-          </div>
-
-          <div className="space-y-3 mb-10">
-            {SECTIONS.map((s) => (
-              <section
-                key={s.title}
-                className="p-6 glass-shimmer-wrap"
-                style={cardStyle}
-              >
-                <div className="flex items-center justify-between gap-3 mb-3">
-                  <h2
-                    className="text-base font-semibold"
-                    style={{ color: "#0F172A", letterSpacing: "-0.02em" }}
-                  >
-                    {s.title}
-                  </h2>
-                  <span
-                    className="text-[10px] font-semibold px-2.5 py-1 rounded-full whitespace-nowrap"
-                    style={s.badgeStyle}
-                  >
-                    {s.badge}
-                  </span>
-                </div>
-                <p className="text-sm leading-relaxed mb-3" style={{ color: "#64748B" }}>
-                  {s.body}
-                </p>
-                <p className="text-xs" style={{ color: "#94A3B8" }}>
-                  <span className="font-semibold" style={{ color: "#64748B" }}>Przykłady:</span>{" "}
-                  {s.examples}
-                </p>
-              </section>
-            ))}
-          </div>
-
-          <section
-            className="p-6 mb-10"
-            style={{
-              background: "rgba(241,246,251,0.85)",
-              backdropFilter: "blur(40px) saturate(200%)",
-              WebkitBackdropFilter: "blur(40px) saturate(200%)",
-              border: "1px solid rgba(203,213,225,0.50)",
-              borderRadius: "1.125rem",
-              boxShadow: "0 1px 2px rgba(0,0,0,0.03), inset 0 1px 0 rgba(255,255,255,1)",
-            }}
-          >
-            <h2
-              className="text-base font-semibold mb-3"
-              style={{ color: "#0F172A", letterSpacing: "-0.02em" }}
-            >
-              Twoje wybory
-            </h2>
-            <p className="text-sm leading-relaxed mb-3" style={{ color: "#64748B" }}>
-              Przy pierwszej wizycie pytamy Cię o zgodę na cookie analityczne i marketingowe.
-              Możesz zaakceptować wszystkie, zostawić tylko niezbędne albo dostosować wybór.
-              Preferencje przechowujemy przez 12 miesięcy.
-            </p>
-            <p className="text-sm leading-relaxed" style={{ color: "#64748B" }}>
-              Pytania dotyczące prywatności? Napisz na{" "}
-              <a href="mailto:hello@termcatch.com" className="underline underline-offset-2 hover:opacity-70" style={{ color: "#475569" }}>
-                hello@termcatch.com
-              </a>
-              {". "}
-              Więcej o przetwarzaniu danych znajdziesz w{" "}
-              <a href="/privacy" className="underline underline-offset-2 hover:opacity-70" style={{ color: "#475569" }}>
-                polityce prywatności
-              </a>
-              .
-            </p>
-          </section>
-
-          <CookieSettingsButton />
-        </div>
-      </div>
-
-      <LandingFooter />
-    </div>
+    <LegalPage
+      title="Polityka Cookies TermCatch"
+      subtitle="Zarządzaj plikami cookie i dowiedz się, jak ich używamy"
+      showOperator={false}
+      intro={
+        <p>
+          Poniżej wyjaśniamy, jakich plików cookie i podobnych technologii używamy w {LEGAL.BRAND}, w jakim celu oraz jak
+          możesz zarządzać swoją zgodą. Cookie inne niż niezbędne uruchamiamy dopiero po wyrażeniu zgody.
+        </p>
+      }
+      sections={sections}
+    />
   );
 }

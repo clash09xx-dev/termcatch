@@ -1,100 +1,82 @@
-import Link from "next/link";
 import type { Metadata } from "next";
-import { LandingNav } from "@/components/layout/landing-nav";
-import { LandingFooter } from "@/components/layout/landing-footer";
+import { LegalPage, type LegalSection } from "@/components/legal/legal-page";
+import { LEGAL } from "@/lib/legal";
 
 export const metadata: Metadata = {
-  title: "RODO — ochrona danych osobowych",
+  title: "Twoje prawa dotyczące danych osobowych — RODO | TermCatch",
   description:
-    "Jak TermCatch chroni Twoje dane osobowe i jak skorzystać z praw wynikających z RODO. Pełne informacje w Polityce prywatności.",
-  alternates: { canonical: "/gdpr" },
+    "Prosto o Twoich prawach z RODO w TermCatch: dostęp, kopia, sprostowanie, usunięcie, ograniczenie, sprzeciw, przenoszenie i cofnięcie zgody — oraz jak je zrealizować.",
 };
 
-const BG = [
-  "radial-gradient(ellipse 100% 60% at 80% 0%, rgba(203,213,225,0.55) 0%, transparent 50%)",
-  "radial-gradient(ellipse 60% 50% at 10% 90%, rgba(148,163,184,0.20) 0%, transparent 55%)",
-  "linear-gradient(168deg, #EEF3F9 0%, #F4F8FC 40%, #ECF3F9 100%)",
-].join(", ");
+const E = LEGAL.CONTACT_EMAIL;
 
-const card: React.CSSProperties = {
-  background: "rgba(255,255,255,0.72)",
-  backdropFilter: "blur(40px) saturate(200%)",
-  WebkitBackdropFilter: "blur(40px) saturate(200%)",
-  border: "1px solid rgba(203,213,225,0.55)",
-  boxShadow:
-    "0 0 0 0.5px rgba(203,213,225,0.45), 0 1px 2px rgba(0,0,0,0.04), 0 6px 20px rgba(100,116,139,0.09), inset 0 1px 0 rgba(255,255,255,0.95)",
-  borderRadius: "1.25rem",
-};
-
-// Standard GDPR/RODO data-subject rights. Points to the (real) Privacy Policy
-// for the full description and to the contact address for exercising them —
-// no fabricated legal claims.
-const RIGHTS: { title: string; body: string }[] = [
-  { title: "Prawo dostępu", body: "Możesz uzyskać informację, jakie dane na Twój temat przetwarzamy, i otrzymać ich kopię." },
-  { title: "Prawo do sprostowania", body: "Możesz poprawić nieprawidłowe lub uzupełnić niekompletne dane." },
-  { title: "Prawo do usunięcia", body: "Możesz zażądać usunięcia swoich danych, jeśli nie ma podstaw do ich dalszego przetwarzania." },
-  { title: "Prawo do ograniczenia", body: "Możesz ograniczyć przetwarzanie swoich danych w określonych sytuacjach." },
-  { title: "Prawo do przenoszenia", body: "Możesz otrzymać swoje dane w ustrukturyzowanym formacie i przenieść je do innego administratora." },
-  { title: "Prawo do sprzeciwu", body: "Możesz wnieść sprzeciw wobec przetwarzania danych, w tym do celów marketingu bezpośredniego." },
+const sections: LegalSection[] = [
+  { id: "r1", title: "1. Kto odpowiada za Twoje dane", body:
+    `To, kto jest administratorem Twoich danych, zależy od sytuacji. Czasem jest to ${LEGAL.BRAND}, a czasem salon/usługodawca, z którego usług korzystasz. Poniżej wyjaśniamy, kiedy jest tak, a kiedy inaczej.` },
+  { id: "r2", title: "2. Administrator a salon", body:
+    `${LEGAL.BRAND} dostarcza technologię (wyszukiwanie, rezerwacje, narzędzia dla firm). Salon świadczy realną usługę. Dlatego odpowiedzialność za dane bywa podzielona.` },
+  { id: "r3", title: "3. Kiedy TermCatch jest administratorem", body:
+    `Gdy chodzi o Twoje konto ${LEGAL.BRAND}, abonament, bezpieczeństwo i działanie Platformy, marketing własny ${LEGAL.BRAND} oraz obsługę marketplace — administratorem jest ${LEGAL.BRAND}.` },
+  { id: "r4", title: "4. Kiedy salon jest administratorem", body:
+    `Gdy salon prowadzi własną bazę klientów (CRM), własną komunikację i obsługę wizyt w swoich celach — administratorem tych danych jest zwykle salon.` },
+  { id: "r5", title: "5. Kiedy TermCatch działa jako podmiot przetwarzający", body:
+    `W zakresie danych, które salon wprowadza do narzędzi ${LEGAL.BRAND} (np. CRM), ${LEGAL.BRAND} przetwarza je w imieniu salonu jako podmiot przetwarzający — na podstawie umowy powierzenia (DPA).` },
+  { id: "r6", title: "6. Prawo dostępu", body:
+    `Masz prawo dowiedzieć się, czy i jakie Twoje dane przetwarzamy oraz w jakim celu.` },
+  { id: "r7", title: "7. Prawo do kopii danych", body:
+    `Możesz poprosić o kopię swoich danych, które przetwarzamy.` },
+  { id: "r8", title: "8. Prawo sprostowania", body:
+    `Jeśli Twoje dane są nieprawidłowe lub niekompletne, możesz je poprawić — część danych zmienisz samodzielnie w ustawieniach konta.` },
+  { id: "r9", title: "9. Prawo usunięcia", body:
+    `Możesz poprosić o usunięcie danych, gdy nie są już potrzebne lub gdy cofniesz zgodę, a nie ma innej podstawy przetwarzania.` },
+  { id: "r10", title: "10. Prawo do bycia zapomnianym", body:
+    `To rozszerzenie prawa do usunięcia — w uzasadnionych przypadkach usuniemy dane także tam, gdzie zostały przez nas udostępnione, w granicach prawa.` },
+  { id: "r11", title: "11. Prawo ograniczenia", body:
+    `Możesz żądać ograniczenia przetwarzania, np. gdy kwestionujesz prawidłowość danych — do czasu wyjaśnienia.` },
+  { id: "r12", title: "12. Prawo sprzeciwu", body:
+    `Możesz sprzeciwić się przetwarzaniu opartemu na naszym prawnie uzasadnionym interesie oraz w każdej chwili sprzeciwić się marketingowi bezpośredniemu.` },
+  { id: "r13", title: "13. Prawo przenoszenia", body:
+    `Dane przetwarzane na podstawie zgody lub umowy w sposób zautomatyzowany możesz otrzymać w formacie nadającym się do przeniesienia.` },
+  { id: "r14", title: "14. Cofnięcie zgody", body:
+    `Zgodę (np. na cookie analityczne lub marketing) możesz wycofać w każdej chwili — bez wpływu na zgodność z prawem wcześniejszego przetwarzania.` },
+  { id: "r15", title: "15. Profilowanie", body:
+    `Stosujemy jedynie ograniczone profilowanie (np. ranking, statystyka, zapobieganie nadużyciom). Możesz zapytać nas o szczegóły.` },
+  { id: "r16", title: "16. Automatyczne podejmowanie decyzji", body:
+    `Nie podejmujemy wobec Ciebie w pełni automatycznych decyzji wywołujących skutki prawne bez odpowiedniej podstawy i zabezpieczeń.` },
+  { id: "r17", title: "17. Skarga do Prezesa UODO", body:
+    `Jeśli uważasz, że przetwarzamy dane niezgodnie z prawem, możesz złożyć skargę do Prezesa Urzędu Ochrony Danych Osobowych (ul. Stawki 2, 00-193 Warszawa).` },
+  { id: "r18", title: "18. Jak zgłosić żądanie", body:
+    `Najprościej napisz na ${E}, opisując, czego dotyczy Twoje żądanie. Część spraw (np. edycja profilu, usunięcie konta) załatwisz samodzielnie w aplikacji.` },
+  { id: "r19", title: "19. Weryfikacja tożsamości", body:
+    `Aby chronić Twoje dane, przed realizacją żądania możemy poprosić o potwierdzenie tożsamości (np. z adresu e-mail powiązanego z kontem).` },
+  { id: "r20", title: "20. Termin odpowiedzi", body:
+    `Odpowiadamy bez zbędnej zwłoki, co do zasady w ciągu miesiąca. W złożonych sprawach termin może zostać przedłużony, o czym poinformujemy.` },
+  { id: "r21", title: "21. Kiedy możemy odmówić", body:
+    `Możemy odmówić realizacji żądania, gdy przepisy na to pozwalają lub tego wymagają (np. obowiązek przechowywania faktur, ochrona praw innych osób, dochodzenie roszczeń). Odmowę uzasadnimy.` },
+  { id: "r22", title: "22. Dane, których nie możemy natychmiast usunąć", body:
+    `Niektóre dane musimy zachować przez wymagany prawem czas (np. dokumenty rozliczeniowe) lub dla obrony roszczeń — po tym okresie zostaną usunięte lub zanonimizowane.` },
+  { id: "r23", title: "23. Jak usunąć konto", body:
+    `Konto usuniesz w ustawieniach (strefa „danger”), potwierdzając operację kodem wysłanym e-mailem. Usunięcie kaskadowo usuwa powiązane dane, z wyjątkami wskazanymi wyżej.` },
+  { id: "r24", title: "24. Jak pobrać dane", body:
+    `Aby otrzymać kopię lub eksport danych, napisz na ${E} — przygotujemy je w rozsądnym terminie.` },
+  { id: "r25", title: "25. Kontakt", body:
+    `W sprawach danych osobowych pisz na ${E}. Gdy administratorem danych z CRM/obsługi klienta jest salon, część żądań dotyczących tych zapisów może wymagać kontaktu bezpośrednio z tym salonem — pomożemy Ci ustalić właściwego adresata.` },
 ];
 
 export default function GdprPage() {
   return (
-    <div className="min-h-screen" style={{ background: BG }}>
-      <LandingNav />
-      <div className="pt-28 pb-20 px-6">
-        <div className="max-w-2xl mx-auto">
-          <div className="mb-8">
-            <div
-              className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full mb-6 text-xs font-semibold uppercase tracking-widest"
-              style={{ background: "rgba(203,213,225,0.28)", border: "1px solid rgba(203,213,225,0.50)", color: "#64748B" }}
-            >
-              RODO
-            </div>
-            <h1 className="text-4xl font-bold mb-3" style={{ letterSpacing: "-0.04em", color: "#0F172A" }}>
-              Ochrona danych osobowych
-            </h1>
-            <p className="text-lg leading-relaxed" style={{ color: "#64748B" }}>
-              Administratorem danych jest TermCatch z siedzibą w Krakowie. Szczegółowy opis
-              tego, jakie dane zbieramy, w jakim celu i na jakiej podstawie, znajdziesz w{" "}
-              <Link href="/privacy" className="underline underline-offset-2 hover:no-underline" style={{ color: "#334155" }}>
-                Polityce prywatności
-              </Link>
-              .
-            </p>
-          </div>
-
-          <div className="p-6 mb-6" style={card}>
-            <h2 className="font-semibold mb-4 text-sm" style={{ color: "#0F172A" }}>
-              Twoje prawa
-            </h2>
-            <div className="space-y-4">
-              {RIGHTS.map((r) => (
-                <div key={r.title}>
-                  <p className="text-sm font-semibold" style={{ color: "#334155" }}>{r.title}</p>
-                  <p className="text-sm leading-relaxed" style={{ color: "#64748B" }}>{r.body}</p>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          <div className="p-6" style={card}>
-            <h2 className="font-semibold mb-2 text-sm" style={{ color: "#0F172A" }}>
-              Jak skorzystać z tych praw
-            </h2>
-            <p className="text-sm leading-relaxed" style={{ color: "#64748B" }}>
-              Aby zrealizować dowolne z powyższych praw lub zadać pytanie dotyczące danych,
-              napisz na{" "}
-              <a href="mailto:hello@termcatch.com" className="underline underline-offset-2 hover:no-underline" style={{ color: "#334155" }}>
-                hello@termcatch.com
-              </a>
-              . Odpowiemy bez zbędnej zwłoki. Masz również prawo wniesienia skargi do
-              Prezesa Urzędu Ochrony Danych Osobowych (UODO).
-            </p>
-          </div>
-        </div>
-      </div>
-      <LandingFooter />
-    </div>
+    <LegalPage
+      title="Twoje prawa dotyczące danych osobowych"
+      subtitle="RODO w praktyce — prosto i przejrzyście"
+      showOperator={false}
+      intro={
+        <p>
+          Na tej stronie wyjaśniamy w prosty sposób, jakie prawa przysługują Ci na podstawie RODO i jak możesz je
+          zrealizować w {LEGAL.BRAND}. Pełne informacje znajdziesz w{" "}
+          <a href="/privacy" className="underline underline-offset-2 hover:text-slate-800">Polityce Prywatności</a>.
+        </p>
+      }
+      sections={sections}
+    />
   );
 }
