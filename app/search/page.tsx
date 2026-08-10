@@ -333,8 +333,10 @@ async function SearchResults({ searchParams }: { searchParams: SearchParams }) {
       });
       totalCount = await prisma.business.count({ where });
     }
-  } catch {
-    // DB not available — show empty state instead of crashing
+  } catch (err) {
+    // DB not available — show the empty state instead of crashing, but log it so
+    // an outage is distinguishable from a genuine "no results" in ops.
+    console.error("[search] query failed:", err instanceof Error ? err.message : "unknown");
   }
 
   const totalPages = Math.ceil(totalCount / PAGE_SIZE);

@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import { getServerUser } from "@/lib/supabase/server";
+import { isPubliclyVisible } from "@/lib/publication";
 
 async function getDbUserId(): Promise<string | null> {
   const user = await getServerUser();
@@ -28,6 +29,13 @@ export async function toggleFavourite(businessId: string): Promise<{ isFavourite
       where: { userId_businessId: { userId, businessId } },
     });
   } else {
+    // Only favourite a real, publicly-visible salon — avoids an unhandled FK
+    // error on a bad id and favouriting hidden/suspended businesses.
+    const biz = await prisma.business.findUnique({
+      where: { id: businessId },
+      select: { id: true, status: true, isActive: true },
+    });
+    if (!biz || !isPubliclyVisible(biz)) return { isFavourite: false };
     await prisma.favouriteBusiness.create({
       data: { userId, businessId },
     });
