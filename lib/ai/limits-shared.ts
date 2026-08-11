@@ -11,16 +11,23 @@ export type AiTier = "none" | "basic" | "unlimited";
 
 /**
  * Default per-business daily request ceilings by entitlement tier.
- *   • none      — AI is not part of the plan (FREE/SOLO/TEAM).
- *   • basic     — included assistant (PRO).
- *   • unlimited — high safety ceiling (ULTIMATE) so no single business can
- *                 create runaway API cost even on the "unlimited" plan.
- * Overridable via env (see dailyRequestLimitForTier in config.ts).
+ *   • none      — AI is not part of the plan (FREE / Solo / Team).
+ *   • basic     — Professional (369 zł): a real daily cap so AI cost stays a
+ *                 tiny fraction of the plan price (high margin). Hitting it
+ *                 shows an upsell to Ultimate.
+ *   • unlimited — Ultimate (499 zł): effectively unlimited for any real salon.
+ *                 The ceiling here is a pure ANTI-ABUSE guard (only a script
+ *                 could hit ~one request every ~3 min for 24h) — a human team
+ *                 never reaches it, so "unlimited" stays honest while a single
+ *                 business still can't create runaway API cost.
+ * With the assistant running on the cheap model (~$0.0015/turn), these caps
+ * keep worst-case cost low: Professional ≈ $1.4/mo, Ultimate ≈ $22/mo at the
+ * ceiling (typical usage far less). Overridable via env (see config.ts).
  */
 export const DAILY_REQUESTS_BY_TIER: Record<AiTier, number> = {
   none: 0,
-  basic: 40,
-  unlimited: 400,
+  basic: 30,
+  unlimited: 500,
 };
 
 /** Human labels for the tier (Polish UI copy). */

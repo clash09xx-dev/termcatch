@@ -29,6 +29,9 @@ export type Recipient = {
   smsOptIn: boolean;
   whatsappOptIn: boolean;
   emailOptIn: boolean;
+  /** Service/employee of the customer's most recent visit — powers {usługa}/{pracownik}. */
+  lastService: string | null;
+  lastEmployee: string | null;
 };
 
 /** Minimal appointment shape this module needs (matches the Prisma include). */
@@ -36,6 +39,9 @@ export type AudienceAppointment = {
   customerId: string;
   status: string;
   startTime: Date;
+  // Optional — only queries that need {usługa}/{pracownik} tokens select these.
+  service?: { name: string } | null;
+  employee?: { firstName: string; lastName: string } | null;
   customer: {
     firstName: string;
     lastName: string;
@@ -69,9 +75,15 @@ export function buildAudience(appointments: AudienceAppointment[], now: number =
     let upcomingCount = 0;
     let lastCompleted = 0;
     let lastVisit = 0;
+    let lastService: string | null = null;
+    let lastEmployee: string | null = null;
     for (const a of appts) {
       const t = a.startTime.getTime();
-      if (t > lastVisit) lastVisit = t;
+      if (t > lastVisit) {
+        lastVisit = t;
+        lastService = a.service?.name ?? null;
+        lastEmployee = a.employee ? `${a.employee.firstName} ${a.employee.lastName}`.trim() : null;
+      }
       if (a.status === "COMPLETED") {
         completedCount++;
         if (t > lastCompleted) lastCompleted = t;
@@ -94,6 +106,8 @@ export function buildAudience(appointments: AudienceAppointment[], now: number =
       smsOptIn: c.smsNotifications,
       whatsappOptIn: c.whatsappNotifications,
       emailOptIn: c.marketingEmails,
+      lastService,
+      lastEmployee,
     });
   }
   return recipients;
@@ -165,11 +179,14 @@ export const CHANNEL_ENV_HINT: Record<Channel, string> = {
 /** Fill message tokens with real values. Unknown tokens are left intact. */
 export function renderMessage(
   template: string,
-  ctx: { firstName: string; salon: string; link: string }
+  ctx: { firstName: string; salon: string; link: string; usluga?: string | null; pracownik?: string | null }
 ): string {
   return template
     .replace(/\{imię\}/g, ctx.firstName)
     .replace(/\{imie\}/g, ctx.firstName)
     .replace(/\{salon\}/g, ctx.salon)
-    .replace(/\{link\}/g, ctx.link);
+    .replace(/\{link\}/g, ctx.link)
+    .replace(/\{usługa\}/g, ctx.usluga ?? "")
+    .replace(/\{usluga\}/g, ctx.usluga ?? "")
+    .replace(/\{pracownik\}/g, ctx.pracownik ?? "");
 }

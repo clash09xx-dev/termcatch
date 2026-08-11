@@ -111,7 +111,7 @@ const sections: LegalSection[] = [
   { id: "s25", title: "§25 Profile sponsorowane", body:
     `Profile lub pozycje sponsorowane, jeżeli występują, są oznaczane jako „sponsorowane” lub „promowane”. Oznaczenie płatnego charakteru nie wpływa na obowiązek rzetelności prezentowanych treści.` },
   { id: "s26", title: "§26 Plany abonamentowe TermCatch", body:
-    `${LEGAL.BRAND} udostępnia Usługodawcom plany abonamentowe (obecnie m.in. Darmowy, Solo, Zespół, Salon Pro, Ultimate) o zakresie i cenie wskazanych w Cenniku. Aktualne ceny i limity prezentowane są na stronie cennika przed zawarciem umowy.` },
+    `${LEGAL.BRAND} udostępnia Usługodawcom plany abonamentowe (obecnie m.in. Darmowy, Solo, Team, Professional, Ultimate) o zakresie i cenie wskazanych w Cenniku. Aktualne ceny i limity prezentowane są na stronie cennika przed zawarciem umowy.` },
   { id: "s27", title: "§27 Okres próbny", body:
     `Nowy Usługodawca może skorzystać z bezpłatnego okresu próbnego (obecnie 7 dni). Metoda płatności może być pobierana już przy rozpoczęciu okresu próbnego, aby po jego zakończeniu abonament mógł być kontynuowany. Powtórne korzystanie z okresu próbnego może być ograniczone.` },
   { id: "s28", title: "§28 Płatności Stripe", body:
@@ -123,9 +123,9 @@ const sections: LegalSection[] = [
   { id: "s31", title: "§31 Limity planów", body:
     `Plany różnią się limitami zasobów, w szczególności liczbą aktywnych specjalistów i lokalizacji. Aktualne limity określa Cennik; przekroczenie limitu może wymagać wyższego planu.` },
   { id: "s32", title: "§32 Limit pracowników", body:
-    `Liczba aktywnych pracowników jest ograniczona zależnie od planu (przykładowo: Solo — 1, Zespół — 4, Salon Pro — 15, Ultimate — bez limitu). Wartości mogą być aktualizowane w Cenniku.` },
+    `Liczba aktywnych pracowników jest ograniczona zależnie od planu (przykładowo: Solo — 1, Team — 4, Professional — 15, Ultimate — bez limitu). Wartości mogą być aktualizowane w Cenniku.` },
   { id: "s33", title: "§33 Limit lokalizacji", body:
-    `Liczba aktywnych lokalizacji jest ograniczona zależnie od planu (przykładowo: Solo/Zespół — 1, Salon Pro — 2, Ultimate — bez limitu). Wartości mogą być aktualizowane w Cenniku.` },
+    `Liczba aktywnych lokalizacji jest ograniczona zależnie od planu (przykładowo: Solo/Team — 1, Professional — 2, Ultimate — bez limitu). Wartości mogą być aktualizowane w Cenniku.` },
   { id: "s34", title: "§34 Upgrade planu", body:
     `Podniesienie planu udostępnia wyższe limity i funkcje. Rozliczenie następuje zgodnie z zasadami operatora płatności.` },
   { id: "s35", title: "§35 Downgrade planu", body:

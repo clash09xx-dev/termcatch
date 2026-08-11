@@ -12,8 +12,8 @@ import { INK_GRADIENT } from "@/components/ui/glass/tokens";
 const PLAN_LABELS: Record<string, string> = {
   FREE: "Plan darmowy",
   SOLO: "Plan Solo",
-  TEAM: "Plan Zespół",
-  PRO: "Plan Salon Pro",
+  TEAM: "Plan Team",
+  PRO: "Plan Professional",
 };
 
 export function BusinessSidebar({

@@ -3,6 +3,7 @@
 import { prisma } from "@/lib/prisma";
 import { getServerUser } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
+import { revalidatePath } from "next/cache";
 import { sendSms, sendWhatsApp } from "@/lib/messaging";
 import { sendEmail } from "@/lib/email";
 import {
@@ -78,6 +79,8 @@ export async function sendCampaign(input: SendInput): Promise<SendResult> {
       customerId: true,
       status: true,
       startTime: true,
+      service: { select: { name: true } },
+      employee: { select: { firstName: true, lastName: true } },
       customer: {
         select: {
           firstName: true,
@@ -105,10 +108,11 @@ export async function sendCampaign(input: SendInput): Promise<SendResult> {
 
   const results = await Promise.allSettled(
     reachable.map(async (r) => {
-      const text = renderMessage(body, { firstName: r.firstName, salon: biz.name, link });
+      const tokens = { firstName: r.firstName, salon: biz.name, link, usluga: r.lastService, pracownik: r.lastEmployee };
+      const text = renderMessage(body, tokens);
       if (input.channel === "sms") return sendSms(r.phone!, text);
       if (input.channel === "whatsapp") return sendWhatsApp(r.phone!, text);
-      const subject = renderMessage(input.subject, { firstName: r.firstName, salon: biz.name, link });
+      const subject = renderMessage(input.subject, tokens);
       const res = await sendEmail({
         to: r.email!,
         subject,
@@ -126,6 +130,28 @@ export async function sendCampaign(input: SendInput): Promise<SendResult> {
   for (const res of results) {
     if (res.status === "fulfilled" && res.value) sent++;
     else failed++;
+  }
+
+  // Persist the campaign for history/results (best-effort — never breaks a send).
+  try {
+    await prisma.marketingCampaign.create({
+      data: {
+        businessId: biz.id,
+        channel: input.channel,
+        segment: input.segment,
+        subject: input.channel === "email" ? input.subject.trim() : null,
+        body,
+        status: "sent",
+        total: inSegment.length,
+        reachable: reachable.length,
+        sent,
+        failed,
+        sentAt: new Date(),
+      },
+    });
+    revalidatePath("/business/marketing");
+  } catch {
+    /* history is best-effort */
   }
 
   return {

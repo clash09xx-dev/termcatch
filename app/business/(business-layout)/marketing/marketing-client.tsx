@@ -28,6 +28,10 @@ import { sendCampaign, type SendResult } from "@/lib/actions/marketing";
 import { generateCampaignCopyAction } from "@/lib/actions/ai";
 import type { Insight } from "@/lib/ai/insights-types";
 import { InsightCards } from "@/components/business/ai/insight-cards";
+import {
+  AutomationsPanel, TemplatesPanel, SegmentsPanel, ResultsPanel, PromotionsLink,
+  type AutomationRow, type TemplateRow, type CampaignRow, type DeliveryStats,
+} from "./marketing-panels";
 
 export type SegmentView = {
   key: SegmentKey;
@@ -58,6 +62,10 @@ export function MarketingClient({
   totalCustomers,
   showWhatsapp = false,
   insights = [],
+  automations = [],
+  templates = [],
+  campaigns = [],
+  deliveryStats = { sent: 0, failed: 0, skipped: 0 },
 }: {
   segments: SegmentView[];
   channels: ChannelAvailability;
@@ -67,6 +75,10 @@ export function MarketingClient({
   /** WhatsApp is feature-flagged off for launch — hidden entirely unless enabled server-side. */
   showWhatsapp?: boolean;
   insights?: Insight[];
+  automations?: AutomationRow[];
+  templates?: TemplateRow[];
+  campaigns?: CampaignRow[];
+  deliveryStats?: DeliveryStats;
 }) {
   const visibleChannels = CHANNELS.filter((c) => c !== "whatsapp" || showWhatsapp);
   const searchParams = useSearchParams();
@@ -84,6 +96,14 @@ export function MarketingClient({
   const [isPending, start] = useTransition();
   const [aiBusy, setAiBusy] = useState(false);
   const [aiError, setAiError] = useState<string | null>(null);
+  const [tab, setTab] = useState<"kampania" | "automatyzacje" | "szablony" | "segmenty" | "wyniki">("kampania");
+
+  function applyTemplate(t: TemplateRow) {
+    if ((t.channel === "sms" || t.channel === "email" || t.channel === "whatsapp") && channels[t.channel]) setChannel(t.channel);
+    if (t.subject) setSubject(t.subject);
+    setMessage(t.body);
+    setTab("kampania");
+  }
 
   async function generateWithAi() {
     setAiError(null);
@@ -94,7 +114,7 @@ export function MarketingClient({
         setMessage(res.message);
         if (channel === "email" && res.subject) setSubject(res.subject);
       } else {
-        setAiError(res.reason === "plan_excluded" ? "Generowanie treści AI jest dostępne w planie Salon Pro i Ultimate." : res.message);
+        setAiError(res.reason === "plan_excluded" ? "Generowanie treści AI jest dostępne w planie Professional i Ultimate." : res.message);
       }
     } catch {
       setAiError("Nie udało się wygenerować treści.");
@@ -232,6 +252,30 @@ export function MarketingClient({
         </div>
       )}
 
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <Segmented
+          ariaLabel="Sekcje marketingu"
+          idBase="mkt-tab"
+          size="sm"
+          value={tab}
+          onChange={(v) => setTab(v as typeof tab)}
+          options={[
+            { value: "kampania", label: "Kampania" },
+            { value: "automatyzacje", label: "Automatyzacje", count: automations.length },
+            { value: "szablony", label: "Szablony", count: templates.length },
+            { value: "segmenty", label: "Segmenty" },
+            { value: "wyniki", label: "Wyniki", count: campaigns.length },
+          ]}
+        />
+        <PromotionsLink />
+      </div>
+
+      {tab === "automatyzacje" && <AutomationsPanel automations={automations} channels={channels} />}
+      {tab === "szablony" && <TemplatesPanel templates={templates} onUse={applyTemplate} />}
+      {tab === "segmenty" && <SegmentsPanel segments={segments} />}
+      {tab === "wyniki" && <ResultsPanel campaigns={campaigns} delivery={deliveryStats} />}
+
+      {tab === "kampania" && (
       <div className="grid gap-4 lg:grid-cols-[360px_1fr] items-start">
         {/* ── Audience + channel + link ─────────────────────── */}
         <div className="space-y-4">
@@ -483,6 +527,7 @@ export function MarketingClient({
           </div>
         </div>
       </div>
+      )}
 
       {/* Confirm send */}
       <GlassModal open={confirmOpen} onOpenChange={setConfirmOpen} title="Wysłać kampanię?" className="max-w-md">

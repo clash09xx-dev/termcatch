@@ -27,7 +27,7 @@ export const PLAN_CATALOG: PlanCatalogEntry[] = [
   },
   {
     key: "TEAM",
-    name: "Zespół",
+    name: "Team",
     price: "199 zł",
     period: "mies.",
     tagline: "Dla małych zespołów w jednej lokalizacji.",
@@ -35,12 +35,12 @@ export const PLAN_CATALOG: PlanCatalogEntry[] = [
   },
   {
     key: "PRO",
-    name: "Salon Pro",
+    name: "Professional",
     price: "369 zł",
     period: "mies.",
     tagline: "Dla rozwijających się salonów z większym zespołem.",
     highlight: true,
-    features: ["Do 15 specjalistów", "Do 2 lokalizacji", "Podstawowy Asystent AI", "Priorytetowa pomoc"],
+    features: ["Do 15 specjalistów", "Do 2 lokalizacji", "Asystent AI (do 30 zapytań/dzień)", "Priorytetowa pomoc"],
   },
   {
     key: "ULTIMATE",

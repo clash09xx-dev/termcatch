@@ -1244,6 +1244,88 @@ model FakturowniaInvoice {
 }
 
 // ============================================================
+// MARKETING (growth center)
+// ============================================================
+// All relation-less (indexed businessId, like SmsMessage) to keep the Business
+// model untouched. Sends still go through the existing lib/messaging + lib/email
+// senders and honour per-customer opt-in.
+
+// One persisted campaign send (aggregate tally lives on the row itself).
+model MarketingCampaign {
+  id          String    @id @default(cuid())
+  businessId  String    @map("business_id")
+  channel     String    // sms | email | whatsapp
+  segment     String
+  subject     String?
+  body        String    @db.Text
+  status      String    @default("sent") // draft | scheduled | sending | sent | failed
+  scheduledAt DateTime? @map("scheduled_at")
+  total       Int       @default(0)
+  reachable   Int       @default(0)
+  sent        Int       @default(0)
+  failed      Int       @default(0)
+  sentAt      DateTime? @map("sent_at")
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+
+  @@index([businessId, createdAt])
+  @@map("marketing_campaigns")
+}
+
+// Reusable message template.
+model MarketingTemplate {
+  id         String   @id @default(cuid())
+  businessId String   @map("business_id")
+  name       String
+  channel    String?  // sms | email | whatsapp | null (any)
+  subject    String?
+  body       String   @db.Text
+  createdAt  DateTime @default(now()) @map("created_at")
+  updatedAt  DateTime @updatedAt @map("updated_at")
+
+  @@index([businessId])
+  @@map("marketing_templates")
+}
+
+// A deterministic automation rule. AI can help draft `body`, but the trigger is
+// deterministic and only fires when `enabled`.
+model MarketingAutomation {
+  id         String    @id @default(cuid())
+  businessId String    @map("business_id")
+  type       String    // birthday | after_visit | winback
+  name       String
+  channel    String    // sms | email
+  subject    String?
+  body       String    @db.Text
+  enabled    Boolean   @default(false)
+  config     Json?     // { days } for winback, { delayHours } for after_visit
+  lastRunAt  DateTime? @map("last_run_at")
+  createdAt  DateTime  @default(now()) @map("created_at")
+  updatedAt  DateTime  @updatedAt @map("updated_at")
+
+  @@index([businessId])
+  @@map("marketing_automations")
+}
+
+// Idempotency + metrics log for automation sends. dedupeKey guarantees an
+// automation fires once per customer per window (birthday/year, winback/month,
+// after_visit/appointment).
+model MarketingDelivery {
+  id           String   @id @default(cuid())
+  businessId   String   @map("business_id")
+  automationId String?  @map("automation_id")
+  customerId   String?  @map("customer_id")
+  channel      String
+  status       String   // sent | failed | skipped
+  dedupeKey    String   @unique @map("dedupe_key")
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  @@index([businessId, createdAt])
+  @@index([automationId])
+  @@map("marketing_deliveries")
+}
+
+// ============================================================
 // ANALYTICS
 // ============================================================
 

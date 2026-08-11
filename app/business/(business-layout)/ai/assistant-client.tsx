@@ -5,6 +5,7 @@ import { askAssistant, confirmAiAction } from "@/lib/actions/ai";
 import type { ActionProposal, AssistantMessage } from "@/lib/ai/proposal-types";
 import { InkButton } from "@/components/ui/glass";
 import { CHIP, INK_GRADIENT } from "@/components/ui/glass/tokens";
+import { GlassModal, ModalInkButton, ModalGlassButton } from "@/components/ui/glass-modal";
 
 type ChatMessage = {
   id: string;
@@ -30,16 +31,19 @@ const uid = () => `m${Date.now()}_${counter++}`;
 export function AssistantClient({
   available,
   reason,
+  tier,
   initialPrompt,
 }: {
   available: boolean;
   reason?: string;
+  tier?: string;
   initialPrompt?: string;
 }) {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState(initialPrompt ?? "");
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [limitOpen, setLimitOpen] = useState<null | "rate_limited" | "plan_excluded">(null);
   const [proposalStates, setProposalStates] = useState<Record<string, ProposalState>>({});
   const scrollRef = useRef<HTMLDivElement>(null);
 
@@ -60,6 +64,8 @@ export function AssistantClient({
       const res = await askAssistant(history);
       if (res.ok) {
         setMessages((prev) => [...prev, { id: uid(), role: "assistant", content: res.text, proposals: res.proposals }]);
+      } else if (res.reason === "rate_limited" || res.reason === "plan_excluded") {
+        setLimitOpen(res.reason);
       } else {
         setError(res.message);
       }
@@ -96,7 +102,7 @@ export function AssistantClient({
         <h3 className="text-sm font-semibold text-slate-900">Asystent AI niedostępny</h3>
         <p className="mt-1 text-sm text-slate-600">
           {reason === "plan_excluded"
-            ? "Asystent AI jest dostępny w planie Salon Pro i Ultimate. Uaktualnij plan, aby rozmawiać z asystentem i uruchomić działania."
+            ? "Asystent AI jest dostępny w planie Professional i Ultimate. Uaktualnij plan, aby rozmawiać z asystentem i uruchomić działania."
             : reason === "not_configured"
               ? "Asystent AI nie został jeszcze skonfigurowany (brak klucza OpenAI). Analizy poniżej działają niezależnie."
               : reason === "rate_limited"
@@ -183,6 +189,30 @@ export function AssistantClient({
           {pending ? "…" : "Wyślij"}
         </InkButton>
       </form>
+
+      <GlassModal
+        open={limitOpen !== null}
+        onOpenChange={(o) => !o && setLimitOpen(null)}
+        title={limitOpen === "plan_excluded" ? "Asystent AI w wyższym planie" : "Osiągnięto dzienny limit AI"}
+      >
+        <div className="space-y-3">
+          <p className="text-sm leading-relaxed text-slate-600">
+            {limitOpen === "plan_excluded"
+              ? "Rozmowa z asystentem i akcje AI są dostępne w planie Professional i Ultimate. Uaktualnij plan, aby korzystać z asystenta."
+              : tier === "unlimited"
+                ? "To chwilowe zabezpieczenie przed nietypowo dużym ruchem. Spróbuj ponownie za jakiś czas — Twój plan Ultimate nie ma stałego limitu."
+                : "Wykorzystałeś dzienny limit zapytań do asystenta w planie Professional. Limit odnawia się w ciągu 24 godzin. W planie Ultimate korzystasz z AI bez limitu."}
+          </p>
+          <div className="flex items-center gap-2 pt-1">
+            {(limitOpen === "plan_excluded" || tier !== "unlimited") && (
+              <ModalInkButton onClick={() => { window.location.href = "/business/payments"; }}>
+                {limitOpen === "plan_excluded" ? "Zobacz plany" : "Przejdź na Ultimate"}
+              </ModalInkButton>
+            )}
+            <ModalGlassButton onClick={() => setLimitOpen(null)}>Zamknij</ModalGlassButton>
+          </div>
+        </div>
+      </GlassModal>
     </div>
   );
 }

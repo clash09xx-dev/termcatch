@@ -8,7 +8,7 @@ import { join } from "node:path";
 const ROOTS = ["app", "components", "lib"];
 const FORBIDDEN: { needle: string; why: string }[] = [
   { needle: "0% prowizji", why: "commission is 20% of the first visit, not 0%" },
-  { needle: "Plan Starter", why: "no 'Starter' plan (Solo/Zespół/Salon Pro/Ultimate)" },
+  { needle: "Plan Starter", why: "no 'Starter' plan (Solo/Team/Professional/Ultimate)" },
   { needle: "bezpłatnie na zawsze", why: "paid plans are not permanently free" },
   { needle: "14 dni za darmo", why: "the standard trial is now 7 days" },
   { needle: "14-dniowy okres", why: "the standard trial is now 7 days" },

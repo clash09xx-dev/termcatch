@@ -4,8 +4,8 @@
 //
 // Product rules (active resources only):
 //   Solo      → 1 specialist,  1 location
-//   Zespół    → 4 specialists, 1 location
-//   Salon Pro → 15 specialists,2 locations
+//   Team         → 4 specialists, 1 location
+//   Professional → 15 specialists, 2 locations
 //   Ultimate  → unlimited,     unlimited
 // FREE (the default until a paid subscription exists) uses the conservative Solo
 // baseline. `null` = unlimited.
@@ -38,8 +38,8 @@ export function entitlementsEnforced(): boolean {
 export const PLAN_ENTITLEMENTS: Record<PlanKey, Entitlements> = {
   FREE: { maxEmployees: 1, maxLocations: 1, aiAssistant: "none", label: "Darmowy" },
   SOLO: { maxEmployees: 1, maxLocations: 1, aiAssistant: "none", label: "Solo" },
-  TEAM: { maxEmployees: 4, maxLocations: 1, aiAssistant: "none", label: "Zespół" },
-  PRO: { maxEmployees: 15, maxLocations: 2, aiAssistant: "basic", label: "Salon Pro" },
+  TEAM: { maxEmployees: 4, maxLocations: 1, aiAssistant: "none", label: "Team" },
+  PRO: { maxEmployees: 15, maxLocations: 2, aiAssistant: "basic", label: "Professional" },
   ULTIMATE: { maxEmployees: null, maxLocations: null, aiAssistant: "unlimited", label: "Ultimate" },
 };
 

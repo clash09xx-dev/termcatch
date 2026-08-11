@@ -46,7 +46,7 @@ const DENY_MESSAGES: Record<AiDenyReason, string> = {
   no_business: "Nie masz przypisanego salonu.",
   not_configured: "Asystent AI nie jest jeszcze skonfigurowany.",
   disabled: "Asystent AI jest chwilowo wyłączony.",
-  plan_excluded: "Asystent AI jest dostępny w planie Salon Pro i Ultimate.",
+  plan_excluded: "Asystent AI jest dostępny w planie Professional i Ultimate.",
   rate_limited: "Osiągnięto dzienny limit zapytań do AI. Spróbuj ponownie później.",
 };
 

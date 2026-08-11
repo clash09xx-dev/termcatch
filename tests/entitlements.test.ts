@@ -10,13 +10,13 @@ import {
 } from "../lib/entitlements";
 
 describe("plan entitlement table — the non-negotiable limits", () => {
-  test("employee limits: Solo 1 / Zespół 4 / Salon Pro 15 / Ultimate unlimited", () => {
+  test("employee limits: Solo 1 / Team 4 / Professional 15 / Ultimate unlimited", () => {
     assert.equal(PLAN_ENTITLEMENTS.SOLO.maxEmployees, 1);
     assert.equal(PLAN_ENTITLEMENTS.TEAM.maxEmployees, 4);
     assert.equal(PLAN_ENTITLEMENTS.PRO.maxEmployees, 15);
     assert.equal(PLAN_ENTITLEMENTS.ULTIMATE.maxEmployees, null);
   });
-  test("location limits: Solo 1 / Zespół 1 / Salon Pro 2 / Ultimate unlimited", () => {
+  test("location limits: Solo 1 / Team 1 / Professional 2 / Ultimate unlimited", () => {
     assert.equal(PLAN_ENTITLEMENTS.SOLO.maxLocations, 1);
     assert.equal(PLAN_ENTITLEMENTS.TEAM.maxLocations, 1);
     assert.equal(PLAN_ENTITLEMENTS.PRO.maxLocations, 2);
@@ -44,11 +44,11 @@ describe("withinLimit — server-side boundary checks", () => {
     assert.equal(withinLimit("SOLO", "employee", 1), true);
     assert.equal(withinLimit("SOLO", "employee", 2), false);
   });
-  test("Zespół allows up to 4 specialists, blocks the 5th", () => {
+  test("Team allows up to 4 specialists, blocks the 5th", () => {
     assert.equal(withinLimit("TEAM", "employee", 4), true);
     assert.equal(withinLimit("TEAM", "employee", 5), false);
   });
-  test("Salon Pro allows up to 15 specialists + 2 locations", () => {
+  test("Professional allows up to 15 specialists + 2 locations", () => {
     assert.equal(withinLimit("PRO", "employee", 15), true);
     assert.equal(withinLimit("PRO", "employee", 16), false);
     assert.equal(withinLimit("PRO", "location", 2), true);
@@ -61,24 +61,24 @@ describe("withinLimit — server-side boundary checks", () => {
 });
 
 describe("requiredPlanFor — upgrade targeting", () => {
-  test("a 2nd specialist needs Zespół; a 5th needs Salon Pro; a 16th needs Ultimate", () => {
+  test("a 2nd specialist needs Team; a 5th needs Professional; a 16th needs Ultimate", () => {
     assert.equal(requiredPlanFor("employee", 2), "TEAM");
     assert.equal(requiredPlanFor("employee", 5), "PRO");
     assert.equal(requiredPlanFor("employee", 16), "ULTIMATE");
   });
-  test("a 2nd location needs Salon Pro; a 3rd needs Ultimate", () => {
+  test("a 2nd location needs Professional; a 3rd needs Ultimate", () => {
     assert.equal(requiredPlanFor("location", 2), "PRO");
     assert.equal(requiredPlanFor("location", 3), "ULTIMATE");
   });
 });
 
 describe("planLimitInfo — the upgrade dialog payload", () => {
-  test("Solo at 1 specialist points to Zespół as the required upgrade", () => {
+  test("Solo at 1 specialist points to Team as the required upgrade", () => {
     const info = planLimitInfo("employee", "SOLO", 1);
     assert.equal(info.used, 1);
     assert.equal(info.limit, 1);
     assert.equal(info.requiredPlan, "TEAM");
-    assert.equal(info.requiredPlanLabel, "Zespół");
+    assert.equal(info.requiredPlanLabel, "Team");
     assert.equal(info.planLabel, "Solo");
   });
   test("Ultimate never yields a required upgrade", () => {

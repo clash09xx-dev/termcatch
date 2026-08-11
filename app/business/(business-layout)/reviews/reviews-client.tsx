@@ -45,7 +45,7 @@ export function ReviewsClient({ reviews: initial, avgRating, totalCount, starDis
     try {
       const res = await generateReviewReplyDraft(id, tone);
       if (res.ok) setReplyText(res.text);
-      else setAiError(res.reason === "plan_excluded" ? "Generowanie odpowiedzi AI jest dostępne w planie Salon Pro i Ultimate." : res.message);
+      else setAiError(res.reason === "plan_excluded" ? "Generowanie odpowiedzi AI jest dostępne w planie Professional i Ultimate." : res.message);
     } catch {
       setAiError("Nie udało się wygenerować odpowiedzi.");
     } finally {

@@ -60,3 +60,72 @@ CREATE INDEX IF NOT EXISTS "fakturownia_invoices_business_id_created_at_idx"
     ON "fakturownia_invoices" ("business_id", "created_at");
 CREATE INDEX IF NOT EXISTS "fakturownia_invoices_appointment_id_idx"
     ON "fakturownia_invoices" ("appointment_id");
+
+-- ============================================================================
+-- MARKETING (growth center) — 4 additional tables
+-- ============================================================================
+
+CREATE TABLE IF NOT EXISTS "marketing_campaigns" (
+    "id"           TEXT NOT NULL,
+    "business_id"  TEXT NOT NULL,
+    "channel"      TEXT NOT NULL,
+    "segment"      TEXT NOT NULL,
+    "subject"      TEXT,
+    "body"         TEXT NOT NULL,
+    "status"       TEXT NOT NULL DEFAULT 'sent',
+    "scheduled_at" TIMESTAMP(3),
+    "total"        INTEGER NOT NULL DEFAULT 0,
+    "reachable"    INTEGER NOT NULL DEFAULT 0,
+    "sent"         INTEGER NOT NULL DEFAULT 0,
+    "failed"       INTEGER NOT NULL DEFAULT 0,
+    "sent_at"      TIMESTAMP(3),
+    "created_at"   TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updated_at"   TIMESTAMP(3) NOT NULL,
+    CONSTRAINT "marketing_campaigns_pkey" PRIMARY KEY ("id")
+);
+CREATE INDEX IF NOT EXISTS "marketing_campaigns_business_id_created_at_idx" ON "marketing_campaigns" ("business_id", "created_at");
+
+CREATE TABLE IF NOT EXISTS "marketing_templates" (
+    "id"          TEXT NOT NULL,
+    "business_id" TEXT NOT NULL,
+    "name"        TEXT NOT NULL,
+    "channel"     TEXT,
+    "subject"     TEXT,
+    "body"        TEXT NOT NULL,
+    "created_at"  TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updated_at"  TIMESTAMP(3) NOT NULL,
+    CONSTRAINT "marketing_templates_pkey" PRIMARY KEY ("id")
+);
+CREATE INDEX IF NOT EXISTS "marketing_templates_business_id_idx" ON "marketing_templates" ("business_id");
+
+CREATE TABLE IF NOT EXISTS "marketing_automations" (
+    "id"          TEXT NOT NULL,
+    "business_id" TEXT NOT NULL,
+    "type"        TEXT NOT NULL,
+    "name"        TEXT NOT NULL,
+    "channel"     TEXT NOT NULL,
+    "subject"     TEXT,
+    "body"        TEXT NOT NULL,
+    "enabled"     BOOLEAN NOT NULL DEFAULT false,
+    "config"      JSONB,
+    "last_run_at" TIMESTAMP(3),
+    "created_at"  TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updated_at"  TIMESTAMP(3) NOT NULL,
+    CONSTRAINT "marketing_automations_pkey" PRIMARY KEY ("id")
+);
+CREATE INDEX IF NOT EXISTS "marketing_automations_business_id_idx" ON "marketing_automations" ("business_id");
+
+CREATE TABLE IF NOT EXISTS "marketing_deliveries" (
+    "id"            TEXT NOT NULL,
+    "business_id"   TEXT NOT NULL,
+    "automation_id" TEXT,
+    "customer_id"   TEXT,
+    "channel"       TEXT NOT NULL,
+    "status"        TEXT NOT NULL,
+    "dedupe_key"    TEXT NOT NULL,
+    "created_at"    TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT "marketing_deliveries_pkey" PRIMARY KEY ("id")
+);
+CREATE UNIQUE INDEX IF NOT EXISTS "marketing_deliveries_dedupe_key_key" ON "marketing_deliveries" ("dedupe_key");
+CREATE INDEX IF NOT EXISTS "marketing_deliveries_business_id_created_at_idx" ON "marketing_deliveries" ("business_id", "created_at");
+CREATE INDEX IF NOT EXISTS "marketing_deliveries_automation_id_idx" ON "marketing_deliveries" ("automation_id");

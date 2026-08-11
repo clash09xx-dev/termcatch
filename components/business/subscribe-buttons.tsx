@@ -5,8 +5,8 @@ import { startSubscriptionCheckout } from "@/lib/actions/subscription";
 
 const PLANS: { key: string; label: string }[] = [
   { key: "SOLO", label: "Solo" },
-  { key: "TEAM", label: "Zespół" },
-  { key: "PRO", label: "Salon Pro" },
+  { key: "TEAM", label: "Team" },
+  { key: "PRO", label: "Professional" },
   { key: "ULTIMATE", label: "Ultimate" },
 ];
 

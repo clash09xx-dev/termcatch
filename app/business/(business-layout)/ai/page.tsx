@@ -48,7 +48,7 @@ export default async function AiPage({ searchParams }: { searchParams: Promise<{
           <Overline>Rozmowa</Overline>
           <span className="flex-1" style={{ borderTop: HAIRLINE }} />
         </div>
-        <AssistantClient available={available} reason={reason} initialPrompt={prompt} />
+        <AssistantClient available={available} reason={reason} tier={actor.tier} initialPrompt={prompt} />
       </section>
 
       {insights.length === 0 && available && (

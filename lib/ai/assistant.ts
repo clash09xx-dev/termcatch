@@ -57,7 +57,7 @@ export async function runAssistant(params: {
 
   for (let step = 0; step < MAX_STEPS; step++) {
     const r = await respond({
-      tier: "smart",
+      tier: "fast",
       instructions,
       input,
       tools: toolSpecs,
@@ -104,7 +104,7 @@ export async function runAssistant(params: {
     // Last step with pending calls but no room to continue → give a closing summary next loop won't run.
     if (step === MAX_STEPS - 1 && !finalText) {
       const closing = await respond({
-        tier: "smart",
+        tier: "fast",
         instructions,
         input,
         feature: "assistant",

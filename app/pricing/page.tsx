@@ -100,7 +100,7 @@ const PLANS = [
     ],
   },
   {
-    name: "Zespół",
+    name: "Team",
     oldPrice: "249 zł",
     price: "199 zł",
     period: "miesiąc",
@@ -118,7 +118,7 @@ const PLANS = [
     ],
   },
   {
-    name: "Salon Pro",
+    name: "Professional",
     oldPrice: "439 zł",
     price: "369 zł",
     period: "miesiąc",
@@ -127,10 +127,10 @@ const PLANS = [
     href: "/register?role=business&plan=pro",
     highlight: true,
     features: [
-      "Wszystko, co w planie Zespół",
+      "Wszystko, co w planie Team",
       "Do 15 specjalistów",
       "Do 2 lokalizacji",
-      "Podstawowy Asystent AI",
+      "Asystent AI (do 30 zapytań dziennie)",
       "Priorytetowa pomoc w nagłych sytuacjach",
       "20% od pierwszej wizyty",
     ],
@@ -145,7 +145,7 @@ const PLANS = [
     href: "/register?role=business&plan=ultimate",
     highlight: false,
     features: [
-      "Wszystko, co w planie Salon Pro",
+      "Wszystko, co w planie Professional",
       "Nielimitowana liczba specjalistów",
       "Nielimitowana liczba lokalizacji",
       "Asystent AI bez limitu",
