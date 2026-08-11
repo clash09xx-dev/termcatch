@@ -132,3 +132,24 @@ CREATE INDEX IF NOT EXISTS "marketing_deliveries_automation_id_idx" ON "marketin
 
 -- Cost attribution: role on the AI usage ledger (additive, nullable).
 ALTER TABLE "ai_usage_logs" ADD COLUMN IF NOT EXISTS "role" TEXT;
+
+-- ============================================================================
+-- EMPLOYEE ACCOUNTS — invitation table
+-- ============================================================================
+CREATE TABLE IF NOT EXISTS "employee_invitations" (
+    "id"          TEXT NOT NULL,
+    "business_id" TEXT NOT NULL,
+    "employee_id" TEXT NOT NULL,
+    "email"       TEXT NOT NULL,
+    "token_hash"  TEXT NOT NULL,
+    "status"      TEXT NOT NULL DEFAULT 'pending',
+    "expires_at"  TIMESTAMP(3) NOT NULL,
+    "accepted_at" TIMESTAMP(3),
+    "invited_by"  TEXT,
+    "created_at"  TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updated_at"  TIMESTAMP(3) NOT NULL,
+    CONSTRAINT "employee_invitations_pkey" PRIMARY KEY ("id")
+);
+CREATE UNIQUE INDEX IF NOT EXISTS "employee_invitations_token_hash_key" ON "employee_invitations" ("token_hash");
+CREATE INDEX IF NOT EXISTS "employee_invitations_business_id_idx" ON "employee_invitations" ("business_id");
+CREATE INDEX IF NOT EXISTS "employee_invitations_employee_id_idx" ON "employee_invitations" ("employee_id");

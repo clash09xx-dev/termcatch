@@ -5,6 +5,7 @@ import { getServerUser } from "@/lib/supabase/server";
 import { prisma } from "@/lib/prisma";
 import { isPlatformAdmin } from "@/lib/is-admin";
 import { planKeyFromEnum, PLAN_ENTITLEMENTS } from "@/lib/entitlements";
+import { resolveEmployeeContext } from "@/lib/employee/context";
 import type { AiTier } from "./limits-shared";
 import type { Role } from "@/lib/permissions";
 import { aiConfigured, aiEnabled, dailyRequestLimitForTier, monthlyCostCapUsd } from "./config";
@@ -29,6 +30,8 @@ export type AiActor = {
   tier: AiTier;
   isAdmin: boolean;
   role: Role;
+  /** Set for employee (and owner view-as) actors — scopes calendar tools. */
+  employeeId?: string | null;
 };
 
 export type AiDenyReason =
@@ -74,6 +77,31 @@ export async function resolveAiActor(): Promise<
 > {
   const user = await getServerUser();
   if (!user) return { ok: false, reason: "unauthenticated" };
+
+  // Employee (or owner previewing via View-As) → operational employee actor.
+  const empCtx = await resolveEmployeeContext();
+  if (empCtx) {
+    const biz = await prisma.business.findUnique({
+      where: { id: empCtx.businessId },
+      select: { subscriptionPlan: true, slug: true },
+    });
+    const empPlanKey = planKeyFromEnum(biz?.subscriptionPlan ?? null);
+    return {
+      ok: true,
+      actor: {
+        supabaseUserId: empCtx.actorSupabaseId,
+        dbUserId: empCtx.actorUserId,
+        businessId: empCtx.businessId,
+        businessName: empCtx.businessName,
+        businessSlug: biz?.slug ?? "",
+        plan: biz?.subscriptionPlan ?? "FREE",
+        tier: PLAN_ENTITLEMENTS[empPlanKey].aiAssistant,
+        isAdmin: false,
+        role: "employee",
+        employeeId: empCtx.employeeId,
+      },
+    };
+  }
 
   const dbUser = await prisma.user.findUnique({
     where: { supabaseId: user.id },

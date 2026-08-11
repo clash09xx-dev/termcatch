@@ -475,3 +475,39 @@ export async function sendNewReviewNotificationEmail(
     ctaUrl: `${APP_URL}/business/reviews`,
   });
 }
+
+/** Employee invitation — branded, one CTA to activate the account (7-day validity). */
+export async function sendEmployeeInvitationEmail(
+  params: { to: string; employeeName: string; businessName: string; url: string }
+): Promise<{ sent: boolean }> {
+  const name = params.employeeName ? escapeHtml(params.employeeName) : "";
+  return sendEmail({
+    to: params.to,
+    subject: `Zaproszenie do zespołu ${params.businessName} w TermCatch`,
+    heading: `Dołącz do zespołu ${escapeHtml(params.businessName)}`,
+    lines: [
+      name ? `Cześć ${name}!` : "Cześć!",
+      `<strong>${escapeHtml(params.businessName)}</strong> zaprasza Cię do TermCatch. Utwórz swoje konto pracownika, aby widzieć swój grafik, wizyty, wolne terminy i operacyjnego asystenta AI.`,
+      "Link jest jednorazowy i ważny przez 7 dni.",
+    ],
+    ctaLabel: "Aktywuj konto",
+    ctaUrl: params.url,
+  });
+}
+
+/** Confirmation after an employee activates their account. */
+export async function sendEmployeeInvitationAcceptedEmail(
+  params: { to: string; employeeName: string; businessName: string }
+): Promise<{ sent: boolean }> {
+  return sendEmail({
+    to: params.to,
+    subject: `Konto pracownika aktywne — ${params.businessName}`,
+    heading: "Twoje konto jest gotowe",
+    lines: [
+      params.employeeName ? `Cześć ${escapeHtml(params.employeeName)}!` : "Cześć!",
+      `Twoje konto pracownika w <strong>${escapeHtml(params.businessName)}</strong> zostało aktywowane. Zaloguj się, aby zobaczyć swój dzień.`,
+    ],
+    ctaLabel: "Przejdź do panelu",
+    ctaUrl: `${APP_URL}/employee/dashboard`,
+  });
+}

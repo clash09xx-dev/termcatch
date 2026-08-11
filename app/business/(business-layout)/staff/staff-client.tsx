@@ -9,10 +9,11 @@ import type { Employee, EmployeeService, Service } from "@prisma/client";
 import { PageHeader, GlassCard, EmptyState, InkButton, GlassButton, FormField, HAIRLINE, CHIP } from "@/components/ui/glass";
 import { GlassModal } from "@/components/ui/glass-modal";
 import { PlanLimitDialog } from "@/components/business/plan-limit-dialog";
+import { EmployeeAccountControls } from "@/components/business/employee-account-controls";
 import type { PlanLimitInfo } from "@/lib/entitlements";
 
 type EmpWithServices = Employee & { services: (EmployeeService & { service: Service })[] };
-type Props = { employees: EmpWithServices[]; availableServices: Service[]; weekLoad: Record<string, number> };
+type Props = { employees: EmpWithServices[]; availableServices: Service[]; weekLoad: Record<string, number>; inviteStatus?: Record<string, string> };
 type Form = { firstName: string; lastName: string; email: string; phone: string; title: string; bio: string; avatarUrl: string; color: string; isActive: boolean; isAccepting: boolean; serviceIds: string[] };
 
 const COLORS = ["#334155", "#2563eb", "#0891b2", "#16a34a", "#65a30d", "#d97706", "#dc2626", "#db2777", "#7c3aed", "#0f766e", "#b45309", "#64748B"];
@@ -20,7 +21,7 @@ const EMPTY: Form = { firstName: "", lastName: "", email: "", phone: "", title: 
 const toForm = (e: EmpWithServices): Form => ({ firstName: e.firstName, lastName: e.lastName, email: e.email ?? "", phone: e.phone ?? "", title: e.title ?? "", bio: e.bio ?? "", avatarUrl: e.avatarUrl ?? "", color: e.color, isActive: e.isActive, isAccepting: e.isAccepting, serviceIds: e.services.map((s) => s.serviceId) });
 const INPUT = "input-glass w-full px-3.5 py-2.5 text-sm rounded-xl outline-none text-slate-800 placeholder:text-slate-400";
 
-export function StaffClient({ employees, availableServices, weekLoad }: Props) {
+export function StaffClient({ employees, availableServices, weekLoad, inviteStatus = {} }: Props) {
   const searchParams = useSearchParams();
   const [open, setOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -131,6 +132,8 @@ export function StaffClient({ employees, availableServices, weekLoad }: Props) {
                   <button onClick={() => openEdit(e)} className="icon-btn p-2 rounded-lg" style={{ color: "#94A3B8" }} aria-label="Edytuj"><svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8}><path d="M12 20h9" /><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z" /></svg></button>
                   <button onClick={() => remove(e.id)} disabled={deletingId === e.id} className="p-2 rounded-lg transition-colors" style={{ color: "#94A3B8" }} onMouseOver={(ev) => (ev.currentTarget.style.color = "#BE123C")} onMouseOut={(ev) => (ev.currentTarget.style.color = "#94A3B8")} aria-label="Usuń"><svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8}><path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" /></svg></button>
                 </div>
+
+                <EmployeeAccountControls employeeId={e.id} hasAccount={Boolean(e.userId)} hasEmail={Boolean(e.email)} inviteStatus={inviteStatus[e.id] ?? null} />
               </div>
             );
           })}

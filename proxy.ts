@@ -2,7 +2,7 @@ import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
 // Routes that require authentication
-const PROTECTED_ROUTES = ["/customer", "/business", "/admin"];
+const PROTECTED_ROUTES = ["/customer", "/business", "/admin", "/employee"];
 
 // Routes that should redirect to dashboard if already logged in
 const AUTH_ROUTES = ["/login", "/register", "/reset-password"];
@@ -47,9 +47,11 @@ export async function proxy(request: NextRequest) {
     const target =
       role === "BUSINESS_OWNER"
         ? "/business/dashboard"
-        : role === "ADMIN" || role === "SUPERADMIN"
-          ? "/admin/dashboard"
-          : "/customer/dashboard";
+        : role === "EMPLOYEE"
+          ? "/employee/dashboard"
+          : role === "ADMIN" || role === "SUPERADMIN"
+            ? "/admin/dashboard"
+            : "/customer/dashboard";
     return NextResponse.redirect(new URL(target, request.url));
   }
 

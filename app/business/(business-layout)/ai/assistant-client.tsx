@@ -33,12 +33,15 @@ export function AssistantClient({
   reason,
   tier,
   initialPrompt,
+  suggestions,
 }: {
   available: boolean;
   reason?: string;
   tier?: string;
   initialPrompt?: string;
+  suggestions?: string[];
 }) {
+  const chips = suggestions ?? SUGGESTIONS;
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState(initialPrompt ?? "");
   const [pending, setPending] = useState(false);
@@ -160,7 +163,7 @@ export function AssistantClient({
 
       {messages.length === 0 && (
         <div className="flex flex-wrap gap-2 px-4 pb-1">
-          {SUGGESTIONS.map((s) => (
+          {chips.map((s) => (
             <button
               key={s}
               type="button"

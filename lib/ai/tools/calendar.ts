@@ -54,13 +54,18 @@ export const calendarTools: AiTool[] = [
       const duration = svc?.duration ?? Math.min(...services.map((s) => s.duration).concat([30]));
 
       let employeeId: string | undefined;
-      const wantEmp = str(args, "employeeName")?.toLowerCase();
-      if (wantEmp) {
-        const list = await prisma.employee.findMany({
-          where: { businessId: actor.businessId, isActive: true },
-          select: { id: true, firstName: true, lastName: true },
-        });
-        employeeId = list.find((e) => `${e.firstName} ${e.lastName}`.toLowerCase().includes(wantEmp))?.id;
+      if (actor.role === "employee" && actor.employeeId) {
+        // Employees only see their own free slots — ignore any employeeName arg.
+        employeeId = actor.employeeId;
+      } else {
+        const wantEmp = str(args, "employeeName")?.toLowerCase();
+        if (wantEmp) {
+          const list = await prisma.employee.findMany({
+            where: { businessId: actor.businessId, isActive: true },
+            select: { id: true, firstName: true, lastName: true },
+          });
+          employeeId = list.find((e) => `${e.firstName} ${e.lastName}`.toLowerCase().includes(wantEmp))?.id;
+        }
       }
 
       const { open, slots } = await getBusinessDaySlots({
@@ -110,6 +115,8 @@ export const calendarTools: AiTool[] = [
           businessId: actor.businessId,
           startTime: { gte, lt },
           ...(status ? { status: status as never } : {}),
+          // Employees (and owner view-as) only ever see their OWN appointments.
+          ...(actor.role === "employee" && actor.employeeId ? { employeeId: actor.employeeId } : {}),
         },
         orderBy: { startTime: "asc" },
         take: 100,

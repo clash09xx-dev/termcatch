@@ -363,6 +363,8 @@ export async function loginAction(
     if (dbUser?.role === "BUSINESS_OWNER") {
       const hasBusiness = (dbUser.ownedBusinesses?.length ?? 0) > 0;
       redirect(hasBusiness ? "/business/dashboard" : "/business/onboarding");
+    } else if (dbUser?.role === "EMPLOYEE") {
+      redirect("/employee/dashboard");
     } else if (dbUser?.role === "ADMIN" || dbUser?.role === "SUPERADMIN") {
       redirect("/admin/dashboard");
     }

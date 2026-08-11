@@ -10,6 +10,7 @@ import { CommandPalette } from "@/components/command-palette";
 import { isPlatformAdmin } from "@/lib/is-admin";
 import { multiLocationEnabled } from "@/lib/multi-location";
 import { billingConfigured } from "@/lib/subscription";
+import { resolveEmployeeSelf } from "@/lib/employee/context";
 
 export default async function BusinessDashboardLayout({
   children,
@@ -32,6 +33,13 @@ export default async function BusinessDashboardLayout({
     },
   });
   const business = dbUser?.ownedBusinesses[0] ?? null;
+
+  // An employee must never see the owner dashboard — send them to their own.
+  if (!business) {
+    const emp = await resolveEmployeeSelf();
+    if (emp) redirect("/employee/dashboard");
+  }
+
   const initials =
     `${dbUser?.firstName?.[0] ?? ""}${dbUser?.lastName?.[0] ?? ""}`.toUpperCase() || undefined;
   const multiLocation = multiLocationEnabled();

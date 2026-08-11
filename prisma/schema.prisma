@@ -1244,6 +1244,27 @@ model FakturowniaInvoice {
   @@map("fakturownia_invoices")
 }
 
+// One-time employee-account invitation. Only an HMAC of the token is stored
+// (never plaintext). Bound to a specific business + Employee record + email;
+// expires; single-use; revocable. Relation-less (indexed ids) like SmsMessage.
+model EmployeeInvitation {
+  id         String    @id @default(cuid())
+  businessId String    @map("business_id")
+  employeeId String    @map("employee_id")
+  email      String
+  tokenHash  String    @unique @map("token_hash")
+  status     String    @default("pending") // pending | accepted | expired | revoked
+  expiresAt  DateTime  @map("expires_at")
+  acceptedAt DateTime? @map("accepted_at")
+  invitedBy  String?   @map("invited_by") // owner userId
+  createdAt  DateTime  @default(now()) @map("created_at")
+  updatedAt  DateTime  @updatedAt @map("updated_at")
+
+  @@index([businessId])
+  @@index([employeeId])
+  @@map("employee_invitations")
+}
+
 // ============================================================
 // MARKETING (growth center)
 // ============================================================

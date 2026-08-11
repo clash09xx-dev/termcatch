@@ -3,6 +3,7 @@ export const dynamic = "force-dynamic";
 import { redirect } from "next/navigation";
 import { getServerUser } from "@/lib/supabase/server";
 import { prisma } from "@/lib/prisma";
+import { effectiveStatus } from "@/lib/employee/invite-status";
 import { StaffClient } from "./staff-client";
 
 async function getStaffData(supabaseId: string) {
@@ -54,11 +55,21 @@ export default async function StaffPage() {
   const weekLoad: Record<string, number> = {};
   for (const a of upcoming) if (a.employeeId) weekLoad[a.employeeId] = (weekLoad[a.employeeId] ?? 0) + 1;
 
+  // Latest invitation status per employee (for the "Zaproś / status" controls).
+  const invites = await prisma.employeeInvitation.findMany({
+    where: { businessId: business.id },
+    orderBy: { createdAt: "desc" },
+    select: { employeeId: true, status: true, expiresAt: true, acceptedAt: true },
+  });
+  const inviteStatus: Record<string, string> = {};
+  for (const inv of invites) if (!(inv.employeeId in inviteStatus)) inviteStatus[inv.employeeId] = effectiveStatus(inv);
+
   return (
     <StaffClient
       employees={business.employees}
       availableServices={business.services}
       weekLoad={weekLoad}
+      inviteStatus={inviteStatus}
     />
   );
 }
