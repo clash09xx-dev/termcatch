@@ -12,7 +12,7 @@ import { Segmented } from "@/components/ui/segmented";
 import { RevenueArea, WeekdayBars } from "./charts";
 import { getInsights } from "@/lib/ai/insights";
 import { InsightCards } from "@/components/business/ai/insight-cards";
-import { computeDemand } from "@/lib/analytics/demand";
+import { getDemand } from "@/lib/analytics/demand";
 import { DemandHeatmap } from "./demand-heatmap";
 
 type Period = "week" | "month" | "year";
@@ -104,12 +104,17 @@ export default async function AnalyticsPage({ searchParams }: { searchParams: Pr
 
   const periodOpts = (["week", "month", "year"] as Period[]).map((p) => ({ value: p, label: PERIOD_LABEL[p], href: `/business/analytics?period=${p}` }));
 
-  const aiInsights = total === 0
-    ? []
-    : (await getInsights(business.id).catch(() => []))
-        .filter((i) => ["revenue", "calendar", "employees", "services"].includes(i.category))
-        .slice(0, 3);
-  const demand = total === 0 ? null : await computeDemand(business.id, 90).catch(() => null);
+  // Both are period-INDEPENDENT (cached, 30-min TTL) — fetch them in PARALLEL so
+  // switching Week/Month/Year doesn't wait on a sequential waterfall.
+  const [insightsRaw, demand] = total === 0
+    ? [[], null]
+    : await Promise.all([
+        getInsights(business.id).catch(() => []),
+        getDemand(business.id, 90).catch(() => null),
+      ]);
+  const aiInsights = insightsRaw
+    .filter((i) => ["revenue", "calendar", "employees", "services"].includes(i.category))
+    .slice(0, 3);
 
   return (
     <div className="max-w-6xl mx-auto space-y-5">

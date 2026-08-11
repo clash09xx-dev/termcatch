@@ -257,6 +257,7 @@ model User {
   isVerified      Boolean   @default(false) @map("is_verified")
   isActive        Boolean   @default(true) @map("is_active")
   lastLoginAt     DateTime? @map("last_login_at")
+  welcomeEmailSentAt DateTime? @map("welcome_email_sent_at") // gates the one-time welcome email
   createdAt       DateTime  @default(now()) @map("created_at")
   updatedAt       DateTime  @updatedAt @map("updated_at")
 

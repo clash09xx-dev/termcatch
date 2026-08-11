@@ -4,6 +4,7 @@ import { useState, useMemo, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { updateBusinessSettings } from "@/lib/actions/business";
 import { NotificationSettingsForm } from "@/components/business/notification-settings-form";
+import { TestSmsButton } from "@/components/business/test-sms-button";
 import { PublicVisibilityToggle } from "@/components/business/public-visibility-toggle";
 import { requestDangerCode, confirmBusinessDeletion, confirmSalonDeletion } from "@/lib/actions/danger";
 import { sendInvite } from "@/actions/invite";
@@ -457,7 +458,12 @@ export function SettingsClient({ settings: initialSettings, notificationSettings
           )}
 
           {/* Powiadomienia */}
-          {activeSection === "powiadomienia" && <NotificationSettingsForm initial={notificationSettings} smsAvailable={smsAvailable} />}
+          {activeSection === "powiadomienia" && (
+            <>
+              <NotificationSettingsForm initial={notificationSettings} smsAvailable={smsAvailable} />
+              <TestSmsButton />
+            </>
+          )}
 
           {/* Profil publiczny */}
           {activeSection === "profil" && (

@@ -476,6 +476,47 @@ export async function sendNewReviewNotificationEmail(
   });
 }
 
+/** Notify an EMPLOYEE about one of THEIR appointments (new / changed / cancelled). */
+export async function sendEmployeeAppointmentEmail(
+  params: { to: string; businessName: string; serviceName: string; slotLabel: string; clientName: string; kind: "new" | "changed" | "cancelled" }
+): Promise<{ sent: boolean }> {
+  const heading =
+    params.kind === "new" ? "Masz nową wizytę w grafiku"
+    : params.kind === "changed" ? "Zmieniono termin Twojej wizyty"
+    : "Twoja wizyta została odwołana";
+  const subjectVerb = params.kind === "new" ? "Nowa wizyta" : params.kind === "changed" ? "Zmiana terminu" : "Odwołana wizyta";
+  return sendEmail({
+    to: params.to,
+    subject: `${subjectVerb} — ${escapeHtml(params.serviceName)}`,
+    heading,
+    lines: [
+      `<strong>${escapeHtml(params.serviceName)}</strong> — ${escapeHtml(params.clientName)}`,
+      escapeHtml(params.slotLabel),
+      `Salon: ${escapeHtml(params.businessName)}`,
+    ],
+    ctaLabel: "Zobacz swój grafik",
+    ctaUrl: `${APP_URL}/employee/dashboard`,
+  });
+}
+
+/** One-time welcome / account-created email (sent after signup completes). */
+export async function sendWelcomeEmail(
+  params: { to: string; firstName?: string | null }
+): Promise<{ sent: boolean }> {
+  const name = params.firstName ? escapeHtml(params.firstName) : "";
+  return sendEmail({
+    to: params.to,
+    subject: "Witaj w TermCatch 👋",
+    heading: name ? `Cześć ${name}!` : "Witaj w TermCatch!",
+    lines: [
+      "Twoje konto zostało utworzone. Możesz już rezerwować wizyty i zarządzać swoim kontem w TermCatch.",
+      "Cieszymy się, że jesteś z nami.",
+    ],
+    ctaLabel: "Przejdź do TermCatch",
+    ctaUrl: APP_URL,
+  });
+}
+
 /** Employee invitation — branded, one CTA to activate the account (7-day validity). */
 export async function sendEmployeeInvitationEmail(
   params: { to: string; employeeName: string; businessName: string; url: string }

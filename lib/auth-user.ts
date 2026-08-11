@@ -25,16 +25,16 @@ export async function getOrCreateDbUser(): Promise<User> {
         create: {
           supabaseId: authUser.id,
           email: authUser.email ?? `${authUser.id}@unknown.termcatch.com`,
+          // Prefer structured names; split full_name only as a last resort.
           firstName:
             (md.firstName as string) ??
-            (md.full_name as string)?.split(" ")[0] ??
             (md.given_name as string) ??
+            (md.full_name as string)?.split(" ")[0] ??
             "Użytkownik",
           lastName:
             (md.lastName as string) ??
-            ((md.full_name as string)?.split(" ").slice(1).join(" ") || "") ??
             (md.family_name as string) ??
-            "",
+            ((md.full_name as string)?.split(" ").slice(1).join(" ") || ""),
           avatarUrl: (md.avatar_url as string) ?? (md.picture as string) ?? null,
           role: (md.role as "CUSTOMER" | "BUSINESS_OWNER") ?? "CUSTOMER",
           isVerified: !!authUser.email_confirmed_at,

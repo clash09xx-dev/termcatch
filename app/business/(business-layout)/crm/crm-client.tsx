@@ -42,6 +42,7 @@ export function CrmClient({ customers }: { customers: CustomerSummary[] }) {
   const searchParams = useSearchParams();
   const [search, setSearch] = useState(searchParams.get("q") ?? "");
   const [segment, setSegment] = useState<Segment>("all");
+  const [sort, setSort] = useState<"spend" | "firstName" | "lastName">("spend");
   const [selectedId, setSelectedId] = useState<string | null>(null);
 
   const counts = useMemo(() => {
@@ -57,12 +58,17 @@ export function CrmClient({ customers }: { customers: CustomerSummary[] }) {
 
   const list = useMemo(() => {
     const q = search.trim().toLowerCase();
-    return customers.filter((c) => {
+    const filtered = customers.filter((c) => {
       if (!segmentOf(c).includes(segment)) return false;
       if (!q) return true;
       return (`${c.firstName} ${c.lastName}`.toLowerCase().includes(q) || c.email.toLowerCase().includes(q) || (c.phone ?? "").includes(q));
     });
-  }, [customers, search, segment]);
+    return [...filtered].sort((a, b) => {
+      if (sort === "firstName") return a.firstName.localeCompare(b.firstName, "pl") || a.lastName.localeCompare(b.lastName, "pl");
+      if (sort === "lastName") return a.lastName.localeCompare(b.lastName, "pl") || a.firstName.localeCompare(b.firstName, "pl");
+      return b.totalSpent - a.totalSpent; // default: by value
+    });
+  }, [customers, search, segment, sort]);
 
   const selected = customers.find((c) => c.id === selectedId) ?? null;
 
@@ -86,6 +92,14 @@ export function CrmClient({ customers }: { customers: CustomerSummary[] }) {
             { value: "returning", label: "Wracający", count: counts.returning },
             { value: "new", label: "Nowi", count: counts.new },
             { value: "dormant", label: "Uśpieni", count: counts.dormant },
+          ]}
+        />
+        <Segmented
+          ariaLabel="Sortowanie klientów" idBase="crm-sort" size="sm" value={sort} onChange={(v) => setSort(v as typeof sort)}
+          options={[
+            { value: "spend", label: "Wg wartości" },
+            { value: "firstName", label: "Imię A–Z" },
+            { value: "lastName", label: "Nazwisko A–Z" },
           ]}
         />
       </div>

@@ -3,6 +3,7 @@
 import { useState, useTransition } from "react";
 import { acceptInvitation } from "@/lib/actions/employee-invitations";
 import { InkButton } from "@/components/ui/glass";
+import { PasswordInput } from "@/components/ui/password-input";
 
 const INPUT = "input-glass w-full rounded-xl px-3.5 py-2.5 text-sm text-slate-800 outline-none placeholder:text-slate-400";
 
@@ -32,11 +33,11 @@ export function InviteForm({ token, email }: { token: string; email: string }) {
       </div>
       <div>
         <label className="mb-1 block text-xs font-medium text-slate-500" htmlFor="pw">Ustaw hasło</label>
-        <input id="pw" type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="min. 8 znaków" className={INPUT} autoComplete="new-password" />
+        <PasswordInput id="pw" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="min. 8 znaków" className={INPUT} autoComplete="new-password" />
       </div>
       <div>
         <label className="mb-1 block text-xs font-medium text-slate-500" htmlFor="pw2">Powtórz hasło</label>
-        <input id="pw2" type="password" value={confirm} onChange={(e) => setConfirm(e.target.value)} className={INPUT} autoComplete="new-password" />
+        <PasswordInput id="pw2" value={confirm} onChange={(e) => setConfirm(e.target.value)} className={INPUT} autoComplete="new-password" />
       </div>
       {error && <p className="text-xs" style={{ color: "#BE123C" }}>{error}</p>}
       <InkButton type="submit" disabled={pending} className="w-full">{pending ? "Tworzę konto…" : "Aktywuj konto"}</InkButton>

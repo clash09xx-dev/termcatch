@@ -202,6 +202,7 @@ export default function RegisterPage() {
             <input
               id="firstName" name="firstName" type="text"
               autoComplete="given-name" required placeholder="Jan"
+              defaultValue={state.values?.firstName}
               className={inputCls}
             />
             {state.fieldErrors?.firstName && (
@@ -213,6 +214,7 @@ export default function RegisterPage() {
             <input
               id="lastName" name="lastName" type="text"
               autoComplete="family-name" required placeholder="Kowalski"
+              defaultValue={state.values?.lastName}
               className={inputCls}
             />
           </div>
@@ -223,6 +225,7 @@ export default function RegisterPage() {
           <input
             id="email" name="email" type="email"
             autoComplete="email" required placeholder="twoj@email.pl"
+            defaultValue={state.values?.email}
             className={inputCls}
           />
           {state.fieldErrors?.email && (
@@ -239,6 +242,18 @@ export default function RegisterPage() {
           />
           {state.fieldErrors?.password && (
             <p className="mt-1 text-xs text-red-500">{state.fieldErrors.password[0]}</p>
+          )}
+        </div>
+
+        <div>
+          <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700 mb-1.5">Powtórz hasło</label>
+          <PasswordInput
+            id="confirmPassword" name="confirmPassword"
+            autoComplete="new-password" required placeholder="Powtórz hasło"
+            className={inputCls}
+          />
+          {state.fieldErrors?.confirmPassword && (
+            <p className="mt-1 text-xs text-red-500">{state.fieldErrors.confirmPassword[0]}</p>
           )}
         </div>
 

@@ -13,6 +13,7 @@ import {
   sendBookingTimeChangedEmail,
   sendNewBookingNotificationEmail,
   sendReviewRequestEmail,
+  sendEmployeeAppointmentEmail,
 } from "@/lib/email";
 import { sendSms, sendWhatsApp } from "@/lib/messaging";
 import { sendTransactionalSms, type SmsTemplate } from "@/lib/sms";
@@ -175,6 +176,42 @@ async function notify(params: {
       sentAt: new Date(),
     },
   });
+}
+
+/**
+ * Notify the ASSIGNED employee about THEIR appointment (in-app if they have a
+ * linked account, email if they have an address). Scoped to the one assigned
+ * employee — "Dowolny specjalista" (no employeeId) is a no-op. Never throws.
+ */
+async function notifyAssignedEmployee(params: {
+  employee: { userId: string | null; email: string | null } | null;
+  businessId: string;
+  businessName: string;
+  serviceName: string;
+  slotLabel: string;
+  clientName: string;
+  appointmentId: string;
+  kind: "new" | "changed" | "cancelled";
+}) {
+  const e = params.employee;
+  if (!e) return;
+  const type: NotificationType =
+    params.kind === "cancelled" ? "APPOINTMENT_CANCELLED"
+    : params.kind === "changed" ? "APPOINTMENT_CONFIRMED"
+    : "APPOINTMENT_BOOKED";
+  const title =
+    params.kind === "new" ? "Nowa wizyta w grafiku"
+    : params.kind === "changed" ? "Zmiana terminu wizyty"
+    : "Odwołana wizyta";
+  const body = `${params.clientName} — ${params.serviceName}, ${params.slotLabel}.`;
+  await Promise.allSettled([
+    e.userId
+      ? notify({ userId: e.userId, businessId: params.businessId, type, title, body, data: { appointmentId: params.appointmentId, link: "/employee/dashboard" } })
+      : Promise.resolve(),
+    e.email
+      ? sendEmployeeAppointmentEmail({ to: e.email, businessName: params.businessName, serviceName: params.serviceName, slotLabel: params.slotLabel, clientName: params.clientName, kind: params.kind })
+      : Promise.resolve(),
+  ]);
 }
 
 /** Transactional booking SMS to the CUSTOMER — only with explicit opt-in
@@ -405,6 +442,17 @@ export async function createAppointment(data: CreateAppointmentInput) {
       template: "confirmed",
       body: `TermCatch: wizyta potwierdzona — ${service.name} w ${business.name}, ${slotLabel}. Do zobaczenia!`,
     }),
+    // Notify the assigned specialist about their new appointment (in-app + email).
+    notifyAssignedEmployee({
+      employee: appointment.employee,
+      businessId: business.id,
+      businessName: business.name,
+      serviceName: service.name,
+      slotLabel,
+      clientName: `${customer.firstName} ${customer.lastName}`,
+      appointmentId: appointment.id,
+      kind: "new",
+    }),
   ]);
 
   revalidatePath("/customer/dashboard");
@@ -491,6 +539,8 @@ export async function rescheduleAppointment(input: {
         endTime: newEnd,
         // Salon musi potwierdzić nowy termin
         status: AppointmentStatus.PENDING,
+        // New time → the old reminder no longer applies; let the cron re-send for the new slot.
+        reminderSentAt: null,
       },
     });
   });
@@ -825,7 +875,8 @@ export async function businessRescheduleAppointment(input: {
     });
     await tx.appointment.update({
       where: { id: appointment.id },
-      data: { startTime: newStart, endTime: newEnd }, // updatedAt bumped automatically (audit timestamp)
+      // reminderSentAt reset → the reminder cron re-sends for the new time.
+      data: { startTime: newStart, endTime: newEnd, reminderSentAt: null },
     });
   });
 

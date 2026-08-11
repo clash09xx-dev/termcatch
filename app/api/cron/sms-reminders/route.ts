@@ -53,7 +53,9 @@ export async function POST(request: NextRequest) {
       toPhone: a.customer.phone,
       body: `TermCatch: przypomnienie — jutro ${a.service.name} w ${a.business.name}, ${slot}. Jeśli nie możesz przyjść, przełóż wizytę w panelu.`,
       template: "reminder",
-      dedupeKey: `sms:reminder:${a.id}`,
+      // Time-specific key: a rescheduled appointment (new startTime) gets a fresh
+      // key so its reminder re-sends; the same time never sends twice.
+      dedupeKey: `sms:reminder:${a.id}:${a.startTime.toISOString()}`,
       appointmentId: a.id,
     });
     // No reminderSentAt write — the SmsMessage dedupeKey already guarantees one

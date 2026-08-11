@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { prisma } from "@/lib/prisma";
+import { maybeSendWelcomeEmail } from "@/lib/welcome";
 import { NextResponse } from "next/server";
 
 // Nigdy nie prerenderuj i zawsze wykonuj na Node (Prisma nie działa na edge)
@@ -76,14 +77,17 @@ export async function GET(request: Request) {
         create: {
           supabaseId: user.id,
           email: user.email!,
+          // Prefer the provider's structured names; only fall back to splitting
+          // full_name (which breaks on multi-word names / single tokens).
           firstName:
-            metadata.full_name?.split(" ")[0] ??
             metadata.given_name ??
             metadata.firstName ??
+            metadata.full_name?.split(" ")[0] ??
             "User",
           lastName:
-            metadata.full_name?.split(" ").slice(1).join(" ") ||
-            (metadata.family_name ?? metadata.lastName ?? ""),
+            metadata.family_name ??
+            metadata.lastName ??
+            (metadata.full_name?.split(" ").slice(1).join(" ") || ""),
           avatarUrl: metadata.avatar_url ?? metadata.picture,
           role: chosenRole,
           isVerified: true,
@@ -104,6 +108,9 @@ export async function GET(request: Request) {
       console.error("[auth/callback] DB sync error:", dbErr);
       // Kontynuujemy — użytkownik jest zalogowany, sync nadrobi się przy następnym żądaniu
     }
+
+    // First-time signup → exactly one welcome email (idempotent; never on repeat Google login).
+    await maybeSendWelcomeEmail(user.id);
 
     // Cel przekierowania: ?next=... albo dashboard wg roli
     let destination = nextParam;

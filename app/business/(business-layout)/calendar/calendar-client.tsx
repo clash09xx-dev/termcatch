@@ -155,29 +155,18 @@ export function CalendarClient(props: Props) {
       .finally(() => setPending(false));
   }
 
-  const dayAppts = apptsForDay(cursor);
-  // The visible timeline starts from the salon's working hours, then EXPANDS to
-  // include every appointment on the day — manual/out-of-hours bookings must
-  // never be clipped or pushed off the grid. Rounded to whole hours, clamped to
-  // a real 24-hour day. workOpen/workClose keep the salon's actual hours so the
-  // out-of-hours regions can be shaded as "closed".
+  // Memoized so modal typing (cancel reason / reschedule fields) never recomputes
+  // the whole day layout.
+  const dayAppts = useMemo(() => apptsForDay(cursor), [appointments, cursor, empFilter, pendingOnly]);
+  // Always render the FULL 00:00–24:00 day — never crop it. The grid scrolls and
+  // auto-positions to the useful part; workOpen/workClose drive the shaded
+  // "outside working hours" bands + the open/close markers.
   const workWin = windowFor(cursor);
   const isClosedToday = workWin === null;
   const [workOpen, workClose] = workWin ?? [8 * 60, 20 * 60];
-  let rangeStart = workOpen;
-  let rangeEnd = workClose;
-  for (const a of dayAppts) {
-    const s = localMin(new Date(a.startTime));
-    const e = s + a.duration; // may exceed 24:00 for overnight — clamped below
-    rangeStart = Math.min(rangeStart, Math.floor(s / 60) * 60);
-    rangeEnd = Math.max(rangeEnd, Math.ceil(e / 60) * 60);
-  }
-  rangeStart = Math.max(0, rangeStart);
-  rangeEnd = Math.min(24 * 60, rangeEnd);
-  if (rangeEnd - rangeStart < 120) rangeEnd = Math.min(24 * 60, rangeStart + 120); // readable minimum
-  const openMin = rangeStart;
-  const closeMin = rangeEnd;
-  const gridHours = Array.from({ length: Math.ceil((closeMin - openMin) / 60) + 1 }, (_, i) => openMin + i * 60).filter((m) => m <= closeMin);
+  const openMin = 0;
+  const closeMin = 24 * 60;
+  const gridHours = useMemo(() => Array.from({ length: 25 }, (_, i) => i * 60), []);
 
   // Auto-scroll the day grid to a useful position: the current time when viewing
   // today, otherwise the first appointment, otherwise the salon's opening hour.
@@ -197,13 +186,13 @@ export function CalendarClient(props: Props) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [view, props.focusDate, cursor, openMin, closeMin, appointments]);
   // Mobile agenda honors the specialist filter (desktop uses lanes instead).
-  const dayApptsForView = empFilter === "all" ? dayAppts : dayAppts.filter((a) => a.employeeId === empFilter);
+  const dayApptsForView = useMemo(() => (empFilter === "all" ? dayAppts : dayAppts.filter((a) => a.employeeId === empFilter)), [dayAppts, empFilter]);
 
   // Lanes for the day view (desktop). Columns = employees (when unfiltered) else
   // single. Appointments booked with "Dowolny specjalista" have employeeId=null —
   // they get their own "Bez przypisania" lane whenever the day has any, so they
   // can never silently disappear from the grid.
-  const laneEmps: (Emp | null)[] = computeLanes(employees, empFilter, dayAppts.some((a) => !a.employeeId));
+  const laneEmps: (Emp | null)[] = useMemo(() => computeLanes(employees, empFilter, dayAppts.some((a) => !a.employeeId)), [employees, empFilter, dayAppts]);
 
   function blockStyle(a: ApptR) {
     const s = localMin(new Date(a.startTime));

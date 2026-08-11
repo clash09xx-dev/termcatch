@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import { maybeSendWelcomeEmail } from "@/lib/welcome";
 import { cookies } from "next/headers";
 import { createClient } from "@/lib/supabase/server";
 import { prisma } from "@/lib/prisma";
@@ -69,18 +70,24 @@ async function syncDbUser(
   }
 }
 
-const RegisterSchema = z.object({
-  firstName: z.string().min(2, "Imię musi mieć min. 2 znaki"),
-  lastName: z.string().min(2, "Nazwisko musi mieć min. 2 znaki"),
-  email: z.string().email("Nieprawidłowy adres e-mail"),
-  password: z.string().min(8, "Hasło musi mieć min. 8 znaków"),
-  role: z.enum(["CUSTOMER", "BUSINESS_OWNER"]).default("CUSTOMER"),
-  acceptTerms: z.literal(true, {
-    errorMap: () => ({
-      message: "Aby założyć konto, zaakceptuj Regulamin i Politykę prywatności.",
+const RegisterSchema = z
+  .object({
+    firstName: z.string().min(2, "Imię musi mieć min. 2 znaki"),
+    lastName: z.string().min(2, "Nazwisko musi mieć min. 2 znaki"),
+    email: z.string().email("Nieprawidłowy adres e-mail"),
+    password: z.string().min(8, "Hasło musi mieć min. 8 znaków"),
+    confirmPassword: z.string().min(1, "Powtórz hasło"),
+    role: z.enum(["CUSTOMER", "BUSINESS_OWNER"]).default("CUSTOMER"),
+    acceptTerms: z.literal(true, {
+      errorMap: () => ({
+        message: "Aby założyć konto, zaakceptuj Regulamin i Politykę prywatności.",
+      }),
     }),
-  }),
-});
+  })
+  .refine((d) => d.password === d.confirmPassword, {
+    message: "Hasła nie są takie same.",
+    path: ["confirmPassword"],
+  });
 
 const LoginSchema = z.object({
   email: z.string().email("Nieprawidłowy adres e-mail"),
@@ -97,6 +104,8 @@ export type AuthState = {
   email?: string;
   /** Safe internal path to continue to after verification (customer flow). */
   next?: string;
+  /** Echoed-back typed values so a validation failure never clears the form. */
+  values?: { firstName?: string; lastName?: string; email?: string };
 };
 
 export async function registerAction(
@@ -108,6 +117,7 @@ export async function registerAction(
     lastName: formData.get("lastName") as string,
     email: formData.get("email") as string,
     password: formData.get("password") as string,
+    confirmPassword: formData.get("confirmPassword") as string,
     role: (formData.get("role") as string) ?? "CUSTOMER",
     acceptTerms: formData.get("acceptTerms") === "on",
   };
@@ -118,6 +128,8 @@ export async function registerAction(
   if (!parsed.success) {
     return {
       fieldErrors: parsed.error.flatten().fieldErrors as Record<string, string[]>,
+      // Preserve everything the user typed (except passwords) so the form never clears.
+      values: { firstName: raw.firstName, lastName: raw.lastName, email: raw.email },
     };
   }
 
@@ -190,6 +202,7 @@ export async function registerAction(
   // stays OUTSIDE the try above so its control-flow signal isn't swallowed.
   if (hasSession && sessionUserId) {
     await syncDbUser(sessionUserId, { email, firstName, lastName, role: role as "CUSTOMER" | "BUSINESS_OWNER" });
+    await maybeSendWelcomeEmail(sessionUserId);
     revalidatePath("/", "layout");
     redirect(role === "BUSINESS_OWNER" ? "/business/onboarding" : (nextParam ?? "/customer/dashboard"));
   }
@@ -237,6 +250,7 @@ export async function verifyEmailOtpAction(emailRaw: string, tokenRaw: string, n
     lastName: typeof meta.lastName === "string" ? meta.lastName : "",
     role,
   });
+  await maybeSendWelcomeEmail(user.id);
 
   revalidatePath("/", "layout");
   // Business always continues into the onboarding/subscription flow (never bypass

@@ -122,6 +122,37 @@ function bestBlock(heatmap: number[][], util: number[][], openFrom: number, open
   return best;
 }
 
+const DEMAND_TTL_MS = 30 * 60 * 1000; // 30-min cache
+
+/**
+ * Cached demand metrics (mirrors getInsights). Demand is period-INDEPENDENT
+ * (fixed 90-day window), so caching it means Analytics Week/Month/Year switching
+ * never recomputes the ~8000-row heatmap — only the period-dependent query runs.
+ */
+export async function getDemand(businessId: string, windowDays = 90): Promise<DemandMetrics> {
+  try {
+    const cached = await prisma.aiInsight.findFirst({
+      where: { businessId, type: "demand", validUntil: { gt: new Date() } },
+      orderBy: { createdAt: "desc" },
+    });
+    if (cached && cached.content && typeof cached.content === "object") {
+      return cached.content as unknown as DemandMetrics;
+    }
+  } catch {
+    /* fall through to compute */
+  }
+  const metrics = await computeDemand(businessId, windowDays);
+  try {
+    await prisma.aiInsight.deleteMany({ where: { businessId, type: "demand" } });
+    await prisma.aiInsight.create({
+      data: { businessId, type: "demand", title: "Popyt", content: metrics as unknown as object, validUntil: new Date(Date.now() + DEMAND_TTL_MS) },
+    });
+  } catch {
+    /* caching is best-effort */
+  }
+  return metrics;
+}
+
 function peakBucket(heat: number[][], min: number): { weekday: number; weekdayLabel: string; hour: number; count: number } | null {
   let best: { weekday: number; weekdayLabel: string; hour: number; count: number } | null = null;
   for (let wd = 0; wd < 7; wd++) {
