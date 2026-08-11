@@ -6,8 +6,9 @@ import { prisma } from "@/lib/prisma";
 import { isPlatformAdmin } from "@/lib/is-admin";
 import { planKeyFromEnum, PLAN_ENTITLEMENTS } from "@/lib/entitlements";
 import type { AiTier } from "./limits-shared";
-import { aiConfigured, aiEnabled, dailyRequestLimitForTier } from "./config";
-import { countRequestsLast24h } from "./usage";
+import type { Role } from "@/lib/permissions";
+import { aiConfigured, aiEnabled, dailyRequestLimitForTier, monthlyCostCapUsd } from "./config";
+import { countRequestsLast24h, billingPeriodStart, monthlyCostForBusiness, logAiUsage } from "./usage";
 
 /**
  * The one gate every server-side AI entry point calls. It resolves the logged-in
@@ -27,6 +28,7 @@ export type AiActor = {
   plan: SubscriptionPlan;
   tier: AiTier;
   isAdmin: boolean;
+  role: Role;
 };
 
 export type AiDenyReason =
@@ -35,7 +37,8 @@ export type AiDenyReason =
   | "not_configured"
   | "disabled"
   | "plan_excluded"
-  | "rate_limited";
+  | "rate_limited"
+  | "monthly_cost_cap";
 
 export type AiGate =
   | { ok: true; actor: AiActor }
@@ -48,7 +51,18 @@ const DENY_MESSAGES: Record<AiDenyReason, string> = {
   disabled: "Asystent AI jest chwilowo wyłączony.",
   plan_excluded: "Asystent AI jest dostępny w planie Professional i Ultimate.",
   rate_limited: "Osiągnięto dzienny limit zapytań do AI. Spróbuj ponownie później.",
+  monthly_cost_cap:
+    "Osiągnięto miesięczny limit wykorzystania AI. Limit odnowi się automatycznie wraz z rozpoczęciem kolejnego okresu.",
 };
+
+/** Log a blocked AI attempt (no OpenAI call). Records role + accumulated cost, no secrets. */
+async function logBlocked(actor: AiActor, reason: string, accumulatedUsd: number): Promise<void> {
+  await logAiUsage({
+    businessId: actor.businessId, userId: actor.dbUserId, role: actor.role,
+    feature: `blocked:${reason}`, model: "-", inputTokens: 0, outputTokens: 0, ok: false,
+  });
+  console.warn(`[ai:blocked] business=${actor.businessId} user=${actor.dbUserId} role=${actor.role} reason=${reason} monthly_cost_usd=${accumulatedUsd.toFixed(4)}`);
+}
 
 function deny(reason: AiDenyReason, extra?: { limit?: number; used?: number }): AiGate {
   return { ok: false, reason, message: DENY_MESSAGES[reason], ...extra };
@@ -90,6 +104,9 @@ export async function resolveAiActor(): Promise<
       plan: business.subscriptionPlan,
       tier,
       isAdmin,
+      // This resolver is the OWNER path (ownedBusinesses). Employee accounts,
+      // when linked via Employee.userId, attach as role:"employee" here.
+      role: "owner",
     },
   };
 }
@@ -111,6 +128,16 @@ export async function gateAiRequest(): Promise<AiGate> {
   const limit = dailyRequestLimitForTier(actor.tier);
   const used = await countRequestsLast24h(actor.businessId);
   if (used >= limit) return deny("rate_limited", { limit, used });
+
+  // HARD monthly cost cap (per business, all plans). Computed server-side from
+  // the usage ledger over the active billing period — never a frontend counter.
+  // Enforced BEFORE any paid OpenAI call so a blocked request costs nothing.
+  const periodStart = await billingPeriodStart(actor.businessId);
+  const monthlyCost = await monthlyCostForBusiness(actor.businessId, periodStart);
+  if (monthlyCost >= monthlyCostCapUsd()) {
+    await logBlocked(actor, "monthly_cost_cap", monthlyCost);
+    return deny("monthly_cost_cap");
+  }
 
   return { ok: true, actor };
 }

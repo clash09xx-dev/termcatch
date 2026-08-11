@@ -10,6 +10,7 @@ export const employeeTools: AiTool[] = [
   {
     name: "employee_performance",
     kind: "read",
+    roles: ["owner"],
     description:
       "Wyniki zespołu w oknie N dni (domyślnie 30): liczba rezerwacji, wizyt ukończonych, przychód i no-show na specjalistę. Do pytań typu 'kto ma najmniej rezerwacji' czy porównań obłożenia.",
     parameters: {

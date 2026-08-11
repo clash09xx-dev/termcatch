@@ -112,6 +112,16 @@ export function monthlyCostLimitForTier(tier: AiTier): number {
   return MONTHLY_COST_LIMIT_BY_TIER[tier];
 }
 
+/**
+ * HARD monthly AI cost cap per business (USD). Applies to EVERY plan,
+ * independently of daily request/deep limits. Once a business's accumulated
+ * spend in the current billing period reaches this, no paid OpenAI call is made.
+ */
+export function monthlyCostCapUsd(): number {
+  const n = Number(process.env.AI_MONTHLY_COST_CAP_USD);
+  return Number.isFinite(n) && n > 0 ? n : 60;
+}
+
 // ── helpers ─────────────────────────────────────────────────────────────────
 function clampInt(raw: string | undefined, fallback: number, min: number, max: number): number {
   const n = raw != null && raw.trim() !== "" ? Number.parseInt(raw, 10) : NaN;

@@ -10,6 +10,7 @@ export const reviewTools: AiTool[] = [
   {
     name: "list_reviews",
     kind: "read",
+    roles: ["owner"],
     description: "Lista opublikowanych opinii. Ustaw unansweredOnly=true, aby pokazać tylko te bez odpowiedzi. Maks. 30.",
     parameters: {
       properties: { unansweredOnly: { type: "boolean" } },
@@ -42,6 +43,7 @@ export const reviewTools: AiTool[] = [
   {
     name: "propose_review_reply",
     kind: "write",
+    roles: ["owner"],
     description:
       "Wygeneruj propozycję odpowiedzi na opinię i przygotuj ją do opublikowania (właściciel zatwierdza). Ton: professional | friendly | short.",
     parameters: {

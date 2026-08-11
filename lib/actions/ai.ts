@@ -3,6 +3,7 @@
 import { gateAiRequest, resolveAiActor } from "@/lib/ai/permissions";
 import { PLAN_ENTITLEMENTS, planKeyFromEnum } from "@/lib/entitlements";
 import { routeAssistant } from "@/lib/ai/guard";
+import { isOwnerLevel } from "@/lib/permissions";
 import { deepAnalysisLimitForTier, type AiModelTier } from "@/lib/ai/config";
 import { countDeepAnalysesLast24h } from "@/lib/ai/usage";
 import { runAssistant } from "@/lib/ai/assistant";
@@ -48,9 +49,10 @@ export async function askAssistant(messages: AssistantMessage[]): Promise<Assist
   }
 
   // Deep analysis → SMART model, capped on Professional (Ultimate = fair-use).
+  // Employees never get SMART/deep analysis — operational assistant only.
   let modelTier: AiModelTier = "standard";
   let feature = "assistant";
-  if (route.deep) {
+  if (route.deep && isOwnerLevel(gate.actor.role)) {
     const limit = deepAnalysisLimitForTier(gate.actor.tier);
     const used = await countDeepAnalysesLast24h(gate.actor.businessId);
     if (used >= limit) {

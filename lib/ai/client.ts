@@ -32,6 +32,7 @@ export type RespondParams = {
   feature: string;
   businessId: string;
   userId?: string | null;
+  role?: string | null;
 };
 
 export type RespondResult = {
@@ -65,6 +66,7 @@ export async function respond(p: RespondParams): Promise<RespondResult> {
     await logAiUsage({
       businessId: p.businessId,
       userId: p.userId,
+      role: p.role,
       feature: p.feature,
       model,
       inputTokens: usage.input,

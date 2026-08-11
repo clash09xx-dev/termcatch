@@ -10,6 +10,7 @@ export const serviceTools: AiTool[] = [
   {
     name: "service_performance",
     kind: "read",
+    roles: ["owner"],
     description:
       "Ranking usług w oknie N dni (domyślnie 30) po przychodzie i liczbie wizyt ukończonych. Do pytań o najbardziej dochodowe / najczęściej wybierane usługi.",
     parameters: {

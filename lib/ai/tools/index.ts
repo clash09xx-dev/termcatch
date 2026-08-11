@@ -26,4 +26,9 @@ export function getToolByName(name: string): AiTool | undefined {
   return ALL_TOOLS.find((t) => t.name === name);
 }
 
+/** Tools available to a given role (server-side authorization source of truth). */
+export function toolsForRole(role: import("@/lib/permissions").Role): AiTool[] {
+  return ALL_TOOLS.filter((t) => t.roles.includes(role));
+}
+
 export * from "./registry";

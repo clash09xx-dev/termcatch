@@ -42,12 +42,46 @@ export async function countDeepAnalysesLast24h(businessId: string): Promise<numb
 export type AiUsageEntry = {
   businessId: string;
   userId?: string | null;
+  role?: string | null;
   feature: string;
   model: string;
   inputTokens: number;
   outputTokens: number;
   ok?: boolean;
 };
+
+/**
+ * Start of the current AI-cost window for a business. Prefers the Stripe
+ * subscription's current_period_start (so the $60 cap resets with the real
+ * billing cycle); falls back to the start of the calendar month.
+ */
+export async function billingPeriodStart(businessId: string): Promise<Date> {
+  try {
+    const sub = await prisma.businessSubscription.findFirst({
+      where: { businessId, status: { in: ["ACTIVE", "TRIALING", "PAST_DUE"] }, currentPeriodStart: { not: null } },
+      orderBy: { createdAt: "desc" },
+      select: { currentPeriodStart: true },
+    });
+    if (sub?.currentPeriodStart) return sub.currentPeriodStart;
+  } catch {
+    /* fall through */
+  }
+  const now = new Date();
+  return new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1));
+}
+
+/** Accumulated estimated OpenAI cost (USD) for a business since `since`. */
+export async function monthlyCostForBusiness(businessId: string, since: Date): Promise<number> {
+  try {
+    const r = await prisma.aiUsageLog.aggregate({
+      where: { businessId, createdAt: { gte: since } },
+      _sum: { estimatedCost: true },
+    });
+    return r._sum.estimatedCost ?? 0;
+  } catch {
+    return 0;
+  }
+}
 
 /** Record one completed (or failed) AI request. Never throws. */
 export async function logAiUsage(entry: AiUsageEntry): Promise<void> {
@@ -57,6 +91,7 @@ export async function logAiUsage(entry: AiUsageEntry): Promise<void> {
       data: {
         businessId: entry.businessId,
         userId: entry.userId ?? null,
+        role: entry.role ?? null,
         feature: entry.feature,
         model: entry.model,
         inputTokens: Math.max(0, Math.round(entry.inputTokens || 0)),

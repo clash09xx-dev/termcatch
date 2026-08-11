@@ -5,7 +5,7 @@ import type { AiActor } from "./permissions";
 import { respond, type ResponsesInput } from "./client";
 import { buildBusinessSnapshot, serializeSnapshot } from "./context";
 import { buildSystemPrompt } from "./system-prompt";
-import { ALL_TOOLS, getToolByName, toolSpecsForModel, isProposal, type ActionProposal, type ToolContext } from "./tools";
+import { ALL_TOOLS, getToolByName, toolSpecsForModel, canRunTool, isProposal, type ActionProposal, type ToolContext } from "./tools";
 import type { AssistantMessage } from "./proposal-types";
 import type { AiModelTier } from "./config";
 import { dailyRequestLimitForTier, deepAnalysisLimitForTier, monthlyCostLimitForTier } from "./config";
@@ -68,7 +68,9 @@ export async function runAssistant(params: {
     contextBlock: serializeSnapshot(snapshot),
     planBlock,
   });
-  const toolSpecs = toolSpecsForModel(ALL_TOOLS);
+  // Tools are filtered to the actor's role — an employee never even sees owner
+  // tools (revenue/marketing/invoices/…).
+  const toolSpecs = toolSpecsForModel(ALL_TOOLS, actor.role);
   const ctx: ToolContext = { actor };
 
   // Seed with the conversation so far (bounded to the last 12 turns).
@@ -90,6 +92,7 @@ export async function runAssistant(params: {
       feature,
       businessId: actor.businessId,
       userId: actor.dbUserId,
+      role: actor.role,
     });
 
     const calls = r.response.output.filter(
@@ -110,6 +113,9 @@ export async function runAssistant(params: {
       let result: unknown;
       if (!tool) {
         result = { error: `Nieznane narzędzie: ${call.name}` };
+      } else if (!canRunTool(tool, actor.role)) {
+        // Server-side authorization — a model claim ("I am the owner") never overrides this.
+        result = { error: "Brak uprawnień do tego narzędzia w Twojej roli." };
       } else {
         try {
           result = await tool.run(safeArgs(call.arguments), ctx);

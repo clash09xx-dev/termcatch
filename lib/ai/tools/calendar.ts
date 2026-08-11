@@ -32,6 +32,7 @@ export const calendarTools: AiTool[] = [
   {
     name: "find_free_slots",
     kind: "read",
+    roles: ["owner", "employee"],
     description:
       "Znajdź wolne terminy w kalendarzu salonu na dany dzień. Podaj datę (YYYY-MM-DD) lub liczbę dni od dziś (inDays: 0=dziś, 1=jutro). Opcjonalnie nazwa usługi (dobiera czas trwania) i imię specjalisty.",
     parameters: {
@@ -81,6 +82,7 @@ export const calendarTools: AiTool[] = [
   {
     name: "list_appointments",
     kind: "read",
+    roles: ["owner", "employee"],
     description:
       "Lista wizyt salonu w zakresie dat (fromDate/toDate w YYYY-MM-DD). Użyj do pytań o tydzień/dzień, obłożenie, kto ma wizyty. Zwraca maks. 100 wizyt.",
     parameters: {
@@ -138,6 +140,7 @@ export const calendarTools: AiTool[] = [
   {
     name: "propose_confirm_appointment",
     kind: "write",
+    roles: ["owner"],
     description: "Przygotuj potwierdzenie oczekującej wizyty (do zatwierdzenia przez właściciela).",
     parameters: {
       properties: { appointmentId: { type: "string" } },
@@ -169,6 +172,7 @@ export const calendarTools: AiTool[] = [
   {
     name: "propose_cancel_appointment",
     kind: "write",
+    roles: ["owner"],
     description:
       "Przygotuj odwołanie wizyty przez salon (wymaga powodu 3–500 znaków). Do zatwierdzenia przez właściciela.",
     parameters: {

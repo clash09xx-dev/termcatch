@@ -2,6 +2,7 @@ import "server-only";
 
 import type { FunctionTool } from "../client";
 import type { AiActor } from "../permissions";
+import type { Role } from "@/lib/permissions";
 
 /**
  * The explicit, registered AI tool layer. The model can ONLY act through these.
@@ -28,22 +29,31 @@ export type AiTool = {
   description: string;
   parameters: JsonSchema;
   kind: "read" | "write";
+  /** Roles allowed to use this tool. Enforced server-side — a model claim never overrides it. */
+  roles: Role[];
   run: (args: Record<string, unknown>, ctx: ToolContext) => Promise<unknown>;
 };
 
-/** Build the OpenAI Responses function-tool specs from a tool list. */
-export function toolSpecsForModel(tools: AiTool[]): FunctionTool[] {
-  return tools.map((t) => ({
-    type: "function",
-    name: t.name,
-    description: t.description,
-    parameters: {
-      type: "object",
-      additionalProperties: false,
-      ...t.parameters,
-    },
-    strict: false,
-  }));
+/** Is this role authorized to run this tool? (server-side authorization, not the model's word) */
+export function canRunTool(tool: AiTool, role: Role): boolean {
+  return tool.roles.includes(role);
+}
+
+/** Build the OpenAI Responses function-tool specs, filtered to the caller's role. */
+export function toolSpecsForModel(tools: AiTool[], role: Role = "owner"): FunctionTool[] {
+  return tools
+    .filter((t) => t.roles.includes(role))
+    .map((t) => ({
+      type: "function",
+      name: t.name,
+      description: t.description,
+      parameters: {
+        type: "object",
+        additionalProperties: false,
+        ...t.parameters,
+      },
+      strict: false,
+    }));
 }
 
 // ── small shared helpers for tool authors ────────────────────────────────────

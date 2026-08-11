@@ -1206,7 +1206,8 @@ model AiUsageLog {
   id            String   @id @default(cuid())
   businessId    String   @map("business_id")
   userId        String?  @map("user_id")
-  feature       String   // "assistant" | "insights" | "review_reply" | "campaign_copy" | "invoice_draft" | ...
+  role          String?  // "owner" | "employee" | "admin" — cost attribution
+  feature       String   // task_type: "assistant" | "deep_analysis" | "review_reply" | "blocked:monthly_cost_cap" | ...
   model         String
   inputTokens   Int      @default(0) @map("input_tokens")
   outputTokens  Int      @default(0) @map("output_tokens")

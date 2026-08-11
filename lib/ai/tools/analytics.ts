@@ -21,6 +21,7 @@ export const analyticsTools: AiTool[] = [
   {
     name: "revenue_summary",
     kind: "read",
+    roles: ["owner"],
     description:
       "Podsumowanie przychodu: ostatnie 7 dni vs poprzednie 7, ostatnie 30 vs poprzednie 30, oraz przychód miesiąca do dziś z SZACUNKOWĄ prognozą na koniec miesiąca (oznaczona jako szacunek). Liczone z wizyt ukończonych.",
     parameters: { properties: {} },
@@ -62,6 +63,7 @@ export const analyticsTools: AiTool[] = [
   {
     name: "demand_analysis",
     kind: "read",
+    roles: ["owner"],
     description:
       "Analiza popytu / godzin szczytu z danych historycznych (domyślnie 90 dni): najbardziej i najmniej obłożone dni i godziny z szacunkowym obłożeniem %, szczyty anulowań i no-show, popyt na usługi i specjalistów. Zwraca PODSUMOWANE metryki (nie surowe wizyty). Gdy za mało danych — jasno o tym informuje.",
     parameters: {

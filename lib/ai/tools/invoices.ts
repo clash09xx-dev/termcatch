@@ -9,6 +9,7 @@ export const invoiceTools: AiTool[] = [
   {
     name: "propose_invoice",
     kind: "write",
+    roles: ["owner"],
     description:
       "Przygotuj fakturę (Fakturownia) za wskazaną wizytę — do zatwierdzenia przez właściciela. Nic nie wystawia bez potwierdzenia. Wymaga skonfigurowanej integracji Fakturownia.",
     parameters: {

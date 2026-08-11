@@ -129,3 +129,6 @@ CREATE TABLE IF NOT EXISTS "marketing_deliveries" (
 CREATE UNIQUE INDEX IF NOT EXISTS "marketing_deliveries_dedupe_key_key" ON "marketing_deliveries" ("dedupe_key");
 CREATE INDEX IF NOT EXISTS "marketing_deliveries_business_id_created_at_idx" ON "marketing_deliveries" ("business_id", "created_at");
 CREATE INDEX IF NOT EXISTS "marketing_deliveries_automation_id_idx" ON "marketing_deliveries" ("automation_id");
+
+-- Cost attribution: role on the AI usage ledger (additive, nullable).
+ALTER TABLE "ai_usage_logs" ADD COLUMN IF NOT EXISTS "role" TEXT;

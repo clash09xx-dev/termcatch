@@ -32,6 +32,7 @@ export const clientTools: AiTool[] = [
   {
     name: "find_inactive_clients",
     kind: "read",
+    roles: ["owner"],
     description:
       "Znajdź klientów, którzy nie byli w salonie od co najmniej N dni (domyślnie 60) i nie mają nadchodzącej wizyty. Do reaktywacji / kampanii. Zwraca liczbę + listę (maks. 60).",
     parameters: {
@@ -65,6 +66,7 @@ export const clientTools: AiTool[] = [
   {
     name: "search_clients",
     kind: "read",
+    roles: ["owner"],
     description: "Wyszukaj klientów salonu po imieniu, nazwisku, e-mailu lub telefonie. Min. 2 znaki. Maks. 20 wyników.",
     parameters: {
       properties: { query: { type: "string" } },

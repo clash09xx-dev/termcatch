@@ -37,6 +37,7 @@ export type AiActionError = {
     | "plan_excluded"
     | "rate_limited"
     | "deep_limit"
+    | "monthly_cost_cap"
     | "error";
   message: string;
 };

@@ -23,6 +23,7 @@ export const marketingTools: AiTool[] = [
   {
     name: "propose_campaign",
     kind: "write",
+    roles: ["owner"],
     description:
       "Przygotuj kampanię (SMS/e-mail) do wybranego segmentu klientów, do zatwierdzenia przez właściciela. Jeśli nie podasz treści, AI ją wygeneruje. Zwraca liczbę odbiorców i szacunek kosztu SMS. Nic nie wysyła bez potwierdzenia.",
     parameters: {
