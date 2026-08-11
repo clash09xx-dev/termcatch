@@ -10,6 +10,8 @@ import {
 } from "@/components/ui/glass";
 import { Segmented } from "@/components/ui/segmented";
 import { RevenueArea, WeekdayBars } from "./charts";
+import { getInsights } from "@/lib/ai/insights";
+import { InsightCards } from "@/components/business/ai/insight-cards";
 
 type Period = "week" | "month" | "year";
 const PERIOD_LABEL: Record<Period, string> = { week: "Tydzień", month: "Miesiąc", year: "Rok" };
@@ -100,6 +102,12 @@ export default async function AnalyticsPage({ searchParams }: { searchParams: Pr
 
   const periodOpts = (["week", "month", "year"] as Period[]).map((p) => ({ value: p, label: PERIOD_LABEL[p], href: `/business/analytics?period=${p}` }));
 
+  const aiInsights = total === 0
+    ? []
+    : (await getInsights(business.id).catch(() => []))
+        .filter((i) => ["revenue", "calendar", "employees", "services"].includes(i.category))
+        .slice(0, 3);
+
   return (
     <div className="max-w-6xl mx-auto space-y-5">
       <PageHeader
@@ -107,6 +115,13 @@ export default async function AnalyticsPage({ searchParams }: { searchParams: Pr
         subtitle="Zdrowie Twojego biznesu w jednym miejscu"
         actions={<Segmented ariaLabel="Okres" idBase="an-period" size="sm" value={period} options={periodOpts} />}
       />
+
+      {aiInsights.length > 0 && (
+        <div className="fade-rise fade-rise-d1 space-y-2.5">
+          <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">Asystent AI — wnioski</span>
+          <InsightCards insights={aiInsights} />
+        </div>
+      )}
 
       {total === 0 ? (
         <GlassCard className="fade-rise fade-rise-d1 overflow-hidden">
