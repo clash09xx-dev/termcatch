@@ -25,6 +25,9 @@ import {
   type ChannelAvailability,
 } from "@/lib/marketing";
 import { sendCampaign, type SendResult } from "@/lib/actions/marketing";
+import { generateCampaignCopyAction } from "@/lib/actions/ai";
+import type { Insight } from "@/lib/ai/insights-types";
+import { InsightCards } from "@/components/business/ai/insight-cards";
 
 export type SegmentView = {
   key: SegmentKey;
@@ -54,6 +57,7 @@ export function MarketingClient({
   bookingUrl,
   totalCustomers,
   showWhatsapp = false,
+  insights = [],
 }: {
   segments: SegmentView[];
   channels: ChannelAvailability;
@@ -62,6 +66,7 @@ export function MarketingClient({
   totalCustomers: number;
   /** WhatsApp is feature-flagged off for launch — hidden entirely unless enabled server-side. */
   showWhatsapp?: boolean;
+  insights?: Insight[];
 }) {
   const visibleChannels = CHANNELS.filter((c) => c !== "whatsapp" || showWhatsapp);
   const searchParams = useSearchParams();
@@ -77,6 +82,26 @@ export function MarketingClient({
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [result, setResult] = useState<SendResult | null>(null);
   const [isPending, start] = useTransition();
+  const [aiBusy, setAiBusy] = useState(false);
+  const [aiError, setAiError] = useState<string | null>(null);
+
+  async function generateWithAi() {
+    setAiError(null);
+    setAiBusy(true);
+    try {
+      const res = await generateCampaignCopyAction(segment, channel);
+      if (res.ok) {
+        setMessage(res.message);
+        if (channel === "email" && res.subject) setSubject(res.subject);
+      } else {
+        setAiError(res.reason === "plan_excluded" ? "Generowanie treści AI jest dostępne w planie Salon Pro i Ultimate." : res.message);
+      }
+    } catch {
+      setAiError("Nie udało się wygenerować treści.");
+    } finally {
+      setAiBusy(false);
+    }
+  }
 
   // Restore a saved draft on mount; focus the composer on ?action=new.
   useEffect(() => {
@@ -199,6 +224,13 @@ export function MarketingClient({
           </span>
         }
       />
+
+      {insights.length > 0 && (
+        <div className="space-y-2.5">
+          <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">Rekomendacje AI</span>
+          <InsightCards insights={insights} />
+        </div>
+      )}
 
       <div className="grid gap-4 lg:grid-cols-[360px_1fr] items-start">
         {/* ── Audience + channel + link ─────────────────────── */}
@@ -337,14 +369,26 @@ export function MarketingClient({
                   <label htmlFor="mkt-body" className="text-sm font-medium text-slate-700">
                     Treść
                   </label>
-                  <button
-                    type="button"
-                    onClick={() => setMessage(SAMPLE_TEMPLATES[channel])}
-                    className="text-[11px] font-semibold text-slate-500 hover:text-slate-800 transition-colors"
-                  >
-                    Wstaw przykład
-                  </button>
+                  <div className="flex items-center gap-3">
+                    <button
+                      type="button"
+                      onClick={generateWithAi}
+                      disabled={aiBusy}
+                      className="inline-flex items-center gap-1 text-[11px] font-semibold text-slate-700 hover:text-slate-900 disabled:opacity-60"
+                    >
+                      <svg className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.6} aria-hidden="true"><path d="M12 3v3m0 12v3M5.6 5.6l2.1 2.1m8.6 8.6 2.1 2.1M3 12h3m12 0h3M5.6 18.4l2.1-2.1m8.6-8.6 2.1-2.1" /></svg>
+                      {aiBusy ? "Generuję…" : "Zaproponuj z AI"}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setMessage(SAMPLE_TEMPLATES[channel])}
+                      className="text-[11px] font-semibold text-slate-500 hover:text-slate-800 transition-colors"
+                    >
+                      Wstaw przykład
+                    </button>
+                  </div>
                 </div>
+                {aiError && <p className="mb-1.5 text-[11px]" style={{ color: "#BE123C" }}>{aiError}</p>}
                 <textarea
                   id="mkt-body"
                   ref={composerRef}

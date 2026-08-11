@@ -2,6 +2,8 @@
 
 import { useState, useMemo, useTransition } from "react";
 import { replyToReview } from "@/lib/actions/reviews";
+import { generateReviewReplyDraft } from "@/lib/actions/ai";
+import type { ReviewTone } from "@/lib/ai/features/reviews";
 import {
   PageHeader, GlassCard, EmptyState, InkButton, GlassButton, ChromeAvatar, Overline,
   HAIRLINE, CHIP, INK_GRADIENT,
@@ -33,6 +35,23 @@ export function ReviewsClient({ reviews: initial, avgRating, totalCount, starDis
   const [replyingTo, setReplyingTo] = useState<string | null>(null);
   const [replyText, setReplyText] = useState("");
   const [isPending, startTransition] = useTransition();
+  const [tone, setTone] = useState<ReviewTone>("professional");
+  const [aiPending, setAiPending] = useState(false);
+  const [aiError, setAiError] = useState<string | null>(null);
+
+  async function generate(id: string) {
+    setAiError(null);
+    setAiPending(true);
+    try {
+      const res = await generateReviewReplyDraft(id, tone);
+      if (res.ok) setReplyText(res.text);
+      else setAiError(res.reason === "plan_excluded" ? "Generowanie odpowiedzi AI jest dostępne w planie Salon Pro i Ultimate." : res.message);
+    } catch {
+      setAiError("Nie udało się wygenerować odpowiedzi.");
+    } finally {
+      setAiPending(false);
+    }
+  }
 
   const unanswered = reviews.filter((r) => !r.replyText).length;
   const answered = totalCount - unanswered;
@@ -154,14 +173,45 @@ export function ReviewsClient({ reviews: initial, avgRating, totalCount, starDis
 
                   {editing ? (
                     <div className="mt-4 space-y-2.5">
-                      <textarea autoFocus rows={3} value={replyText} onChange={(e) => setReplyText(e.target.value)} placeholder="Napisz odpowiedź…" aria-label="Odpowiedź na opinię" className="input-glass w-full rounded-xl px-3.5 py-2.5 text-sm outline-none text-slate-800 placeholder:text-slate-400 resize-none" />
+                      {r.rating <= 3 && (
+                        <p className="text-xs rounded-lg px-3 py-2" style={{ background: "rgba(225,29,72,0.06)", color: "#9F1239", border: "1px solid rgba(225,29,72,0.2)" }}>
+                          To krytyczna opinia — sprawdź ton odpowiedzi przed opublikowaniem. Empatia działa lepiej niż obrona.
+                        </p>
+                      )}
+                      {/* AI-assisted draft (generation only — publishing stays a separate, explicit click) */}
+                      <div className="flex flex-wrap items-center gap-2">
+                        <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">Ton AI</span>
+                        {(["professional", "friendly", "short"] as ReviewTone[]).map((t) => (
+                          <button
+                            key={t}
+                            type="button"
+                            onClick={() => setTone(t)}
+                            className={cn("rounded-full px-3 py-1 text-xs font-medium transition-colors", tone === t ? "text-white" : "text-slate-600 hover:text-slate-900")}
+                            style={tone === t ? { background: INK_GRADIENT } : { border: "1px solid rgba(203,213,225,0.6)" }}
+                          >
+                            {t === "professional" ? "Profesjonalny" : t === "friendly" ? "Przyjazny" : "Krótki"}
+                          </button>
+                        ))}
+                        <button
+                          type="button"
+                          onClick={() => generate(r.id)}
+                          disabled={aiPending}
+                          className="ml-auto inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold text-slate-700 hover:text-slate-900 disabled:opacity-60"
+                          style={{ border: "1px solid rgba(203,213,225,0.6)" }}
+                        >
+                          <svg className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.6}><path d="M12 3v3m0 12v3M5.6 5.6l2.1 2.1m8.6 8.6 2.1 2.1M3 12h3m12 0h3M5.6 18.4l2.1-2.1m8.6-8.6 2.1-2.1" /></svg>
+                          {aiPending ? "Generuję…" : "Zaproponuj z AI"}
+                        </button>
+                      </div>
+                      {aiError && <p className="text-xs" style={{ color: "#BE123C" }}>{aiError}</p>}
+                      <textarea autoFocus rows={3} value={replyText} onChange={(e) => setReplyText(e.target.value)} placeholder="Napisz odpowiedź lub wygeneruj propozycję AI…" aria-label="Odpowiedź na opinię" className="input-glass w-full rounded-xl px-3.5 py-2.5 text-sm outline-none text-slate-800 placeholder:text-slate-400 resize-none" />
                       <div className="flex gap-2">
-                        <GlassButton size="sm" onClick={() => { setReplyingTo(null); setReplyText(""); }}>Anuluj</GlassButton>
-                        <InkButton size="sm" onClick={() => submit(r.id)} disabled={isPending || !replyText.trim()}>{isPending ? "Wysyłanie…" : "Wyślij odpowiedź"}</InkButton>
+                        <GlassButton size="sm" onClick={() => { setReplyingTo(null); setReplyText(""); setAiError(null); }}>Anuluj</GlassButton>
+                        <InkButton size="sm" onClick={() => submit(r.id)} disabled={isPending || !replyText.trim()}>{isPending ? "Wysyłanie…" : "Opublikuj odpowiedź"}</InkButton>
                       </div>
                     </div>
                   ) : (
-                    <button onClick={() => { setReplyingTo(r.id); setReplyText(r.replyText ?? ""); }} className="mt-3 text-xs font-semibold text-slate-500 hover:text-slate-900 transition-colors">
+                    <button onClick={() => { setReplyingTo(r.id); setReplyText(r.replyText ?? ""); setAiError(null); setTone(r.rating <= 3 ? "professional" : "friendly"); }} className="mt-3 text-xs font-semibold text-slate-500 hover:text-slate-900 transition-colors">
                       {r.replyText ? "Edytuj odpowiedź" : "Odpowiedz →"}
                     </button>
                   )}

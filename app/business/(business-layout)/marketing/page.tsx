@@ -6,6 +6,7 @@ import { prisma } from "@/lib/prisma";
 import { buildAudience, SEGMENTS, channelReach } from "@/lib/marketing";
 import { channelAvailability } from "@/lib/marketing-config";
 import { whatsappEnabled } from "@/lib/messaging";
+import { getInsights } from "@/lib/ai/insights";
 import { MarketingClient, type SegmentView } from "./marketing-client";
 
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? "https://termcatch.com";
@@ -59,6 +60,10 @@ export default async function MarketingPage() {
     };
   });
 
+  const insights = (await getInsights(business.id).catch(() => []))
+    .filter((i) => ["clients", "calendar", "revenue"].includes(i.category))
+    .slice(0, 3);
+
   return (
     <MarketingClient
       segments={segments}
@@ -67,6 +72,7 @@ export default async function MarketingPage() {
       salonName={business.name}
       bookingUrl={`${APP_URL}/b/${business.slug}`}
       totalCustomers={recipients.length}
+      insights={insights}
     />
   );
 }

@@ -1198,6 +1198,51 @@ model AiInsight {
   @@map("ai_insights")
 }
 
+// Append-only usage/cost ledger for every OpenAI request the platform makes on
+// a business's behalf. Powers per-business daily rate limiting and cost
+// accounting. No relation (mirrors SmsMessage) to keep the Business model
+// untouched; scoped by indexed businessId. No prompt content is stored.
+model AiUsageLog {
+  id            String   @id @default(cuid())
+  businessId    String   @map("business_id")
+  userId        String?  @map("user_id")
+  feature       String   // "assistant" | "insights" | "review_reply" | "campaign_copy" | "invoice_draft" | ...
+  model         String
+  inputTokens   Int      @default(0) @map("input_tokens")
+  outputTokens  Int      @default(0) @map("output_tokens")
+  estimatedCost Float    @default(0) @map("estimated_cost") // USD, internal accounting only
+  ok            Boolean  @default(true)
+  createdAt     DateTime @default(now()) @map("created_at")
+
+  @@index([businessId, createdAt])
+  @@map("ai_usage_logs")
+}
+
+// Reference to an invoice issued through the external Fakturownia API. The API
+// token never touches this row (server-side env only); we persist only the
+// returned invoice id/number/status so the Faktury page can list + link them.
+// Separate from the Stripe-payment-coupled Invoice model on purpose.
+model FakturowniaInvoice {
+  id            String    @id @default(cuid())
+  businessId    String    @map("business_id")
+  appointmentId String?   @map("appointment_id")
+  customerId    String?   @map("customer_id")
+  fakturowniaId Int       @unique @map("fakturownia_id") // invoice id in Fakturownia
+  number        String?   // human invoice number assigned by Fakturownia
+  totalAmount   Float     @map("total_amount")
+  currency      String    @default("PLN")
+  buyerName     String    @map("buyer_name")
+  status        String    @default("issued") // issued | sent | paid | cancelled
+  viewUrl       String?   @map("view_url")
+  sentAt        DateTime? @map("sent_at")
+  createdAt     DateTime  @default(now()) @map("created_at")
+  updatedAt     DateTime  @updatedAt @map("updated_at")
+
+  @@index([businessId, createdAt])
+  @@index([appointmentId])
+  @@map("fakturownia_invoices")
+}
+
 // ============================================================
 // ANALYTICS
 // ============================================================

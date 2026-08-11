@@ -2,6 +2,8 @@ export const dynamic = "force-dynamic";
 
 import { prisma } from "@/lib/prisma";
 import { getOrCreateDbUser } from "@/lib/auth-user";
+import { getInsights } from "@/lib/ai/insights";
+import { InsightCards } from "@/components/business/ai/insight-cards";
 import { getBusinessNotificationSettings } from "@/lib/notification-settings";
 import { NotificationsPrompt } from "@/components/business/notifications-prompt";
 import { PublicationStatus } from "@/components/business/publication-status";
@@ -149,6 +151,8 @@ export default async function BusinessDashboardPage() {
     return `/business/calendar?action=new&date=${todayStr}&time=${hh}:${mm}`;
   };
 
+  const aiInsights = (await getInsights(business.id).catch(() => [])).slice(0, 3);
+
   return (
     <div className="max-w-6xl mx-auto space-y-5">
       <NotificationsPrompt configured={notifConfigured} />
@@ -180,6 +184,16 @@ export default async function BusinessDashboardPage() {
           )}
         </p>
       </div>
+
+      {aiInsights.length > 0 && (
+        <div className="fade-rise fade-rise-d1 space-y-2.5">
+          <div className="flex items-center gap-2">
+            <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">Asystent AI — sugestie</span>
+            <Link href="/business/ai" className="text-[11px] font-semibold text-slate-500 hover:text-slate-900">Otwórz asystenta →</Link>
+          </div>
+          <InsightCards insights={aiInsights} />
+        </div>
+      )}
 
       <div className="grid lg:grid-cols-3 gap-5 items-start">
         {/* ── Focal: today (or setup for a new salon) ── */}

@@ -11,11 +11,10 @@ import {
   StatCard,
   EmptyState,
   InkLink,
-  GlassButton,
-  ChromeAvatar,
-  HAIRLINE,
   CHIP,
 } from "@/components/ui/glass";
+import { fakturowniaConfigured } from "@/lib/fakturownia/client";
+import { InvoicesClient, type InvoiceRow } from "./invoices-client";
 
 // Invoicing will be delivered via the Fakturownia API (not Stripe): connect a
 // Fakturownia account, issue invoices from CRM/customer data, track status,
@@ -40,7 +39,7 @@ async function getBillingData(supabaseId: string) {
 
   // Totals are aggregated across ALL completed visits (accurate even when the
   // displayed list is capped at ROW_LIMIT). Rows are the most recent slice.
-  const [rows, totals] = await Promise.all([
+  const [rows, totals, invoices] = await Promise.all([
     prisma.appointment.findMany({
       where: { businessId: business.id, status: "COMPLETED" },
       include: {
@@ -56,9 +55,13 @@ async function getBillingData(supabaseId: string) {
       _avg: { price: true },
       _count: true,
     }),
+    prisma.fakturowniaInvoice.findMany({
+      where: { businessId: business.id, appointmentId: { not: null } },
+      select: { appointmentId: true, number: true, fakturowniaId: true, viewUrl: true },
+    }),
   ]);
 
-  return { rows, totals };
+  return { rows, totals, invoices };
 }
 
 export default async function InvoicesPage() {
@@ -68,10 +71,26 @@ export default async function InvoicesPage() {
   const data = await getBillingData(user.id);
   if (!data) redirect("/business/onboarding");
 
-  const { rows, totals } = data;
+  const { rows, totals, invoices } = data;
   const completedCount = totals._count;
   const revenue = totals._sum.price ?? 0;
   const avgValue = completedCount > 0 ? (totals._avg.price ?? 0) : 0;
+  const configured = fakturowniaConfigured();
+
+  const invByAppt = new Map(invoices.map((iv) => [iv.appointmentId as string, iv]));
+  const clientRows: InvoiceRow[] = rows.map((r) => {
+    const iv = invByAppt.get(r.id);
+    return {
+      id: r.id,
+      dateLabel: formatDate(r.startTime, { day: "2-digit", month: "2-digit", year: "numeric" }),
+      clientName: `${r.customer.firstName} ${r.customer.lastName}`.trim(),
+      initials: initialsOf(r.customer.firstName, r.customer.lastName),
+      serviceName: r.service.name,
+      priceLabel: formatCurrency(r.price),
+      invoiceNumber: iv ? iv.number ?? String(iv.fakturowniaId) : null,
+      viewUrl: iv?.viewUrl ?? null,
+    };
+  });
 
   return (
     <div className="max-w-5xl mx-auto space-y-5">
@@ -116,44 +135,7 @@ export default async function InvoicesPage() {
               </span>
             }
           />
-          <div>
-            {rows.map((r, i) => (
-              <div
-                key={r.id}
-                className="flex flex-wrap items-center gap-x-3 gap-y-2 px-4 sm:px-5 py-3.5"
-                style={i > 0 ? { borderTop: HAIRLINE } : undefined}
-              >
-                <span className="w-[72px] flex-shrink-0 text-xs font-medium text-slate-500 tabular-nums">
-                  {formatDate(r.startTime, { day: "2-digit", month: "2-digit", year: "numeric" })}
-                </span>
-                <ChromeAvatar
-                  size="sm"
-                  initials={initialsOf(r.customer.firstName, r.customer.lastName)}
-                />
-                <div className="min-w-0 flex-1">
-                  <p className="text-sm font-semibold text-slate-900 truncate">
-                    {r.customer.firstName} {r.customer.lastName}
-                  </p>
-                  <p className="text-xs text-slate-500 truncate">{r.service.name}</p>
-                </div>
-                <p className="w-24 flex-shrink-0 text-right text-sm font-bold text-slate-900 tabular-nums">
-                  {formatCurrency(r.price)}
-                </p>
-                <GlassButton
-                  size="sm"
-                  disabled
-                  title="Wystawianie faktur przez Fakturownia — wkrótce."
-                  className="flex-shrink-0"
-                >
-                  <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} aria-hidden="true">
-                    <rect x="3" y="11" width="18" height="11" rx="2" />
-                    <path d="M7 11V7a5 5 0 0 1 10 0v4" />
-                  </svg>
-                  Wystaw fakturę
-                </GlassButton>
-              </div>
-            ))}
-          </div>
+          <InvoicesClient rows={clientRows} configured={configured} />
         </GlassCard>
       )}
 
@@ -167,9 +149,20 @@ export default async function InvoicesPage() {
           <path d="M12 16v-4M12 8h.01" />
         </svg>
         <p className={cn("text-xs leading-relaxed text-slate-500")}>
-          Wystawianie formalnych faktur (numeracja, PDF, wysyłka do klienta) przygotowujemy poprzez
-          integrację z <span className="font-medium text-slate-600">Fakturownią</span>. Powyższa
-          lista to historia sprzedaży z ukończonych wizyt — nie są to jeszcze wystawione faktury.
+          {configured ? (
+            <>
+              Faktury wystawiasz przez integrację z <span className="font-medium text-slate-600">Fakturownią</span> —
+              kliknij „Wystaw fakturę”, sprawdź podgląd i zatwierdź. Numer i PDF przypisujemy do wizyty. Asystent AI
+              potrafi też przygotować fakturę na Twoje polecenie (zawsze do zatwierdzenia).
+            </>
+          ) : (
+            <>
+              Wystawianie formalnych faktur (numeracja, PDF, wysyłka do klienta) działa przez integrację z{" "}
+              <span className="font-medium text-slate-600">Fakturownią</span>. Ustaw <code>FAKTUROWNIA_API_TOKEN</code>{" "}
+              i <code>FAKTUROWNIA_ACCOUNT_DOMAIN</code>, aby włączyć przycisk „Wystaw fakturę”. Powyższa lista to
+              historia sprzedaży z ukończonych wizyt.
+            </>
+          )}
         </p>
       </div>
     </div>
