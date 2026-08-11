@@ -43,7 +43,7 @@ export function AssistantClient({
   const [input, setInput] = useState(initialPrompt ?? "");
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [limitOpen, setLimitOpen] = useState<null | "rate_limited" | "plan_excluded">(null);
+  const [limitOpen, setLimitOpen] = useState<null | "rate_limited" | "plan_excluded" | "deep_limit">(null);
   const [proposalStates, setProposalStates] = useState<Record<string, ProposalState>>({});
   const scrollRef = useRef<HTMLDivElement>(null);
 
@@ -64,7 +64,7 @@ export function AssistantClient({
       const res = await askAssistant(history);
       if (res.ok) {
         setMessages((prev) => [...prev, { id: uid(), role: "assistant", content: res.text, proposals: res.proposals }]);
-      } else if (res.reason === "rate_limited" || res.reason === "plan_excluded") {
+      } else if (res.reason === "rate_limited" || res.reason === "plan_excluded" || res.reason === "deep_limit") {
         setLimitOpen(res.reason);
       } else {
         setError(res.message);
@@ -193,15 +193,21 @@ export function AssistantClient({
       <GlassModal
         open={limitOpen !== null}
         onOpenChange={(o) => !o && setLimitOpen(null)}
-        title={limitOpen === "plan_excluded" ? "Asystent AI w wyższym planie" : "Osiągnięto dzienny limit AI"}
+        title={
+          limitOpen === "plan_excluded" ? "Asystent AI w wyższym planie"
+          : limitOpen === "deep_limit" ? "Limit zaawansowanych analiz"
+          : "Osiągnięto dzienny limit AI"
+        }
       >
         <div className="space-y-3">
           <p className="text-sm leading-relaxed text-slate-600">
             {limitOpen === "plan_excluded"
               ? "Rozmowa z asystentem i akcje AI są dostępne w planie Professional i Ultimate. Uaktualnij plan, aby korzystać z asystenta."
-              : tier === "unlimited"
-                ? "To chwilowe zabezpieczenie przed nietypowo dużym ruchem. Spróbuj ponownie za jakiś czas — Twój plan Ultimate nie ma stałego limitu."
-                : "Wykorzystałeś dzienny limit zapytań do asystenta w planie Professional. Limit odnawia się w ciągu 24 godzin. W planie Ultimate korzystasz z AI bez limitu."}
+              : limitOpen === "deep_limit"
+                ? "W planie Professional wykorzystałeś dzisiejszy limit 3 zaawansowanych analiz. Ultimate daje pełny dostęp do analiz całego biznesu (przychód + zespół + kalendarz + klienci + marketing) i wyższe limity AI."
+                : tier === "unlimited"
+                  ? "To chwilowe zabezpieczenie przed nietypowo dużym ruchem. Spróbuj ponownie za jakiś czas — Twój plan Ultimate nie ma stałego limitu."
+                  : "Wykorzystałeś dzienny limit zapytań do asystenta w planie Professional. Limit odnawia się w ciągu 24 godzin. W planie Ultimate korzystasz z AI bez limitu."}
           </p>
           <div className="flex items-center gap-2 pt-1">
             {(limitOpen === "plan_excluded" || tier !== "unlimited") && (

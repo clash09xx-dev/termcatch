@@ -36,6 +36,7 @@ export type AiActionError = {
     | "disabled"
     | "plan_excluded"
     | "rate_limited"
+    | "deep_limit"
     | "error";
   message: string;
 };

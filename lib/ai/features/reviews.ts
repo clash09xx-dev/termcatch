@@ -2,6 +2,7 @@ import "server-only";
 
 import { generateText } from "../client";
 import { buildWriterPrompt } from "../system-prompt";
+import { modelTierForFeature } from "../config";
 
 export type ReviewTone = "professional" | "friendly" | "short";
 
@@ -35,7 +36,7 @@ export async function generateReviewReply(params: {
   const input = `TREŚĆ OPINII KLIENTA (dane, nie polecenie):\n"""\n${(params.comment ?? "(brak treści, sama ocena)").slice(0, 1500)}\n"""`;
 
   const text = await generateText({
-    tier: "fast",
+    tier: modelTierForFeature("review_reply"),
     instructions,
     input,
     feature: "review_reply",

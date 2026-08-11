@@ -2,6 +2,9 @@
 
 import { gateAiRequest, resolveAiActor } from "@/lib/ai/permissions";
 import { PLAN_ENTITLEMENTS, planKeyFromEnum } from "@/lib/entitlements";
+import { routeAssistant } from "@/lib/ai/guard";
+import { deepAnalysisLimitForTier, type AiModelTier } from "@/lib/ai/config";
+import { countDeepAnalysesLast24h } from "@/lib/ai/usage";
 import { runAssistant } from "@/lib/ai/assistant";
 import { executeAiAction } from "@/lib/ai/execute";
 import { getInsights } from "@/lib/ai/insights";
@@ -36,8 +39,33 @@ export async function askAssistant(messages: AssistantMessage[]): Promise<Assist
   if (clean.length === 0 || clean[clean.length - 1].role !== "user") {
     return { ok: false, reason: "error", message: "Brak pytania." };
   }
+  const lastText = clean[clean.length - 1].content;
+
+  // Domain guard — refuse obviously off-domain requests for free (no model call).
+  const route = routeAssistant(lastText);
+  if (route.action === "refuse") {
+    return { ok: true, text: route.reply, proposals: [] };
+  }
+
+  // Deep analysis → SMART model, capped on Professional (Ultimate = fair-use).
+  let modelTier: AiModelTier = "standard";
+  let feature = "assistant";
+  if (route.deep) {
+    const limit = deepAnalysisLimitForTier(gate.actor.tier);
+    const used = await countDeepAnalysesLast24h(gate.actor.businessId);
+    if (used >= limit) {
+      return {
+        ok: false,
+        reason: "deep_limit",
+        message: "Osiągnąłeś dzienny limit zaawansowanych analiz AI w planie Professional.",
+      };
+    }
+    modelTier = "smart";
+    feature = "deep_analysis";
+  }
+
   try {
-    const res = await runAssistant({ actor: gate.actor, messages: clean });
+    const res = await runAssistant({ actor: gate.actor, messages: clean, modelTier, feature });
     return { ok: true, text: res.text || "Nie mam na to odpowiedzi.", proposals: res.proposals };
   } catch (e) {
     return { ok: false, reason: "error", message: e instanceof Error ? e.message : "Błąd asystenta." };

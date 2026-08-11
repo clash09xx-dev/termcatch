@@ -36,3 +36,22 @@ export const AI_TIER_LABEL: Record<AiTier, string> = {
   basic: "Asystent AI",
   unlimited: "Asystent AI bez limitu",
 };
+
+/**
+ * Daily SMART-model "deep analysis" allowance by tier.
+ *   • basic (Professional) — intentionally limited to 3/day; the 4th prompts an
+ *     upgrade to Ultimate.
+ *   • unlimited (Ultimate) — high fair-use ceiling (never hit by real use).
+ */
+export const DEEP_ANALYSES_BY_TIER: Record<AiTier, number> = {
+  none: 0,
+  basic: 3,
+  unlimited: 50,
+};
+
+/** Informational monthly cost budget (USD) surfaced in AI context, not hard-enforced. */
+export const MONTHLY_COST_LIMIT_BY_TIER: Record<AiTier, number> = {
+  none: 0,
+  basic: 8,
+  unlimited: 60,
+};

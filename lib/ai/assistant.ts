@@ -7,6 +7,24 @@ import { buildBusinessSnapshot, serializeSnapshot } from "./context";
 import { buildSystemPrompt } from "./system-prompt";
 import { ALL_TOOLS, getToolByName, toolSpecsForModel, isProposal, type ActionProposal, type ToolContext } from "./tools";
 import type { AssistantMessage } from "./proposal-types";
+import type { AiModelTier } from "./config";
+import { dailyRequestLimitForTier, deepAnalysisLimitForTier, monthlyCostLimitForTier } from "./config";
+import { countRequestsLast24h, countDeepAnalysesLast24h, usageSummary } from "./usage";
+
+async function buildPlanBlock(actor: AiActor): Promise<string> {
+  const [dailyUsed, deepUsed, month] = await Promise.all([
+    countRequestsLast24h(actor.businessId),
+    countDeepAnalysesLast24h(actor.businessId),
+    usageSummary(actor.businessId, 30),
+  ]);
+  const planName = actor.tier === "unlimited" ? "Ultimate" : actor.tier === "basic" ? "Professional" : "—";
+  return [
+    `subscription_tier: ${planName} (${actor.tier})`,
+    `ai_daily_usage: ${dailyUsed} / ai_daily_limit: ${dailyRequestLimitForTier(actor.tier)}`,
+    `smart_analysis_usage: ${deepUsed} / smart_analysis_limit: ${deepAnalysisLimitForTier(actor.tier)}`,
+    `ai_monthly_cost_usage: $${month.estimatedCostUsd.toFixed(2)} / ai_monthly_cost_limit: $${monthlyCostLimitForTier(actor.tier)}`,
+  ].join("\n");
+}
 
 export type { AssistantMessage } from "./proposal-types";
 export type AssistantResult = {
@@ -35,12 +53,20 @@ function safeArgs(raw: string): Record<string, unknown> {
 export async function runAssistant(params: {
   actor: AiActor;
   messages: AssistantMessage[];
+  modelTier?: AiModelTier;
+  feature?: string;
 }): Promise<AssistantResult> {
   const { actor, messages } = params;
-  const snapshot = await buildBusinessSnapshot(actor.businessId);
+  const modelTier: AiModelTier = params.modelTier ?? "standard";
+  const feature = params.feature ?? "assistant";
+  const [snapshot, planBlock] = await Promise.all([
+    buildBusinessSnapshot(actor.businessId),
+    buildPlanBlock(actor),
+  ]);
   const instructions = buildSystemPrompt({
     businessName: actor.businessName,
     contextBlock: serializeSnapshot(snapshot),
+    planBlock,
   });
   const toolSpecs = toolSpecsForModel(ALL_TOOLS);
   const ctx: ToolContext = { actor };
@@ -57,11 +83,11 @@ export async function runAssistant(params: {
 
   for (let step = 0; step < MAX_STEPS; step++) {
     const r = await respond({
-      tier: "fast",
+      tier: modelTier,
       instructions,
       input,
       tools: toolSpecs,
-      feature: "assistant",
+      feature,
       businessId: actor.businessId,
       userId: actor.dbUserId,
     });

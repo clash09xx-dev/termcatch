@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { getBusinessDaySlots, warsawYmdPlusDays } from "@/lib/availability";
 import { warsawDateString } from "@/lib/timezone";
 import { buildBusinessSnapshot } from "./context";
+import { computeDemand } from "@/lib/analytics/demand";
 import type { Insight } from "./insights-types";
 
 export type { Insight } from "./insights-types";
@@ -160,6 +161,26 @@ export async function computeInsights(businessId: string): Promise<Insight[]> {
         body: `„${svc.name}” wygenerowała najwięcej przychodu w ostatnich 30 dniach. Rozważ pakiet lub promocję wokół niej.`,
       });
     }
+  }
+
+  // 8) Demand — weakest open block (opportunity), only with enough real data.
+  try {
+    const demand = await computeDemand(businessId, 90);
+    if (demand.enough && demand.quietest && demand.quietest.utilizationPct < 45) {
+      const q = demand.quietest;
+      const hh = (h: number) => `${String(h).padStart(2, "0")}:00`;
+      insights.push({
+        id: "quiet-block",
+        category: "calendar",
+        severity: "opportunity",
+        title: "Słaby przedział w kalendarzu",
+        metric: `${q.utilizationPct}%`,
+        body: `${q.weekdayLabel} ${hh(q.fromHour)}–${hh(q.toHour)} ma średnio ${q.utilizationPct}% obłożenia (ostatnie 90 dni). Dobry moment na promocję lub kampanię.`,
+        cta: { label: "Przygotuj kampanię", href: promptLink(`Przygotuj kampanię na słaby przedział: ${q.weekdayLabel} ${hh(q.fromHour)}–${hh(q.toHour)}.`) },
+      });
+    }
+  } catch {
+    /* demand insight is best-effort */
   }
 
   // Order: warnings first, then opportunities, then info.

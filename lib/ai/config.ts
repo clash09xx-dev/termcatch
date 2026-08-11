@@ -13,17 +13,32 @@
  */
 
 import type { AiTier } from "./limits-shared";
-import { DAILY_REQUESTS_BY_TIER } from "./limits-shared";
+import { DAILY_REQUESTS_BY_TIER, DEEP_ANALYSES_BY_TIER, MONTHLY_COST_LIMIT_BY_TIER } from "./limits-shared";
 
 // ── Models ──────────────────────────────────────────────────────────────────
-// Two tiers so we never hardcode an expensive model into every request.
+// Three tiers so we never hardcode an expensive model into every request:
+//   fast     — cheap generation/classification (review replies, campaign copy)
+//   standard — normal business-assistant questions
+//   smart    — deep multi-dataset analysis (Professional-capped, Ultimate fair-use)
 // Fully overridable via env. Defaults are widely-available Responses-API models.
 export const AI_MODEL_FAST = process.env.AI_MODEL_FAST || "gpt-4o-mini";
+export const AI_MODEL_STANDARD = process.env.AI_MODEL_STANDARD || "gpt-4o-mini";
 export const AI_MODEL_SMART = process.env.AI_MODEL_SMART || "gpt-4o";
 
-export type AiModelTier = "fast" | "smart";
+export type AiModelTier = "fast" | "standard" | "smart";
 export function modelFor(tier: AiModelTier): string {
-  return tier === "smart" ? AI_MODEL_SMART : AI_MODEL_FAST;
+  if (tier === "smart") return AI_MODEL_SMART;
+  if (tier === "standard") return AI_MODEL_STANDARD;
+  return AI_MODEL_FAST;
+}
+
+/** Which AI feature runs on which model tier (spec-mandated routing). */
+export type AiFeature =
+  | "assistant" | "deep_analysis" | "review_reply" | "campaign_copy" | "insights" | "invoice_issue" | "classification";
+export function modelTierForFeature(feature: AiFeature): AiModelTier {
+  if (feature === "deep_analysis") return "smart";
+  if (feature === "assistant") return "standard";
+  return "fast"; // review_reply, campaign_copy, classifications, short summaries
 }
 
 // ── Flags ─────────────────────────────────────────────────────────────────--
@@ -81,6 +96,20 @@ export function dailyRequestLimitForTier(tier: AiTier): number {
     : "AI_DAILY_LIMIT_NONE";
   const override = clampInt(process.env[envKey], DAILY_REQUESTS_BY_TIER[tier], 0, 100000);
   return override;
+}
+
+/** Daily SMART-model deep-analysis allowance (Professional-capped). */
+export function deepAnalysisLimitForTier(tier: AiTier): number {
+  const envKey =
+    tier === "unlimited" ? "AI_DEEP_LIMIT_UNLIMITED"
+    : tier === "basic" ? "AI_DEEP_LIMIT_BASIC"
+    : "AI_DEEP_LIMIT_NONE";
+  return clampInt(process.env[envKey], DEEP_ANALYSES_BY_TIER[tier], 0, 10000);
+}
+
+/** Informational monthly cost budget (USD) for AI context. */
+export function monthlyCostLimitForTier(tier: AiTier): number {
+  return MONTHLY_COST_LIMIT_BY_TIER[tier];
 }
 
 // ── helpers ─────────────────────────────────────────────────────────────────

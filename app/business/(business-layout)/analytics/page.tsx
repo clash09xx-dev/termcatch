@@ -12,6 +12,8 @@ import { Segmented } from "@/components/ui/segmented";
 import { RevenueArea, WeekdayBars } from "./charts";
 import { getInsights } from "@/lib/ai/insights";
 import { InsightCards } from "@/components/business/ai/insight-cards";
+import { computeDemand } from "@/lib/analytics/demand";
+import { DemandHeatmap } from "./demand-heatmap";
 
 type Period = "week" | "month" | "year";
 const PERIOD_LABEL: Record<Period, string> = { week: "Tydzień", month: "Miesiąc", year: "Rok" };
@@ -107,6 +109,7 @@ export default async function AnalyticsPage({ searchParams }: { searchParams: Pr
     : (await getInsights(business.id).catch(() => []))
         .filter((i) => ["revenue", "calendar", "employees", "services"].includes(i.category))
         .slice(0, 3);
+  const demand = total === 0 ? null : await computeDemand(business.id, 90).catch(() => null);
 
   return (
     <div className="max-w-6xl mx-auto space-y-5">
@@ -122,6 +125,8 @@ export default async function AnalyticsPage({ searchParams }: { searchParams: Pr
           <InsightCards insights={aiInsights} />
         </div>
       )}
+
+      {demand && <DemandHeatmap metrics={demand} />}
 
       {total === 0 ? (
         <GlassCard className="fade-rise fade-rise-d1 overflow-hidden">

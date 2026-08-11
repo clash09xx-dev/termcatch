@@ -2,6 +2,7 @@ import "server-only";
 
 import { respond } from "../client";
 import { buildWriterPrompt } from "../system-prompt";
+import { modelTierForFeature } from "../config";
 
 export type CampaignChannel = "sms" | "whatsapp" | "email";
 
@@ -32,7 +33,7 @@ export async function generateCampaignCopy(params: {
     `\nZwróć wynik jako CZYSTY JSON: {"subject": string|null, "message": string}. Bez bloków kodu.`;
 
   const r = await respond({
-    tier: "fast",
+    tier: modelTierForFeature("campaign_copy"),
     instructions,
     input: "Wygeneruj treść kampanii teraz.",
     feature: "campaign_copy",

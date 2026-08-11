@@ -27,6 +27,18 @@ export async function countRequestsLast24h(businessId: string): Promise<number> 
   }
 }
 
+/** Number of SMART-model deep analyses this business ran in the last 24h. */
+export async function countDeepAnalysesLast24h(businessId: string): Promise<number> {
+  const since = new Date(Date.now() - DAY_MS);
+  try {
+    return await prisma.aiUsageLog.count({
+      where: { businessId, feature: "deep_analysis", createdAt: { gte: since } },
+    });
+  } catch {
+    return 0;
+  }
+}
+
 export type AiUsageEntry = {
   businessId: string;
   userId?: string | null;
