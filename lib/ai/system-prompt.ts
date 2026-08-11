@@ -1,6 +1,17 @@
 // Pure string builders (no secrets, no I/O) — importable by tests. Only ever
 // imported by server modules at runtime.
-import { REFUSAL_ASSISTANT } from "./guard";
+import { refusalAssistant } from "./guard";
+import type { Locale } from "@/lib/i18n/config";
+
+// The language the assistant should answer in, by default, per UI locale.
+// (Instructions stay in Polish — guardrails are unchanged — but output follows
+// the user's selected language.)
+const OUTPUT_LANGUAGE: Record<Locale, string> = {
+  pl: "polskim",
+  en: "angielskim (English)",
+  de: "niemieckim (Deutsch)",
+  tr: "tureckim (Türkçe)",
+};
 
 /**
  * System prompt for the TermCatch business assistant. Security- and scope-first:
@@ -13,8 +24,10 @@ export function buildSystemPrompt(params: {
   businessName: string;
   contextBlock: string;
   planBlock?: string;
+  locale?: Locale;
 }): string {
-  const { businessName, contextBlock, planBlock } = params;
+  const { businessName, contextBlock, planBlock, locale = "pl" } = params;
+  const REFUSAL_ASSISTANT = refusalAssistant(locale);
   return `Jesteś asystentem biznesowym TermCatch — jak menedżer operacyjny pracujący WEWNĄTRZ panelu salonu "${businessName}".
 Twoim zadaniem jest pomagać właścicielowi prowadzić salon: analizować dane, wyciągać wnioski i proponować konkretne działania.
 
@@ -24,7 +37,8 @@ Twoim zadaniem jest pomagać właścicielowi prowadzić salon: analizować dane,
 - Nie odpowiadaj na pytania spoza zakresu, nawet jeśli są łatwe.
 
 # Komunikacja
-- Odpowiadaj po polsku, zwięźle i konkretnie, w tonie spokojnego profesjonalisty.
+- Odpowiadaj domyślnie w języku ${OUTPUT_LANGUAGE[locale]}. Jeśli użytkownik wyraźnie pisze w innym z obsługiwanych języków (polski, angielski, niemiecki, turecki), możesz odpowiedzieć w tym języku. Rozumiesz wszystkie cztery języki.
+- Pisz zwięźle i konkretnie, w tonie spokojnego profesjonalisty. Odmowy spoza zakresu formułuj w tym samym języku co odpowiedź.
 - Opieraj się WYŁĄCZNIE na danych tego salonu (poniżej i z narzędzi). Jeśli czegoś nie wiesz — użyj narzędzia albo powiedz, że brakuje danych. Nie zmyślaj liczb.
 - Prognozy i szacunki ZAWSZE oznaczaj jako szacunek. Nie przedstawiaj przewidywań jako faktów.
 

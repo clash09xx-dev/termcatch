@@ -11,6 +11,8 @@ import {
   GlassButton,
   ChromeAvatar,
 } from "@/components/ui/glass";
+import { useT } from "@/components/i18n/i18n-provider";
+import { LanguageSelector } from "@/components/i18n/language-selector";
 
 interface ProfileFormProps {
   smsNotifications: boolean;
@@ -27,6 +29,7 @@ const INPUT_CLS =
 const LABEL_CLS = "block text-sm font-medium text-slate-700 mb-1.5";
 
 export default function ProfileForm({ firstName, lastName, phone, email, smsNotifications }: ProfileFormProps) {
+  const t = useT();
   const [state, formAction, isPending] = useActionState(updateProfileAction, initialState);
 
   return (
@@ -134,6 +137,13 @@ export default function ProfileForm({ firstName, lastName, phone, email, smsNoti
             </InkButton>
           </div>
         </form>
+      </GlassCard>
+
+      {/* Language */}
+      <GlassCard className="fade-rise fade-rise-d3 p-6">
+        <h3 className="text-sm font-semibold text-slate-900 mb-1.5">{t.lang.label}</h3>
+        <p className="text-xs text-slate-500 mb-4 leading-relaxed">{t.lang.description}</p>
+        <LanguageSelector className="w-full max-w-xs cursor-pointer rounded-xl border border-slate-200 bg-white/70 px-3.5 py-2.5 text-sm text-slate-800 outline-none" />
       </GlassCard>
 
       {/* Account */}

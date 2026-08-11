@@ -7,6 +7,8 @@ import { prisma } from "@/lib/prisma";
 import { logoutAction } from "@/actions/auth";
 import { PageHeader, GlassCard, CardHeader, Overline } from "@/components/ui/glass";
 import { CHIP, HAIRLINE, INK_GRADIENT } from "@/components/ui/glass/tokens";
+import { getServerI18n } from "@/lib/i18n/server";
+import { LanguageSelector } from "@/components/i18n/language-selector";
 
 const DAY_ORDER: DayOfWeek[] = ["MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY", "SATURDAY", "SUNDAY"];
 const DAY_PL: Record<DayOfWeek, string> = {
@@ -16,6 +18,7 @@ const DAY_PL: Record<DayOfWeek, string> = {
 export default async function EmployeeProfile() {
   const ctx = await resolveEmployeeContext();
   if (!ctx) redirect("/");
+  const { dict } = await getServerI18n();
 
   const [emp, hours] = await Promise.all([
     prisma.employee.findUnique({ where: { id: ctx.employeeId }, select: { firstName: true, lastName: true, email: true, phone: true, title: true } }),
@@ -25,7 +28,7 @@ export default async function EmployeeProfile() {
 
   return (
     <div className="mx-auto max-w-2xl space-y-4">
-      <PageHeader title="Mój profil" subtitle={ctx.businessName} />
+      <PageHeader title={dict.employee.myProfile} subtitle={ctx.businessName} />
 
       <GlassCard className="p-5">
         <p className="text-lg font-bold text-slate-900">{emp ? `${emp.firstName} ${emp.lastName}`.trim() : ctx.employeeName}</p>
@@ -52,10 +55,15 @@ export default async function EmployeeProfile() {
         </div>
       </GlassCard>
 
+      <GlassCard className="p-5">
+        <Overline className="mb-3">{dict.lang.label}</Overline>
+        <LanguageSelector className="w-full max-w-xs cursor-pointer rounded-xl border border-slate-200 bg-white/70 px-3.5 py-2.5 text-sm text-slate-800 outline-none" />
+      </GlassCard>
+
       {!ctx.viewAs && (
         <form action={logoutAction}>
           <button type="submit" className="w-full rounded-xl px-4 py-2.5 text-sm font-semibold text-slate-600 hover:text-slate-900" style={CHIP}>
-            Wyloguj się
+            {dict.employee.logout}
           </button>
         </form>
       )}

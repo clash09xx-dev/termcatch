@@ -9,10 +9,31 @@
  * Pure (no imports, no env, no DB) → safe in the client bundle and easy to test.
  */
 
-// Refusal copy (spec-mandated).
-export const REFUSAL_ASSISTANT =
-  "Pomagam tylko w sprawach związanych z TermCatch, rezerwacjami i prowadzeniem Twojego biznesu.";
-export const REFUSAL_SEARCH = "Mogę pomóc Ci znaleźć i zarezerwować usługę w TermCatch.";
+import type { Locale } from "@/lib/i18n/config";
+
+// Refusal copy in all four launch languages (kept here so the guard stays
+// self-contained + testable; identical wording to the dictionaries).
+export const REFUSAL_ASSISTANT_BY_LOCALE: Record<Locale, string> = {
+  pl: "Pomagam tylko w sprawach związanych z TermCatch, rezerwacjami i prowadzeniem Twojego biznesu.",
+  en: "I can only help with TermCatch, bookings, and running your business.",
+  de: "Ich helfe nur bei TermCatch, Terminen und der Führung Ihres Unternehmens.",
+  tr: "Yalnızca TermCatch, randevular ve işletmenizi yönetme konularında yardımcı olabilirim.",
+};
+export const REFUSAL_SEARCH_BY_LOCALE: Record<Locale, string> = {
+  pl: "Mogę pomóc Ci znaleźć i zarezerwować usługę w TermCatch.",
+  en: "I can help you find and book a service on TermCatch.",
+  de: "Ich helfe Ihnen, eine Dienstleistung auf TermCatch zu finden und zu buchen.",
+  tr: "TermCatch'te bir hizmet bulmanıza ve randevu almanıza yardımcı olabilirim.",
+};
+export function refusalAssistant(locale: Locale = "pl"): string {
+  return REFUSAL_ASSISTANT_BY_LOCALE[locale] ?? REFUSAL_ASSISTANT_BY_LOCALE.pl;
+}
+export function refusalSearch(locale: Locale = "pl"): string {
+  return REFUSAL_SEARCH_BY_LOCALE[locale] ?? REFUSAL_SEARCH_BY_LOCALE.pl;
+}
+// Back-compat PL aliases (used where a locale isn't threaded yet).
+export const REFUSAL_ASSISTANT = REFUSAL_ASSISTANT_BY_LOCALE.pl;
+export const REFUSAL_SEARCH = REFUSAL_SEARCH_BY_LOCALE.pl;
 
 // Where the contextual upgrade CTA points (real billing flow).
 export const UPGRADE_HREF = "/business/payments";
@@ -34,6 +55,10 @@ const IN_DOMAIN = [
   "revenue", "staff", "service", "review", "invoice", "schedule", "availab", "fryzjer", "barber",
   "masaz", "manicure", "pedicure", "paznokc", "kosmetyk", "strzyzen", "spa", "biznes", "firm",
   "obrot", "utrzyman", "retencj", "lojaln", "segment", "raport", "dochod",
+  // German
+  "friseur", "termine", "kunden", "umsatz", "mitarbeiter", "dienstleist", "buchung", "geschaft", "gutschein", "bewertung",
+  // Turkish
+  "kuafor", "randevu", "musteri", "hizmet", "isletme", "gelir", "personel", "salonu", "berber", "kampanya",
 ];
 
 // Strong markers of OBVIOUSLY unrelated requests. Only used when NO in-domain
@@ -46,6 +71,10 @@ const OUT_DOMAIN = [
   "wiersz", "poem", "opowiadanie", "napisz mi tekst piosenk", "piosenk",
   "stolic", "capital of", "kto wygral", "ile ma lat", "przetlumacz", "translate", "przepis na", "pogoda",
   "gra komputer", "grze", "my game", "history essay", "solve this", "solve the",
+  // German off-domain
+  "hausaufgabe", "aufsatz", "gedicht", "matheaufgabe", "loese die gleichung", "schreibe code",
+  // Turkish off-domain
+  "odev", "matematik problem", "siir yaz", "kod yaz", "denklemi coz", "fizik problem",
 ];
 
 /** Classify whether a message is in TermCatch's domain. Bias toward "in". */
@@ -78,13 +107,13 @@ export type AssistantRoute =
   | { action: "answer"; deep: boolean };
 
 /** Decide what to do with an assistant message BEFORE any model call. */
-export function routeAssistant(text: string): AssistantRoute {
-  if (classifyDomain(text) === "out") return { action: "refuse", reply: REFUSAL_ASSISTANT };
+export function routeAssistant(text: string, locale: Locale = "pl"): AssistantRoute {
+  if (classifyDomain(text) === "out") return { action: "refuse", reply: refusalAssistant(locale) };
   return { action: "answer", deep: isDeepAnalysis(text) };
 }
 
 /** Decide what to do with a customer-search message. */
-export function routeSearch(text: string): { action: "refuse"; reply: string } | { action: "search" } {
-  if (classifyDomain(text) === "out") return { action: "refuse", reply: REFUSAL_SEARCH };
+export function routeSearch(text: string, locale: Locale = "pl"): { action: "refuse"; reply: string } | { action: "search" } {
+  if (classifyDomain(text) === "out") return { action: "refuse", reply: refusalSearch(locale) };
   return { action: "search" };
 }

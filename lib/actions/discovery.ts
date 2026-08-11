@@ -16,7 +16,8 @@ import { earliestFreeSlot, type BusySpan } from "@/lib/slots";
 import { warsawTodayYmd } from "@/lib/calendar-utils";
 import { warsawDayStartUtc, warsawDayEndUtc } from "@/lib/timezone";
 import { publicDiscoveryWhere } from "@/lib/publication";
-import { routeSearch, REFUSAL_SEARCH } from "@/lib/ai/guard";
+import { routeSearch } from "@/lib/ai/guard";
+import { resolveLocale } from "@/lib/i18n/server";
 import { AppointmentStatus, DayOfWeek } from "@prisma/client";
 
 const DOW: DayOfWeek[] = ["SUNDAY", "MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY", "SATURDAY"];
@@ -62,8 +63,10 @@ export async function discoverSalons(userMessages: string[]): Promise<AssistantR
   // TermCatch. Obviously off-domain requests (homework, trivia, general chat)
   // are refused and redirected — it never becomes a general-purpose assistant.
   const lastMsg = [...clean].reverse().find((m) => m.trim()) ?? "";
-  if (routeSearch(lastMsg).action === "refuse") {
-    return { kind: "question", text: REFUSAL_SEARCH };
+  const locale = await resolveLocale();
+  const searchRoute = routeSearch(lastMsg, locale);
+  if (searchRoute.action === "refuse") {
+    return { kind: "question", text: searchRoute.reply };
   }
 
   const provider = await getProvider();

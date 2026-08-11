@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { Wordmark } from "@/components/brand/wordmark";
+import { LanguageSelector } from "@/components/i18n/language-selector";
 
 const BG = [
   "radial-gradient(ellipse 120% 80% at 85% -20%, rgba(203,213,225,0.70) 0%, transparent 50%)",
@@ -13,7 +14,7 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
     <div className="min-h-screen flex flex-col" style={{ background: BG }}>
       {/* Top bar */}
       <header
-        className="h-14 flex items-center px-6"
+        className="h-14 flex items-center justify-between px-6"
         style={{
           background: "rgba(255,255,255,0.72)",
           backdropFilter: "blur(40px) saturate(200%)",
@@ -25,6 +26,7 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
         <Link href="/" className="flex items-center">
           <Wordmark className="text-lg" />
         </Link>
+        <LanguageSelector className="cursor-pointer rounded-lg border border-slate-200 bg-white/70 px-2 py-1.5 text-sm text-slate-700 outline-none" />
       </header>
 
       {/* Centered form */}

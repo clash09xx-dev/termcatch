@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { INK_BTN, GLASS_BTN, CHIP, ELEV_OVERLAY } from "@/components/ui/glass/tokens";
+import { useT } from "@/components/i18n/i18n-provider";
 
 export type CookieConsent = {
   essential: true;
@@ -41,6 +42,7 @@ export function openConsentSettings() {
 }
 
 export function CookieConsentBanner() {
+  const t = useT();
   const [visible, setVisible] = useState(false);
   const [showDetails, setShowDetails] = useState(false);
   const [analytics, setAnalytics] = useState(true);
@@ -82,13 +84,11 @@ export function CookieConsentBanner() {
       className="fixed bottom-0 inset-x-0 z-[60] p-4 sm:p-6"
     >
       <div className="max-w-xl mx-auto rounded-[20px] p-5 sm:p-6" style={ELEV_OVERLAY}>
-        <h2 className="text-sm font-semibold text-slate-900 mb-1.5">Pliki cookie</h2>
+        <h2 className="text-sm font-semibold text-slate-900 mb-1.5">{t.footer.cookies}</h2>
         <p className="text-xs text-slate-500 leading-relaxed mb-4">
-          Używamy niezbędnych plików cookie, aby TermCatch działał (logowanie, sesja).
-          Za Twoją zgodą użyjemy też cookie analitycznych, żeby rozumieć ruch na stronie.
-          Szczegóły w{" "}
+          {t.cookie.message}{" "}
           <Link href="/cookies" className="underline underline-offset-2 hover:text-slate-700">
-            polityce cookies
+            {t.footer.cookies}
           </Link>
           .
         </p>

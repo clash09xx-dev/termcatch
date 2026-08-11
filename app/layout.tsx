@@ -5,6 +5,8 @@ import { QueryProvider } from "@/components/providers/query-provider";
 import { CookieConsentBanner } from "@/components/cookie-consent";
 import { AnalyticsTracker } from "@/components/analytics-tracker";
 import { Toaster } from "sonner";
+import { getServerI18n } from "@/lib/i18n/server";
+import { I18nProvider } from "@/components/i18n/i18n-provider";
 import "./globals.css";
 
 const inter = Inter({
@@ -75,13 +77,14 @@ export const viewport: Viewport = {
   maximumScale: 1,
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
+  const { locale, dict } = await getServerI18n();
   return (
-    <html lang="pl" suppressHydrationWarning>
+    <html lang={locale} suppressHydrationWarning>
       <body className={`${inter.variable} font-sans antialiased`}>
         <ThemeProvider
           attribute="class"
@@ -90,9 +93,10 @@ export default function RootLayout({
           disableTransitionOnChange
         >
           <QueryProvider>
-            {children}
-            <CookieConsentBanner />
-            <AnalyticsTracker />
+            <I18nProvider locale={locale} dict={dict}>
+              {children}
+              <CookieConsentBanner />
+              <AnalyticsTracker />
             <Toaster
               position="bottom-right"
               toastOptions={{
@@ -112,6 +116,7 @@ export default function RootLayout({
                 },
               }}
             />
+            </I18nProvider>
           </QueryProvider>
         </ThemeProvider>
       </body>

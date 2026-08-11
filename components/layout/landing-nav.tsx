@@ -6,6 +6,8 @@ import { cn } from "@/lib/utils";
 import { Wordmark } from "@/components/brand/wordmark";
 import { createClient } from "@/lib/supabase/client";
 import { motion, AnimatePresence } from "framer-motion";
+import { useT } from "@/components/i18n/i18n-provider";
+import { LanguageSelector } from "@/components/i18n/language-selector";
 
 type AuthState =
   | { status: "loading" }
@@ -42,6 +44,7 @@ export function LandingNav({
    *  customer-discovery/booking variant stays minimal ("Szukaj" only). */
   variant?: LandingNavVariant;
 }) {
+  const t = useT();
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileOpen, setIsMobileOpen] = useState(false);
   const [auth, setAuth] = useState<AuthState>({ status: "loading" });
@@ -117,17 +120,18 @@ export function LandingNav({
 
           {/* Actions */}
           <div className={desktopActionsCls}>
+            <LanguageSelector />
             {isMarketing && (
               <Link href={affiliateHref} className="px-3.5 py-2 text-sm font-semibold rounded-xl text-white transition-transform hover:-translate-y-px" style={AFFILIATE_CTA}>
                 Zaproś i zarób
               </Link>
             )}
             {auth.status === "authed" ? (
-              <ChromeBtn href={auth.dashboardHref}>Mój panel</ChromeBtn>
+              <ChromeBtn href={auth.dashboardHref}>{t.nav.dashboard}</ChromeBtn>
             ) : auth.status === "guest" ? (
               <>
-                <NavLink href="/login">Zaloguj się</NavLink>
-                <ChromeBtn href="/register">Zarejestruj się</ChromeBtn>
+                <NavLink href="/login">{t.nav.login}</NavLink>
+                <ChromeBtn href="/register">{t.nav.register}</ChromeBtn>
               </>
             ) : (
               <div className="w-40 h-9" aria-hidden="true" />
@@ -185,6 +189,7 @@ export function LandingNav({
                 ))}
               </div>
               <div className="px-3 pb-3 pt-2 space-y-1.5" style={{ borderTop: "1px solid rgba(203,213,225,0.25)" }}>
+                <LanguageSelector className="w-full cursor-pointer rounded-xl border border-slate-200 bg-white/70 px-3 py-2.5 text-sm text-slate-700 outline-none" />
                 {isMarketing && (
                   <Link
                     href={affiliateHref}
@@ -207,7 +212,7 @@ export function LandingNav({
                       boxShadow: "inset 0 1px 0 rgba(255,255,255,0.80)",
                     }}
                   >
-                    Mój panel
+                    {t.nav.dashboard}
                   </Link>
                 ) : (
                   <>

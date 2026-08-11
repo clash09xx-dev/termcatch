@@ -6,6 +6,7 @@ import type { ActionProposal, AssistantMessage } from "@/lib/ai/proposal-types";
 import { InkButton } from "@/components/ui/glass";
 import { CHIP, INK_GRADIENT } from "@/components/ui/glass/tokens";
 import { GlassModal, ModalInkButton, ModalGlassButton } from "@/components/ui/glass-modal";
+import { useT } from "@/components/i18n/i18n-provider";
 
 type ChatMessage = {
   id: string;
@@ -41,6 +42,7 @@ export function AssistantClient({
   initialPrompt?: string;
   suggestions?: string[];
 }) {
+  const t = useT();
   const chips = suggestions ?? SUGGESTIONS;
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState(initialPrompt ?? "");
@@ -73,7 +75,7 @@ export function AssistantClient({
         setError(res.message);
       }
     } catch {
-      setError("Coś poszło nie tak. Spróbuj ponownie.");
+      setError(t.errors.generic);
     } finally {
       setPending(false);
     }
@@ -102,19 +104,19 @@ export function AssistantClient({
   if (!available) {
     return (
       <div className="rounded-2xl p-6" style={{ ...CHIP }}>
-        <h3 className="text-sm font-semibold text-slate-900">Asystent AI niedostępny</h3>
+        <h3 className="text-sm font-semibold text-slate-900">{t.ai.unavailableTitle}</h3>
         <p className="mt-1 text-sm text-slate-600">
           {reason === "plan_excluded"
-            ? "Asystent AI jest dostępny w planie Professional i Ultimate. Uaktualnij plan, aby rozmawiać z asystentem i uruchomić działania."
+            ? t.ai.planExcluded
             : reason === "not_configured"
-              ? "Asystent AI nie został jeszcze skonfigurowany (brak klucza OpenAI). Analizy poniżej działają niezależnie."
+              ? t.ai.notConfigured
               : reason === "rate_limited"
-                ? "Osiągnięto dzienny limit zapytań do AI. Spróbuj ponownie później."
-                : "Asystent AI jest chwilowo niedostępny."}
+                ? t.ai.dailyLimitBody
+                : t.ai.unavailableBusy}
         </p>
         {reason === "plan_excluded" && (
           <a href="/business/payments" className="mt-3 inline-block rounded-xl px-4 py-2 text-sm font-semibold text-white" style={{ background: INK_GRADIENT }}>
-            Zobacz plany
+            {t.common.seePlans}
           </a>
         )}
       </div>
@@ -126,7 +128,7 @@ export function AssistantClient({
       <div ref={scrollRef} className="flex-1 space-y-4 overflow-y-auto p-4" style={{ maxHeight: 520 }}>
         {messages.length === 0 && (
           <div className="py-6 text-center">
-            <p className="text-sm text-slate-500">Zadaj pytanie albo wybierz jedną z propozycji poniżej.</p>
+            <p className="text-sm text-slate-500">{t.ai.emptyState}</p>
           </div>
         )}
         {messages.map((m) => (
@@ -153,7 +155,7 @@ export function AssistantClient({
         {pending && (
           <div className="flex justify-start">
             <div className="rounded-2xl rounded-bl-sm bg-white/80 px-4 py-2.5 text-sm text-slate-500" style={{ border: "1px solid rgba(203,213,225,0.4)" }}>
-              Analizuję dane salonu…
+              {t.ai.thinking}
             </div>
           </div>
         )}
@@ -184,12 +186,12 @@ export function AssistantClient({
         <input
           value={input}
           onChange={(e) => setInput(e.target.value)}
-          placeholder="Zapytaj asystenta o Twój salon…"
+          placeholder={t.ai.placeholder}
           className="input-glass flex-1 rounded-xl px-3.5 py-2.5 text-sm text-slate-800 outline-none placeholder:text-slate-400"
           disabled={pending}
         />
         <InkButton type="submit" disabled={pending || !input.trim()}>
-          {pending ? "…" : "Wyślij"}
+          {pending ? "…" : t.ai.send}
         </InkButton>
       </form>
 
@@ -197,31 +199,31 @@ export function AssistantClient({
         open={limitOpen !== null}
         onOpenChange={(o) => !o && setLimitOpen(null)}
         title={
-          limitOpen === "plan_excluded" ? "Asystent AI w wyższym planie"
-          : limitOpen === "deep_limit" ? "Limit zaawansowanych analiz"
-          : limitOpen === "monthly_cost_cap" ? "Miesięczny limit AI"
-          : "Osiągnięto dzienny limit AI"
+          limitOpen === "plan_excluded" ? t.ai.planExcludedTitle
+          : limitOpen === "deep_limit" ? t.ai.deepLimitTitle
+          : limitOpen === "monthly_cost_cap" ? t.ai.monthlyCapTitle
+          : t.ai.dailyLimitTitle
         }
       >
         <div className="space-y-3">
           <p className="text-sm leading-relaxed text-slate-600">
             {limitOpen === "plan_excluded"
-              ? "Rozmowa z asystentem i akcje AI są dostępne w planie Professional i Ultimate. Uaktualnij plan, aby korzystać z asystenta."
+              ? t.ai.planExcludedBody
               : limitOpen === "deep_limit"
-                ? "W planie Professional wykorzystałeś dzisiejszy limit 3 zaawansowanych analiz. Ultimate daje pełny dostęp do analiz całego biznesu (przychód + zespół + kalendarz + klienci + marketing) i wyższe limity AI."
+                ? t.ai.deepLimitBody
                 : limitOpen === "monthly_cost_cap"
-                ? "Osiągnięto miesięczny limit wykorzystania AI. Limit odnowi się automatycznie wraz z rozpoczęciem kolejnego okresu rozliczeniowego."
+                ? t.ai.monthlyCapBody
                 : tier === "unlimited"
-                  ? "To chwilowe zabezpieczenie przed nietypowo dużym ruchem. Spróbuj ponownie za jakiś czas — Twój plan Ultimate nie ma stałego limitu."
-                  : "Wykorzystałeś dzienny limit zapytań do asystenta w planie Professional. Limit odnawia się w ciągu 24 godzin. W planie Ultimate korzystasz z AI bez limitu."}
+                  ? t.ai.rateLimitBusyBody
+                  : t.ai.dailyLimitBody}
           </p>
           <div className="flex items-center gap-2 pt-1">
             {(limitOpen === "plan_excluded" || limitOpen === "deep_limit" || (limitOpen === "rate_limited" && tier !== "unlimited")) && (
               <ModalInkButton onClick={() => { window.location.href = "/business/payments"; }}>
-                {limitOpen === "plan_excluded" ? "Zobacz plany" : "Przejdź na Ultimate"}
+                {limitOpen === "plan_excluded" ? t.common.seePlans : t.ai.upgradeUltimate}
               </ModalInkButton>
             )}
-            <ModalGlassButton onClick={() => setLimitOpen(null)}>Zamknij</ModalGlassButton>
+            <ModalGlassButton onClick={() => setLimitOpen(null)}>{t.common.close}</ModalGlassButton>
           </div>
         </div>
       </GlassModal>

@@ -22,6 +22,8 @@ import {
 } from "@/components/ui/glass";
 import { GlassModal } from "@/components/ui/glass-modal";
 import { cn } from "@/lib/utils";
+import { useT } from "@/components/i18n/i18n-provider";
+import { LanguageSelector } from "@/components/i18n/language-selector";
 
 type Settings = {
   advanceBookingDays: number;
@@ -41,13 +43,14 @@ type Props = {
   smsAvailable: boolean;
 };
 
-type Section = "rezerwacje" | "odwolania" | "powiadomienia" | "profil" | "strefa";
+type Section = "rezerwacje" | "odwolania" | "powiadomienia" | "profil" | "jezyk" | "strefa";
 
 const SECTIONS: { id: Section; label: string; danger?: boolean }[] = [
   { id: "rezerwacje", label: "Rezerwacje" },
   { id: "odwolania", label: "Odwołania" },
   { id: "powiadomienia", label: "Powiadomienia" },
   { id: "profil", label: "Profil publiczny" },
+  { id: "jezyk", label: "Język" },
   { id: "strefa", label: "Bezpieczeństwo", danger: true },
 ];
 
@@ -142,6 +145,7 @@ function DecisionCard({
 }
 
 export function SettingsClient({ settings: initialSettings, notificationSettings, business, smsAvailable }: Props) {
+  const t = useT();
   const router = useRouter();
   const [activeSection, setActiveSection] = useState<Section>("rezerwacje");
   const [settings, setSettings] = useState<Settings>(initialSettings);
@@ -307,7 +311,7 @@ export function SettingsClient({ settings: initialSettings, notificationSettings
                     ? { color: "#BE123C", border: "1px solid transparent" }
                     : undefined}
                 >
-                  {section.label}
+                  {section.id === "jezyk" ? t.lang.label : section.label}
                 </button>
               );
             })}
@@ -471,6 +475,15 @@ export function SettingsClient({ settings: initialSettings, notificationSettings
               <Overline className="mb-4">Profil publiczny</Overline>
               <PublicVisibilityToggle initialActive={business.isActive} published={business.status === "ACTIVE"} />
               <ProfileClient business={business} embedded />
+            </GlassCard>
+          )}
+
+          {/* Język / Language */}
+          {activeSection === "jezyk" && (
+            <GlassCard className="p-5 sm:p-6">
+              <Overline className="mb-4">{t.lang.label}</Overline>
+              <p className="text-sm text-slate-500 mb-4 leading-relaxed">{t.lang.description}</p>
+              <LanguageSelector className="w-full max-w-xs cursor-pointer rounded-xl border border-slate-200 bg-white/70 px-3.5 py-2.5 text-sm text-slate-800 outline-none" />
             </GlassCard>
           )}
 

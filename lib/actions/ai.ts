@@ -3,6 +3,8 @@
 import { gateAiRequest, resolveAiActor } from "@/lib/ai/permissions";
 import { PLAN_ENTITLEMENTS, planKeyFromEnum } from "@/lib/entitlements";
 import { routeAssistant } from "@/lib/ai/guard";
+import { resolveLocale } from "@/lib/i18n/server";
+import { getDictionary } from "@/lib/i18n/dictionaries";
 import { isOwnerLevel } from "@/lib/permissions";
 import { deepAnalysisLimitForTier, type AiModelTier } from "@/lib/ai/config";
 import { countDeepAnalysesLast24h } from "@/lib/ai/usage";
@@ -36,14 +38,18 @@ export async function askAssistant(messages: AssistantMessage[]): Promise<Assist
   const gate = await gateAiRequest();
   if (!gate.ok) return { ok: false, reason: gate.reason, message: gate.message };
 
+  const locale = await resolveLocale();
+  const dict = getDictionary(locale);
+
   const clean = sanitizeMessages(messages);
   if (clean.length === 0 || clean[clean.length - 1].role !== "user") {
-    return { ok: false, reason: "error", message: "Brak pytania." };
+    return { ok: false, reason: "error", message: dict.errors.generic };
   }
   const lastText = clean[clean.length - 1].content;
 
-  // Domain guard — refuse obviously off-domain requests for free (no model call).
-  const route = routeAssistant(lastText);
+  // Domain guard — refuse obviously off-domain requests for free (no model call),
+  // in the user's language.
+  const route = routeAssistant(lastText, locale);
   if (route.action === "refuse") {
     return { ok: true, text: route.reply, proposals: [] };
   }
@@ -59,7 +65,7 @@ export async function askAssistant(messages: AssistantMessage[]): Promise<Assist
       return {
         ok: false,
         reason: "deep_limit",
-        message: "Osiągnąłeś dzienny limit zaawansowanych analiz AI w planie Professional.",
+        message: dict.ai.deepLimitBody,
       };
     }
     modelTier = "smart";
@@ -67,10 +73,10 @@ export async function askAssistant(messages: AssistantMessage[]): Promise<Assist
   }
 
   try {
-    const res = await runAssistant({ actor: gate.actor, messages: clean, modelTier, feature });
-    return { ok: true, text: res.text || "Nie mam na to odpowiedzi.", proposals: res.proposals };
+    const res = await runAssistant({ actor: gate.actor, messages: clean, modelTier, feature, locale });
+    return { ok: true, text: res.text || dict.errors.generic, proposals: res.proposals };
   } catch (e) {
-    return { ok: false, reason: "error", message: e instanceof Error ? e.message : "Błąd asystenta." };
+    return { ok: false, reason: "error", message: e instanceof Error ? e.message : dict.errors.generic };
   }
 }
 

@@ -48,24 +48,45 @@ export interface DiscoveryInterpreter {
 }
 
 // ── Controlled specialty tags (owner-picked, searchable) ──────
+// Keyword stems include EN/DE/TR aliases so a query in any launch language maps
+// to the SAME canonical specialty slug (no duplicated DB categories).
 export const SPECIALTY_TAGS: { slug: string; label: string; keywords: string[] }[] = [
-  { slug: "krecone-wlosy", label: "Kręcone włosy", keywords: ["krecon", "loki", "lokow", "curly", "afro"] },
-  { slug: "koloryzacja", label: "Koloryzacja", keywords: ["koloryzacj", "farbowan", "balayage", "baleyage", "sombre", "ombre", "refleksy"] },
-  { slug: "strzyzenie-meskie", label: "Strzyżenie męskie", keywords: ["meskie", "barber", "broda", "brody"] },
-  { slug: "przedluzanie-wlosow", label: "Przedłużanie włosów", keywords: ["przedluzan", "doczepy"] },
-  { slug: "stylizacja-slubna", label: "Stylizacja ślubna", keywords: ["slub", "wesel", "panna mloda"] },
-  { slug: "manicure-hybrydowy", label: "Manicure hybrydowy", keywords: ["hybryd", "manicure", "paznokc"] },
-  { slug: "przedluzanie-paznokci", label: "Przedłużanie paznokci", keywords: ["zelowe", "tips", "przedluzanie paznokci"] },
-  { slug: "stylizacja-brwi", label: "Brwi i rzęsy", keywords: ["brwi", "rzes", "laminacj", "henna"] },
-  { slug: "masaz-leczniczy", label: "Masaż leczniczy", keywords: ["leczniczy", "kregoslup", "rehabilitac"] },
-  { slug: "masaz-relaksacyjny", label: "Masaż relaksacyjny", keywords: ["relaks", "aromater"] },
-  { slug: "pielegnacja-twarzy", label: "Pielęgnacja twarzy", keywords: ["twarz", "oczyszczan", "peeling", "mezoterapi"] },
-  { slug: "depilacja", label: "Depilacja", keywords: ["depilacj", "wosk", "laser"] },
+  { slug: "krecone-wlosy", label: "Kręcone włosy", keywords: ["krecon", "loki", "lokow", "curly", "afro", "lockig", "kivircik"] },
+  { slug: "koloryzacja", label: "Koloryzacja", keywords: ["koloryzacj", "farbowan", "balayage", "baleyage", "sombre", "ombre", "refleksy", "coloring", "colouring", "hair color", "farben", "farbung", "strahnen", "boyama", "sac boyama", "rofle"] },
+  { slug: "strzyzenie-meskie", label: "Strzyżenie męskie", keywords: ["meskie", "barber", "broda", "brody", "beard", "bart", "herren", "erkek", "sakal", "berber"] },
+  { slug: "przedluzanie-wlosow", label: "Przedłużanie włosów", keywords: ["przedluzan", "doczepy", "extension", "haarverlangerung", "sac kaynak"] },
+  { slug: "stylizacja-slubna", label: "Stylizacja ślubna", keywords: ["slub", "wesel", "panna mloda", "bridal", "wedding", "hochzeit", "braut", "gelin", "dugun"] },
+  { slug: "manicure-hybrydowy", label: "Manicure hybrydowy", keywords: ["hybryd", "manicure", "paznokc", "nails", "nagel", "nagellack", "gel", "tirnak", "manikur", "oje"] },
+  { slug: "przedluzanie-paznokci", label: "Przedłużanie paznokci", keywords: ["zelowe", "tips", "przedluzanie paznokci", "nail extension", "kunstnagel", "protez tirnak"] },
+  { slug: "stylizacja-brwi", label: "Brwi i rzęsy", keywords: ["brwi", "rzes", "laminacj", "henna", "brows", "lashes", "augenbrauen", "wimpern", "kas", "kirpik"] },
+  { slug: "masaz-leczniczy", label: "Masaż leczniczy", keywords: ["leczniczy", "kregoslup", "rehabilitac", "therapeutic", "heilmassage", "tibbi masaj"] },
+  { slug: "masaz-relaksacyjny", label: "Masaż relaksacyjny", keywords: ["relaks", "aromater", "massage", "masaj", "entspannung", "wellness"] },
+  { slug: "pielegnacja-twarzy", label: "Pielęgnacja twarzy", keywords: ["twarz", "oczyszczan", "peeling", "mezoterapi", "facial", "gesicht", "gesichtsbehandlung", "cilt", "yuz bakimi"] },
+  { slug: "depilacja", label: "Depilacja", keywords: ["depilacj", "wosk", "laser", "waxing", "hair removal", "wachsen", "haarentfernung", "agda", "sir agda"] },
 ];
 
 export function specialtyLabel(slug: string): string {
   return SPECIALTY_TAGS.find((t) => t.slug === slug)?.label ?? slug;
 }
+
+/**
+ * Generic service nouns → one canonical Polish query term. Localized synonyms
+ * (EN/DE/TR) resolve to the same canonical value, so search never forks into
+ * per-language categories. `serviceQuery` is later matched against real service
+ * names; the canonical term keeps that match language-stable.
+ */
+export const SERVICE_ALIASES: { canonical: string; stems: string[] }[] = [
+  { canonical: "fryzjer", stems: ["fryzjer", "friseur", "hairdresser", "hair salon", "kuafor", "coiffeur", "berber"] },
+  { canonical: "strzyzenie", stems: ["strzyzenie", "haircut", "hair cut", "haarschnitt", "sac kesimi", "sac kesim"] },
+  { canonical: "farbowanie", stems: ["farbowanie", "coloring", "colouring", "farben", "boyama"] },
+  { canonical: "manicure", stems: ["manicure", "manikure", "manikur"] },
+  { canonical: "pedicure", stems: ["pedicure", "pedikure", "pedikur", "ayak bakimi"] },
+  { canonical: "masaz", stems: ["masaz", "massage", "masaj"] },
+  { canonical: "depilacja", stems: ["depilacja", "waxing", "hair removal", "wachsen", "haarentfernung", "agda"] },
+  { canonical: "makijaz", stems: ["makijaz", "makeup", "make-up", "schminken", "makyaj"] },
+  { canonical: "peeling", stems: ["peeling", "facial", "gesichtsbehandlung", "cilt bakimi", "yuz bakimi"] },
+  { canonical: "regulacja", stems: ["regulacja brwi", "brow", "augenbrauen", "kas alma"] },
+];
 
 /** Major Polish cities — merged into interpretation so "w Warszawie" is
  * understood even before any salon exists there (search itself stays honest:
@@ -86,6 +107,7 @@ export function normalizeText(s: string): string {
   return s
     .toLowerCase()
     .replace(/ł/g, "l")
+    .replace(/ı/g, "i") // Turkish dotless-ı has no NFD decomposition — fold to "i".
     .normalize("NFD")
     .replace(/[̀-ͯ]/g, "");
 }
@@ -151,10 +173,14 @@ export class DeterministicInterpreter implements DiscoveryInterpreter {
       }
     }
 
-    // Service words: generic service nouns worth matching against real names.
-    const serviceWords = ["strzyzenie", "farbowanie", "manicure", "pedicure", "masaz", "depilacja", "makijaz", "fryzjer", "peeling", "regulacja"];
-    const found = serviceWords.find((s) => text.includes(s));
-    if (found) filters.serviceQuery = found;
+    // Generic service nouns → a single canonical query, regardless of the
+    // language the customer typed ("Friseur"/"hairdresser"/"kuaför" → "fryzjer").
+    for (const { canonical, stems } of SERVICE_ALIASES) {
+      if (stems.some((s) => text.includes(normalizeText(s)))) {
+        filters.serviceQuery = canonical;
+        break;
+      }
+    }
 
     return filters;
   }

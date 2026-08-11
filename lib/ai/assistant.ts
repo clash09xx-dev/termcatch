@@ -8,6 +8,7 @@ import { buildSystemPrompt } from "./system-prompt";
 import { ALL_TOOLS, getToolByName, toolSpecsForModel, canRunTool, isProposal, type ActionProposal, type ToolContext } from "./tools";
 import type { AssistantMessage } from "./proposal-types";
 import type { AiModelTier } from "./config";
+import type { Locale } from "@/lib/i18n/config";
 import { dailyRequestLimitForTier, deepAnalysisLimitForTier, monthlyCostLimitForTier } from "./config";
 import { countRequestsLast24h, countDeepAnalysesLast24h, usageSummary } from "./usage";
 
@@ -55,10 +56,12 @@ export async function runAssistant(params: {
   messages: AssistantMessage[];
   modelTier?: AiModelTier;
   feature?: string;
+  locale?: Locale;
 }): Promise<AssistantResult> {
   const { actor, messages } = params;
   const modelTier: AiModelTier = params.modelTier ?? "standard";
   const feature = params.feature ?? "assistant";
+  const locale = params.locale ?? "pl";
   const [snapshot, planBlock] = await Promise.all([
     buildBusinessSnapshot(actor.businessId),
     buildPlanBlock(actor),
@@ -67,6 +70,7 @@ export async function runAssistant(params: {
     businessName: actor.businessName,
     contextBlock: serializeSnapshot(snapshot),
     planBlock,
+    locale,
   });
   // Tools are filtered to the actor's role — an employee never even sees owner
   // tools (revenue/marketing/invoices/…).
