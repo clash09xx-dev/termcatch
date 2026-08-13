@@ -7,6 +7,9 @@ import { motion, useInView } from "framer-motion";
 import { LandingNav } from "@/components/layout/landing-nav";
 import { LandingFooter } from "@/components/layout/landing-footer";
 import { CustomerAssistant } from "@/components/assistant/customer-assistant";
+import { useT, useLocale } from "@/components/i18n/i18n-provider";
+import { interpolate } from "@/lib/i18n/dictionaries";
+import { visibleCategoriesFor } from "@/lib/categories";
 
 // ── Premium Chrome Glass style helpers ───────────────────────────────────────
 // Every surface is multi-layer: chrome ring → contact → depth → ambient
@@ -123,15 +126,16 @@ const BG = {
 
 // ── Interactive Booking Widget ────────────────────────────────────────────────
 
-const SERVICES = [
-  { name: "Strzyżenie + modelowanie", dur: "45 min", price: "80 zł" },
-  { name: "Fade klasyczny", dur: "30 min", price: "60 zł" },
-  { name: "Broda + strzyżenie", dur: "60 min", price: "110 zł" },
-];
-const DAYS = ["Pn", "Wt", "Śr", "Cz", "Pt", "So"];
 const SLOTS = ["09:00", "10:30", "12:00", "13:30", "15:00", "16:30", "18:00"];
 
 function BookingWidget() {
+  const h = useT().home;
+  const SERVICES = [
+    { name: h.demoService1, dur: "45 min", price: "80 zł" },
+    { name: h.demoService2, dur: "30 min", price: "60 zł" },
+    { name: h.demoService3, dur: "60 min", price: "110 zł" },
+  ];
+  const DAYS = h.demoDays.split(",");
   const [svc, setSvc] = useState(0);
   const [day, setDay] = useState(2);
   const [slot, setSlot] = useState<number | null>(null);
@@ -159,18 +163,18 @@ function BookingWidget() {
             T
           </div>
           <div className="min-w-0">
-            <p className="text-sm font-semibold truncate text-slate-800">Twój salon</p>
-            <p className="text-xs text-slate-400">Tak klienci widzą Twój profil</p>
+            <p className="text-sm font-semibold truncate text-slate-800">{h.yourSalon}</p>
+            <p className="text-xs text-slate-400">{h.previewSubtitle}</p>
           </div>
           <span className="ml-auto text-[11px] font-medium px-2.5 py-1 rounded-full flex-shrink-0 text-slate-500" style={G.pill}>
-            Podgląd
+            {h.preview}
           </span>
         </div>
 
         <div className="relative px-5 pt-4 pb-5 space-y-4">
           {/* Services */}
           <div>
-            <p className="text-[10px] font-semibold uppercase tracking-widest mb-2 text-slate-400">Usługa</p>
+            <p className="text-[10px] font-semibold uppercase tracking-widest mb-2 text-slate-400">{h.service}</p>
             <div className="space-y-1.5">
               {SERVICES.map((s, i) => (
                 <button
@@ -193,7 +197,7 @@ function BookingWidget() {
 
           {/* Days */}
           <div>
-            <p className="text-[10px] font-semibold uppercase tracking-widest mb-2 text-slate-400">Termin</p>
+            <p className="text-[10px] font-semibold uppercase tracking-widest mb-2 text-slate-400">{h.time}</p>
             <div className="flex gap-1.5">
               {DAYS.map((d, i) => (
                 <button
@@ -239,7 +243,7 @@ function BookingWidget() {
               className="flex items-center justify-center w-full py-3 text-sm font-semibold rounded-xl"
               style={G.inkBtn}
             >
-              {slot !== null ? `Zarezerwuj na ${SLOTS[slot]}` : "Wybierz godzinę"}
+              {slot !== null ? interpolate(h.bookAt, { time: SLOTS[slot] }) : h.pickTime}
             </Link>
           </motion.div>
         </div>
@@ -252,8 +256,8 @@ function BookingWidget() {
         className="absolute -top-6 -right-6 rounded-2xl px-4 py-3 hidden sm:block"
         style={G.chip}
       >
-        <p className="text-[10px] font-medium tracking-wide text-slate-400 uppercase">Nowa rezerwacja</p>
-        <p className="text-sm font-semibold text-slate-700 mt-0.5">Dziś · 15:30</p>
+        <p className="text-[10px] font-medium tracking-wide text-slate-400 uppercase">{h.chipNewBooking}</p>
+        <p className="text-sm font-semibold text-slate-700 mt-0.5">{h.chipToday}</p>
       </motion.div>
 
       <motion.div
@@ -262,8 +266,8 @@ function BookingWidget() {
         className="absolute -bottom-6 -left-6 rounded-2xl px-4 py-3 hidden sm:block"
         style={G.chip}
       >
-        <p className="text-[10px] font-medium tracking-wide text-slate-400 uppercase">Powiadomienie</p>
-        <p className="text-sm font-semibold text-slate-700 mt-0.5">Wizyta potwierdzona</p>
+        <p className="text-[10px] font-medium tracking-wide text-slate-400 uppercase">{h.chipNotification}</p>
+        <p className="text-sm font-semibold text-slate-700 mt-0.5">{h.chipConfirmed}</p>
       </motion.div>
     </motion.div>
   );
@@ -272,6 +276,7 @@ function BookingWidget() {
 // ── Hero Search ───────────────────────────────────────────────────────────────
 
 function HeroSearch() {
+  const t = useT();
   const router = useRouter();
   const [q, setQ] = useState("");
   const [city, setCity] = useState("");
@@ -292,7 +297,7 @@ function HeroSearch() {
         </svg>
         <input
           type="text" value={q} onChange={(e) => setQ(e.target.value)}
-          placeholder="Fryzjer, masaż, manicure…"
+          placeholder={t.search.servicePlaceholder}
           className="w-full pl-10 pr-4 py-3.5 rounded-xl text-sm focus:outline-none transition-all placeholder:text-slate-400"
           style={G.input}
         />
@@ -303,7 +308,7 @@ function HeroSearch() {
         </svg>
         <input
           type="text" value={city} onChange={(e) => setCity(e.target.value)}
-          placeholder="Miasto"
+          placeholder={t.home.cityPlaceholder}
           className="w-full pl-10 pr-4 py-3.5 rounded-xl text-sm focus:outline-none transition-all placeholder:text-slate-400"
           style={G.input}
         />
@@ -319,7 +324,7 @@ function HeroSearch() {
         <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
           <circle cx="11" cy="11" r="8" /><path d="m21 21-4.35-4.35" />
         </svg>
-        Szukaj
+        {t.nav.search}
       </motion.button>
     </form>
   );
@@ -341,6 +346,10 @@ const HOME_JSON_LD = {
 };
 
 export default function HomePage() {
+  const t = useT();
+  const h = t.home;
+  const locale = useLocale();
+  const marquee = visibleCategoriesFor(locale).map((c) => c.label);
   return (
     <div className="min-h-screen overflow-x-hidden text-slate-900" style={{ background: BG.hero }}>
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(HOME_JSON_LD) }} />
@@ -378,7 +387,7 @@ export default function HomePage() {
                 />
                 <span className="relative inline-flex rounded-full h-2 w-2" style={{ background: "#CBD5E1" }} />
               </span>
-              Wczesny dostęp · dołącz jako jeden z pierwszych salonów
+              {h.badge}
             </motion.div>
 
             <motion.h1
@@ -388,8 +397,8 @@ export default function HomePage() {
               className="text-6xl sm:text-7xl xl:text-8xl font-bold leading-[0.95] text-slate-900"
               style={{ letterSpacing: "-0.04em" }}
             >
-              Rezerwuj<br />
-              bez<br />
+              {h.heroLine1}<br />
+              {h.heroLine2}<br />
               <span
                 className="italic font-bold"
                 style={{
@@ -399,7 +408,7 @@ export default function HomePage() {
                   backgroundClip: "text",
                 }}
               >
-                telefonu.
+                {h.heroLine3}
               </span>
             </motion.h1>
 
@@ -409,7 +418,7 @@ export default function HomePage() {
               transition={{ duration: 0.6, delay: 0.2 }}
               className="mt-7 text-lg max-w-md leading-relaxed text-slate-500"
             >
-              Jeden link do salonu. Klienci wybierają termin sami — Ty dostajesz powiadomienie i gotowe.
+              {h.heroSubtitle}
             </motion.p>
 
             {/* Search */}
@@ -424,9 +433,9 @@ export default function HomePage() {
                 <CustomerAssistant />
               </div>
               <p className="mt-3 text-xs text-slate-500">
-                Lub{" "}
+                {h.orPrefix}{" "}
                 <Link href="/register?role=business" className="underline underline-offset-2 hover:text-slate-700 transition-colors">
-                  dodaj salon za darmo →
+                  {h.addSalonFree}
                 </Link>
               </p>
             </motion.div>
@@ -437,7 +446,7 @@ export default function HomePage() {
               transition={{ delay: 0.7 }}
               className="mt-6 text-xs text-slate-500"
             >
-              Bez karty kredytowej · Instalacja w 5 minut · Polskie wsparcie
+              {h.heroTrust}
             </motion.p>
           </div>
 
@@ -468,10 +477,10 @@ export default function HomePage() {
         >
           <div className="flex-1 text-center sm:text-left">
             <p className="text-lg font-bold text-slate-900" style={{ letterSpacing: "-0.02em" }}>
-              Prowadzisz salon?
+              {h.runSalon}
             </p>
             <p className="text-sm text-slate-500 mt-1 leading-relaxed">
-              Zarejestruj salon już teraz. Pierwsze 3 miesiące bez opłat z kodem WELCOME.
+              {h.runSalonDesc}
             </p>
           </div>
           <Link
@@ -479,7 +488,7 @@ export default function HomePage() {
             className="btn-spring whitespace-nowrap inline-flex items-center justify-center px-6 py-3 text-sm font-semibold rounded-xl"
             style={G.inkBtn}
           >
-            Zarejestruj salon
+            {t.nav.registerSalon}
           </Link>
         </div>
       </section>
@@ -490,14 +499,7 @@ export default function HomePage() {
         style={{ background: "rgba(203,213,225,0.14)", borderTop: "1px solid rgba(203,213,225,0.30)", borderBottom: "1px solid rgba(203,213,225,0.30)" }}
       >
         <div className="marquee-track gap-3 px-3">
-          {[
-            "Fryzjer", "Barber", "Masaż", "Manicure", "Kosmetyczka", "Tatuaż",
-            "Spa & wellness", "Fizjoterapia", "Joga", "Pilates", "Solarium",
-            "Dietetyk", "Trener personalny", "Makijaż", "Brwi & Rzęsy",
-            "Fryzjer", "Barber", "Masaż", "Manicure", "Kosmetyczka", "Tatuaż",
-            "Spa & wellness", "Fizjoterapia", "Joga", "Pilates", "Solarium",
-            "Dietetyk", "Trener personalny", "Makijaż", "Brwi & Rzęsy",
-          ].map((label, i) => (
+          {[...marquee, ...marquee].map((label, i) => (
             <span
               key={i}
               className="flex-shrink-0 px-3.5 py-1.5 rounded-full text-xs font-medium text-slate-500"
@@ -520,16 +522,16 @@ export default function HomePage() {
         <div className="max-w-5xl mx-auto">
           <motion.div initial="hidden" whileInView="show" viewport={{ once: true }} variants={fade} className="mb-16">
             <span className="inline-block text-xs font-semibold uppercase tracking-widest mb-4 px-3 py-1 rounded-full text-slate-500" style={G.pill}>
-              Jak to działa
+              {h.howBadge}
             </span>
-            <h2 className="text-4xl font-bold text-slate-900" style={{ letterSpacing: "-0.03em" }}>Trzy kroki. Nic więcej.</h2>
+            <h2 className="text-4xl font-bold text-slate-900" style={{ letterSpacing: "-0.03em" }}>{h.howTitle}</h2>
           </motion.div>
 
           <div className="grid md:grid-cols-3 gap-5">
             {[
-              { n: "01", title: "Wyszukaj", desc: "Wpisz usługę lub kategorię. Widzisz dostępność w czasie rzeczywistym — żadnego czekania na odpowiedź." },
-              { n: "02", title: "Wybierz termin", desc: "Wolne sloty aktualizują się automatycznie. Filtruj po pracowniku, dacie i cenie." },
-              { n: "03", title: "Gotowe", desc: "Rezerwacja w kilka sekund. Potwierdzenie i przypomnienie na SMS i e-mail." },
+              { n: "01", title: h.step1Title, desc: h.step1Desc },
+              { n: "02", title: h.step2Title, desc: h.step2Desc },
+              { n: "03", title: h.step3Title, desc: h.step3Desc },
             ].map((step, i) => (
               <motion.div
                 key={step.n}
@@ -573,15 +575,15 @@ export default function HomePage() {
               <div className="absolute top-0 left-0 right-0 h-px" style={{ background: "linear-gradient(90deg, transparent, rgba(255,255,255,0.95) 30%, rgba(255,255,255,0.95) 70%, transparent)" }} />
 
               <div className="relative">
-                <span className="text-xs font-semibold uppercase tracking-widest block mb-6 text-slate-400">Panel specjalisty</span>
+                <span className="text-xs font-semibold uppercase tracking-widest block mb-6 text-slate-400">{h.bizBadge}</span>
                 <h2 className="text-3xl font-bold leading-snug mb-5 text-slate-900" style={{ letterSpacing: "-0.03em" }}>
-                  Mniej administracji.<br />Więcej klientów.
+                  {h.bizTitle1}<br />{h.bizTitle2}
                 </h2>
                 <p className="text-sm leading-relaxed mb-9 text-slate-500">
-                  Kalendarz online, zarządzanie personelem, płatności i analityka — w jednym miejscu.
+                  {h.bizSubtitle}
                 </p>
                 <div className="space-y-3 mb-10">
-                  {["Kalendarz online 24/7", "Automatyczne przypomnienia SMS", "Zarządzanie pracownikami", "Płatności i depozyty", "CRM i historia klientów", "Analityka i raporty"].map((f) => (
+                  {[h.feat1, h.feat2, h.feat3, h.feat4, h.feat5, h.feat6].map((f) => (
                     <div key={f} className="flex items-center gap-3 text-sm text-slate-600">
                       <svg className="w-4 h-4 flex-shrink-0 text-slate-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
                         <path strokeLinecap="round" strokeLinejoin="round" d="m5 13 4 4L19 7" />
@@ -601,7 +603,7 @@ export default function HomePage() {
                     className="inline-flex items-center gap-2 px-6 py-3 text-sm font-semibold rounded-xl"
                     style={G.inkBtn}
                   >
-                    Zarejestruj salon — za darmo
+                    {h.registerFree}
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="m9 18 6-6-6-6" /></svg>
                   </Link>
                 </motion.div>
@@ -610,11 +612,11 @@ export default function HomePage() {
 
             {/* Feature cards */}
             <motion.div initial="hidden" whileInView="show" viewport={{ once: true }} variants={fade} className="space-y-4 lg:pt-2">
-              <h3 className="text-2xl font-bold mb-6 text-slate-900">Dlaczego TermCatch?</h3>
+              <h3 className="text-2xl font-bold mb-6 text-slate-900">{h.whyTitle}</h3>
               {[
-                { n: "01", title: "Mniej nieobecności", desc: "Automatyczne przypomnienia SMS i e-mail przed każdą wizytą pomagają ograniczyć nieobecności." },
-                { n: "02", title: "Rezerwacje o każdej porze", desc: "Klienci rezerwują o 2 w nocy, w weekend, w czasie pracy — bez Twojego udziału." },
-                { n: "03", title: "Jeden link", desc: "Twoja strona rezerwacji gotowa od razu. Wystarczy wysłać link klientom lub dodać go do bio." },
+                { n: "01", title: h.why1Title, desc: h.why1Desc },
+                { n: "02", title: h.why2Title, desc: h.why2Desc },
+                { n: "03", title: h.why3Title, desc: h.why3Desc },
               ].map((f, i) => (
                 <motion.div
                   key={f.title}
@@ -635,7 +637,7 @@ export default function HomePage() {
                 </motion.div>
               ))}
               <Link href="/for-business" className="inline-flex items-center gap-1.5 text-sm font-semibold hover:opacity-70 transition-opacity mt-2 text-slate-500">
-                Wszystkie funkcje dla salonów
+                {h.allFeatures}
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="m9 18 6-6-6-6" /></svg>
               </Link>
             </motion.div>
@@ -654,11 +656,7 @@ export default function HomePage() {
         >
           <div className="absolute inset-0 bg-gradient-to-b from-white/60 to-transparent pointer-events-none" />
           <div className="relative flex flex-col sm:flex-row items-center justify-center gap-6 sm:gap-10 text-center">
-            {[
-              "Darmowa rejestracja konta",
-              "Prowizja 20% tylko od 1. wizyty nowego klienta",
-              "Wsparcie w języku polskim",
-            ].map((claim) => (
+            {[h.trust1, h.trust2, h.trust3].map((claim) => (
               <div key={claim} className="flex items-center gap-2 text-sm font-semibold text-slate-700">
                 <svg className="w-4 h-4 flex-shrink-0 text-slate-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
                   <path strokeLinecap="round" strokeLinejoin="round" d="m5 13 4 4L19 7" />
@@ -697,9 +695,9 @@ export default function HomePage() {
                 <span className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ background: "#CBD5E1", boxShadow: "0 0 0 2px rgba(203,213,225,0.30)" }} />
                 <span className="h-px w-12" style={{ background: "linear-gradient(90deg, rgba(203,213,225,0.70), transparent)" }} />
               </div>
-              <h2 className="text-4xl font-bold mb-4 text-slate-900" style={{ letterSpacing: "-0.03em" }}>Zacznij dziś — za darmo</h2>
+              <h2 className="text-4xl font-bold mb-4 text-slate-900" style={{ letterSpacing: "-0.03em" }}>{h.ctaTitle}</h2>
               <p className="mb-10 max-w-sm mx-auto text-base text-slate-500">
-                Żadnych kart kredytowych. Żadnych ukrytych opłat.
+                {h.ctaSubtitle}
               </p>
               <div className="flex flex-col sm:flex-row gap-3 justify-center">
                 <motion.div
@@ -712,7 +710,7 @@ export default function HomePage() {
                     className="inline-flex items-center justify-center px-7 py-3.5 font-semibold text-sm rounded-xl text-slate-700"
                     style={G.innerBtn}
                   >
-                    Znajdź specjalistę
+                    {t.customer.findSpecialist}
                   </Link>
                 </motion.div>
                 <motion.div
@@ -725,7 +723,7 @@ export default function HomePage() {
                     className="inline-flex items-center justify-center px-7 py-3.5 font-semibold text-sm rounded-xl"
                     style={G.inkBtn}
                   >
-                    Zarejestruj salon →
+                    {h.registerSalonArrow}
                   </Link>
                 </motion.div>
               </div>

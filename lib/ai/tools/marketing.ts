@@ -9,6 +9,7 @@ import { channelAvailability } from "@/lib/marketing-config";
 import { generateCampaignCopy } from "../features/marketing";
 import type { AiTool, ActionProposal } from "./registry";
 import { str } from "./registry";
+import { getDictionary, interpolate } from "@/lib/i18n/dictionaries";
 
 const VALID_SEGMENTS: SegmentKey[] = ["all", "upcoming", "regulars", "dormant"];
 const VALID_CHANNELS: Channel[] = ["sms", "whatsapp", "email"];
@@ -36,7 +37,7 @@ export const marketingTools: AiTool[] = [
       },
       required: ["segment", "channel"],
     },
-    async run(args, { actor }): Promise<ActionProposal | { error: string }> {
+    async run(args, { actor, locale }): Promise<ActionProposal | { error: string }> {
       const segment = str(args, "segment") as SegmentKey;
       const channel = str(args, "channel") as Channel;
       if (!VALID_SEGMENTS.includes(segment)) return { error: "Nieprawidłowy segment." };
@@ -84,22 +85,23 @@ export const marketingTools: AiTool[] = [
           ? `${reach} e-maili`
           : `~${reach * smsParts(message)} wiadomości SMS (${reach} odbiorców)`;
 
+      const p = getDictionary(locale).proposals;
       return {
         kind: "proposal",
         actionType: "send_campaign",
-        title: `Wyślij kampanię ${CHANNEL_LABEL[channel]}`,
-        summary: `Kampania do segmentu „${seg.label}” (${reach} odbiorców)`,
+        title: interpolate(p.sendCampaign, { channel: CHANNEL_LABEL[channel] }),
+        summary: interpolate(p.campaignSummary, { seg: seg.label, n: reach }),
         details: [
-          { label: "Segment", value: seg.label },
-          { label: "Kanał", value: CHANNEL_LABEL[channel] },
-          ...(subject ? [{ label: "Temat", value: subject }] : []),
-          { label: "Szacowany zasięg", value: costHint },
+          { label: p.segment, value: seg.label },
+          { label: p.channel, value: CHANNEL_LABEL[channel] },
+          ...(subject ? [{ label: p.subject, value: subject }] : []),
+          { label: p.estReach, value: costHint },
         ],
         params: { segment, channel, subject: subject ?? "", message },
         draft: message,
         recipientCount: reach,
         costHint,
-        confirmLabel: `Wyślij do ${reach} odbiorców`,
+        confirmLabel: interpolate(p.confirmSend, { n: reach }),
         external: true,
         danger: true,
       };

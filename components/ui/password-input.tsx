@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { cn } from "@/lib/utils";
+import { useT } from "@/components/i18n/i18n-provider";
 
 interface PasswordInputProps extends Omit<React.InputHTMLAttributes<HTMLInputElement>, "type"> {
   className?: string;
@@ -9,6 +10,7 @@ interface PasswordInputProps extends Omit<React.InputHTMLAttributes<HTMLInputEle
 
 /** Pole hasła z dostępnym przełącznikiem pokaż/ukryj. */
 export function PasswordInput({ className, ...props }: PasswordInputProps) {
+  const a = useT().a11y;
   const [visible, setVisible] = useState(false);
 
   return (
@@ -21,7 +23,7 @@ export function PasswordInput({ className, ...props }: PasswordInputProps) {
       <button
         type="button"
         onClick={() => setVisible((v) => !v)}
-        aria-label={visible ? "Ukryj hasło" : "Pokaż hasło"}
+        aria-label={visible ? a.hidePassword : a.showPassword}
         aria-pressed={visible}
         tabIndex={0}
         className="absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 flex items-center justify-center rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-50 transition-colors"

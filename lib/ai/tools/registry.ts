@@ -3,6 +3,7 @@ import "server-only";
 import type { FunctionTool } from "../client";
 import type { AiActor } from "../permissions";
 import type { Role } from "@/lib/permissions";
+import type { Locale } from "@/lib/i18n/config";
 
 /**
  * The explicit, registered AI tool layer. The model can ONLY act through these.
@@ -16,7 +17,7 @@ import type { Role } from "@/lib/permissions";
  * trusts a client- or model-supplied businessId.
  */
 
-export type ToolContext = { actor: AiActor };
+export type ToolContext = { actor: AiActor; locale: Locale };
 
 export type JsonSchema = Record<string, unknown>;
 

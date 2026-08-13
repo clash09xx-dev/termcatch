@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { resolveAiActor } from "@/lib/ai/permissions";
 import { aiEnabled, aiConfigured } from "@/lib/ai/config";
 import { getInsights } from "@/lib/ai/insights";
+import { getServerI18n } from "@/lib/i18n/server";
 import { PageHeader, GlassCard, Overline, HAIRLINE } from "@/components/ui/glass";
 import { InsightCards } from "@/components/business/ai/insight-cards";
 import { AssistantClient } from "./assistant-client";
@@ -21,7 +22,8 @@ export default async function AiPage({ searchParams }: { searchParams: Promise<{
   else if (!aiConfigured()) { available = false; reason = "not_configured"; }
   else if (actor.tier === "none") { available = false; reason = "plan_excluded"; }
 
-  const insights = await getInsights(actor.businessId);
+  const { dict } = await getServerI18n();
+  const insights = await getInsights(actor.businessId, dict);
   const { prompt } = await searchParams;
 
   return (

@@ -14,6 +14,9 @@ import { bookingSmsBody, smsSlotLabel } from "../lib/i18n/sms-templates";
 import { DeterministicInterpreter, nextQuestion } from "../lib/discovery";
 import { LOCALE_CODE } from "../lib/i18n/config";
 import { buildSystemPrompt } from "../lib/ai/system-prompt";
+import { categoryLabelFor } from "../lib/categories";
+import { renderInsights } from "../lib/ai/insights";
+import type { StructuredInsight } from "../lib/ai/insights-types";
 
 const interp = new DeterministicInterpreter(["Kraków", "Warszawa"]);
 
@@ -222,5 +225,57 @@ describe("mobile language codes", () => {
   test("26. codes are PL/EN/DE/TR — never ANG", () => {
     assert.deepEqual(LOCALES.map((l) => LOCALE_CODE[l]), ["PL", "EN", "DE", "TR"]);
     for (const l of LOCALES) assert.notEqual(LOCALE_CODE[l], "ANG");
+  });
+});
+
+// ── Category labels are localized (canonical id unchanged) ───────────────────
+describe("category labels", () => {
+  test("27. visible categories translate; internal id is language-neutral", () => {
+    assert.equal(categoryLabelFor("HAIR_SALON", "pl"), "Fryzjer");
+    assert.equal(categoryLabelFor("HAIR_SALON", "en"), "Hair salon");
+    assert.equal(categoryLabelFor("HAIR_SALON", "de"), "Friseur");
+    assert.equal(categoryLabelFor("HAIR_SALON", "tr"), "Kuaför");
+    assert.equal(categoryLabelFor("BARBER", "de"), "Barbershop");
+  });
+  test("28. unknown / hidden category falls back (never a raw crash)", () => {
+    assert.equal(categoryLabelFor("NOPE_XYZ", "en"), "NOPE_XYZ");
+  });
+});
+
+// ── Deterministic insights render per-locale from the neutral structured form ─
+describe("insights localization", () => {
+  const sample: StructuredInsight[] = [
+    { id: "revenue-up", type: "revenue-up", category: "revenue", severity: "info", metric: "+12%", vars: { pct: 12 }, ctaHref: "" },
+    { id: "inactive-clients", type: "inactive-clients", category: "clients", severity: "opportunity", vars: { count: 7 }, ctaKey: "prepareCampaign", ctaHref: "/x" },
+  ];
+  test("29. same structured insight renders in the requested language", () => {
+    const pl = renderInsights(sample, getDictionary("pl"));
+    const en = renderInsights(sample, getDictionary("en"));
+    const de = renderInsights(sample, getDictionary("de"));
+    assert.match(pl[0].title, /Przychód rośnie/);
+    assert.match(en[0].title, /Revenue is growing/);
+    assert.match(de[0].title, /Umsatz steigt/);
+    assert.match(en[0].body, /12% higher/);            // vars interpolated
+    assert.equal(en[1].cta?.label, "Prepare a campaign"); // localized CTA label
+  });
+});
+
+// ── AI proposal preview labels are localized (schema stays canonical) ────────
+describe("AI proposal previews", () => {
+  test("30. proposal labels translated (no Polish under EN/DE/TR)", () => {
+    assert.equal(pl.proposals.issueInvoice, "Wystaw fakturę");
+    assert.equal(en.proposals.issueInvoice, "Issue invoice");
+    assert.equal(de.proposals.buyer, "Käufer");
+    assert.equal(tr.proposals.confirmBooking, "Randevuyu onayla");
+  });
+});
+
+// ── Accessibility labels are localized ───────────────────────────────────────
+describe("aria labels", () => {
+  test("31. shared a11y strings are translated", () => {
+    assert.equal(en.a11y.close, "Close");
+    assert.equal(de.a11y.showPassword, "Passwort anzeigen");
+    assert.equal(tr.a11y.commandPalette, "Komut paletini aç (Cmd+K)");
+    assert.match(interpolate(en.a11y.otpDigit, { i: 2, n: 8 }), /Digit 2 of 8/);
   });
 });

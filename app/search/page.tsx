@@ -13,7 +13,8 @@ import { prisma } from "@/lib/prisma";
 import { LandingNav } from "@/components/layout/landing-nav";
 import { formatCurrency, cn } from "@/lib/utils";
 import { ServiceCategory } from "@prisma/client";
-import { parseCategoryParam, categoryLabel } from "@/lib/categories";
+import { parseCategoryParam, categoryLabelFor } from "@/lib/categories";
+import type { Locale } from "@/lib/i18n/config";
 import { getServerI18n } from "@/lib/i18n/server";
 import { interpolate } from "@/lib/i18n/dictionaries";
 import { buildBusinessSearchWhere } from "@/lib/search";
@@ -76,7 +77,7 @@ function minServicePrice(business: BusinessWithServices): number | null {
     : null;
 }
 
-function BusinessCard({ business }: { business: BusinessWithServices }) {
+function BusinessCard({ business, locale }: { business: BusinessWithServices; locale: Locale }) {
   const minPrice = minServicePrice(business);
 
   return (
@@ -108,7 +109,7 @@ function BusinessCard({ business }: { business: BusinessWithServices }) {
             boxShadow: "0 0 0 0.5px rgba(203,213,225,0.25), inset 0 1px 0 rgba(255,255,255,0.95)",
           }}
         >
-          {categoryLabel(business.category)}
+          {categoryLabelFor(business.category, locale)}
         </span>
       </div>
 
@@ -263,7 +264,7 @@ function hhmmToMin(hhmm: string): number {
 }
 
 async function SearchResults({ searchParams }: { searchParams: SearchParams }) {
-  const { dict } = await getServerI18n();
+  const { locale, dict } = await getServerI18n();
   const sr = dict.search;
   const page = Math.max(1, parseInt(searchParams.page ?? "1", 10));
   const skip = (page - 1) * PAGE_SIZE;
@@ -437,7 +438,7 @@ async function SearchResults({ searchParams }: { searchParams: SearchParams }) {
 
       <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
         {businesses.map((business) => (
-          <BusinessCard key={business.id} business={business} />
+          <BusinessCard key={business.id} business={business} locale={locale} />
         ))}
       </div>
 
@@ -478,13 +479,13 @@ export default async function SearchPage({
 }) {
   const params = await searchParams;
   const categoryFilter = parseCategoryParam(params.category);
-  const { dict } = await getServerI18n();
+  const { locale, dict } = await getServerI18n();
   const sr = dict.search;
 
   const title = params.q
     ? interpolate(sr.resultsFor, { q: params.q })
     : categoryFilter
-    ? categoryLabel(categoryFilter)
+    ? categoryLabelFor(categoryFilter, locale)
     : sr.heroTitle;
 
   const subtitle = params.city

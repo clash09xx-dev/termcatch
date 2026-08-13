@@ -3,6 +3,7 @@ export const dynamic = "force-dynamic";
 import { prisma } from "@/lib/prisma";
 import { getOrCreateDbUser } from "@/lib/auth-user";
 import { getInsights } from "@/lib/ai/insights";
+import { getServerI18n } from "@/lib/i18n/server";
 import { InsightCards } from "@/components/business/ai/insight-cards";
 import { getBusinessNotificationSettings } from "@/lib/notification-settings";
 import { NotificationsPrompt } from "@/components/business/notifications-prompt";
@@ -151,7 +152,8 @@ export default async function BusinessDashboardPage() {
     return `/business/calendar?action=new&date=${todayStr}&time=${hh}:${mm}`;
   };
 
-  const aiInsights = (await getInsights(business.id).catch(() => [])).slice(0, 3);
+  const { dict } = await getServerI18n();
+  const aiInsights = (await getInsights(business.id, dict).catch(() => [])).slice(0, 3);
 
   return (
     <div className="max-w-6xl mx-auto space-y-5">

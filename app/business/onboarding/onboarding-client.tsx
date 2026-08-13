@@ -9,7 +9,8 @@ import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { Wordmark } from "@/components/brand/wordmark";
 import { createBusiness, type OnboardingInput, type WorkingHourInput } from "@/lib/actions/business";
-import { visibleCategories } from "@/lib/categories";
+import { onboardingCategoriesFor } from "@/lib/categories";
+import { useLocale } from "@/components/i18n/i18n-provider";
 import { isValidPolishPostalCode, normalizePolishPostalCode } from "@/lib/postal-code";
 import type { ServiceCategory } from "@prisma/client";
 import { stepSlide, stepFade, SPRING, useReducedMotion } from "@/lib/motion";
@@ -39,10 +40,6 @@ const inputCls =
 
 // ─── Data ─────────────────────────────────────────────────────
 
-// Single source of truth (lib/categories) — medical categories are excluded,
-// aesthetic ("Klinika urody" / BEAUTY_CLINIC) stays available.
-const CATEGORIES = visibleCategories();
-
 const DEFAULT_HOURS: WorkingHourInput[] = [
   { dayOfWeek: 0, isOpen: true, openTime: "09:00", closeTime: "18:00" },
   { dayOfWeek: 1, isOpen: true, openTime: "09:00", closeTime: "18:00" },
@@ -70,6 +67,8 @@ const STEPS = [
 export function OnboardingClient({ ownerName }: { ownerName: string }) {
   const reduceMotion = useReducedMotion();
   const [isPending, startTransition] = useTransition();
+  // Registration category picker — visible categories + an "Other/Inne" catch-all.
+  const CATEGORIES = onboardingCategoriesFor(useLocale());
 
   const [step, setStep] = useState(1);
   const [direction, setDirection] = useState(1);

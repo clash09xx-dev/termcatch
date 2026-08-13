@@ -2,6 +2,8 @@
 
 import { useRef, type ClipboardEvent, type KeyboardEvent } from "react";
 import { cn } from "@/lib/utils";
+import { useT } from "@/components/i18n/i18n-provider";
+import { interpolate } from "@/lib/i18n/dictionaries";
 
 // ─── 6-digit e-mail OTP input ────────────────────────────────────────────────
 // Segmented numeric boxes with full paste support (paste the whole code into any
@@ -33,6 +35,7 @@ export function OtpInput({
   autoFocus = false,
   ariaDescribedBy,
 }: Props) {
+  const a = useT().a11y;
   const refs = useRef<Array<HTMLInputElement | null>>([]);
 
   const focusBox = (i: number) => {
@@ -108,7 +111,7 @@ export function OtpInput({
   };
 
   return (
-    <div className="flex w-full items-center justify-center gap-1.5 sm:gap-2" role="group" aria-label={`${length}-cyfrowy kod weryfikacyjny`}>
+    <div className="flex w-full items-center justify-center gap-1.5 sm:gap-2" role="group" aria-label={interpolate(a.otpCode, { n: length })}>
       {Array.from({ length }, (_, i) => (
         <input
           key={i}
@@ -121,7 +124,7 @@ export function OtpInput({
           value={value[i] ?? ""}
           disabled={disabled}
           autoFocus={autoFocus && i === 0}
-          aria-label={`Cyfra ${i + 1} z ${length}`}
+          aria-label={interpolate(a.otpDigit, { i: i + 1, n: length })}
           aria-invalid={hasError}
           aria-describedby={ariaDescribedBy}
           onChange={(e) => handleChange(i, e.target.value)}

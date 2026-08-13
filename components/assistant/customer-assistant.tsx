@@ -12,10 +12,10 @@ import Link from "next/link";
 import { cn } from "@/lib/utils";
 import { discoverSalons } from "@/lib/actions/discovery";
 import type { AssistantReply, DiscoveryResult } from "@/lib/discovery";
+import { useT } from "@/components/i18n/i18n-provider";
+import { interpolate } from "@/lib/i18n/dictionaries";
 
 type Turn = { role: "user" | "assistant"; text: string; results?: DiscoveryResult[] };
-
-const SUGGESTIONS = ["Kręcone włosy w Warszawie", "Manicure dzisiaj", "Masaż po 18:00", "Barber w Krakowie"];
 
 const GLASS: React.CSSProperties = {
   background: "rgba(255,255,255,0.72)",
@@ -34,6 +34,8 @@ const INK: React.CSSProperties = {
 };
 
 export function CustomerAssistant({ className }: { className?: string }) {
+  const s = useT().search;
+  const SUGGESTIONS = s.suggestions.split(",");
   const [expanded, setExpanded] = useState(false);
   const [turns, setTurns] = useState<Turn[]>([]);
   const [input, setInput] = useState("");
@@ -77,7 +79,7 @@ export function CustomerAssistant({ className }: { className?: string }) {
 
   return (
     <section
-      aria-label="Asystent TermCatch — rekomendacje salonów"
+      aria-label={s.title}
       className={cn("w-full max-w-xl rounded-2xl overflow-hidden text-left", className)}
       style={GLASS}
       onKeyDown={(e) => {
@@ -91,13 +93,13 @@ export function CustomerAssistant({ className }: { className?: string }) {
             <path strokeLinecap="round" strokeLinejoin="round" d="M9.813 15.904 9 18.75l-.813-2.846a4.5 4.5 0 0 0-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 0 0 3.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 0 0 3.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 0 0-3.09 3.09Z" />
             <path strokeLinecap="round" strokeLinejoin="round" d="M18.259 8.715 18 9.75l-.259-1.035a3.375 3.375 0 0 0-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 0 0 2.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 0 0 2.456 2.456L21.75 6l-1.035.259a3.375 3.375 0 0 0-2.456 2.456Z" />
           </svg>
-          Asystent TermCatch
+          {s.title}
           <span className="text-[10px] font-semibold uppercase tracking-wide px-1.5 py-0.5 rounded" style={{ background: "rgba(203,213,225,0.30)", color: "#64748B" }}>
             Beta
           </span>
         </p>
         {expanded && (
-          <button type="button" onClick={close} aria-label="Zamknij asystenta" className="p-1 rounded-lg text-slate-400 hover:text-slate-700">
+          <button type="button" onClick={close} aria-label={s.close} className="p-1 rounded-lg text-slate-400 hover:text-slate-700">
             <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}><path d="M18 6 6 18M6 6l12 12" /></svg>
           </button>
         )}
@@ -120,7 +122,7 @@ export function CustomerAssistant({ className }: { className?: string }) {
                         <div className="flex items-center justify-between gap-2">
                           <span className="text-sm font-semibold text-slate-900 truncate">{r.name}</span>
                           <span className="text-xs text-slate-500 tabular-nums flex-shrink-0">
-                            {r.slotLabel ? `wolne o ${r.slotLabel}` : r.priceFrom != null ? `od ${Math.round(r.priceFrom)} zł` : ""}
+                            {r.slotLabel ? interpolate(s.freeAt, { slot: r.slotLabel }) : r.priceFrom != null ? interpolate(s.priceFrom, { price: Math.round(r.priceFrom) }) : ""}
                           </span>
                         </div>
                         <p className="text-[11px] text-slate-500 mt-0.5 leading-relaxed">{r.reasons.join(" · ")}</p>
@@ -130,14 +132,14 @@ export function CustomerAssistant({ className }: { className?: string }) {
                             className="btn-spring px-2.5 py-1 rounded-lg text-[11px] font-semibold text-slate-600"
                             style={{ background: "rgba(255,255,255,0.8)", border: "1px solid rgba(203,213,225,0.55)" }}
                           >
-                            Zobacz profil
+                            {s.viewProfile}
                           </Link>
                           <Link
                             href={`/b/${r.slug}/book${r.serviceId ? `?serviceId=${r.serviceId}` : ""}`}
                             className="btn-spring px-2.5 py-1 rounded-lg text-[11px] font-semibold text-white"
                             style={INK}
                           >
-                            Zarezerwuj
+                            {s.book}
                           </Link>
                         </div>
                       </li>
@@ -147,14 +149,14 @@ export function CustomerAssistant({ className }: { className?: string }) {
               </div>
             </div>
           ))}
-          {isPending && <p className="text-xs text-slate-400">Szukam wśród salonów…</p>}
+          {isPending && <p className="text-xs text-slate-400">{s.searchingSalons}</p>}
           {!isPending && firstQuery && !failed && (
             <div className="pt-0.5">
               <Link
                 href={`/search?q=${encodeURIComponent(firstQuery)}`}
                 className="text-[11px] font-semibold text-slate-500 hover:text-slate-800"
               >
-                Zobacz wyniki w wyszukiwarce →
+                {s.seeInSearch}
               </Link>
             </div>
           )}
@@ -174,8 +176,8 @@ export function CustomerAssistant({ className }: { className?: string }) {
           value={input}
           maxLength={300}
           onChange={(e) => setInput(e.target.value)}
-          placeholder="Opisz, czego szukasz…"
-          aria-label="Opisz, czego szukasz — asystent poleci salony"
+          placeholder={s.placeholder}
+          aria-label={s.inputAria}
           className="flex-1 px-3.5 py-2.5 rounded-xl text-sm outline-none text-slate-800 placeholder:text-slate-400"
           style={{ background: "rgba(255,255,255,0.75)", border: "1px solid rgba(203,213,225,0.55)", boxShadow: "inset 0 1px 0 rgba(255,255,255,0.9)" }}
         />
@@ -185,7 +187,7 @@ export function CustomerAssistant({ className }: { className?: string }) {
           className="btn-spring px-4 py-2.5 rounded-xl text-sm font-semibold disabled:opacity-40 flex-shrink-0"
           style={INK}
         >
-          Zapytaj
+          {s.ask}
         </button>
       </form>
 

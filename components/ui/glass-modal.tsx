@@ -8,6 +8,7 @@ import * as Dialog from "@radix-ui/react-dialog";
 import { motion } from "framer-motion";
 import { modalIn, overlayFade, useReducedMotion } from "@/lib/motion";
 import { cn } from "@/lib/utils";
+import { useT } from "@/components/i18n/i18n-provider";
 
 const PANEL_STYLE: React.CSSProperties = {
   background: "rgba(255,255,255,0.92)",
@@ -38,6 +39,7 @@ export function GlassModal({
   accent?: string;
 }) {
   const reduceMotion = useReducedMotion();
+  const a = useT().a11y;
 
   return (
     <Dialog.Root open={open} onOpenChange={onOpenChange}>
@@ -82,7 +84,7 @@ export function GlassModal({
                       <Dialog.Close asChild>
                         <button
                           type="button"
-                          aria-label="Zamknij"
+                          aria-label={a.close}
                           className="w-8 h-8 -mr-2 -mt-1 flex items-center justify-center rounded-lg icon-btn"
                           style={{ color: "#94A3B8" }}
                         >

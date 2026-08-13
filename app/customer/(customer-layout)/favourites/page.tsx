@@ -5,7 +5,8 @@ import { redirect } from "next/navigation";
 import { getServerUser } from "@/lib/supabase/server";
 import { getMyFavourites } from "@/lib/actions/favourites";
 import FavouriteButton from "@/components/booking/favourite-button";
-import { categoryLabel } from "@/lib/categories";
+import { categoryLabelFor } from "@/lib/categories";
+import { getServerI18n } from "@/lib/i18n/server";
 import { PlaceholderCover } from "@/components/ui/placeholder-cover";
 import { PageHeader, GlassCard, EmptyState, InkLink } from "@/components/ui/glass";
 
@@ -13,11 +14,13 @@ export default async function FavouritesPage() {
   const user = await getServerUser();
   if (!user) redirect("/login");
 
+  const { locale, dict } = await getServerI18n();
+  const c = dict.customer;
   const favourites = await getMyFavourites();
 
   return (
     <div className="space-y-5 max-w-3xl">
-      <PageHeader title="Ulubione" subtitle="Zapisane salony i specjaliści" />
+      <PageHeader title={c.favourites} subtitle={c.favSubtitle} />
 
       {favourites.length === 0 ? (
         <GlassCard className="fade-rise fade-rise-d1">
@@ -27,9 +30,9 @@ export default async function FavouritesPage() {
                 <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
               </svg>
             }
-            title="Brak ulubionych"
-            body="Kliknij serce przy profilu salonu, żeby dodać go do ulubionych i szybko wracać na rezerwację."
-            action={<InkLink href="/search" size="md">Znajdź specjalistę</InkLink>}
+            title={c.favEmptyTitle}
+            body={c.favEmptyBody}
+            action={<InkLink href="/search" size="md">{c.findSpecialist}</InkLink>}
           />
         </GlassCard>
       ) : (
@@ -68,7 +71,7 @@ export default async function FavouritesPage() {
                       {business.name}
                     </Link>
                     <p className="text-xs text-slate-500 mt-0.5">
-                      {categoryLabel(business.category)} · {business.city}
+                      {categoryLabelFor(business.category, locale)} · {business.city}
                     </p>
                   </div>
                   <FavouriteButton
@@ -93,7 +96,7 @@ export default async function FavouritesPage() {
 
                 <div className="mt-auto pt-3">
                   <InkLink href={`/b/${business.slug}/book`} size="sm" className="w-full">
-                    Zarezerwuj wizytę
+                    {c.bookVisit}
                   </InkLink>
                 </div>
               </div>

@@ -5,6 +5,7 @@ import { warsawDateString } from "@/lib/timezone";
 import { generateReviewReply, type ReviewTone } from "../features/reviews";
 import type { AiTool, ActionProposal } from "./registry";
 import { str } from "./registry";
+import { getDictionary, interpolate } from "@/lib/i18n/dictionaries";
 
 export const reviewTools: AiTool[] = [
   {
@@ -53,7 +54,7 @@ export const reviewTools: AiTool[] = [
       },
       required: ["reviewId"],
     },
-    async run(args, { actor }): Promise<ActionProposal | { error: string }> {
+    async run(args, { actor, locale }): Promise<ActionProposal | { error: string }> {
       const reviewId = str(args, "reviewId");
       if (!reviewId) return { error: "Brak reviewId." };
       const review = await prisma.review.findFirst({
@@ -73,18 +74,19 @@ export const reviewTools: AiTool[] = [
         tone,
       });
       const client = `${review.customer.firstName} ${review.customer.lastName}`.trim();
+      const p = getDictionary(locale).proposals;
       return {
         kind: "proposal",
         actionType: "publish_review_reply",
-        title: "Opublikuj odpowiedź na opinię",
-        summary: `Odpowiedź na opinię (${review.rating}/5) od ${client}`,
+        title: p.publishReply,
+        summary: interpolate(p.reviewSummary, { rating: review.rating, client }),
         details: [
-          { label: "Opinia", value: (review.comment ?? "(sama ocena)").slice(0, 200) },
-          { label: "Ton", value: tone },
+          { label: p.review, value: (review.comment ?? p.ratingOnly).slice(0, 200) },
+          { label: p.tone, value: tone },
         ],
         params: { reviewId: review.id, replyText: draft },
         draft,
-        confirmLabel: "Opublikuj odpowiedź",
+        confirmLabel: p.confirmPublish,
         external: review.rating <= 3,
       };
     },

@@ -11,6 +11,7 @@ import {
 import { Segmented } from "@/components/ui/segmented";
 import { RevenueArea, WeekdayBars } from "./charts";
 import { getInsights } from "@/lib/ai/insights";
+import { getServerI18n } from "@/lib/i18n/server";
 import { InsightCards } from "@/components/business/ai/insight-cards";
 import { getDemand } from "@/lib/analytics/demand";
 import { DemandHeatmap } from "./demand-heatmap";
@@ -106,10 +107,11 @@ export default async function AnalyticsPage({ searchParams }: { searchParams: Pr
 
   // Both are period-INDEPENDENT (cached, 30-min TTL) — fetch them in PARALLEL so
   // switching Week/Month/Year doesn't wait on a sequential waterfall.
+  const { dict } = await getServerI18n();
   const [insightsRaw, demand] = total === 0
     ? [[], null]
     : await Promise.all([
-        getInsights(business.id).catch(() => []),
+        getInsights(business.id, dict).catch(() => []),
         getDemand(business.id, 90).catch(() => null),
       ]);
   const aiInsights = insightsRaw

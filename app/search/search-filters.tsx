@@ -5,8 +5,8 @@ import { useState, useCallback, useTransition, useEffect } from "react";
 import { createPortal } from "react-dom";
 import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
 import { cn } from "@/lib/utils";
-import { visibleCategories } from "@/lib/categories";
-import { useT } from "@/components/i18n/i18n-provider";
+import { visibleCategoriesFor } from "@/lib/categories";
+import { useT, useLocale } from "@/components/i18n/i18n-provider";
 
 // ─── Shared styles ────────────────────────────────────────────────────────────
 
@@ -51,6 +51,7 @@ export default function SearchFilters({
   const router = useRouter();
   const pathname = usePathname();
   const s = useT().search;
+  const locale = useLocale();
   const [isPending, startTransition] = useTransition();
 
   const [q, setQ] = useState(currentQ ?? "");
@@ -190,7 +191,7 @@ export default function SearchFilters({
             className="input-glass w-full appearance-none pl-3 pr-9 py-2.5 text-sm rounded-xl outline-none text-slate-800 transition-shadow cursor-pointer"
           >
             <option value="">{s.allCategories}</option>
-            {visibleCategories().map((cat) => (
+            {visibleCategoriesFor(locale).map((cat) => (
               <option key={cat.value} value={cat.value}>
                 {cat.label}
               </option>

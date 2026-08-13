@@ -6,6 +6,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { cn } from "@/lib/utils";
+import { useT } from "@/components/i18n/i18n-provider";
 
 const INK = "#0F172A";
 const INK_SOFT = "#334155";
@@ -36,6 +37,7 @@ export function AreaChart({
   const wrapRef = useRef<HTMLDivElement | null>(null);
   const [W, setW] = useState(0);
   const [hover, setHover] = useState<number | null>(null);
+  const a11y = useT().a11y;
 
   useEffect(() => {
     const el = wrapRef.current;
@@ -92,7 +94,7 @@ export function AreaChart({
           onMouseMove={onMove}
           onMouseLeave={() => setHover(null)}
           role="img"
-          aria-label="Wykres przychodu w czasie"
+          aria-label={a11y.revenueChart}
           style={{ display: "block" }}
         >
           <defs>

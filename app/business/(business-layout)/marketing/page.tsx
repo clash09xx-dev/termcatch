@@ -7,6 +7,7 @@ import { buildAudience, SEGMENTS, channelReach } from "@/lib/marketing";
 import { channelAvailability } from "@/lib/marketing-config";
 import { whatsappEnabled } from "@/lib/messaging";
 import { getInsights } from "@/lib/ai/insights";
+import { getServerI18n } from "@/lib/i18n/server";
 import { MarketingClient, type SegmentView } from "./marketing-client";
 
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? "https://termcatch.com";
@@ -60,7 +61,8 @@ export default async function MarketingPage() {
     };
   });
 
-  const insights = (await getInsights(business.id).catch(() => []))
+  const { dict } = await getServerI18n();
+  const insights = (await getInsights(business.id, dict).catch(() => []))
     .filter((i) => ["clients", "calendar", "revenue"].includes(i.category))
     .slice(0, 3);
 

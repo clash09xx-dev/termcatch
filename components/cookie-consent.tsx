@@ -80,7 +80,7 @@ export function CookieConsentBanner() {
   return (
     <div
       role="dialog"
-      aria-label="Ustawienia plików cookie"
+      aria-label={t.cookie.ariaLabel}
       className="fixed bottom-0 inset-x-0 z-[60] p-4 sm:p-6"
     >
       <div className="max-w-xl mx-auto rounded-[20px] p-5 sm:p-6" style={ELEV_OVERLAY}>
@@ -98,9 +98,9 @@ export function CookieConsentBanner() {
             <label className="flex items-start gap-3 p-3 rounded-xl cursor-not-allowed" style={CHIP}>
               <input type="checkbox" checked disabled className="mt-0.5 accent-slate-900" />
               <span>
-                <span className="block text-xs font-semibold text-slate-900">Niezbędne</span>
+                <span className="block text-xs font-semibold text-slate-900">{t.cookie.essential}</span>
                 <span className="block text-xs text-slate-500">
-                  Logowanie, sesja, bezpieczeństwo. Zawsze aktywne.
+                  {t.cookie.essentialDesc}
                 </span>
               </span>
             </label>
@@ -112,9 +112,9 @@ export function CookieConsentBanner() {
                 className="mt-0.5 accent-slate-900"
               />
               <span>
-                <span className="block text-xs font-semibold text-slate-900">Analityczne</span>
+                <span className="block text-xs font-semibold text-slate-900">{t.cookie.analytics}</span>
                 <span className="block text-xs text-slate-500">
-                  Anonimowe statystyki odwiedzin — pomagają nam ulepszać TermCatch.
+                  {t.cookie.analyticsDesc}
                 </span>
               </span>
             </label>
@@ -126,9 +126,9 @@ export function CookieConsentBanner() {
                 className="mt-0.5 accent-slate-900"
               />
               <span>
-                <span className="block text-xs font-semibold text-slate-900">Marketingowe</span>
+                <span className="block text-xs font-semibold text-slate-900">{t.cookie.marketing}</span>
                 <span className="block text-xs text-slate-500">
-                  Obecnie nie używamy cookie marketingowych. Ustawienie na przyszłość.
+                  {t.cookie.marketingDesc}
                 </span>
               </span>
             </label>
@@ -143,7 +143,7 @@ export function CookieConsentBanner() {
               className="btn-spring flex-1 py-2.5 rounded-xl text-sm font-semibold"
               style={INK_BTN}
             >
-              Zapisz wybór
+              {t.cookie.save}
             </button>
           ) : (
             <>
@@ -153,7 +153,7 @@ export function CookieConsentBanner() {
                 className="btn-spring flex-1 py-2.5 rounded-xl text-sm font-semibold"
                 style={INK_BTN}
               >
-                Akceptuję
+                {t.cookie.accept}
               </button>
               <button
                 type="button"
@@ -161,14 +161,14 @@ export function CookieConsentBanner() {
                 className="btn-spring flex-1 py-2.5 rounded-xl text-sm font-medium"
                 style={GLASS_BTN}
               >
-                Tylko niezbędne
+                {t.cookie.reject}
               </button>
               <button
                 type="button"
                 onClick={() => setShowDetails(true)}
                 className="py-2.5 px-4 text-slate-500 hover:text-slate-700 rounded-xl text-sm font-medium transition-colors"
               >
-                Ustawienia
+                {t.cookie.settings}
               </button>
             </>
           )}

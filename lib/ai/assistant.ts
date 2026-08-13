@@ -75,7 +75,7 @@ export async function runAssistant(params: {
   // Tools are filtered to the actor's role — an employee never even sees owner
   // tools (revenue/marketing/invoices/…).
   const toolSpecs = toolSpecsForModel(ALL_TOOLS, actor.role);
-  const ctx: ToolContext = { actor };
+  const ctx: ToolContext = { actor, locale };
 
   // Seed with the conversation so far (bounded to the last 12 turns).
   const input: ResponsesInput = messages.slice(-12).map((m) => ({

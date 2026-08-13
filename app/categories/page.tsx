@@ -1,7 +1,8 @@
 import Link from "next/link";
 import { LandingNav } from "@/components/layout/landing-nav";
 import { LandingFooter } from "@/components/layout/landing-footer";
-import { visibleCategories } from "@/lib/categories";
+import { visibleCategoriesFor } from "@/lib/categories";
+import { getServerI18n } from "@/lib/i18n/server";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
@@ -29,10 +30,12 @@ const cardStyle: React.CSSProperties = {
 
 import React from "react";
 
-export default function CategoriesPage() {
+export default async function CategoriesPage() {
   // Single source of truth (lib/categories) — canonical slugs that /search
   // actually resolves, with medical categories hidden until launch-ready.
-  const categories = visibleCategories();
+  const { locale, dict } = await getServerI18n();
+  const s = dict.search;
+  const categories = visibleCategoriesFor(locale);
   return (
     <div className="min-h-screen" style={{ background: BG }}>
       <LandingNav />
@@ -48,16 +51,16 @@ export default function CategoriesPage() {
                 color: "#64748B",
               }}
             >
-              Kategorie
+              {dict.nav.categories}
             </div>
             <h1
               className="text-4xl font-bold mb-3"
               style={{ letterSpacing: "-0.04em", color: "#0F172A" }}
             >
-              Znajdź swojego specjalistę
+              {s.catTitle}
             </h1>
             <p className="text-sm" style={{ color: "#64748B" }}>
-              Przeglądaj salony i specjalistów według kategorii
+              {s.catSubtitle}
             </p>
           </div>
 
@@ -93,7 +96,7 @@ export default function CategoriesPage() {
                     className="text-xs"
                     style={{ color: "#94A3B8" }}
                   >
-                    Szukaj →
+                    {s.searchArrow}
                   </p>
                 </div>
               </Link>

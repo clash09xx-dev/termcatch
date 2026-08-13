@@ -5,7 +5,8 @@ import { getBusinessDaySlots, warsawYmdPlusDays } from "@/lib/availability";
 import { warsawDateString } from "@/lib/timezone";
 import { buildBusinessSnapshot } from "./context";
 import { getDemand } from "@/lib/analytics/demand";
-import type { Insight } from "./insights-types";
+import type { Insight, StructuredInsight, InsightType, InsightCtaKey } from "./insights-types";
+import { interpolate, type Dictionary } from "@/lib/i18n/dictionaries";
 
 export type { Insight } from "./insights-types";
 
@@ -15,13 +16,14 @@ const AI_ASSISTANT = "/business/ai";
 const promptLink = (q: string) => `${AI_ASSISTANT}?prompt=${encodeURIComponent(q)}`;
 
 /**
- * Deterministic, data-backed insights (NO OpenAI call — safe to compute on
- * demand). Forecasts are labelled as estimates. Results are cached in the
- * ai_insights table (type "digest") with a freshness window.
+ * Deterministic, data-backed insights (NO OpenAI call). Produces LANGUAGE-NEUTRAL
+ * structured insights (type + vars) — never rendered Polish — so the cache is
+ * locale-agnostic and each reader renders in its own language via the dictionary.
+ * Forecasts are labelled as estimates.
  */
-export async function computeInsights(businessId: string): Promise<Insight[]> {
+export async function computeInsights(businessId: string): Promise<StructuredInsight[]> {
   const snap = await buildBusinessSnapshot(businessId);
-  const insights: Insight[] = [];
+  const insights: StructuredInsight[] = [];
   const now = new Date();
 
   // 1) Empty slots tomorrow (opportunity)
@@ -35,13 +37,9 @@ export async function computeInsights(businessId: string): Promise<Insight[]> {
     const { open, slots } = await getBusinessDaySlots({ businessId, serviceDurationMin: dur, dateYmd: tomorrow });
     if (open && slots.length >= 3) {
       insights.push({
-        id: "free-slots-tomorrow",
-        category: "calendar",
-        severity: "opportunity",
-        title: "Wolne terminy jutro",
-        metric: `${slots.length}`,
-        body: `Masz jutro ${slots.length} wolnych terminów. Rozważ kampanię last-minute lub przypomnienie klientom.`,
-        cta: { label: "Zapytaj asystenta", href: promptLink("Zaproponuj, jak wypełnić jutrzejsze wolne terminy.") },
+        id: "free-slots-tomorrow", type: "free-slots-tomorrow", category: "calendar", severity: "opportunity",
+        metric: `${slots.length}`, vars: { count: slots.length },
+        ctaKey: "askAssistant", ctaHref: promptLink("Zaproponuj, jak wypełnić jutrzejsze wolne terminy."),
       });
     }
   }
@@ -49,13 +47,9 @@ export async function computeInsights(businessId: string): Promise<Insight[]> {
   // 2) Inactive clients >60d (opportunity)
   if (snap.stats.inactive60 >= 5) {
     insights.push({
-      id: "inactive-clients",
-      category: "clients",
-      severity: "opportunity",
-      title: "Klienci do odzyskania",
-      metric: `${snap.stats.inactive60}`,
-      body: `${snap.stats.inactive60} klientów nie wróciło od ponad 60 dni. Kampania reaktywacyjna może ich przywrócić.`,
-      cta: { label: "Przygotuj kampanię", href: promptLink("Przygotuj kampanię reaktywacyjną do klientów nieaktywnych od 60 dni.") },
+      id: "inactive-clients", type: "inactive-clients", category: "clients", severity: "opportunity",
+      metric: `${snap.stats.inactive60}`, vars: { count: snap.stats.inactive60 },
+      ctaKey: "prepareCampaign", ctaHref: promptLink("Przygotuj kampanię reaktywacyjną do klientów nieaktywnych od 60 dni."),
     });
   }
 
@@ -64,22 +58,14 @@ export async function computeInsights(businessId: string): Promise<Insight[]> {
     const pct = snap.stats.revenueChangePct;
     if (pct <= -10) {
       insights.push({
-        id: "revenue-down",
-        category: "revenue",
-        severity: "warning",
-        title: "Przychód spada",
-        metric: `${pct}%`,
-        body: `Przychód z ostatnich 30 dni jest o ${Math.abs(pct)}% niższy niż w poprzednich 30. Sprawdź obłożenie i rozważ działania marketingowe.`,
-        cta: { label: "Jak zwiększyć przychód?", href: promptLink("Jak zwiększyć przychód w przyszłym tygodniu?") },
+        id: "revenue-down", type: "revenue-down", category: "revenue", severity: "warning",
+        metric: `${pct}%`, vars: { abs: Math.abs(pct) },
+        ctaKey: "howRevenue", ctaHref: promptLink("Jak zwiększyć przychód w przyszłym tygodniu?"),
       });
     } else if (pct >= 10) {
       insights.push({
-        id: "revenue-up",
-        category: "revenue",
-        severity: "info",
-        title: "Przychód rośnie",
-        metric: `+${pct}%`,
-        body: `Przychód z ostatnich 30 dni jest o ${pct}% wyższy niż w poprzednich 30. Dobra passa — utrzymaj tempo.`,
+        id: "revenue-up", type: "revenue-up", category: "revenue", severity: "info",
+        metric: `+${pct}%`, vars: { pct }, ctaHref: "",
       });
     }
   }
@@ -87,12 +73,8 @@ export async function computeInsights(businessId: string): Promise<Insight[]> {
   // 4) No-show rate warning
   if (snap.stats.noShowRatePct != null && snap.stats.noShowRatePct >= 15 && snap.stats.noShow30 >= 3) {
     insights.push({
-      id: "no-show-rate",
-      category: "calendar",
-      severity: "warning",
-      title: "Wysoki wskaźnik no-show",
-      metric: `${snap.stats.noShowRatePct}%`,
-      body: `W ostatnich 30 dniach ${snap.stats.noShowRatePct}% wizyt zakończyło się nieobecnością. Rozważ przypomnienia SMS lub zadatki.`,
+      id: "no-show-rate", type: "no-show-rate", category: "calendar", severity: "warning",
+      metric: `${snap.stats.noShowRatePct}%`, vars: { pct: snap.stats.noShowRatePct }, ctaHref: "",
     });
   }
 
@@ -102,13 +84,9 @@ export async function computeInsights(businessId: string): Promise<Insight[]> {
   });
   if (negUnanswered > 0) {
     insights.push({
-      id: "negative-reviews",
-      category: "reviews",
-      severity: "warning",
-      title: "Negatywne opinie bez odpowiedzi",
-      metric: `${negUnanswered}`,
-      body: `${negUnanswered} negatywn${negUnanswered === 1 ? "a opinia nie ma" : "e opinie nie mają"} odpowiedzi. Szybka, empatyczna reakcja robi różnicę.`,
-      cta: { label: "Odpowiedz z pomocą AI", href: "/business/reviews" },
+      id: "negative-reviews", type: "negative-reviews", category: "reviews", severity: "warning",
+      metric: `${negUnanswered}`, vars: { count: negUnanswered },
+      ctaKey: "replyAi", ctaHref: "/business/reviews",
     });
   }
 
@@ -132,11 +110,8 @@ export async function computeInsights(businessId: string): Promise<Insight[]> {
     if (avg >= 3 && lowest.c < avg * 0.62) {
       const pct = Math.round((1 - lowest.c / avg) * 100);
       insights.push({
-        id: "employee-imbalance",
-        category: "employees",
-        severity: "info",
-        title: "Nierówne obłożenie zespołu",
-        body: `${lowest.e.firstName} ${lowest.e.lastName} ma o ${pct}% mniej rezerwacji niż średnia zespołu (ostatnie 30 dni). Może warto wypromować jej/jego terminy.`,
+        id: "employee-imbalance", type: "employee-imbalance", category: "employees", severity: "info",
+        vars: { name: `${lowest.e.firstName} ${lowest.e.lastName}`.trim(), pct }, ctaHref: "",
       });
     }
   }
@@ -153,12 +128,8 @@ export async function computeInsights(businessId: string): Promise<Insight[]> {
     const svc = await prisma.service.findUnique({ where: { id: top.serviceId }, select: { name: true } });
     if (svc && (top._sum.price ?? 0) > 0) {
       insights.push({
-        id: "top-service",
-        category: "services",
-        severity: "info",
-        title: "Najbardziej dochodowa usługa",
-        metric: `${Math.round(top._sum.price ?? 0)} ${snap.currency}`,
-        body: `„${svc.name}” wygenerowała najwięcej przychodu w ostatnich 30 dniach. Rozważ pakiet lub promocję wokół niej.`,
+        id: "top-service", type: "top-service", category: "services", severity: "info",
+        metric: `${Math.round(top._sum.price ?? 0)} ${snap.currency}`, vars: { service: svc.name }, ctaHref: "",
       });
     }
   }
@@ -169,14 +140,11 @@ export async function computeInsights(businessId: string): Promise<Insight[]> {
     if (demand.enough && demand.quietest && demand.quietest.utilizationPct < 45) {
       const q = demand.quietest;
       const hh = (h: number) => `${String(h).padStart(2, "0")}:00`;
+      const block = `${q.weekdayLabel} ${hh(q.fromHour)}–${hh(q.toHour)}`;
       insights.push({
-        id: "quiet-block",
-        category: "calendar",
-        severity: "opportunity",
-        title: "Słaby przedział w kalendarzu",
-        metric: `${q.utilizationPct}%`,
-        body: `${q.weekdayLabel} ${hh(q.fromHour)}–${hh(q.toHour)} ma średnio ${q.utilizationPct}% obłożenia (ostatnie 90 dni). Dobry moment na promocję lub kampanię.`,
-        cta: { label: "Przygotuj kampanię", href: promptLink(`Przygotuj kampanię na słaby przedział: ${q.weekdayLabel} ${hh(q.fromHour)}–${hh(q.toHour)}.`) },
+        id: "quiet-block", type: "quiet-block", category: "calendar", severity: "opportunity",
+        metric: `${q.utilizationPct}%`, vars: { block, pct: q.utilizationPct },
+        ctaKey: "prepareCampaign", ctaHref: promptLink(`Przygotuj kampanię na słaby przedział: ${block}.`),
       });
     }
   } catch {
@@ -189,36 +157,70 @@ export async function computeInsights(businessId: string): Promise<Insight[]> {
   return insights;
 }
 
-/** Cached insights read. Recomputes when the cached digest is stale. */
-export async function getInsights(businessId: string, opts?: { force?: boolean }): Promise<Insight[]> {
+/** Render language-neutral insights into localized cards for the UI. */
+export function renderInsights(items: StructuredInsight[], dict: Dictionary): Insight[] {
+  const t = dict.insights;
+  const TITLE: Record<InsightType, string> = {
+    "free-slots-tomorrow": t.freeSlotsTitle, "inactive-clients": t.inactiveTitle,
+    "revenue-down": t.revenueDownTitle, "revenue-up": t.revenueUpTitle,
+    "no-show-rate": t.noShowTitle, "negative-reviews": t.negReviewsTitle,
+    "employee-imbalance": t.imbalanceTitle, "top-service": t.topServiceTitle, "quiet-block": t.quietBlockTitle,
+  };
+  const BODY: Record<InsightType, string> = {
+    "free-slots-tomorrow": t.freeSlotsBody, "inactive-clients": t.inactiveBody,
+    "revenue-down": t.revenueDownBody, "revenue-up": t.revenueUpBody,
+    "no-show-rate": t.noShowBody, "negative-reviews": t.negReviewsBody,
+    "employee-imbalance": t.imbalanceBody, "top-service": t.topServiceBody, "quiet-block": t.quietBlockBody,
+  };
+  const CTA: Record<InsightCtaKey, string> = {
+    askAssistant: t.ctaAskAssistant, prepareCampaign: t.ctaPrepareCampaign,
+    howRevenue: t.ctaHowRevenue, replyAi: t.ctaReplyAi,
+  };
+  return items.map((s) => ({
+    id: s.id,
+    category: s.category,
+    severity: s.severity,
+    metric: s.metric,
+    title: TITLE[s.type],
+    body: interpolate(BODY[s.type], s.vars),
+    cta: s.ctaKey && s.ctaHref ? { label: CTA[s.ctaKey], href: s.ctaHref } : undefined,
+  }));
+}
+
+/**
+ * Cached insights, rendered in `dict`'s language. The cache stores the neutral
+ * structured form (type + vars) — never rendered Polish — so any language reads
+ * the same cache and renders locally.
+ */
+export async function getInsights(businessId: string, dict: Dictionary, opts?: { force?: boolean }): Promise<Insight[]> {
   if (!opts?.force) {
     try {
       const cached = await prisma.aiInsight.findFirst({
-        where: { businessId, type: "digest", validUntil: { gt: new Date() } },
+        where: { businessId, type: "digest_v2", validUntil: { gt: new Date() } },
         orderBy: { createdAt: "desc" },
       });
       if (cached && Array.isArray(cached.content)) {
-        return cached.content as unknown as Insight[];
+        return renderInsights(cached.content as unknown as StructuredInsight[], dict);
       }
     } catch {
       /* fall through to compute */
     }
   }
 
-  const insights = await computeInsights(businessId);
+  const structured = await computeInsights(businessId);
   try {
-    await prisma.aiInsight.deleteMany({ where: { businessId, type: "digest" } });
+    await prisma.aiInsight.deleteMany({ where: { businessId, type: { in: ["digest", "digest_v2"] } } });
     await prisma.aiInsight.create({
       data: {
         businessId,
-        type: "digest",
-        title: "Podsumowanie operacyjne",
-        content: insights as unknown as object,
+        type: "digest_v2",
+        title: "operational_digest",
+        content: structured as unknown as object,
         validUntil: new Date(Date.now() + INSIGHT_TTL_MS),
       },
     });
   } catch {
     /* caching is best-effort */
   }
-  return insights;
+  return renderInsights(structured, dict);
 }

@@ -6,6 +6,7 @@ import { warsawDateString, warsawTimeString, warsawDayStartUtc } from "@/lib/tim
 import { warsawYmdPlusDays } from "@/lib/availability";
 import type { AiTool, ActionProposal } from "./registry";
 import { str, int, money } from "./registry";
+import { getDictionary, interpolate } from "@/lib/i18n/dictionaries";
 
 const YMD = /^\d{4}-\d{2}-\d{2}$/;
 
@@ -153,25 +154,26 @@ export const calendarTools: AiTool[] = [
       properties: { appointmentId: { type: "string" } },
       required: ["appointmentId"],
     },
-    async run(args, { actor }): Promise<ActionProposal | { error: string }> {
+    async run(args, { actor, locale }): Promise<ActionProposal | { error: string }> {
       const id = str(args, "appointmentId");
       if (!id) return { error: "Brak appointmentId." };
       const a = await findAppointmentForBusiness(actor.businessId, id);
       if (!a) return { error: "Nie znaleziono wizyty w tym salonie." };
       if (a.status !== "PENDING") return { error: `Wizyta ma status ${a.status} — nie wymaga potwierdzenia.` };
       const client = `${a.customer.firstName} ${a.customer.lastName}`.trim();
+      const p = getDictionary(locale).proposals;
       return {
         kind: "proposal",
         actionType: "confirm_appointment",
-        title: "Potwierdź wizytę",
-        summary: `Potwierdzić wizytę: ${client}, ${a.service.name}`,
+        title: p.confirmBooking,
+        summary: interpolate(p.confirmSummary, { client, service: a.service.name }),
         details: [
-          { label: "Klient", value: client },
-          { label: "Usługa", value: a.service.name },
-          { label: "Termin", value: `${warsawDateString(a.startTime)} ${warsawTimeString(a.startTime)}` },
+          { label: p.client, value: client },
+          { label: p.service, value: a.service.name },
+          { label: p.time, value: `${warsawDateString(a.startTime)} ${warsawTimeString(a.startTime)}` },
         ],
         params: { appointmentId: a.id },
-        confirmLabel: "Potwierdź wizytę",
+        confirmLabel: p.confirmBooking,
       };
     },
   },
@@ -189,7 +191,7 @@ export const calendarTools: AiTool[] = [
       },
       required: ["appointmentId", "reason"],
     },
-    async run(args, { actor }): Promise<ActionProposal | { error: string }> {
+    async run(args, { actor, locale }): Promise<ActionProposal | { error: string }> {
       const id = str(args, "appointmentId");
       const reason = str(args, "reason");
       if (!id) return { error: "Brak appointmentId." };
@@ -197,18 +199,19 @@ export const calendarTools: AiTool[] = [
       const a = await findAppointmentForBusiness(actor.businessId, id);
       if (!a) return { error: "Nie znaleziono wizyty w tym salonie." };
       const client = `${a.customer.firstName} ${a.customer.lastName}`.trim();
+      const p = getDictionary(locale).proposals;
       return {
         kind: "proposal",
         actionType: "decline_appointment",
-        title: "Odwołaj wizytę",
-        summary: `Odwołać wizytę: ${client}, ${a.service.name}`,
+        title: p.cancelBooking,
+        summary: interpolate(p.cancelSummary, { client, service: a.service.name }),
         details: [
-          { label: "Klient", value: client },
-          { label: "Termin", value: `${warsawDateString(a.startTime)} ${warsawTimeString(a.startTime)}` },
-          { label: "Powód", value: reason.slice(0, 500) },
+          { label: p.client, value: client },
+          { label: p.time, value: `${warsawDateString(a.startTime)} ${warsawTimeString(a.startTime)}` },
+          { label: p.reason, value: reason.slice(0, 500) },
         ],
         params: { appointmentId: a.id, reason: reason.slice(0, 500) },
-        confirmLabel: "Odwołaj wizytę",
+        confirmLabel: p.cancelBooking,
         danger: true,
       };
     },

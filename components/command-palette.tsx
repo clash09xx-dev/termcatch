@@ -9,6 +9,7 @@ import { useRouter, usePathname } from "next/navigation";
 import * as Dialog from "@radix-ui/react-dialog";
 import { motion } from "framer-motion";
 import { overlayFade, useReducedMotion } from "@/lib/motion";
+import { useT } from "@/components/i18n/i18n-provider";
 import { cn } from "@/lib/utils";
 import { searchClients } from "@/lib/actions/appointments";
 
@@ -65,6 +66,7 @@ export function CommandPalette({ businessSlug }: { businessSlug?: string }) {
   const router = useRouter();
   const pathname = usePathname();
   const reduceMotion = useReducedMotion();
+  const a = useT().a11y;
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
   const [activeIdx, setActiveIdx] = useState(0);
@@ -275,7 +277,7 @@ export function CommandPalette({ businessSlug }: { businessSlug?: string }) {
                       value={query}
                       onChange={(e) => setQuery(e.target.value)}
                       onKeyDown={onInputKeyDown}
-                      placeholder="Szukaj poleceń, sekcji, klientów…"
+                      placeholder={a.palettePlaceholder}
                       className="flex-1 py-3.5 text-sm bg-transparent outline-none placeholder:text-slate-400 text-slate-900"
                       role="combobox"
                       aria-expanded="true"
@@ -291,7 +293,7 @@ export function CommandPalette({ businessSlug }: { businessSlug?: string }) {
                   </div>
 
                   {/* Results */}
-                  <div id="palette-list" role="listbox" aria-label="Wyniki" className="max-h-[40vh] overflow-y-auto p-2">
+                  <div id="palette-list" role="listbox" aria-label={a.results} className="max-h-[40vh] overflow-y-auto p-2">
                     {flatItems.length === 0 && (
                       <p className="px-3 py-6 text-center text-sm text-slate-500">
                         Brak wyników dla „{query}"

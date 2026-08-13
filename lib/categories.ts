@@ -1,4 +1,5 @@
 import type { ServiceCategory } from "@prisma/client";
+import type { Locale } from "@/lib/i18n/config";
 
 // ─── Single source of truth: enum ↔ slug ↔ label ────────────────────────────
 // Every category link, filter, and label on the public site goes through
@@ -95,6 +96,7 @@ export const CATEGORY_LABELS: Record<string, string> = {
   DENTAL_HYGIENIST: "Higienistka stomatologiczna",
   PET_GROOMING: "Grooming",
   PHOTOGRAPHY: "Fotografia",
+  OTHER: "Inne",
 };
 
 // Legacy slugs that shipped in old links (homepage pills, /categories page).
@@ -143,6 +145,62 @@ export function parseCategoryParam(value?: string): ServiceCategory | undefined 
 
 export function categoryLabel(value: string): string {
   return CATEGORY_LABELS[value] ?? value;
+}
+
+// ─── Localized labels (visible marketplace categories) ───────────────────────
+// Controlled vocabulary → self-contained per-locale labels (no dict import, so
+// this module stays client-safe). Internal enum IDs are unchanged; only the
+// visible label is translated. Missing keys fall back to Polish then the raw
+// value, so hidden/medical categories still render.
+const CATEGORY_LABELS_BY_LOCALE: Record<Locale, Record<string, string>> = {
+  pl: CATEGORY_LABELS,
+  en: {
+    HAIR_SALON: "Hair salon", BARBER: "Barber", NAIL_SALON: "Nails", MASSAGE: "Massage",
+    SPA: "Spa & wellness", BEAUTY_CLINIC: "Beauty clinic", EYEBROWS_LASHES: "Brows & lashes",
+    MAKEUP: "Makeup", TATTOO: "Tattoo", PIERCING: "Piercing", TANNING: "Tanning salon",
+    PHYSIOTHERAPY: "Physiotherapy", PERSONAL_TRAINER: "Personal trainer", YOGA: "Yoga",
+    PILATES: "Pilates", NUTRITIONIST: "Nutritionist", PET_GROOMING: "Pet grooming",
+    PHOTOGRAPHY: "Photography", OTHER: "Other",
+  },
+  de: {
+    HAIR_SALON: "Friseur", BARBER: "Barbershop", NAIL_SALON: "Nägel", MASSAGE: "Massage",
+    SPA: "Spa & Wellness", BEAUTY_CLINIC: "Kosmetikstudio", EYEBROWS_LASHES: "Augenbrauen & Wimpern",
+    MAKEUP: "Make-up", TATTOO: "Tattoo", PIERCING: "Piercing", TANNING: "Sonnenstudio",
+    PHYSIOTHERAPY: "Physiotherapie", PERSONAL_TRAINER: "Personal Trainer", YOGA: "Yoga",
+    PILATES: "Pilates", NUTRITIONIST: "Ernährungsberatung", PET_GROOMING: "Hundesalon",
+    PHOTOGRAPHY: "Fotografie", OTHER: "Sonstige",
+  },
+  tr: {
+    HAIR_SALON: "Kuaför", BARBER: "Berber", NAIL_SALON: "Tırnak", MASSAGE: "Masaj",
+    SPA: "Spa & wellness", BEAUTY_CLINIC: "Güzellik kliniği", EYEBROWS_LASHES: "Kaş & kirpik",
+    MAKEUP: "Makyaj", TATTOO: "Dövme", PIERCING: "Piercing", TANNING: "Solaryum",
+    PHYSIOTHERAPY: "Fizyoterapi", PERSONAL_TRAINER: "Kişisel antrenör", YOGA: "Yoga",
+    PILATES: "Pilates", NUTRITIONIST: "Diyetisyen", PET_GROOMING: "Pet kuaförü",
+    PHOTOGRAPHY: "Fotoğrafçılık", OTHER: "Diğer",
+  },
+};
+
+/** Localized category label; falls back to Polish then the raw value. */
+export function categoryLabelFor(value: string, locale: Locale): string {
+  return CATEGORY_LABELS_BY_LOCALE[locale]?.[value] ?? CATEGORY_LABELS[value] ?? value;
+}
+
+/** The category picker with medical entries removed, labels in `locale`. */
+export function visibleCategoriesFor(locale: Locale): CategoryDef[] {
+  return visibleCategories().map((c) => ({ ...c, label: categoryLabelFor(c.value, locale) }));
+}
+
+// "Other/Inne" — a catch-all so a business whose category isn't listed can still
+// register. Intentionally kept OUT of visibleCategories() (public search filter)
+// where "Other" is a meaningless filter; it belongs only in the picker below.
+const OTHER_CATEGORY: CategoryDef = { value: "OTHER", slug: "inne", label: "Inne" };
+
+/** Registration category picker: the visible set + an "Other" catch-all, in `locale`. */
+export function onboardingCategoriesFor(locale: Locale): CategoryDef[] {
+  return [
+    ...visibleCategoriesFor(locale),
+    { ...OTHER_CATEGORY, label: categoryLabelFor("OTHER", locale) },
+  ];
 }
 
 // ─── Medical categories — hidden from public discovery until launch-ready ─────

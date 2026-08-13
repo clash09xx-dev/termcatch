@@ -36,7 +36,7 @@ export function BusinessTopbar({ initials }: { initials?: string } = {}) {
           onClick={() => window.dispatchEvent(new CustomEvent("tc-palette"))}
           className="hidden md:flex items-center gap-2 pl-3 pr-2 py-1.5 rounded-lg icon-btn"
           style={{ color: "#94A3B8" }}
-          aria-label="Otwórz paletę poleceń (Cmd+K)"
+          aria-label={t.a11y.commandPalette}
         >
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true"><circle cx="11" cy="11" r="8" /><path d="m21 21-4.35-4.35" /></svg>
           <kbd className="text-[10px] font-semibold px-1.5 py-0.5 rounded" style={{ background: "rgba(203,213,225,0.24)", border: "1px solid rgba(203,213,225,0.45)", color: "#64748B" }}>⌘K</kbd>
@@ -65,7 +65,7 @@ export function BusinessTopbar({ initials }: { initials?: string } = {}) {
           href="/customer/notifications"
           className="relative p-2 rounded-lg icon-btn"
           style={{ color: "#94A3B8" }}
-          aria-label={unread > 0 ? `Powiadomienia (${unread} nieprzeczytanych)` : "Powiadomienia"}
+          aria-label={t.a11y.notifications}
         >
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" /><path d="M13.73 21a2 2 0 0 1-3.46 0" /></svg>
           {unread > 0 && (
@@ -77,8 +77,8 @@ export function BusinessTopbar({ initials }: { initials?: string } = {}) {
         <form action={logoutAction}>
           <button
             type="submit"
-            title="Wyloguj"
-            aria-label="Wyloguj"
+            title={t.a11y.logout}
+            aria-label={t.a11y.logout}
             className="flex items-center gap-2 pl-2 pr-2.5 py-1.5 rounded-lg icon-btn"
             style={{ color: "#94A3B8" }}
           >

@@ -158,5 +158,6 @@ export async function generateCampaignCopyAction(
 export async function refreshInsights(): Promise<Insight[]> {
   const resolved = await resolveAiActor();
   if (!resolved.ok) return [];
-  return getInsights(resolved.actor.businessId, { force: true });
+  const dict = getDictionary(await resolveLocale());
+  return getInsights(resolved.actor.businessId, dict, { force: true });
 }
