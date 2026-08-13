@@ -3,8 +3,10 @@
 import { revalidatePath } from "next/cache";
 import { getServerUser } from "@/lib/supabase/server";
 import { prisma } from "@/lib/prisma";
-import { fakturowniaConfigured } from "@/lib/fakturownia/client";
+import { hasConnection } from "@/lib/fakturownia/connection";
 import { buildInvoiceDraftFromAppointment, issueInvoiceForBusiness } from "@/lib/ai/features/invoices";
+
+const NOT_CONNECTED = "Najpierw połącz swoje konto Fakturownia w Ustawienia → Integracje.";
 
 async function ownerBusiness(): Promise<{ businessId: string; userId: string } | null> {
   const user = await getServerUser();
@@ -26,7 +28,7 @@ export type InvoicePreview =
 export async function previewInvoiceAction(appointmentId: string): Promise<InvoicePreview> {
   const owner = await ownerBusiness();
   if (!owner) return { ok: false, error: "Brak dostępu." };
-  if (!fakturowniaConfigured()) return { ok: false, error: "Integracja Fakturownia nie jest skonfigurowana." };
+  if (!(await hasConnection(owner.businessId))) return { ok: false, error: NOT_CONNECTED };
   const res = await buildInvoiceDraftFromAppointment(owner.businessId, String(appointmentId));
   if (!res.ok) return { ok: false, error: res.error };
   const d = res.draft;
@@ -47,7 +49,7 @@ export async function issueInvoiceAction(
 ): Promise<{ ok: boolean; message: string; number?: string | null }> {
   const owner = await ownerBusiness();
   if (!owner) return { ok: false, message: "Brak dostępu." };
-  if (!fakturowniaConfigured()) return { ok: false, message: "Integracja Fakturownia nie jest skonfigurowana." };
+  if (!(await hasConnection(owner.businessId))) return { ok: false, message: NOT_CONNECTED };
   const res = await issueInvoiceForBusiness(owner.businessId, owner.userId, String(appointmentId));
   if (res.ok) revalidatePath("/business/invoices");
   return { ok: res.ok, message: res.message, number: res.data?.number ?? null };

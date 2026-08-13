@@ -413,6 +413,7 @@ model Business {
   locations           Location[]           // multi-location (Wave 4, flag-gated)
   billingCustomer     BillingCustomer?     // Stripe billing (one customer per business)
   promoRedemptions    PromoRedemption[]    // WELCOME etc.
+  fakturowniaConnection FakturowniaConnection? // per-business Fakturownia credentials (own account)
 
   @@index([city, category])
   @@index([slug])
@@ -1243,6 +1244,26 @@ model FakturowniaInvoice {
   @@index([businessId, createdAt])
   @@index([appointmentId])
   @@map("fakturownia_invoices")
+}
+
+// Per-business Fakturownia credentials (multi-tenant): every salon connects its
+// OWN account. The API token is stored ENCRYPTED at rest (AES-256-GCM, see
+// lib/fakturownia/crypto.ts) and NEVER returned to the browser or logged. One
+// connection per business (1:1). `accountName` is the <name>.fakturownia.pl
+// subdomain. Deleting the business cascades this row away with the credentials.
+model FakturowniaConnection {
+  id             String    @id @default(cuid())
+  businessId     String    @unique @map("business_id")
+  accountName    String    @map("account_name")   // the <name> in <name>.fakturownia.pl
+  encryptedToken String    @map("encrypted_token") // AES-256-GCM ciphertext, never plaintext
+  lastSyncAt     DateTime? @map("last_sync_at")     // last successful API call
+  connectedAt    DateTime  @default(now()) @map("connected_at")
+  createdAt      DateTime  @default(now()) @map("created_at")
+  updatedAt      DateTime  @updatedAt @map("updated_at")
+
+  business Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+
+  @@map("fakturownia_connections")
 }
 
 // One-time employee-account invitation. Only an HMAC of the token is stored

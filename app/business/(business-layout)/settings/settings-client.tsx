@@ -24,6 +24,8 @@ import { GlassModal } from "@/components/ui/glass-modal";
 import { cn } from "@/lib/utils";
 import { useT } from "@/components/i18n/i18n-provider";
 import { LanguageSelector } from "@/components/i18n/language-selector";
+import { FakturowniaIntegrationCard } from "@/components/business/fakturownia-integration-card";
+import type { ConnectionStatus } from "@/lib/fakturownia/connection";
 
 type Settings = {
   advanceBookingDays: number;
@@ -41,15 +43,17 @@ type Props = {
   notificationSettings: BusinessNotificationSettings;
   business: Business;
   smsAvailable: boolean;
+  fakturownia: ConnectionStatus;
 };
 
-type Section = "rezerwacje" | "odwolania" | "powiadomienia" | "profil" | "jezyk" | "strefa";
+type Section = "rezerwacje" | "odwolania" | "powiadomienia" | "profil" | "integracje" | "jezyk" | "strefa";
 
 const SECTIONS: { id: Section; label: string; danger?: boolean }[] = [
   { id: "rezerwacje", label: "Rezerwacje" },
   { id: "odwolania", label: "Odwołania" },
   { id: "powiadomienia", label: "Powiadomienia" },
   { id: "profil", label: "Profil publiczny" },
+  { id: "integracje", label: "Integracje" },
   { id: "jezyk", label: "Język" },
   { id: "strefa", label: "Bezpieczeństwo", danger: true },
 ];
@@ -144,10 +148,13 @@ function DecisionCard({
   );
 }
 
-export function SettingsClient({ settings: initialSettings, notificationSettings, business, smsAvailable }: Props) {
+export function SettingsClient({ settings: initialSettings, notificationSettings, business, smsAvailable, fakturownia }: Props) {
   const t = useT();
   const router = useRouter();
-  const [activeSection, setActiveSection] = useState<Section>("rezerwacje");
+  // Deep-link: /business/settings?section=integrations opens Integrations.
+  const initialSection: Section =
+    typeof window !== "undefined" && /[?&]section=integ/.test(window.location.search) ? "integracje" : "rezerwacje";
+  const [activeSection, setActiveSection] = useState<Section>(initialSection);
   const [settings, setSettings] = useState<Settings>(initialSettings);
   const [baseline, setBaseline] = useState<Settings>(initialSettings);
   const [isPending, startTransition] = useTransition();
@@ -476,6 +483,11 @@ export function SettingsClient({ settings: initialSettings, notificationSettings
               <PublicVisibilityToggle initialActive={business.isActive} published={business.status === "ACTIVE"} />
               <ProfileClient business={business} embedded />
             </GlassCard>
+          )}
+
+          {/* Integracje / Integrations */}
+          {activeSection === "integracje" && (
+            <FakturowniaIntegrationCard initial={fakturownia} />
           )}
 
           {/* Język / Language */}

@@ -3,6 +3,7 @@ import "server-only";
 import { prisma } from "@/lib/prisma";
 import { warsawDateString } from "@/lib/timezone";
 import { createInvoice, defaultTaxRate, type CreateInvoiceInput } from "@/lib/fakturownia/client";
+import { resolveCredentials, touchLastSync } from "@/lib/fakturownia/connection";
 import { logAiUsage } from "../usage";
 
 export type InvoiceDraft = {
@@ -84,13 +85,21 @@ export async function issueInvoiceForBusiness(
   userId: string | null,
   appointmentId: string
 ): Promise<IssueInvoiceResult> {
+  // Resolve THIS business's own Fakturownia credentials — never a global token,
+  // never another salon's. No connection → nothing is issued.
+  const creds = await resolveCredentials(businessId);
+  if (!creds) {
+    return { ok: false, message: "Najpierw połącz swoje konto Fakturownia w Ustawienia → Integracje." };
+  }
+
   const res = await buildInvoiceDraftFromAppointment(businessId, appointmentId);
   if (!res.ok) return { ok: false, message: res.error };
   const draft = res.draft;
 
-  const created = await createInvoice(draft.payload);
+  const created = await createInvoice(creds, draft.payload);
   await logAiUsage({ businessId, userId, feature: "invoice_issue", model: "fakturownia", inputTokens: 0, outputTokens: 0, ok: created.ok });
   if (!created.ok) return { ok: false, message: created.error };
+  await touchLastSync(businessId);
 
   const dto = created.data;
   await prisma.fakturowniaInvoice

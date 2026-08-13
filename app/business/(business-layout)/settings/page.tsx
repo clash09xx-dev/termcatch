@@ -6,6 +6,7 @@ import { prisma } from "@/lib/prisma";
 import { SettingsClient } from "./settings-client";
 import { getBusinessNotificationSettings } from "@/lib/notification-settings";
 import { smsConfigured } from "@/lib/messaging";
+import { getConnectionStatus } from "@/lib/fakturownia/connection";
 
 async function getSettingsData(supabaseId: string) {
   const dbUser = await prisma.user.findUnique({
@@ -29,12 +30,15 @@ export default async function SettingsPage() {
   // Platform SMS gateway live? (SMS_ENABLED + Twilio API key configured.) Drives
   // an honest availability note — the salon can still opt in beforehand.
   const smsAvailable = smsConfigured();
+  // Per-business Fakturownia connection status (token-free — never leaves server).
+  const fakturownia = await getConnectionStatus(business.id);
 
   return (
     <SettingsClient
       business={business}
       notificationSettings={notificationSettings}
       smsAvailable={smsAvailable}
+      fakturownia={fakturownia}
       settings={{
         advanceBookingDays: business.advanceBookingDays,
         minAdvanceHours: business.minAdvanceHours,

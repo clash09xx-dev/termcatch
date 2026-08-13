@@ -13,7 +13,7 @@ import {
   InkLink,
   CHIP,
 } from "@/components/ui/glass";
-import { fakturowniaConfigured } from "@/lib/fakturownia/client";
+import { hasConnection } from "@/lib/fakturownia/connection";
 import { InvoicesClient, type InvoiceRow } from "./invoices-client";
 
 // Invoicing will be delivered via the Fakturownia API (not Stripe): connect a
@@ -61,7 +61,7 @@ async function getBillingData(supabaseId: string) {
     }),
   ]);
 
-  return { rows, totals, invoices };
+  return { businessId: business.id, rows, totals, invoices };
 }
 
 export default async function InvoicesPage() {
@@ -71,11 +71,11 @@ export default async function InvoicesPage() {
   const data = await getBillingData(user.id);
   if (!data) redirect("/business/onboarding");
 
-  const { rows, totals, invoices } = data;
+  const { businessId, rows, totals, invoices } = data;
   const completedCount = totals._count;
   const revenue = totals._sum.price ?? 0;
   const avgValue = completedCount > 0 ? (totals._avg.price ?? 0) : 0;
-  const configured = fakturowniaConfigured();
+  const configured = await hasConnection(businessId);
 
   const invByAppt = new Map(invoices.map((iv) => [iv.appointmentId as string, iv]));
   const clientRows: InvoiceRow[] = rows.map((r) => {
@@ -158,9 +158,9 @@ export default async function InvoicesPage() {
           ) : (
             <>
               Wystawianie formalnych faktur (numeracja, PDF, wysyłka do klienta) działa przez integrację z{" "}
-              <span className="font-medium text-slate-600">Fakturownią</span>. Ustaw <code>FAKTUROWNIA_API_TOKEN</code>{" "}
-              i <code>FAKTUROWNIA_ACCOUNT_DOMAIN</code>, aby włączyć przycisk „Wystaw fakturę”. Powyższa lista to
-              historia sprzedaży z ukończonych wizyt.
+              <span className="font-medium text-slate-600">Fakturownią</span>. Połącz swoje konto Fakturownia w{" "}
+              <InkLink href="/business/settings?section=integrations" size="sm">Ustawienia → Integracje</InkLink>, aby
+              włączyć przycisk „Wystaw fakturę”. Powyższa lista to historia sprzedaży z ukończonych wizyt.
             </>
           )}
         </p>
