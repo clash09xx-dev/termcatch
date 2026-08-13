@@ -3,6 +3,8 @@ import { prisma } from "@/lib/prisma";
 import { sendBookingReminderEmail } from "@/lib/email";
 import { formatDate } from "@/lib/utils";
 import { warsawTimeString } from "@/lib/timezone";
+import { toLocale } from "@/lib/i18n/config";
+import { smsSlotLabel } from "@/lib/i18n/sms-templates";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -35,7 +37,7 @@ export async function GET(request: NextRequest) {
       reminderSentAt: null,
     },
     include: {
-      customer: { select: { id: true, email: true, firstName: true } },
+      customer: { select: { id: true, email: true, firstName: true, locale: true } },
       business: { select: { id: true, name: true, address: true, city: true } },
       service: { select: { name: true } },
     },
@@ -45,14 +47,16 @@ export async function GET(request: NextRequest) {
   let sent = 0;
   for (const apt of appointments) {
     const slotLabel = `${formatDate(apt.startTime, { weekday: "long", day: "numeric", month: "long" })} o ${warsawTimeString(apt.startTime)}`;
+    const locale = toLocale(apt.customer.locale);
     try {
       const [emailRes, notifRes] = await Promise.allSettled([
         sendBookingReminderEmail({
           to: apt.customer.email,
           businessName: apt.business.name,
           serviceName: apt.service.name,
-          slotLabel,
+          slotLabel: smsSlotLabel(apt.startTime, locale),
           address: `${apt.business.address}, ${apt.business.city}`,
+          locale,
         }),
         prisma.notification.create({
           data: {

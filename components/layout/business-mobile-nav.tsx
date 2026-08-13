@@ -8,8 +8,10 @@ import { cn } from "@/lib/utils";
 import { navGroupsFor } from "./business-nav";
 import { sheetUp, overlayFade, useReducedMotion } from "@/lib/motion";
 import { INK_GRADIENT } from "@/components/ui/glass/tokens";
+import { useT } from "@/components/i18n/i18n-provider";
 
 export function BusinessMobileNav({ multiLocation = false }: { multiLocation?: boolean } = {}) {
+  const t = useT();
   const pathname = usePathname();
   const reduceMotion = useReducedMotion();
   const [moreOpen, setMoreOpen] = useState(false);
@@ -43,7 +45,7 @@ export function BusinessMobileNav({ multiLocation = false }: { multiLocation?: b
             <div className="space-y-4">
               {MORE_GROUPS.map((group) => (
                 <div key={group.label}>
-                  <p className="text-[10px] font-semibold uppercase tracking-[0.13em] text-slate-400 mb-1.5 px-1">{group.label}</p>
+                  <p className="text-[10px] font-semibold uppercase tracking-[0.13em] text-slate-400 mb-1.5 px-1">{t.businessNav[group.groupKey]}</p>
                   <div className="grid grid-cols-2 gap-1.5">
                     {group.items.map((item) => {
                       const active = pathname.startsWith(item.href);
@@ -57,7 +59,7 @@ export function BusinessMobileNav({ multiLocation = false }: { multiLocation?: b
                           style={active ? { background: "rgba(203,213,225,0.24)", border: "1px solid rgba(203,213,225,0.5)", boxShadow: "inset 0 1px 0 rgba(255,255,255,0.9)" } : undefined}
                         >
                           <Icon className="flex-shrink-0" style={{ color: active ? "#334155" : undefined }} />
-                          {item.label}
+                          {t.businessNav[item.key]}
                         </Link>
                       );
                     })}
@@ -90,7 +92,7 @@ export function BusinessMobileNav({ multiLocation = false }: { multiLocation?: b
                 className={cn("flex-1 flex flex-col items-center gap-1 py-2.5 text-[10px] font-medium transition-colors", active && !moreOpen ? "text-slate-900" : "text-slate-400")}
               >
                 <Icon style={{ width: 21, height: 21 }} />
-                {item.label}
+                {t.businessNav[item.key]}
               </Link>
             );
           })}
@@ -104,7 +106,7 @@ export function BusinessMobileNav({ multiLocation = false }: { multiLocation?: b
             <span className="w-8 h-8 -mt-0.5 rounded-xl flex items-center justify-center" style={{ background: INK_GRADIENT, color: "#F8FAFC", boxShadow: "0 4px 12px rgba(15,23,42,0.28), inset 0 1px 0 rgba(255,255,255,0.15)" }}>
               <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" aria-hidden="true"><path d="M12 5v14M5 12h14" /></svg>
             </span>
-            Wizyta
+            {t.businessNav.appointmentShort}
           </Link>
           <button
             type="button"
@@ -113,7 +115,7 @@ export function BusinessMobileNav({ multiLocation = false }: { multiLocation?: b
             className={cn("flex-1 flex flex-col items-center gap-1 py-2.5 text-[10px] font-medium transition-colors", moreOpen ? "text-slate-900" : "text-slate-400")}
           >
             <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" aria-hidden="true"><circle cx="5" cy="12" r="1" /><circle cx="12" cy="12" r="1" /><circle cx="19" cy="12" r="1" /></svg>
-            Więcej
+            {t.businessNav.more}
           </button>
         </div>
       </nav>

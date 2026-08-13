@@ -8,6 +8,7 @@ import { cn } from "@/lib/utils";
 import { Wordmark } from "@/components/brand/wordmark";
 import { navGroupsFor } from "./business-nav";
 import { INK_GRADIENT } from "@/components/ui/glass/tokens";
+import { useT } from "@/components/i18n/i18n-provider";
 
 const PLAN_LABELS: Record<string, string> = {
   FREE: "Plan darmowy",
@@ -25,6 +26,7 @@ export function BusinessSidebar({
   plan?: string;
   multiLocation?: boolean;
 } = {}) {
+  const t = useT();
   const pathname = usePathname();
   const [collapsed, setCollapsed] = useState(false);
   const name = businessName ?? "Twój salon";
@@ -79,7 +81,7 @@ export function BusinessSidebar({
               <div className="mx-2 mb-2 h-px" style={{ background: "linear-gradient(90deg,transparent,rgba(148,163,184,0.28),transparent)" }} />
             ) : (
               <p className="px-2.5 mb-1.5 text-[10px] font-semibold uppercase tracking-[0.13em] select-none" style={{ color: "#B4C0D0" }}>
-                {group.label}
+                {t.businessNav[group.groupKey]}
               </p>
             )}
             <ul className="space-y-0.5">
@@ -92,7 +94,7 @@ export function BusinessSidebar({
                   <li key={item.href}>
                     <Link
                       href={item.href}
-                      title={collapsed ? item.label : undefined}
+                      title={collapsed ? t.businessNav[item.key] : undefined}
                       aria-current={active ? "page" : undefined}
                       className={cn(
                         "group relative flex items-center gap-3 rounded-[11px] text-[13.5px] font-medium transition-colors",
@@ -105,7 +107,7 @@ export function BusinessSidebar({
                       } : undefined}
                     >
                       <Icon className="flex-shrink-0" style={{ color: active ? "#F8FAFC" : undefined }} />
-                      {!collapsed && <span className="truncate leading-none">{item.label}</span>}
+                      {!collapsed && <span className="truncate leading-none">{t.businessNav[item.key]}</span>}
                     </Link>
                   </li>
                 );

@@ -8,8 +8,14 @@ import type { CSSProperties } from "react";
 type IconProps = { className?: string; style?: CSSProperties };
 type IconFn = (p: IconProps) => React.JSX.Element;
 
-export type NavItem = { href: string; label: string; icon: IconFn; flag?: "multiLocation" };
-export type NavGroup = { label: string; items: NavItem[] };
+// `key` indexes into dict.businessNav; `label` is the Polish fallback/source.
+export type NavKey =
+  | "today" | "calendar" | "clients" | "history" | "services" | "team" | "hours"
+  | "ai" | "marketing" | "coupons" | "invoices" | "analytics" | "reviews"
+  | "payments" | "locations" | "settings";
+export type NavItem = { href: string; label: string; key: NavKey; icon: IconFn; flag?: "multiLocation" };
+export type NavGroupKey = "groupWork" | "groupOffer" | "groupTools" | "groupCompany";
+export type NavGroup = { label: string; groupKey: NavGroupKey; items: NavItem[] };
 
 const svg = (children: React.ReactNode): IconFn =>
   function Icon({ className, style }: IconProps) {
@@ -52,40 +58,40 @@ const LocationsIcon = svg(<><path d="M12 21s-6-5.686-6-10a6 6 0 0 1 12 0c0 4.314
 
 export const NAV_GROUPS: NavGroup[] = [
   {
-    label: "Praca",
+    label: "Praca", groupKey: "groupWork",
     items: [
-      { href: "/business/dashboard", label: "Dziś", icon: TodayIcon },
-      { href: "/business/calendar", label: "Kalendarz", icon: CalendarIcon },
-      { href: "/business/crm", label: "Klienci", icon: ClientsIcon },
-      { href: "/business/history", label: "Historia", icon: HistoryIcon },
+      { href: "/business/dashboard", label: "Dziś", key: "today", icon: TodayIcon },
+      { href: "/business/calendar", label: "Kalendarz", key: "calendar", icon: CalendarIcon },
+      { href: "/business/crm", label: "Klienci", key: "clients", icon: ClientsIcon },
+      { href: "/business/history", label: "Historia", key: "history", icon: HistoryIcon },
     ],
   },
   {
-    label: "Oferta",
+    label: "Oferta", groupKey: "groupOffer",
     items: [
-      { href: "/business/services", label: "Usługi", icon: ServicesIcon },
-      { href: "/business/staff", label: "Zespół", icon: TeamIcon },
-      { href: "/business/hours", label: "Godziny", icon: HoursIcon },
+      { href: "/business/services", label: "Usługi", key: "services", icon: ServicesIcon },
+      { href: "/business/staff", label: "Zespół", key: "team", icon: TeamIcon },
+      { href: "/business/hours", label: "Godziny", key: "hours", icon: HoursIcon },
     ],
   },
   {
-    label: "Narzędzia",
+    label: "Narzędzia", groupKey: "groupTools",
     items: [
-      { href: "/business/ai", label: "AI Asystent", icon: AiIcon },
-      { href: "/business/marketing", label: "Marketing", icon: MarketingIcon },
-      { href: "/business/coupons", label: "Kupony", icon: CouponIcon },
-      { href: "/business/invoices", label: "Faktury", icon: InvoiceIcon },
+      { href: "/business/ai", label: "AI Asystent", key: "ai", icon: AiIcon },
+      { href: "/business/marketing", label: "Marketing", key: "marketing", icon: MarketingIcon },
+      { href: "/business/coupons", label: "Kupony", key: "coupons", icon: CouponIcon },
+      { href: "/business/invoices", label: "Faktury", key: "invoices", icon: InvoiceIcon },
     ],
   },
   {
-    label: "Firma",
+    label: "Firma", groupKey: "groupCompany",
     items: [
-      { href: "/business/analytics", label: "Analityka", icon: AnalyticsIcon },
-      { href: "/business/reviews", label: "Opinie", icon: ReviewIcon },
-      { href: "/business/payments", label: "Płatności", icon: PaymentsIcon },
+      { href: "/business/analytics", label: "Analityka", key: "analytics", icon: AnalyticsIcon },
+      { href: "/business/reviews", label: "Opinie", key: "reviews", icon: ReviewIcon },
+      { href: "/business/payments", label: "Płatności", key: "payments", icon: PaymentsIcon },
       // Gated by MULTI_LOCATION_ENABLED — hidden (filtered) unless the flag is on.
-      { href: "/business/locations", label: "Lokalizacje", icon: LocationsIcon, flag: "multiLocation" },
-      { href: "/business/settings", label: "Ustawienia", icon: SettingsIcon },
+      { href: "/business/locations", label: "Lokalizacje", key: "locations", icon: LocationsIcon, flag: "multiLocation" },
+      { href: "/business/settings", label: "Ustawienia", key: "settings", icon: SettingsIcon },
     ],
   },
 ];
@@ -107,32 +113,39 @@ export const ALL_NAV_ITEMS: NavItem[] = NAV_GROUPS.flatMap((g) => g.items);
 // Per-route title + one contextual primary action.
 // Actions use ?action=new which each client page reads to open its creator —
 // keeps server pages server-side, no global handler wiring.
-export type PageAction = { label: string; href: string; plus?: boolean };
-export const PAGE_META: Record<string, { title: string; action?: PageAction }> = {
-  "/business/dashboard": { title: "Dziś", action: { label: "Nowa wizyta", href: "/business/calendar?action=new", plus: true } },
-  "/business/calendar": { title: "Kalendarz", action: { label: "Nowa wizyta", href: "/business/calendar?action=new", plus: true } },
-  "/business/crm": { title: "Klienci", action: { label: "Nowa wizyta", href: "/business/calendar?action=new", plus: true } },
-  "/business/history": { title: "Historia" },
-  "/business/services": { title: "Usługi", action: { label: "Dodaj usługę", href: "/business/services?action=new", plus: true } },
-  "/business/staff": { title: "Zespół", action: { label: "Dodaj osobę", href: "/business/staff?action=new", plus: true } },
-  "/business/hours": { title: "Godziny" },
-  "/business/ai": { title: "AI Asystent" },
-  "/business/marketing": { title: "Marketing", action: { label: "Nowa kampania", href: "/business/marketing?action=new", plus: true } },
-  "/business/coupons": { title: "Kupony", action: { label: "Nowy kupon", href: "/business/coupons?action=new", plus: true } },
-  "/business/invoices": { title: "Faktury" },
-  "/business/analytics": { title: "Analityka" },
-  "/business/reviews": { title: "Opinie" },
-  "/business/payments": { title: "Płatności" },
-  "/business/locations": { title: "Lokalizacje", action: { label: "Dodaj lokalizację", href: "/business/locations?action=new", plus: true } },
-  "/business/settings": { title: "Ustawienia" },
-  "/business/profile": { title: "Profil salonu" },
+// Text keys into dict.businessNav — titles reuse the nav keys; actions + a few
+// extras (panel/salonProfile) round out the set.
+export type BusinessTextKey =
+  | NavKey | "panel" | "salonProfile"
+  | "newAppointment" | "addService" | "addPerson" | "newCampaign" | "newCoupon" | "addLocation";
+export type PageAction = { label: string; labelKey: BusinessTextKey; href: string; plus?: boolean };
+export type PageMeta = { title: string; titleKey: BusinessTextKey; action?: PageAction };
+const NEW_APPT: PageAction = { label: "Nowa wizyta", labelKey: "newAppointment", href: "/business/calendar?action=new", plus: true };
+export const PAGE_META: Record<string, PageMeta> = {
+  "/business/dashboard": { title: "Dziś", titleKey: "today", action: NEW_APPT },
+  "/business/calendar": { title: "Kalendarz", titleKey: "calendar", action: NEW_APPT },
+  "/business/crm": { title: "Klienci", titleKey: "clients", action: NEW_APPT },
+  "/business/history": { title: "Historia", titleKey: "history" },
+  "/business/services": { title: "Usługi", titleKey: "services", action: { label: "Dodaj usługę", labelKey: "addService", href: "/business/services?action=new", plus: true } },
+  "/business/staff": { title: "Zespół", titleKey: "team", action: { label: "Dodaj osobę", labelKey: "addPerson", href: "/business/staff?action=new", plus: true } },
+  "/business/hours": { title: "Godziny", titleKey: "hours" },
+  "/business/ai": { title: "AI Asystent", titleKey: "ai" },
+  "/business/marketing": { title: "Marketing", titleKey: "marketing", action: { label: "Nowa kampania", labelKey: "newCampaign", href: "/business/marketing?action=new", plus: true } },
+  "/business/coupons": { title: "Kupony", titleKey: "coupons", action: { label: "Nowy kupon", labelKey: "newCoupon", href: "/business/coupons?action=new", plus: true } },
+  "/business/invoices": { title: "Faktury", titleKey: "invoices" },
+  "/business/analytics": { title: "Analityka", titleKey: "analytics" },
+  "/business/reviews": { title: "Opinie", titleKey: "reviews" },
+  "/business/payments": { title: "Płatności", titleKey: "payments" },
+  "/business/locations": { title: "Lokalizacje", titleKey: "locations", action: { label: "Dodaj lokalizację", labelKey: "addLocation", href: "/business/locations?action=new", plus: true } },
+  "/business/settings": { title: "Ustawienia", titleKey: "settings" },
+  "/business/profile": { title: "Profil salonu", titleKey: "salonProfile" },
 };
 
-export function pageMetaFor(pathname: string): { title: string; action?: PageAction } {
+export function pageMetaFor(pathname: string): PageMeta {
   if (PAGE_META[pathname]) return PAGE_META[pathname];
   // Longest-prefix fallback for nested routes
   const hit = Object.keys(PAGE_META)
     .filter((k) => pathname.startsWith(k))
     .sort((a, b) => b.length - a.length)[0];
-  return hit ? PAGE_META[hit] : { title: "Panel" };
+  return hit ? PAGE_META[hit] : { title: "Panel", titleKey: "panel" };
 }

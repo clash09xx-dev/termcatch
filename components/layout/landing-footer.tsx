@@ -1,32 +1,50 @@
+"use client";
+
 import Link from "next/link";
 import { Wordmark } from "@/components/brand/wordmark";
-
-const FOOTER_LINKS = {
-  "Dla klientów": [
-    { label: "Znajdź specjalistę", href: "/search" },
-    { label: "Kategorie", href: "/categories" },
-    { label: "Dostępne dziś", href: "/search?available=today" },
-  ],
-  "Dla salonów": [
-    { label: "Zarejestruj salon", href: "/register?role=business" },
-    { label: "Cennik", href: "/pricing" },
-    { label: "Funkcje", href: "/for-business" },
-  ],
-  Firma: [
-    { label: "O nas", href: "/about" },
-    { label: "Pomoc i FAQ", href: "/faq" },
-    { label: "Kontakt", href: "/contact" },
-    { label: "Kariera", href: "/careers" },
-  ],
-  Prawne: [
-    { label: "Regulamin", href: "/terms" },
-    { label: "Polityka prywatności", href: "/privacy" },
-    { label: "Cookies", href: "/cookies" },
-    { label: "RODO", href: "/gdpr" },
-  ],
-};
+import { useT } from "@/components/i18n/i18n-provider";
 
 export function LandingFooter() {
+  const t = useT();
+  const f = t.footer;
+
+  const columns: { title: string; links: { label: string; href: string }[] }[] = [
+    {
+      title: f.forCustomers,
+      links: [
+        { label: f.findSpecialist, href: "/search" },
+        { label: f.categories, href: "/categories" },
+        { label: f.availableToday, href: "/search?available=today" },
+      ],
+    },
+    {
+      title: f.forSalons,
+      links: [
+        { label: f.registerSalon, href: "/register?role=business" },
+        { label: t.nav.pricing, href: "/pricing" },
+        { label: f.features, href: "/for-business" },
+      ],
+    },
+    {
+      title: f.company,
+      links: [
+        { label: f.about, href: "/about" },
+        { label: f.help, href: "/faq" },
+        { label: f.contact, href: "/contact" },
+        { label: f.careers, href: "/careers" },
+      ],
+    },
+    {
+      title: f.legalSection,
+      links: [
+        { label: f.terms, href: "/terms" },
+        { label: f.privacy, href: "/privacy" },
+        { label: f.cookies, href: "/cookies" },
+        { label: f.gdpr, href: "/gdpr" },
+      ],
+    },
+  ];
+
   return (
     <footer className="border-t border-gray-100 bg-white">
       <div className="max-w-7xl mx-auto px-6 py-16">
@@ -37,16 +55,16 @@ export function LandingFooter() {
               <Wordmark className="text-lg" />
             </Link>
             <p className="text-sm text-gray-500 leading-relaxed mb-6">
-              Platforma rezerwacji online dla polskiego rynku beauty i wellness.
+              {f.blurb}
             </p>
           </div>
 
           {/* Link columns */}
-          {Object.entries(FOOTER_LINKS).map(([section, links]) => (
-            <div key={section}>
-              <h3 className="text-sm font-semibold text-gray-900 mb-4">{section}</h3>
+          {columns.map((section) => (
+            <div key={section.title}>
+              <h3 className="text-sm font-semibold text-gray-900 mb-4">{section.title}</h3>
               <ul className="space-y-3">
-                {links.map((link) => (
+                {section.links.map((link) => (
                   <li key={link.href}>
                     <Link
                       href={link.href}
@@ -63,10 +81,10 @@ export function LandingFooter() {
 
         <div className="border-t border-gray-100 mt-12 pt-8 flex flex-col sm:flex-row items-center justify-between gap-4">
           <p className="text-xs text-gray-400">
-            &copy; {new Date().getFullYear()} TermCatch. Wszelkie prawa zastrzeżone.
+            &copy; {new Date().getFullYear()} TermCatch. {f.allRights}
           </p>
           <p className="text-xs text-gray-400 flex items-center gap-1.5">
-            Zbudowane w Polsce
+            {f.builtInPoland}
             <svg viewBox="0 0 20 14" className="w-5 h-3.5 inline-block" xmlns="http://www.w3.org/2000/svg">
               <rect width="20" height="7" fill="white" />
               <rect y="7" width="20" height="7" fill="#DC143C" />

@@ -17,6 +17,8 @@ import {
 } from "@/lib/email";
 import { sendSms, sendWhatsApp } from "@/lib/messaging";
 import { sendTransactionalSms, type SmsTemplate } from "@/lib/sms";
+import { toLocale } from "@/lib/i18n/config";
+import { bookingSmsBody, smsSlotLabel } from "@/lib/i18n/sms-templates";
 import { getBusinessNotificationSettings, salonWants, type SalonEventKey } from "@/lib/notification-settings";
 import { isPubliclyVisible } from "@/lib/publication";
 import { getAppUrl } from "@/lib/app-url";
@@ -419,6 +421,7 @@ export async function createAppointment(data: CreateAppointmentInput) {
       businessName: business.name,
       serviceName: service.name,
       slotLabel,
+      locale: customer.locale,
     }),
     notifySalonEmail(business.id, "newBooking", () =>
       business.email
@@ -440,7 +443,11 @@ export async function createAppointment(data: CreateAppointmentInput) {
       customer,
       appointmentId: appointment.id,
       template: "confirmed",
-      body: `TermCatch: wizyta potwierdzona — ${service.name} w ${business.name}, ${slotLabel}. Do zobaczenia!`,
+      body: bookingSmsBody(toLocale(customer.locale), "confirmed", {
+        serviceName: service.name,
+        businessName: business.name,
+        slotLabel: smsSlotLabel(start, toLocale(customer.locale)),
+      }),
     }),
     // Notify the assigned specialist about their new appointment (in-app + email).
     notifyAssignedEmployee({
@@ -584,7 +591,11 @@ export async function rescheduleAppointment(input: {
       customer,
       appointmentId: appointment.id,
       template: "rescheduled",
-      body: `TermCatch: wizyta przełożona — ${appointment.service.name} w ${appointment.business.name}, nowy termin: ${newSlotLabel}. Salon potwierdzi zmianę.`,
+      body: bookingSmsBody(toLocale(customer.locale), "rescheduledByCustomer", {
+        serviceName: appointment.service.name,
+        businessName: appointment.business.name,
+        slotLabel: smsSlotLabel(newStart, toLocale(customer.locale)),
+      }),
       dedupeSuffix: `:${newStart.toISOString()}`,
     }),
   ]);
@@ -674,7 +685,11 @@ export async function cancelAppointment(appointmentId: string) {
       customer,
       appointmentId,
       template: "cancelled",
-      body: `TermCatch: Twoja wizyta ${appointment.service.name} w ${appointment.business.name}, ${describeSlot(appointment.startTime)} została anulowana.`,
+      body: bookingSmsBody(toLocale(customer.locale), "cancelled", {
+        serviceName: appointment.service.name,
+        businessName: appointment.business.name,
+        slotLabel: smsSlotLabel(appointment.startTime, toLocale(customer.locale)),
+      }),
     }),
   ]);
 
@@ -693,7 +708,7 @@ export async function confirmAppointment(appointmentId: string) {
     include: {
       business: { select: { id: true, name: true } },
       service: { select: { name: true } },
-      customer: { select: { id: true, email: true, firstName: true, phone: true, smsNotifications: true } },
+      customer: { select: { id: true, email: true, firstName: true, phone: true, smsNotifications: true, locale: true } },
     },
   });
 
@@ -724,12 +739,17 @@ export async function confirmAppointment(appointmentId: string) {
       businessName: appointment.business.name,
       serviceName: appointment.service.name,
       slotLabel,
+      locale: appointment.customer.locale,
     }),
     customerBookingSms({
       customer: appointment.customer,
       appointmentId,
       template: "confirmed",
-      body: `TermCatch: wizyta potwierdzona — ${appointment.service.name} w ${appointment.business.name}, ${slotLabel}. Do zobaczenia!`,
+      body: bookingSmsBody(toLocale(appointment.customer.locale), "confirmed", {
+        serviceName: appointment.service.name,
+        businessName: appointment.business.name,
+        slotLabel: smsSlotLabel(appointment.startTime, toLocale(appointment.customer.locale)),
+      }),
     }),
   ]);
 
@@ -754,7 +774,7 @@ export async function declineAppointment(appointmentId: string, reasonRaw: strin
     include: {
       business: { select: { id: true, name: true, slug: true, ownerId: true } },
       service: { select: { name: true } },
-      customer: { select: { id: true, email: true, firstName: true, phone: true, smsNotifications: true } },
+      customer: { select: { id: true, email: true, firstName: true, phone: true, smsNotifications: true, locale: true } },
     },
   });
 
@@ -800,12 +820,18 @@ export async function declineAppointment(appointmentId: string, reasonRaw: strin
       slotLabel,
       cancelledBy: "business",
       reason,
+      locale: appointment.customer.locale,
     }),
     customerBookingSms({
       customer: appointment.customer,
       appointmentId,
       template: "declined",
-      body: `TermCatch: salon ${appointment.business.name} odwołał wizytę ${appointment.service.name}, ${slotLabel}. Powód: ${reason}. Zarezerwuj inny termin w aplikacji.`,
+      body: bookingSmsBody(toLocale(appointment.customer.locale), "declined", {
+        serviceName: appointment.service.name,
+        businessName: appointment.business.name,
+        slotLabel: smsSlotLabel(appointment.startTime, toLocale(appointment.customer.locale)),
+        reason,
+      }),
     }),
   ]);
 
@@ -837,7 +863,7 @@ export async function businessRescheduleAppointment(input: {
     include: {
       business: { select: { id: true, name: true, ownerId: true } },
       service: { select: { name: true } },
-      customer: { select: { id: true, email: true, firstName: true, phone: true, smsNotifications: true } },
+      customer: { select: { id: true, email: true, firstName: true, phone: true, smsNotifications: true, locale: true } },
     },
   });
 
@@ -904,12 +930,18 @@ export async function businessRescheduleAppointment(input: {
       serviceName: appointment.service.name,
       slotLabel: newSlotLabel,
       oldSlotLabel,
+      locale: appointment.customer.locale,
     }),
     customerBookingSms({
       customer: appointment.customer,
       appointmentId: appointment.id,
       template: "rescheduled",
-      body: `TermCatch: salon ${appointment.business.name} zmienił godzinę wizyty ${appointment.service.name} na ${newSlotLabel} (poprzednio ${oldSlotLabel}).`,
+      body: bookingSmsBody(toLocale(appointment.customer.locale), "rescheduledByBusiness", {
+        serviceName: appointment.service.name,
+        businessName: appointment.business.name,
+        slotLabel: smsSlotLabel(newStart, toLocale(appointment.customer.locale)),
+        oldSlotLabel: smsSlotLabel(originalStart, toLocale(appointment.customer.locale)),
+      }),
       dedupeSuffix: `:${newStart.toISOString()}`,
     }),
   ]);
@@ -928,7 +960,7 @@ export async function completeAppointment(appointmentId: string) {
     where: { id: appointmentId },
     include: {
       business: { select: { id: true, name: true, slug: true } },
-      customer: { select: { id: true, email: true } },
+      customer: { select: { id: true, email: true, locale: true } },
       service: { select: { name: true } },
     },
   });
@@ -967,6 +999,7 @@ export async function completeAppointment(appointmentId: string) {
           businessName: appointment.business.name,
           serviceName: appointment.service.name,
           reviewUrl,
+          locale: appointment.customer.locale,
         })
       : Promise.resolve(),
   ]);
@@ -1151,7 +1184,7 @@ export async function createManualAppointment(input: ManualAppointmentInput) {
         currency: service.currency,
         businessNotes: input.note?.trim() || null,
       },
-      include: { customer: { select: { id: true, email: true, firstName: true, lastName: true } } },
+      include: { customer: { select: { id: true, email: true, firstName: true, lastName: true, locale: true } } },
     });
   });
 
@@ -1173,6 +1206,7 @@ export async function createManualAppointment(input: ManualAppointmentInput) {
         businessName: business.name,
         serviceName: service.name,
         slotLabel,
+        locale: appointment.customer.locale,
       }),
     ]);
   }

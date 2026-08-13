@@ -6,6 +6,7 @@ import { useSearchParams } from "next/navigation";
 import { loginAction, signInWithGoogleAction, signInWithAppleAction } from "@/actions/auth";
 import type { AuthState } from "@/actions/auth";
 import { PasswordInput } from "@/components/ui/password-input";
+import { useT } from "@/components/i18n/i18n-provider";
 
 const initialState: AuthState = {};
 
@@ -24,26 +25,27 @@ export default function LoginPage() {
 }
 
 function LoginForm() {
+  const t = useT();
   const [state, formAction, isPending] = useActionState(loginAction, initialState);
   const searchParams = useSearchParams();
   const redirectTo = searchParams.get("redirect") ?? "";
   const urlError = searchParams.get("error");
   const oauthError =
     urlError === "oauth_callback_failed" || urlError === "auth_callback_failed"
-      ? "Logowanie przez Google/Apple nie powiodło się. Spróbuj ponownie lub zaloguj się e-mailem."
+      ? t.auth.oauthFailed
       : null;
 
   return (
     <div>
       <div className="mb-7">
-        <h1 className="text-xl font-semibold text-gray-900 tracking-tight">Zaloguj się</h1>
+        <h1 className="text-xl font-semibold text-gray-900 tracking-tight">{t.auth.loginTitle}</h1>
         <p className="mt-1 text-sm text-gray-500">
-          Nie masz konta?{" "}
+          {t.auth.noAccount}{" "}
           <Link
             href={redirectTo ? `/register?next=${encodeURIComponent(redirectTo)}` : "/register"}
             className="text-gray-900 font-medium underline underline-offset-2 hover:no-underline transition-all"
           >
-            Zarejestruj się
+            {t.auth.signUp}
           </Link>
         </p>
       </div>
@@ -67,7 +69,7 @@ function LoginForm() {
               <path d="M3.964 10.71A5.41 5.41 0 0 1 3.682 9c0-.593.102-1.17.282-1.71V4.958H.957A8.996 8.996 0 0 0 0 9c0 1.452.348 2.827.957 4.042l3.007-2.332z" fill="#FBBC05"/>
               <path d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0A8.997 8.997 0 0 0 .957 4.958L3.964 7.29C4.672 5.163 6.656 3.58 9 3.58z" fill="#EA4335"/>
             </svg>
-            Kontynuuj z Google
+            {t.auth.continueGoogle}
           </button>
         </form>
 
@@ -82,7 +84,7 @@ function LoginForm() {
               <svg width="18" height="18" viewBox="0 0 814 1000" fill="currentColor">
                 <path d="M788.1 340.9c-5.8 4.5-108.2 62.2-108.2 190.5 0 148.4 130.3 200.9 134.2 202.2-.6 3.2-20.7 71.9-68.7 141.9-42.8 61.6-87.5 123.1-155.5 123.1s-85.5-39.5-164-39.5c-76 0-103.7 40.8-165.9 40.8s-105.3-57.8-155.5-127.4C46 790.7 0 663 0 541.8c0-207.5 135.4-317.3 269-317.3 71 0 130.5 46.4 175 46.4 42.8 0 109.1-49 191.8-49 30.8 0 110.6 2.6 163.9 100.9zm-234.5-181.5c32.4-38.4 56.5-91.4 56.5-144.4 0-7.4-.6-15.5-2-22.3-53.4 2-116.8 35.2-154.5 78.6-29.4 33.6-58.5 86.6-58.5 140.4 0 8.3 1.3 16.6 1.9 19.2 3.2.6 8.4 1.3 13.6 1.3 48 0 108.8-32.1 143-72.8z"/>
               </svg>
-              Kontynuuj z Apple
+              {t.auth.continueApple}
             </button>
           </form>
         )}
@@ -90,7 +92,7 @@ function LoginForm() {
 
       <div className="flex items-center gap-3 my-5">
         <div className="flex-1 h-px" style={{ background: "rgba(203,213,225,0.45)" }} />
-        <span className="text-xs" style={{ color: "#94A3B8" }}>lub</span>
+        <span className="text-xs" style={{ color: "#94A3B8" }}>{t.auth.or}</span>
         <div className="flex-1 h-px" style={{ background: "rgba(203,213,225,0.45)" }} />
       </div>
 
@@ -109,11 +111,11 @@ function LoginForm() {
         <input type="hidden" name="redirect" value={redirectTo} />
         <div>
           <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1.5">
-            Adres e-mail
+            {t.auth.email}
           </label>
           <input
             id="email" name="email" type="email"
-            autoComplete="email" required placeholder="twoj@email.pl"
+            autoComplete="email" required placeholder={t.auth.emailPlaceholder}
             className={inputCls}
           />
           {state.fieldErrors?.email && (
@@ -124,10 +126,10 @@ function LoginForm() {
         <div>
           <div className="flex items-center justify-between mb-1.5">
             <label htmlFor="password" className="block text-sm font-medium text-gray-700">
-              Hasło
+              {t.auth.password}
             </label>
             <Link href="/reset-password" className="text-xs text-gray-500 hover:text-gray-800 transition-colors">
-              Zapomniałeś hasła?
+              {t.auth.forgotPassword}
             </Link>
           </div>
           <PasswordInput
@@ -157,9 +159,9 @@ function LoginForm() {
                 <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
                 <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
               </svg>
-              Logowanie...
+              {t.auth.signingIn}
             </>
-          ) : "Zaloguj się"}
+          ) : t.auth.signIn}
         </button>
       </form>
     </div>

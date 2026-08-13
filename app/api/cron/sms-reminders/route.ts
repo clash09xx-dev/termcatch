@@ -2,8 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { sendTransactionalSms, smsFlagEnabled } from "@/lib/sms";
 import { AppointmentStatus } from "@prisma/client";
-import { warsawTimeString } from "@/lib/timezone";
-import { formatDate } from "@/lib/utils";
+import { toLocale } from "@/lib/i18n/config";
+import { bookingSmsBody, smsSlotLabel } from "@/lib/i18n/sms-templates";
 
 // Appointment-reminder SMS — designed for Railway Cron (hourly).
 // Protected by CRON_SECRET; sends only for CONFIRMED future appointments in
@@ -34,7 +34,7 @@ export async function POST(request: NextRequest) {
     select: {
       id: true,
       startTime: true,
-      customer: { select: { phone: true, smsNotifications: true } },
+      customer: { select: { phone: true, smsNotifications: true, locale: true } },
       business: { select: { name: true } },
       service: { select: { name: true } },
     },
@@ -48,10 +48,14 @@ export async function POST(request: NextRequest) {
       skipped++;
       continue;
     }
-    const slot = `${formatDate(a.startTime, { day: "numeric", month: "long" })} o ${warsawTimeString(a.startTime)}`;
+    const locale = toLocale(a.customer.locale);
     const res = await sendTransactionalSms({
       toPhone: a.customer.phone,
-      body: `TermCatch: przypomnienie — jutro ${a.service.name} w ${a.business.name}, ${slot}. Jeśli nie możesz przyjść, przełóż wizytę w panelu.`,
+      body: bookingSmsBody(locale, "reminder", {
+        serviceName: a.service.name,
+        businessName: a.business.name,
+        slotLabel: smsSlotLabel(a.startTime, locale),
+      }),
       template: "reminder",
       // Time-specific key: a rescheduled appointment (new startTime) gets a fresh
       // key so its reminder re-sends; the same time never sends twice.

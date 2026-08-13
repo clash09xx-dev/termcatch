@@ -75,13 +75,13 @@ export function LandingNav({
   const isMarketing = variant === "marketing";
   const links = isMarketing
     ? [
-        { href: "/search", label: "Szukaj" },
-        { href: "/register?role=business", label: "Zarejestruj salon" },
-        { href: "/pricing", label: "Cennik" },
-        { href: "/careers", label: "Kariera" },
-        { href: "/about", label: "O nas" },
+        { href: "/search", label: t.nav.search },
+        { href: "/register?role=business", label: t.nav.registerSalon },
+        { href: "/pricing", label: t.nav.pricing },
+        { href: "/careers", label: t.nav.careers },
+        { href: "/about", label: t.nav.about },
       ]
-    : [{ href: "/search", label: "Szukaj" }];
+    : [{ href: "/search", label: t.nav.search }];
   // "Zaproś i zarób" — the stronger CTA → affiliate section under Careers.
   const affiliateHref = "/careers#zaros-i-zarob";
   // Fuller marketing nav needs a later breakpoint so it never overflows the pill.
@@ -123,7 +123,7 @@ export function LandingNav({
             <LanguageSelector />
             {isMarketing && (
               <Link href={affiliateHref} className="px-3.5 py-2 text-sm font-semibold rounded-xl text-white transition-transform hover:-translate-y-px" style={AFFILIATE_CTA}>
-                Zaproś i zarób
+                {t.nav.inviteEarn}
               </Link>
             )}
             {auth.status === "authed" ? (
@@ -197,7 +197,7 @@ export function LandingNav({
                     className="block w-full text-center px-4 py-2.5 text-sm font-semibold rounded-xl text-white"
                     style={AFFILIATE_CTA}
                   >
-                    Zaproś i zarób
+                    {t.nav.inviteEarn}
                   </Link>
                 )}
                 {auth.status === "authed" ? (
@@ -227,7 +227,7 @@ export function LandingNav({
                         boxShadow: "inset 0 1px 0 rgba(255,255,255,0.80)",
                       }}
                     >
-                      Zaloguj się
+                      {t.nav.login}
                     </Link>
                     <Link
                       href="/register"
@@ -240,7 +240,7 @@ export function LandingNav({
                         boxShadow: "inset 0 1px 0 rgba(255,255,255,0.80)",
                       }}
                     >
-                      Zarejestruj się
+                      {t.nav.register}
                     </Link>
                   </>
                 )}

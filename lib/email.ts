@@ -1,4 +1,10 @@
 import { Resend } from "resend";
+import { toLocale, type Locale } from "@/lib/i18n/config";
+
+/** Pick a locale variant, falling back to Polish (the default/governing copy). */
+function L<T>(locale: Locale, m: Record<Locale, T>): T {
+  return m[locale] ?? m.pl;
+}
 
 /**
  * Transactional e-mail via Resend.
@@ -253,23 +259,59 @@ type BookingEmailBase = {
   serviceName: string;
   /** Human-readable slot, e.g. "piątek, 10 lipca o 14:30" */
   slotLabel: string;
+  /** Recipient's UI language; defaults to Polish when unknown. */
+  locale?: Locale | string | null;
 };
+
+// Shared CTA labels + inline connectors for the localized booking emails.
+const CTA_MY_BOOKINGS: Record<Locale, string> = { pl: "Moje rezerwacje", en: "My bookings", de: "Meine Buchungen", tr: "Randevularım" };
 
 /** Booking request sent (waiting for salon confirmation). */
 export async function sendBookingRequestEmail(
   params: BookingEmailBase & { priceLabel: string }
 ): Promise<{ sent: boolean }> {
+  const loc = toLocale(params.locale);
   return sendEmail({
     to: params.to,
-    subject: `Rezerwacja wysłana — ${params.businessName}`,
-    heading: "Twoja rezerwacja została wysłana",
+    subject: L(loc, {
+      pl: `Rezerwacja wysłana — ${params.businessName}`,
+      en: `Booking sent — ${params.businessName}`,
+      de: `Buchung gesendet — ${params.businessName}`,
+      tr: `Randevu gönderildi — ${params.businessName}`,
+    }),
+    heading: L(loc, {
+      pl: "Twoja rezerwacja została wysłana",
+      en: "Your booking has been sent",
+      de: "Ihre Buchung wurde gesendet",
+      tr: "Randevunuz gönderildi",
+    }),
     lines: [
-      `<strong>${params.serviceName}</strong> w <strong>${params.businessName}</strong>`,
-      `Termin: <strong>${params.slotLabel}</strong>`,
-      `Cena: <strong>${params.priceLabel}</strong>`,
-      "Salon potwierdzi wizytę — poinformujemy Cię o zmianie statusu.",
+      L(loc, {
+        pl: `<strong>${params.serviceName}</strong> w <strong>${params.businessName}</strong>`,
+        en: `<strong>${params.serviceName}</strong> at <strong>${params.businessName}</strong>`,
+        de: `<strong>${params.serviceName}</strong> bei <strong>${params.businessName}</strong>`,
+        tr: `<strong>${params.businessName}</strong> — <strong>${params.serviceName}</strong>`,
+      }),
+      L(loc, {
+        pl: `Termin: <strong>${params.slotLabel}</strong>`,
+        en: `Time: <strong>${params.slotLabel}</strong>`,
+        de: `Termin: <strong>${params.slotLabel}</strong>`,
+        tr: `Zaman: <strong>${params.slotLabel}</strong>`,
+      }),
+      L(loc, {
+        pl: `Cena: <strong>${params.priceLabel}</strong>`,
+        en: `Price: <strong>${params.priceLabel}</strong>`,
+        de: `Preis: <strong>${params.priceLabel}</strong>`,
+        tr: `Fiyat: <strong>${params.priceLabel}</strong>`,
+      }),
+      L(loc, {
+        pl: "Salon potwierdzi wizytę — poinformujemy Cię o zmianie statusu.",
+        en: "The salon will confirm your appointment — we'll let you know when the status changes.",
+        de: "Der Salon bestätigt Ihren Termin — wir informieren Sie über Statusänderungen.",
+        tr: "Salon randevunuzu onaylayacak — durum değiştiğinde size haber vereceğiz.",
+      }),
     ],
-    ctaLabel: "Moje rezerwacje",
+    ctaLabel: L(loc, CTA_MY_BOOKINGS),
     ctaUrl: `${APP_URL}/customer/dashboard`,
   });
 }
@@ -278,16 +320,37 @@ export async function sendBookingRequestEmail(
 export async function sendBookingConfirmationEmail(
   params: BookingEmailBase
 ): Promise<{ sent: boolean }> {
+  const loc = toLocale(params.locale);
   return sendEmail({
     to: params.to,
-    subject: `Wizyta potwierdzona — ${params.businessName}`,
-    heading: "Twoja wizyta została potwierdzona",
+    subject: L(loc, {
+      pl: `Wizyta potwierdzona — ${params.businessName}`,
+      en: `Appointment confirmed — ${params.businessName}`,
+      de: `Termin bestätigt — ${params.businessName}`,
+      tr: `Randevu onaylandı — ${params.businessName}`,
+    }),
+    heading: L(loc, {
+      pl: "Twoja wizyta została potwierdzona",
+      en: "Your appointment is confirmed",
+      de: "Ihr Termin ist bestätigt",
+      tr: "Randevunuz onaylandı",
+    }),
     lines: [
-      `<strong>${params.serviceName}</strong> w <strong>${params.businessName}</strong>`,
-      `Termin: <strong>${params.slotLabel}</strong>`,
-      "Do zobaczenia!",
+      L(loc, {
+        pl: `<strong>${params.serviceName}</strong> w <strong>${params.businessName}</strong>`,
+        en: `<strong>${params.serviceName}</strong> at <strong>${params.businessName}</strong>`,
+        de: `<strong>${params.serviceName}</strong> bei <strong>${params.businessName}</strong>`,
+        tr: `<strong>${params.businessName}</strong> — <strong>${params.serviceName}</strong>`,
+      }),
+      L(loc, {
+        pl: `Termin: <strong>${params.slotLabel}</strong>`,
+        en: `Time: <strong>${params.slotLabel}</strong>`,
+        de: `Termin: <strong>${params.slotLabel}</strong>`,
+        tr: `Zaman: <strong>${params.slotLabel}</strong>`,
+      }),
+      L(loc, { pl: "Do zobaczenia!", en: "See you there!", de: "Bis bald!", tr: "Görüşmek üzere!" }),
     ],
-    ctaLabel: "Moje rezerwacje",
+    ctaLabel: L(loc, CTA_MY_BOOKINGS),
     ctaUrl: `${APP_URL}/customer/dashboard`,
   });
 }
@@ -298,19 +361,56 @@ export async function sendBookingCancellationEmail(
 ): Promise<{ sent: boolean }> {
   const bySalon = params.cancelledBy === "business";
   const reason = params.reason?.trim();
+  const loc = toLocale(params.locale);
   return sendEmail({
     to: params.to,
-    subject: `Wizyta odwołana — ${params.businessName}`,
-    heading: bySalon ? "Twoja wizyta została odwołana" : "Rezerwacja anulowana",
+    subject: L(loc, {
+      pl: `Wizyta odwołana — ${params.businessName}`,
+      en: `Appointment cancelled — ${params.businessName}`,
+      de: `Termin storniert — ${params.businessName}`,
+      tr: `Randevu iptal edildi — ${params.businessName}`,
+    }),
+    heading: bySalon
+      ? L(loc, { pl: "Twoja wizyta została odwołana", en: "Your appointment was cancelled", de: "Ihr Termin wurde storniert", tr: "Randevunuz iptal edildi" })
+      : L(loc, { pl: "Rezerwacja anulowana", en: "Booking cancelled", de: "Buchung storniert", tr: "Randevu iptal edildi" }),
     lines: [
-      `<strong>${params.serviceName}</strong> w <strong>${params.businessName}</strong>`,
-      `Termin: <strong>${params.slotLabel}</strong>`,
+      L(loc, {
+        pl: `<strong>${params.serviceName}</strong> w <strong>${params.businessName}</strong>`,
+        en: `<strong>${params.serviceName}</strong> at <strong>${params.businessName}</strong>`,
+        de: `<strong>${params.serviceName}</strong> bei <strong>${params.businessName}</strong>`,
+        tr: `<strong>${params.businessName}</strong> — <strong>${params.serviceName}</strong>`,
+      }),
+      L(loc, {
+        pl: `Termin: <strong>${params.slotLabel}</strong>`,
+        en: `Time: <strong>${params.slotLabel}</strong>`,
+        de: `Termin: <strong>${params.slotLabel}</strong>`,
+        tr: `Zaman: <strong>${params.slotLabel}</strong>`,
+      }),
       bySalon
-        ? "Salon odwołał tę wizytę. Możesz zarezerwować inny termin."
-        : "Klient anulował tę wizytę — termin jest znów dostępny.",
-      ...(bySalon && reason ? [`Powód odwołania: <strong>${escapeHtml(reason)}</strong>`] : []),
+        ? L(loc, {
+            pl: "Salon odwołał tę wizytę. Możesz zarezerwować inny termin.",
+            en: "The salon cancelled this appointment. You can book another time.",
+            de: "Der Salon hat diesen Termin storniert. Sie können einen anderen Termin buchen.",
+            tr: "Salon bu randevuyu iptal etti. Başka bir saat seçebilirsiniz.",
+          })
+        : L(loc, {
+            pl: "Klient anulował tę wizytę — termin jest znów dostępny.",
+            en: "The customer cancelled this appointment — the slot is available again.",
+            de: "Der Kunde hat diesen Termin storniert — der Slot ist wieder verfügbar.",
+            tr: "Müşteri bu randevuyu iptal etti — saat yeniden müsait.",
+          }),
+      ...(bySalon && reason
+        ? [L(loc, {
+            pl: `Powód odwołania: <strong>${escapeHtml(reason)}</strong>`,
+            en: `Cancellation reason: <strong>${escapeHtml(reason)}</strong>`,
+            de: `Stornierungsgrund: <strong>${escapeHtml(reason)}</strong>`,
+            tr: `İptal nedeni: <strong>${escapeHtml(reason)}</strong>`,
+          })]
+        : []),
     ],
-    ctaLabel: bySalon ? "Zarezerwuj ponownie" : "Otwórz kalendarz",
+    ctaLabel: bySalon
+      ? L(loc, { pl: "Zarezerwuj ponownie", en: "Book again", de: "Erneut buchen", tr: "Tekrar randevu al" })
+      : L(loc, { pl: "Otwórz kalendarz", en: "Open calendar", de: "Kalender öffnen", tr: "Takvimi aç" }),
     ctaUrl: bySalon ? `${APP_URL}/customer/dashboard` : `${APP_URL}/business/calendar`,
   });
 }
@@ -319,17 +419,48 @@ export async function sendBookingCancellationEmail(
 export async function sendBookingTimeChangedEmail(
   params: BookingEmailBase & { oldSlotLabel: string }
 ): Promise<{ sent: boolean }> {
+  const loc = toLocale(params.locale);
   return sendEmail({
     to: params.to,
-    subject: `Zmiana godziny wizyty — ${params.businessName}`,
-    heading: "Salon zmienił godzinę Twojej wizyty",
+    subject: L(loc, {
+      pl: `Zmiana godziny wizyty — ${params.businessName}`,
+      en: `Appointment time changed — ${params.businessName}`,
+      de: `Terminzeit geändert — ${params.businessName}`,
+      tr: `Randevu saati değişti — ${params.businessName}`,
+    }),
+    heading: L(loc, {
+      pl: "Salon zmienił godzinę Twojej wizyty",
+      en: "The salon changed your appointment time",
+      de: "Der Salon hat Ihre Terminzeit geändert",
+      tr: "Salon randevu saatinizi değiştirdi",
+    }),
     lines: [
-      `<strong>${params.serviceName}</strong> w <strong>${params.businessName}</strong>`,
-      `Poprzedni termin: ${params.oldSlotLabel}`,
-      `Nowy termin: <strong>${params.slotLabel}</strong>`,
-      "Jeśli nowy termin Ci nie odpowiada, przełóż lub anuluj wizytę w panelu.",
+      L(loc, {
+        pl: `<strong>${params.serviceName}</strong> w <strong>${params.businessName}</strong>`,
+        en: `<strong>${params.serviceName}</strong> at <strong>${params.businessName}</strong>`,
+        de: `<strong>${params.serviceName}</strong> bei <strong>${params.businessName}</strong>`,
+        tr: `<strong>${params.businessName}</strong> — <strong>${params.serviceName}</strong>`,
+      }),
+      L(loc, {
+        pl: `Poprzedni termin: ${params.oldSlotLabel}`,
+        en: `Previous time: ${params.oldSlotLabel}`,
+        de: `Vorheriger Termin: ${params.oldSlotLabel}`,
+        tr: `Önceki zaman: ${params.oldSlotLabel}`,
+      }),
+      L(loc, {
+        pl: `Nowy termin: <strong>${params.slotLabel}</strong>`,
+        en: `New time: <strong>${params.slotLabel}</strong>`,
+        de: `Neuer Termin: <strong>${params.slotLabel}</strong>`,
+        tr: `Yeni zaman: <strong>${params.slotLabel}</strong>`,
+      }),
+      L(loc, {
+        pl: "Jeśli nowy termin Ci nie odpowiada, przełóż lub anuluj wizytę w panelu.",
+        en: "If the new time doesn't suit you, reschedule or cancel in the app.",
+        de: "Wenn der neue Termin nicht passt, verschieben oder stornieren Sie ihn in der App.",
+        tr: "Yeni saat uygun değilse, uygulamadan erteleyin veya iptal edin.",
+      }),
     ],
-    ctaLabel: "Moje rezerwacje",
+    ctaLabel: L(loc, CTA_MY_BOOKINGS),
     ctaUrl: `${APP_URL}/customer/dashboard`,
   });
 }
@@ -358,17 +489,48 @@ export async function sendBookingRescheduleEmail(
 export async function sendBookingReminderEmail(
   params: BookingEmailBase & { address: string }
 ): Promise<{ sent: boolean }> {
+  const loc = toLocale(params.locale);
   return sendEmail({
     to: params.to,
-    subject: `Przypomnienie: jutro wizyta — ${params.businessName}`,
-    heading: "Przypomnienie o wizycie",
+    subject: L(loc, {
+      pl: `Przypomnienie: jutro wizyta — ${params.businessName}`,
+      en: `Reminder: appointment tomorrow — ${params.businessName}`,
+      de: `Erinnerung: Termin morgen — ${params.businessName}`,
+      tr: `Hatırlatma: yarın randevu — ${params.businessName}`,
+    }),
+    heading: L(loc, {
+      pl: "Przypomnienie o wizycie",
+      en: "Appointment reminder",
+      de: "Terminerinnerung",
+      tr: "Randevu hatırlatması",
+    }),
     lines: [
-      `<strong>${params.serviceName}</strong> w <strong>${params.businessName}</strong>`,
-      `Termin: <strong>${params.slotLabel}</strong>`,
-      `Adres: ${params.address}`,
-      "Jeśli nie możesz przyjść — przełóż lub anuluj wizytę w panelu, żeby ktoś inny mógł skorzystać z terminu.",
+      L(loc, {
+        pl: `<strong>${params.serviceName}</strong> w <strong>${params.businessName}</strong>`,
+        en: `<strong>${params.serviceName}</strong> at <strong>${params.businessName}</strong>`,
+        de: `<strong>${params.serviceName}</strong> bei <strong>${params.businessName}</strong>`,
+        tr: `<strong>${params.businessName}</strong> — <strong>${params.serviceName}</strong>`,
+      }),
+      L(loc, {
+        pl: `Termin: <strong>${params.slotLabel}</strong>`,
+        en: `Time: <strong>${params.slotLabel}</strong>`,
+        de: `Termin: <strong>${params.slotLabel}</strong>`,
+        tr: `Zaman: <strong>${params.slotLabel}</strong>`,
+      }),
+      L(loc, {
+        pl: `Adres: ${params.address}`,
+        en: `Address: ${params.address}`,
+        de: `Adresse: ${params.address}`,
+        tr: `Adres: ${params.address}`,
+      }),
+      L(loc, {
+        pl: "Jeśli nie możesz przyjść — przełóż lub anuluj wizytę w panelu, żeby ktoś inny mógł skorzystać z terminu.",
+        en: "If you can't make it, reschedule or cancel in the app so someone else can take the slot.",
+        de: "Falls Sie nicht können, verschieben oder stornieren Sie den Termin in der App, damit jemand anderes ihn nutzen kann.",
+        tr: "Gelemeyecekseniz, başkasının yararlanabilmesi için randevuyu uygulamadan erteleyin veya iptal edin.",
+      }),
     ],
-    ctaLabel: "Moje rezerwacje",
+    ctaLabel: L(loc, CTA_MY_BOOKINGS),
     ctaUrl: `${APP_URL}/customer/dashboard`,
   });
 }
@@ -444,17 +606,38 @@ export async function sendTrialEndingEmail(
 
 /** Post-visit — ask the customer to leave a review. */
 export async function sendReviewRequestEmail(
-  params: { to: string; businessName: string; serviceName: string; reviewUrl: string }
+  params: { to: string; businessName: string; serviceName: string; reviewUrl: string; locale?: Locale | string | null }
 ): Promise<{ sent: boolean }> {
+  const loc = toLocale(params.locale);
   return sendEmail({
     to: params.to,
-    subject: `Jak było? Oceń wizytę — ${params.businessName}`,
-    heading: "Jak minęła Twoja wizyta?",
+    subject: L(loc, {
+      pl: `Jak było? Oceń wizytę — ${params.businessName}`,
+      en: `How was it? Rate your visit — ${params.businessName}`,
+      de: `Wie war es? Bewerten Sie Ihren Besuch — ${params.businessName}`,
+      tr: `Nasıldı? Ziyaretinizi değerlendirin — ${params.businessName}`,
+    }),
+    heading: L(loc, {
+      pl: "Jak minęła Twoja wizyta?",
+      en: "How was your visit?",
+      de: "Wie war Ihr Besuch?",
+      tr: "Ziyaretiniz nasıldı?",
+    }),
     lines: [
-      `Dziękujemy za wizytę: <strong>${params.serviceName}</strong> w <strong>${params.businessName}</strong>.`,
-      "Twoja opinia zajmie chwilę, a pomaga salonowi i innym klientom.",
+      L(loc, {
+        pl: `Dziękujemy za wizytę: <strong>${params.serviceName}</strong> w <strong>${params.businessName}</strong>.`,
+        en: `Thanks for your visit: <strong>${params.serviceName}</strong> at <strong>${params.businessName}</strong>.`,
+        de: `Danke für Ihren Besuch: <strong>${params.serviceName}</strong> bei <strong>${params.businessName}</strong>.`,
+        tr: `Ziyaretiniz için teşekkürler: <strong>${params.businessName}</strong> — <strong>${params.serviceName}</strong>.`,
+      }),
+      L(loc, {
+        pl: "Twoja opinia zajmie chwilę, a pomaga salonowi i innym klientom.",
+        en: "Your review takes a moment and helps the salon and other customers.",
+        de: "Ihre Bewertung dauert nur einen Moment und hilft dem Salon und anderen Kunden.",
+        tr: "Değerlendirmeniz bir dakika sürer ve salona ve diğer müşterilere yardımcı olur.",
+      }),
     ],
-    ctaLabel: "Oceń wizytę",
+    ctaLabel: L(loc, { pl: "Oceń wizytę", en: "Rate your visit", de: "Besuch bewerten", tr: "Ziyareti değerlendir" }),
     ctaUrl: params.reviewUrl,
   });
 }

@@ -7,8 +7,10 @@ import { logoutAction } from "@/actions/auth";
 import { useUnreadCount } from "@/hooks/use-unread-count";
 import { pageMetaFor } from "./business-nav";
 import { INK_GRADIENT } from "@/components/ui/glass/tokens";
+import { useT } from "@/components/i18n/i18n-provider";
 
 export function BusinessTopbar({ initials }: { initials?: string } = {}) {
+  const t = useT();
   const pathname = usePathname();
   const meta = pageMetaFor(pathname);
   const unread = useUnreadCount();
@@ -24,7 +26,7 @@ export function BusinessTopbar({ initials }: { initials?: string } = {}) {
       }}
     >
       <h1 className="text-[17px] font-semibold tracking-[-0.02em] text-slate-900 flex-shrink-0">
-        {meta.title}
+        {t.businessNav[meta.titleKey]}
       </h1>
 
       <div className="flex items-center gap-1.5 ml-auto">
@@ -51,7 +53,7 @@ export function BusinessTopbar({ initials }: { initials?: string } = {}) {
               {meta.action.plus && (
                 <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" aria-hidden="true"><path d="M12 5v14M5 12h14" /></svg>
               )}
-              {meta.action.label}
+              {t.businessNav[meta.action.labelKey]}
             </Link>
           </motion.div>
         )}
