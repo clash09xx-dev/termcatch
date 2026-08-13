@@ -7,6 +7,7 @@ import { InkButton } from "@/components/ui/glass";
 import { CHIP, INK_GRADIENT } from "@/components/ui/glass/tokens";
 import { GlassModal, ModalInkButton, ModalGlassButton } from "@/components/ui/glass-modal";
 import { useT } from "@/components/i18n/i18n-provider";
+import { AssistantMarkdown } from "@/components/business/ai/assistant-markdown";
 
 type ChatMessage = {
   id: string;
@@ -142,7 +143,9 @@ export function AssistantClient({
                 }
                 style={m.role === "user" ? { background: INK_GRADIENT } : { border: "1px solid rgba(203,213,225,0.4)" }}
               >
-                <p className="whitespace-pre-wrap leading-relaxed">{m.content}</p>
+                {m.role === "user"
+                  ? <p className="whitespace-pre-wrap leading-relaxed">{m.content}</p>
+                  : <AssistantMarkdown text={m.content} />}
               </div>
               {m.proposals?.map((p, pi) => {
                 const key = `${m.id}_${pi}`;

@@ -1,25 +1,35 @@
 // ─── Legal document constants ────────────────────────────────────────────────
 // Company registration details are PLACEHOLDERS until the real entity data is
-// supplied. Never render fabricated NIP / KRS / REGON / address values — the
-// helpers below render the placeholder token verbatim so it is obvious a value
-// is still outstanding.
+// supplied. Fill the real values via server-side env vars in Railway (no code
+// change needed) — until then the placeholder token renders verbatim, so it is
+// obvious a value is still outstanding. NEVER fabricate NIP / KRS / REGON / address.
+//
+// Railway env vars (all optional; unset → placeholder shown):
+//   LEGAL_COMPANY_NAME, LEGAL_FORM, LEGAL_REGISTERED_ADDRESS,
+//   LEGAL_NIP, LEGAL_REGON, LEGAL_KRS, LEGAL_EFFECTIVE_DATE, LEGAL_CONTACT_EMAIL
+//
+// server-only: lib/legal is imported exclusively by server components.
+const env = (key: string, fallback: string): string => {
+  const v = process.env[key];
+  return v && v.trim().length > 0 ? v.trim() : fallback;
+};
 
 export const LEGAL = {
-  COMPANY_NAME: "[LEGAL_COMPANY_NAME]",
-  LEGAL_FORM: "[LEGAL_FORM]",
-  REGISTERED_ADDRESS: "[REGISTERED_ADDRESS]",
-  NIP: "[NIP]",
-  REGON: "[REGON]",
-  KRS: "[KRS]",
+  COMPANY_NAME: env("LEGAL_COMPANY_NAME", "[LEGAL_COMPANY_NAME]"),
+  LEGAL_FORM: env("LEGAL_FORM", "[LEGAL_FORM]"),
+  REGISTERED_ADDRESS: env("LEGAL_REGISTERED_ADDRESS", "[REGISTERED_ADDRESS]"),
+  NIP: env("LEGAL_NIP", "[NIP]"),
+  REGON: env("LEGAL_REGON", "[REGON]"),
+  KRS: env("LEGAL_KRS", "[KRS]"),
   /** Real, usable contact until company details are provided. */
-  CONTACT_EMAIL: "hello@termcatch.com",
+  CONTACT_EMAIL: env("LEGAL_CONTACT_EMAIL", "hello@termcatch.com"),
   /** Set to the real go-live date once the documents are formally adopted. */
-  EFFECTIVE_DATE: "[LEGAL_EFFECTIVE_DATE]",
+  EFFECTIVE_DATE: env("LEGAL_EFFECTIVE_DATE", "[LEGAL_EFFECTIVE_DATE]"),
   /** Human "last updated" — kept in sync when a document is revised. */
   LAST_UPDATED: "10 sierpnia 2026",
   BRAND: "TermCatch",
   DOMAIN: "termcatch.com",
-} as const;
+};
 
 /** The eight registration fields, for a compact "operator details" block. */
 export const LEGAL_OPERATOR_FIELDS: { label: string; value: string }[] = [

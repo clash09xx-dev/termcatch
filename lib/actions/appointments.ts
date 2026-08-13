@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { after } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getServerUser } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
@@ -397,10 +398,12 @@ export async function createAppointment(data: CreateAppointmentInput) {
 
   const slotLabel = describeSlot(start);
 
-  // In-app notifications (customer + salon owner) — non-blocking.
-  // The booking is already confirmed: the customer is told so, the salon is
-  // notified of the new (confirmed) booking.
-  await Promise.allSettled([
+  // Notifications + emails + SMS — genuinely non-blocking now. The booking is
+  // already committed above; these external side effects run AFTER the response
+  // is sent (next/server `after`), so the customer never waits on Resend/Twilio.
+  // Each side effect is independently idempotent/deduped, so running post-response
+  // is safe. This is the main booking latency fix.
+  after(() => Promise.allSettled([
     notify({
       userId: customer.id,
       businessId: business.id,
@@ -460,7 +463,7 @@ export async function createAppointment(data: CreateAppointmentInput) {
       appointmentId: appointment.id,
       kind: "new",
     }),
-  ]);
+  ]));
 
   revalidatePath("/customer/dashboard");
   revalidatePath("/business/dashboard");
@@ -554,7 +557,7 @@ export async function rescheduleAppointment(input: {
 
   const newSlotLabel = describeSlot(newStart);
 
-  await Promise.allSettled([
+  after(() => Promise.allSettled([
     notifySalonInApp(appointment.business.id, "reschedule", {
       userId: appointment.business.ownerId,
       type: "APPOINTMENT_BOOKED",
@@ -598,7 +601,7 @@ export async function rescheduleAppointment(input: {
       }),
       dedupeSuffix: `:${newStart.toISOString()}`,
     }),
-  ]);
+  ]));
 
   revalidatePath("/customer/dashboard");
   revalidatePath("/business/dashboard");
@@ -657,7 +660,7 @@ export async function cancelAppointment(appointmentId: string) {
     },
   });
 
-  await Promise.allSettled([
+  after(() => Promise.allSettled([
     notifySalonInApp(appointment.business.id, "cancellation", {
       userId: appointment.business.ownerId,
       type: "APPOINTMENT_CANCELLED",
@@ -691,7 +694,7 @@ export async function cancelAppointment(appointmentId: string) {
         slotLabel: smsSlotLabel(appointment.startTime, toLocale(customer.locale)),
       }),
     }),
-  ]);
+  ]));
 
   revalidatePath("/customer/dashboard");
   revalidatePath("/business/dashboard");

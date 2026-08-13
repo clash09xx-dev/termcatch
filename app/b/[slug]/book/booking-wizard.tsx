@@ -1046,7 +1046,7 @@ export default function BookingWizard({
                             applyCoupon();
                           }
                         }}
-                        placeholder="WELCOME20"
+                        placeholder="Kod rabatowy"
                         disabled={!!appliedCoupon}
                         className="input-glass flex-1 px-3.5 py-2.5 text-sm rounded-xl outline-none text-slate-800 placeholder:text-slate-400 uppercase tabular-nums disabled:opacity-60"
                       />

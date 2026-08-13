@@ -142,7 +142,7 @@ export function CouponsClient({ coupons }: { coupons: CouponRow[] }) {
       <GlassModal open={open} onOpenChange={(o) => { if (o) setOpen(true); else requestClose(); }} title={editingId ? "Edytuj kupon" : "Nowy kupon"} className="max-w-md">
         <form onSubmit={save} className="space-y-4 mt-2">
           <div className="grid grid-cols-2 gap-3">
-            <FormField label="Kod" htmlFor="c-code"><input id="c-code" value={form.code} onChange={(e) => set("code", e.target.value.toUpperCase())} placeholder="WELCOME20" className={cn(INPUT, "font-mono uppercase")} autoFocus /></FormField>
+            <FormField label="Kod" htmlFor="c-code"><input id="c-code" value={form.code} onChange={(e) => set("code", e.target.value.toUpperCase())} placeholder="np. LATO10" className={cn(INPUT, "font-mono uppercase")} autoFocus /></FormField>
             <FormField label="Nazwa" htmlFor="c-name"><input id="c-name" value={form.name} onChange={(e) => set("name", e.target.value)} placeholder="Powitalny" className={INPUT} /></FormField>
           </div>
           <div className="grid grid-cols-2 gap-3">
