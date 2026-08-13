@@ -45,27 +45,32 @@ function baseUrl(accountName: string): string {
   return `https://${accountName}.fakturownia.pl`;
 }
 
-export type FakturowniaError = { ok: false; error: string; status?: number };
+// Stable error codes — the client translates these via the dictionary so the
+// backend stays language-free. `error` is a Polish fallback (logs / non-UI).
+export type FakturowniaErrorCode =
+  | "NOT_CONFIGURED" | "INVALID_TOKEN" | "NO_PERMISSION" | "NOT_FOUND"
+  | "RATE_LIMITED" | "UNAVAILABLE" | "TIMEOUT" | "NETWORK" | "HTTP";
+export type FakturowniaError = { ok: false; error: string; code: FakturowniaErrorCode; status?: number };
 export type FakturowniaOk<T> = { ok: true; data: T };
 export type FakturowniaResult<T> = FakturowniaOk<T> | FakturowniaError;
 
 const TIMEOUT_MS = 12_000;
 
-/** Map transport/HTTP failures to friendly, token-safe messages. */
+/** Map transport/HTTP failures to a stable code + token-safe fallback message. */
 function httpError(status: number): FakturowniaError {
   switch (status) {
     case 401:
-      return { ok: false, error: "Nieprawidłowy token API Fakturownia.", status };
+      return { ok: false, code: "INVALID_TOKEN", error: "Nieprawidłowy token API Fakturownia.", status };
     case 403:
-      return { ok: false, error: "Token nie ma wystarczających uprawnień w Fakturownia.", status };
+      return { ok: false, code: "NO_PERMISSION", error: "Token nie ma wystarczających uprawnień w Fakturownia.", status };
     case 404:
-      return { ok: false, error: "Nie znaleziono konta Fakturownia lub zasobu.", status };
+      return { ok: false, code: "NOT_FOUND", error: "Nie znaleziono konta Fakturownia lub zasobu.", status };
     case 429:
-      return { ok: false, error: "Zbyt wiele zapytań do Fakturownia — spróbuj ponownie za chwilę.", status };
+      return { ok: false, code: "RATE_LIMITED", error: "Zbyt wiele zapytań do Fakturownia — spróbuj ponownie za chwilę.", status };
     default:
       return status >= 500
-        ? { ok: false, error: "Fakturownia jest chwilowo niedostępna.", status }
-        : { ok: false, error: `Fakturownia zwróciła błąd (HTTP ${status}).`, status };
+        ? { ok: false, code: "UNAVAILABLE", error: "Fakturownia jest chwilowo niedostępna.", status }
+        : { ok: false, code: "HTTP", error: `Fakturownia zwróciła błąd (HTTP ${status}).`, status };
   }
 }
 
@@ -76,8 +81,8 @@ async function request<T>(
   body?: unknown
 ): Promise<FakturowniaResult<T>> {
   const account = creds.accountName.trim().toLowerCase();
-  if (!isValidAccountName(account)) return { ok: false, error: "Nieprawidłowa nazwa konta Fakturownia." };
-  if (!creds.token || creds.token.trim().length === 0) return { ok: false, error: "Brak tokenu API Fakturownia." };
+  if (!isValidAccountName(account)) return { ok: false, code: "NOT_CONFIGURED", error: "Nieprawidłowa nazwa konta Fakturownia." };
+  if (!creds.token || creds.token.trim().length === 0) return { ok: false, code: "NOT_CONFIGURED", error: "Brak tokenu API Fakturownia." };
 
   // Token in query for GET, in JSON body for POST — never in a logged surface.
   const sep = path.includes("?") ? "&" : "?";
@@ -101,9 +106,9 @@ async function request<T>(
     return { ok: true, data };
   } catch (e) {
     if (e instanceof Error && e.name === "AbortError") {
-      return { ok: false, error: "Przekroczono czas oczekiwania na odpowiedź Fakturownia." };
+      return { ok: false, code: "TIMEOUT", error: "Przekroczono czas oczekiwania na odpowiedź Fakturownia." };
     }
-    return { ok: false, error: "Nie udało się połączyć z Fakturownia." };
+    return { ok: false, code: "NETWORK", error: "Nie udało się połączyć z Fakturownia." };
   } finally {
     clearTimeout(timer);
   }

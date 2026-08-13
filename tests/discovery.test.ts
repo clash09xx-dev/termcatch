@@ -1,6 +1,10 @@
 import { test, describe } from "node:test";
 import assert from "node:assert/strict";
 import { DeterministicInterpreter, cityMatches, nextQuestion, rankSalons, type RankableSalon } from "../lib/discovery";
+import { getDictionary } from "../lib/i18n/dictionaries";
+
+const PL = getDictionary("pl").search;
+const EN = getDictionary("en").search;
 
 const CITIES = ["Warszawa", "Kraków", "Gdańsk"];
 const interp = new DeterministicInterpreter(CITIES);
@@ -31,9 +35,10 @@ describe("deterministic interpreter", () => {
     assert.equal(f.cityQuery, "Gdańsk");
     assert.equal(f.specialty, "manicure-hybrydowy");
   });
-  test("missing city → asks for city first", () => {
+  test("missing city → asks for city first (locale-aware copy)", () => {
     const f = interp.interpret(["dobry fryzjer"]);
-    assert.match(nextQuestion(f) ?? "", /mieście/);
+    assert.equal(nextQuestion(f, PL), PL.askCity);
+    assert.equal(nextQuestion(f, EN), EN.askCity); // same logic, English copy
   });
   test("time extraction: 'dzisiaj' / 'jutro' / 'pojutrze'", () => {
     assert.equal(interp.interpret(["manicure w Krakowie dzisiaj"]).dayOffset, 0);
@@ -55,7 +60,7 @@ describe("deterministic interpreter", () => {
   });
   test("missing service/specialty → asks what they need", () => {
     const f = interp.interpret(["cokolwiek w Warszawie"]);
-    assert.match(nextQuestion(f) ?? "", /usługi|specjalizacji/);
+    assert.equal(nextQuestion(f, PL), PL.askService);
   });
 });
 

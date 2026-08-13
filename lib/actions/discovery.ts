@@ -18,6 +18,7 @@ import { warsawDayStartUtc, warsawDayEndUtc } from "@/lib/timezone";
 import { publicDiscoveryWhere } from "@/lib/publication";
 import { routeSearch } from "@/lib/ai/guard";
 import { resolveLocale } from "@/lib/i18n/server";
+import { getDictionary, interpolate } from "@/lib/i18n/dictionaries";
 import { AppointmentStatus, DayOfWeek } from "@prisma/client";
 
 const DOW: DayOfWeek[] = ["SUNDAY", "MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY", "SATURDAY"];
@@ -54,16 +55,21 @@ function warsawYmdPlus(offset: number): string {
 export async function discoverSalons(userMessages: string[]): Promise<AssistantReply> {
   // Untrusted input: hard length/turn caps; content only ever reaches Prisma
   // as parametrized values derived from controlled vocabularies.
+  // The search assistant answers in the selected TermCatch language (deterministic
+  // copy from the dictionary — no LLM). Category terms still map to canonical
+  // internal categories regardless of the query language.
+  const locale = await resolveLocale();
+  const s = getDictionary(locale).search;
+
   const clean = userMessages.map((m) => String(m).slice(0, 500)).slice(-8);
   if (clean.length === 0 || clean.every((m) => !m.trim())) {
-    return { kind: "question", text: "Powiedz, czego szukasz — np. „dobry salon w Krakowie od koloryzacji”." };
+    return { kind: "question", text: s.greeting };
   }
 
   // Domain guard: the search assistant only helps discover + book services in
   // TermCatch. Obviously off-domain requests (homework, trivia, general chat)
   // are refused and redirected — it never becomes a general-purpose assistant.
   const lastMsg = [...clean].reverse().find((m) => m.trim()) ?? "";
-  const locale = await resolveLocale();
   const searchRoute = routeSearch(lastMsg, locale);
   if (searchRoute.action === "refuse") {
     return { kind: "question", text: searchRoute.reply };
@@ -72,7 +78,7 @@ export async function discoverSalons(userMessages: string[]): Promise<AssistantR
   const provider = await getProvider();
   const filters = provider.interpret(clean);
 
-  const question = nextQuestion(filters);
+  const question = nextQuestion(filters, s);
   if (question) return { kind: "question", text: question };
 
   const businesses = await prisma.business.findMany({
@@ -148,19 +154,17 @@ export async function discoverSalons(userMessages: string[]): Promise<AssistantR
   const results = rankSalons(salons, filters, 5);
 
   if (results.length === 0) {
-    return {
-      kind: "empty",
-      text: "Nie znalazłem jeszcze salonu spełniającego wszystkie warunki. Mogę poszukać podobnych usług albo innego terminu.",
-    };
+    return { kind: "empty", text: s.noResults };
   }
 
-  const what = filters.specialty ? specialtyLabel(filters.specialty) : filters.serviceQuery;
-  const timeNote =
-    filters.afterMinutes != null ? ` po ${timeLabelFromMinutes(filters.afterMinutes)}` : "";
+  const whatLabel = filters.specialty ? specialtyLabel(filters.specialty) : filters.serviceQuery;
+  const whatPart = whatLabel ? ` (${whatLabel})` : "";
+  const timePart = filters.afterMinutes != null ? interpolate(s.afterTime, { time: timeLabelFromMinutes(filters.afterMinutes) }) : "";
+  const vars = { city: filters.cityQuery ?? "", what: whatPart, time: timePart, n: results.length };
   const intro =
-    results.length < 3
-      ? `Znalazłem ${results.length === 1 ? "1 pasujący salon" : `${results.length} pasujące salony`} w ${filters.cityQuery}${what ? ` (${what})` : ""}${timeNote}:`
-      : `Najlepiej dopasowane w ${filters.cityQuery}${what ? ` (${what})` : ""}${timeNote}:`;
+    results.length === 1 ? interpolate(s.foundOne, vars)
+    : results.length === 2 ? interpolate(s.foundFew, vars)
+    : interpolate(s.bestMatch, vars);
 
   return { kind: "results", intro, results };
 }

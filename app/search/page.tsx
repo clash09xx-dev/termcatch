@@ -14,6 +14,8 @@ import { LandingNav } from "@/components/layout/landing-nav";
 import { formatCurrency, cn } from "@/lib/utils";
 import { ServiceCategory } from "@prisma/client";
 import { parseCategoryParam, categoryLabel } from "@/lib/categories";
+import { getServerI18n } from "@/lib/i18n/server";
+import { interpolate } from "@/lib/i18n/dictionaries";
 import { buildBusinessSearchWhere } from "@/lib/search";
 import { getBusinessesEarliest, warsawYmdPlusDays } from "@/lib/availability";
 import { warsawTodayYmd } from "@/lib/calendar-utils";
@@ -261,6 +263,8 @@ function hhmmToMin(hhmm: string): number {
 }
 
 async function SearchResults({ searchParams }: { searchParams: SearchParams }) {
+  const { dict } = await getServerI18n();
+  const sr = dict.search;
   const page = Math.max(1, parseInt(searchParams.page ?? "1", 10));
   const skip = (page - 1) * PAGE_SIZE;
   const sort = searchParams.sort === "price" ? "price" : "rating";
@@ -362,12 +366,10 @@ async function SearchResults({ searchParams }: { searchParams: SearchParams }) {
           </svg>
         </div>
         <p className="text-slate-900 font-semibold">
-          {availability ? `Brak salonów z wolnym terminem ${availability.label}` : "Nie znaleziono salonów"}
+          {availability ? interpolate(sr.emptyTitleAvail, { when: availability.label }) : sr.emptyTitle}
         </p>
         <p className="text-slate-500 text-sm mt-1 mb-5">
-          {availability
-            ? "Spróbuj innego dnia albo wyłącz filtr dostępności."
-            : "Spróbuj zmienić filtry lub wyszukaj inną frazę."}
+          {availability ? sr.emptyBodyAvail : sr.emptyBody}
         </p>
         {hasFilters && (
           <Link
@@ -476,16 +478,18 @@ export default async function SearchPage({
 }) {
   const params = await searchParams;
   const categoryFilter = parseCategoryParam(params.category);
+  const { dict } = await getServerI18n();
+  const sr = dict.search;
 
   const title = params.q
-    ? `Wyniki dla „${params.q}"`
+    ? interpolate(sr.resultsFor, { q: params.q })
     : categoryFilter
     ? categoryLabel(categoryFilter)
-    : "Znajdź specjalistę";
+    : sr.heroTitle;
 
   const subtitle = params.city
-    ? `Salony i specjaliści w: ${params.city}`
-    : "Salony i specjaliści z rezerwacją online";
+    ? interpolate(sr.heroSubtitleCity, { city: params.city })
+    : sr.heroSubtitle;
 
   return (
     <div

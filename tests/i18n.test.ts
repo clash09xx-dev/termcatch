@@ -11,7 +11,9 @@ import { tr } from "../lib/i18n/dictionaries/tr";
 import { refusalAssistant, refusalSearch, routeAssistant, routeSearch } from "../lib/ai/guard";
 import { formatCurrency, formatDate, formatNumber } from "../lib/i18n/format";
 import { bookingSmsBody, smsSlotLabel } from "../lib/i18n/sms-templates";
-import { DeterministicInterpreter } from "../lib/discovery";
+import { DeterministicInterpreter, nextQuestion } from "../lib/discovery";
+import { LOCALE_CODE } from "../lib/i18n/config";
+import { buildSystemPrompt } from "../lib/ai/system-prompt";
 
 const interp = new DeterministicInterpreter(["Kraków", "Warszawa"]);
 
@@ -160,5 +162,65 @@ describe("deterministic SMS templates", () => {
     for (const l of LOCALES) assert.ok(bookingSmsBody(l, "reminder", params).startsWith("TermCatch:"));
     // Warsaw-time slot label is produced without throwing.
     assert.ok(smsSlotLabel(new Date(Date.UTC(2026, 7, 11, 12, 0, 0)), "pl").length > 0);
+  });
+});
+
+// ── Owner AI answers in the selected locale (hard directive in the prompt) ────
+describe("owner assistant language directive", () => {
+  const args = { businessName: "Salon X", contextBlock: "..." };
+  test("21. the system prompt names the target language (per locale)", () => {
+    assert.match(buildSystemPrompt({ ...args, locale: "pl" }), /po polsku/);
+    assert.match(buildSystemPrompt({ ...args, locale: "en" }), /in English/);
+    assert.match(buildSystemPrompt({ ...args, locale: "de" }), /auf Deutsch/);
+    assert.match(buildSystemPrompt({ ...args, locale: "tr" }), /Türkçe/);
+  });
+  test("22. the directive is repeated (first + last) and unchanged guardrails remain", () => {
+    const p = buildSystemPrompt({ ...args, locale: "en" });
+    assert.ok(p.indexOf("in English") !== p.lastIndexOf("in English")); // appears at least twice
+    assert.match(p, /Bezpieczeństwo/); // security section is still present (guardrails intact)
+  });
+});
+
+// ── Customer search: deterministic + localized (real language, not hardcoded) ─
+describe("search discovery is locale-aware", () => {
+  test("23. discovery questions come from the dictionary per locale", () => {
+    const f = interp.interpret(["dobry fryzjer"]); // missing city
+    assert.equal(nextQuestion(f, pl.search), pl.search.askCity);
+    assert.equal(nextQuestion(f, en.search), en.search.askCity);
+    assert.equal(nextQuestion(f, de.search), de.search.askCity);
+    assert.equal(nextQuestion(f, tr.search), tr.search.askCity);
+  });
+  test("24. search copy is genuinely translated (not left Polish)", () => {
+    assert.notEqual(en.search.greeting, pl.search.greeting);
+    assert.notEqual(de.search.noResults, pl.search.noResults);
+    assert.match(interpolate(en.search.foundOne, { city: "Kraków", what: "", time: "", n: 1 }), /Found 1 matching salon in Kraków/);
+  });
+});
+
+// ── Fakturownia UI is fully localized (codes → dict, no raw Polish) ───────────
+describe("Fakturownia UI localization", () => {
+  const CODES = [
+    "okConnected", "okDisconnected", "okTest", "errNoAccess", "errEncryption",
+    "errAccountRequired", "errAccountInvalid", "errTokenRequired", "errTokenShort",
+    "errNotConnected", "errInvalidToken", "errNoPermission", "errNotFound",
+    "errRateLimited", "errUnavailable", "errTimeout", "errNetwork", "errGeneric",
+  ] as const;
+  test("25. every result/error code has copy in all four languages", () => {
+    for (const l of LOCALES) {
+      const f = getDictionary(l).fakturownia;
+      for (const k of CODES) assert.ok(typeof f[k] === "string" && f[k].length > 0, `${l}.fakturownia.${k}`);
+    }
+    // and the section + key controls are translated (not Polish under EN)
+    assert.equal(en.fakturownia.section, "Integrations");
+    assert.equal(de.fakturownia.connect, "Konto verbinden");
+    assert.equal(tr.fakturownia.disconnect, "Bağlantıyı kes");
+  });
+});
+
+// ── Compact language control uses standard codes (never "ANG") ───────────────
+describe("mobile language codes", () => {
+  test("26. codes are PL/EN/DE/TR — never ANG", () => {
+    assert.deepEqual(LOCALES.map((l) => LOCALE_CODE[l]), ["PL", "EN", "DE", "TR"]);
+    for (const l of LOCALES) assert.notEqual(LOCALE_CODE[l], "ANG");
   });
 });

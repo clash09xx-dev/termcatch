@@ -36,7 +36,9 @@ async function ownerBusiness(): Promise<{ businessId: string } | null> {
   return business ? { businessId: business.id } : null;
 }
 
-export type IntegrationActionResult = { ok: boolean; message: string; status?: ConnectionStatus };
+// `code` is stable + language-free; the client maps it to a localized string.
+// `message` is a Polish fallback (server logs / non-localized callers).
+export type IntegrationActionResult = { ok: boolean; code: string; message: string; status?: ConnectionStatus };
 
 const MIN_TOKEN_LEN = 10;
 
@@ -57,24 +59,24 @@ export async function connectFakturownia(
   tokenRaw: string
 ): Promise<IntegrationActionResult> {
   const owner = await ownerBusiness();
-  if (!owner) return { ok: false, message: "Brak dostępu." };
+  if (!owner) return { ok: false, code: "NO_ACCESS", message: "Brak dostępu." };
 
   if (!encryptionAvailable()) {
-    return { ok: false, message: "Szyfrowanie sekretów nie jest skonfigurowane na serwerze." };
+    return { ok: false, code: "ENCRYPTION_UNAVAILABLE", message: "Szyfrowanie sekretów nie jest skonfigurowane na serwerze." };
   }
 
   const accountName = normalizeAccountName(String(accountNameRaw ?? ""));
   const token = String(tokenRaw ?? "").trim();
 
-  if (!accountName) return { ok: false, message: "Podaj nazwę konta Fakturownia." };
-  if (!isValidAccountName(accountName)) return { ok: false, message: "Nieprawidłowa nazwa konta (dozwolone: litery, cyfry, myślnik)." };
-  if (!token) return { ok: false, message: "Podaj token API Fakturownia." };
-  if (token.length < MIN_TOKEN_LEN) return { ok: false, message: "Token API wygląda na niepełny." };
+  if (!accountName) return { ok: false, code: "ACCOUNT_REQUIRED", message: "Podaj nazwę konta Fakturownia." };
+  if (!isValidAccountName(accountName)) return { ok: false, code: "ACCOUNT_INVALID", message: "Nieprawidłowa nazwa konta (dozwolone: litery, cyfry, myślnik)." };
+  if (!token) return { ok: false, code: "TOKEN_REQUIRED", message: "Podaj token API Fakturownia." };
+  if (token.length < MIN_TOKEN_LEN) return { ok: false, code: "TOKEN_TOO_SHORT", message: "Token API wygląda na niepełny." };
 
   // Verify BEFORE persisting — never store credentials we couldn't authenticate.
   const creds: FakturowniaCredentials = { accountName, token };
   const test = await testConnection(creds);
-  if (!test.ok) return { ok: false, message: test.error };
+  if (!test.ok) return { ok: false, code: test.code, message: test.error };
 
   await saveConnection(owner.businessId, accountName, token);
   await touchLastSync(owner.businessId);
@@ -82,32 +84,34 @@ export async function connectFakturownia(
   revalidatePath("/business/settings");
   revalidatePath("/business/invoices");
   const status = await getConnectionStatus(owner.businessId);
-  return { ok: true, message: `Połączono z kontem „${accountName}".`, status };
+  return { ok: true, code: "CONNECTED", message: `Połączono z kontem „${accountName}".`, status };
 }
 
 /** Disconnect: delete the stored credentials entirely. */
 export async function disconnectFakturownia(): Promise<IntegrationActionResult> {
   const owner = await ownerBusiness();
-  if (!owner) return { ok: false, message: "Brak dostępu." };
+  if (!owner) return { ok: false, code: "NO_ACCESS", message: "Brak dostępu." };
   await deleteConnection(owner.businessId);
   revalidatePath("/business/settings");
   revalidatePath("/business/invoices");
   const status = await getConnectionStatus(owner.businessId);
-  return { ok: true, message: "Rozłączono konto Fakturownia.", status };
+  return { ok: true, code: "DISCONNECTED", message: "Rozłączono konto Fakturownia.", status };
 }
 
 /** Re-test the STORED credentials (button in Settings). Updates last sync. */
 export async function testFakturowniaConnection(): Promise<IntegrationActionResult> {
   const owner = await ownerBusiness();
-  if (!owner) return { ok: false, message: "Brak dostępu." };
+  if (!owner) return { ok: false, code: "NO_ACCESS", message: "Brak dostępu." };
 
   const creds = await resolveCredentials(owner.businessId);
   if (!creds) {
     const status = await getConnectionStatus(owner.businessId);
-    return { ok: false, message: "Brak połączonego konta Fakturownia.", status };
+    return { ok: false, code: "NOT_CONNECTED", message: "Brak połączonego konta Fakturownia.", status };
   }
   const test = await testConnection(creds);
   if (test.ok) await touchLastSync(owner.businessId);
   const status = await getConnectionStatus(owner.businessId);
-  return { ok: test.ok, message: test.ok ? "Połączenie działa poprawnie." : test.error, status };
+  return test.ok
+    ? { ok: true, code: "TEST_OK", message: "Połączenie działa poprawnie.", status }
+    : { ok: false, code: test.code, message: test.error, status };
 }

@@ -87,7 +87,6 @@ export function LandingNav({
   // Fuller marketing nav needs a later breakpoint so it never overflows the pill.
   const desktopNavCls = isMarketing ? "hidden lg:flex items-center gap-0.5" : "hidden md:flex items-center gap-0.5";
   const desktopActionsCls = isMarketing ? "hidden lg:flex items-center gap-1.5" : "hidden md:flex items-center gap-1.5";
-  const toggleCls = isMarketing ? "lg:hidden p-2 rounded-xl nav-link" : "md:hidden p-2 rounded-xl nav-link";
 
   return (
     <header className="fixed top-0 inset-x-0 z-50 px-4 pt-3">
@@ -138,13 +137,16 @@ export function LandingNav({
             )}
           </div>
 
-          {/* Mobile toggle */}
-          <button
-            className={toggleCls}
-            onClick={() => setIsMobileOpen(!isMobileOpen)}
-            aria-label="Menu"
-            aria-expanded={isMobileOpen}
-          >
+          {/* Mobile: compact language control sits NEXT TO the menu button
+              (flag + PL/EN/DE/TR) — visible without opening the menu. */}
+          <div className={isMarketing ? "flex items-center gap-1.5 lg:hidden" : "flex items-center gap-1.5 md:hidden"}>
+            <LanguageSelector compact />
+            <button
+              className="p-2 rounded-xl nav-link"
+              onClick={() => setIsMobileOpen(!isMobileOpen)}
+              aria-label={t.nav.menu}
+              aria-expanded={isMobileOpen}
+            >
             <motion.svg
               width="17" height="17" viewBox="0 0 24 24"
               fill="none" stroke="currentColor" strokeWidth="2"
@@ -156,7 +158,8 @@ export function LandingNav({
                 : <path d="M4 6h16M4 12h16M4 18h16" />
               }
             </motion.svg>
-          </button>
+            </button>
+          </div>
         </motion.div>
 
         {/* ── Mobile menu — chrome glass ── */}
@@ -189,7 +192,6 @@ export function LandingNav({
                 ))}
               </div>
               <div className="px-3 pb-3 pt-2 space-y-1.5" style={{ borderTop: "1px solid rgba(203,213,225,0.25)" }}>
-                <LanguageSelector className="w-full cursor-pointer rounded-xl border border-slate-200 bg-white/70 px-3 py-2.5 text-sm text-slate-700 outline-none" />
                 {isMarketing && (
                   <Link
                     href={affiliateHref}

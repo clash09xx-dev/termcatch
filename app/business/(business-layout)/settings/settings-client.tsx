@@ -318,7 +318,7 @@ export function SettingsClient({ settings: initialSettings, notificationSettings
                     ? { color: "#BE123C", border: "1px solid transparent" }
                     : undefined}
                 >
-                  {section.id === "jezyk" ? t.lang.label : section.label}
+                  {section.id === "jezyk" ? t.lang.label : section.id === "integracje" ? t.fakturownia.section : section.label}
                 </button>
               );
             })}

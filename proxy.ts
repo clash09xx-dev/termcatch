@@ -8,6 +8,21 @@ const PROTECTED_ROUTES = ["/customer", "/business", "/admin", "/employee"];
 const AUTH_ROUTES = ["/login", "/register", "/reset-password"];
 
 export async function proxy(request: NextRequest) {
+  // ── Canonical hostname (ONE host: termcatch.com) ──────────────────────────
+  // Redirect www.<domain> → the apex on https, preserving path + query. This is
+  // the code half of the "www broken" fix; the other half (a TLS certificate
+  // actually being issued for www) is Railway/DNS config and cannot be done in
+  // code — see the report. Dev/localhost never uses a www host, so this is inert
+  // locally and carries no redirect-loop risk (apex never starts with "www.").
+  const host = request.headers.get("host") ?? "";
+  if (host.startsWith("www.")) {
+    const url = request.nextUrl.clone();
+    url.protocol = "https:";
+    url.host = host.slice(4); // strip "www."
+    url.port = "";
+    return NextResponse.redirect(url, 308);
+  }
+
   // Forward the pathname to Server Components (they can't read it otherwise) so
   // the business layout can exempt the billing route from the subscription gate.
   const requestHeaders = new Headers(request.headers);

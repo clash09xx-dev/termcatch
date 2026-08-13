@@ -9,19 +9,31 @@ import {
   testFakturowniaConnection,
 } from "@/lib/actions/integrations";
 import type { ConnectionStatus } from "@/lib/fakturownia/connection";
+import { useT, useLocale } from "@/components/i18n/i18n-provider";
+import { intlLocale } from "@/lib/i18n/format";
+import type { Dictionary } from "@/lib/i18n/dictionaries";
 
 const INPUT_CLS =
   "input-glass w-full rounded-xl px-3.5 py-2.5 text-sm text-slate-800 placeholder:text-slate-400 outline-none";
 
 type Feedback = { kind: "ok" | "err"; text: string } | null;
 
-function fmtDate(d: Date | string | null): string {
-  if (!d) return "—";
-  const date = typeof d === "string" ? new Date(d) : d;
-  return new Intl.DateTimeFormat("pl-PL", { dateStyle: "medium", timeStyle: "short" }).format(date);
-}
+// Stable action/error codes → localized copy (backend stays language-free).
+const CODE_KEY: Record<string, keyof Dictionary["fakturownia"]> = {
+  CONNECTED: "okConnected", DISCONNECTED: "okDisconnected", TEST_OK: "okTest",
+  NO_ACCESS: "errNoAccess", ENCRYPTION_UNAVAILABLE: "errEncryption",
+  ACCOUNT_REQUIRED: "errAccountRequired", ACCOUNT_INVALID: "errAccountInvalid",
+  TOKEN_REQUIRED: "errTokenRequired", TOKEN_TOO_SHORT: "errTokenShort",
+  NOT_CONNECTED: "errNotConnected", INVALID_TOKEN: "errInvalidToken",
+  NO_PERMISSION: "errNoPermission", NOT_FOUND: "errNotFound",
+  RATE_LIMITED: "errRateLimited", UNAVAILABLE: "errUnavailable",
+  TIMEOUT: "errTimeout", NETWORK: "errNetwork",
+};
 
 export function FakturowniaIntegrationCard({ initial }: { initial: ConnectionStatus }) {
+  const t = useT();
+  const f = t.fakturownia;
+  const locale = useLocale();
   const [status, setStatus] = useState<ConnectionStatus>(initial);
   const [editing, setEditing] = useState(false);
   const [account, setAccount] = useState("");
@@ -31,11 +43,22 @@ export function FakturowniaIntegrationCard({ initial }: { initial: ConnectionSta
 
   const showForm = editing || (!status.connected && !status.needsReconnect) || status.needsReconnect;
 
+  const msg = (code: string): string => {
+    const k = CODE_KEY[code];
+    return k ? f[k] : f.errGeneric;
+  };
+
+  const fmtDate = (d: Date | string | null): string => {
+    if (!d) return "—";
+    const date = typeof d === "string" ? new Date(d) : d;
+    return new Intl.DateTimeFormat(intlLocale(locale), { dateStyle: "medium", timeStyle: "short" }).format(date);
+  };
+
   function connect() {
     setFeedback(null);
     start(async () => {
       const res = await connectFakturownia(account, token);
-      setFeedback({ kind: res.ok ? "ok" : "err", text: res.message });
+      setFeedback({ kind: res.ok ? "ok" : "err", text: msg(res.code) });
       if (res.ok) {
         if (res.status) setStatus(res.status);
         setEditing(false);
@@ -49,7 +72,7 @@ export function FakturowniaIntegrationCard({ initial }: { initial: ConnectionSta
     setFeedback(null);
     start(async () => {
       const res = await disconnectFakturownia();
-      setFeedback({ kind: res.ok ? "ok" : "err", text: res.message });
+      setFeedback({ kind: res.ok ? "ok" : "err", text: msg(res.code) });
       if (res.status) setStatus(res.status);
       setEditing(false);
     });
@@ -59,7 +82,7 @@ export function FakturowniaIntegrationCard({ initial }: { initial: ConnectionSta
     setFeedback(null);
     start(async () => {
       const res = await testFakturowniaConnection();
-      setFeedback({ kind: res.ok ? "ok" : "err", text: res.message });
+      setFeedback({ kind: res.ok ? "ok" : "err", text: msg(res.code) });
       if (res.status) setStatus(res.status);
     });
   }
@@ -70,25 +93,22 @@ export function FakturowniaIntegrationCard({ initial }: { initial: ConnectionSta
       <div className="flex items-start justify-between gap-3">
         <div>
           <h3 className="text-sm font-semibold text-slate-900">Fakturownia</h3>
-          <p className="mt-0.5 text-xs text-slate-500 leading-relaxed">
-            Połącz własne konto Fakturownia, aby wystawiać faktury z TermCatch. Token API przechowujemy
-            bezpiecznie (zaszyfrowany) i nigdy nie pokazujemy w przeglądarce.
-          </p>
+          <p className="mt-0.5 text-xs text-slate-500 leading-relaxed">{f.description}</p>
         </div>
-        <StatusPill status={status} />
+        <StatusPill connected={status.connected} label={status.connected ? f.connected : f.notConnected} />
       </div>
 
       {/* Connected details */}
       {status.connected && !editing && (
         <div className="mt-4 grid grid-cols-2 gap-3">
-          <Detail label="Konto" value={status.accountName ?? "—"} />
-          <Detail label="Ostatnia synchronizacja" value={fmtDate(status.lastSyncAt)} />
+          <Detail label={f.account} value={status.accountName ?? "—"} />
+          <Detail label={f.lastSync} value={fmtDate(status.lastSyncAt)} />
         </div>
       )}
 
       {status.needsReconnect && (
         <p className="mt-3 rounded-xl px-3 py-2 text-xs font-medium" style={{ background: "rgba(245,158,11,0.10)", border: "1px solid rgba(245,158,11,0.30)", color: "#B45309" }}>
-          Nie możemy odczytać zapisanego tokenu. Połącz konto ponownie.
+          {f.needsReconnect}
         </p>
       )}
 
@@ -97,21 +117,21 @@ export function FakturowniaIntegrationCard({ initial }: { initial: ConnectionSta
         <div className="mt-4 space-y-3">
           <div>
             <label htmlFor="fk-account" className="mb-1 block text-xs font-medium text-slate-600">
-              Nazwa konta Fakturownia
+              {f.accountNameLabel}
             </label>
             <input
               id="fk-account"
               value={account}
               onChange={(e) => setAccount(e.target.value)}
-              placeholder="np. mojsalon"
+              placeholder={f.accountPlaceholder}
               autoComplete="off"
               className={INPUT_CLS}
             />
-            <p className="mt-1 text-[11px] text-slate-400">Część adresu: <code>mojsalon</code>.fakturownia.pl</p>
+            <p className="mt-1 text-[11px] text-slate-400">{f.accountHint}</p>
           </div>
           <div>
             <label htmlFor="fk-token" className="mb-1 block text-xs font-medium text-slate-600">
-              Token API
+              {f.tokenLabel}
             </label>
             <input
               id="fk-token"
@@ -122,15 +142,15 @@ export function FakturowniaIntegrationCard({ initial }: { initial: ConnectionSta
               autoComplete="off"
               className={`${INPUT_CLS} tabular-nums`}
             />
-            <p className="mt-1 text-[11px] text-slate-400">Ustawienia → API w panelu Fakturownia.</p>
+            <p className="mt-1 text-[11px] text-slate-400">{f.tokenHint}</p>
           </div>
           <div className="flex items-center gap-2">
             <InkButton onClick={connect} disabled={pending || !account.trim() || !token.trim()}>
-              {pending ? "Łączenie…" : status.connected || status.needsReconnect ? "Zapisz token" : "Połącz konto"}
+              {pending ? f.connecting : status.connected || status.needsReconnect ? f.saveToken : f.connect}
             </InkButton>
             {(editing || status.connected) && (
               <GlassButton onClick={() => { setEditing(false); setFeedback(null); setAccount(""); setToken(""); }} disabled={pending}>
-                Anuluj
+                {f.cancel}
               </GlassButton>
             )}
           </div>
@@ -141,10 +161,10 @@ export function FakturowniaIntegrationCard({ initial }: { initial: ConnectionSta
       {status.connected && !editing && (
         <div className="mt-4 flex flex-wrap items-center gap-2">
           <GlassButton onClick={test} disabled={pending}>
-            {pending ? "Testowanie…" : "Testuj połączenie"}
+            {pending ? f.testing : f.test}
           </GlassButton>
           <GlassButton onClick={() => { setEditing(true); setAccount(status.accountName ?? ""); setFeedback(null); }} disabled={pending}>
-            Zmień token
+            {f.changeToken}
           </GlassButton>
           <button
             type="button"
@@ -153,7 +173,7 @@ export function FakturowniaIntegrationCard({ initial }: { initial: ConnectionSta
             className="rounded-xl px-3.5 py-2 text-sm font-medium"
             style={{ background: "rgba(244,63,94,0.08)", border: "1px solid rgba(244,63,94,0.28)", color: "#BE123C" }}
           >
-            Rozłącz
+            {f.disconnect}
           </button>
         </div>
       )}
@@ -176,8 +196,7 @@ export function FakturowniaIntegrationCard({ initial }: { initial: ConnectionSta
   );
 }
 
-function StatusPill({ status }: { status: ConnectionStatus }) {
-  const connected = status.connected;
+function StatusPill({ connected, label }: { connected: boolean; label: string }) {
   return (
     <span
       className="flex-shrink-0 rounded-full px-2.5 py-1 text-[11px] font-semibold"
@@ -187,7 +206,7 @@ function StatusPill({ status }: { status: ConnectionStatus }) {
           : { background: "rgba(148,163,184,0.14)", border: "1px solid rgba(203,213,225,0.5)", color: "#64748B" }
       }
     >
-      {connected ? "Połączono" : "Nie połączono"}
+      {label}
     </span>
   );
 }

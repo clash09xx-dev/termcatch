@@ -186,10 +186,16 @@ export class DeterministicInterpreter implements DiscoveryInterpreter {
   }
 }
 
-/** The follow-up question for missing info — one at a time, city first. */
-export function nextQuestion(f: DiscoveryFilters): string | null {
-  if (!f.cityQuery) return "W jakim mieście mam szukać?";
-  if (!f.specialty && !f.serviceQuery) return "Jakiej usługi lub specjalizacji szukasz? Np. koloryzacja, kręcone włosy, manicure…";
+/**
+ * The follow-up question for missing info — one at a time, city first. Copy is
+ * passed in (locale-resolved by the caller) so this module stays pure/testable.
+ */
+export function nextQuestion(
+  f: DiscoveryFilters,
+  copy: { askCity: string; askService: string }
+): string | null {
+  if (!f.cityQuery) return copy.askCity;
+  if (!f.specialty && !f.serviceQuery) return copy.askService;
   return null;
 }
 

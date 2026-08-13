@@ -6,6 +6,7 @@ import { createPortal } from "react-dom";
 import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { visibleCategories } from "@/lib/categories";
+import { useT } from "@/components/i18n/i18n-provider";
 
 // ─── Shared styles ────────────────────────────────────────────────────────────
 
@@ -49,6 +50,7 @@ export default function SearchFilters({
 }: SearchFiltersProps) {
   const router = useRouter();
   const pathname = usePathname();
+  const s = useT().search;
   const [isPending, startTransition] = useTransition();
 
   const [q, setQ] = useState(currentQ ?? "");
@@ -108,7 +110,7 @@ export default function SearchFilters({
           className="block text-[11px] font-semibold text-slate-500 uppercase mb-2"
           style={{ letterSpacing: "0.08em" }}
         >
-          Szukaj
+          {s.filterSearch}
         </label>
         <div className="relative">
           <svg
@@ -128,7 +130,7 @@ export default function SearchFilters({
             onBlur={() => {
               if (q !== (currentQ ?? "")) applyFilters({ q });
             }}
-            placeholder="Fryzjer, masaż, manicure…"
+            placeholder={s.servicePlaceholder}
             className="input-glass w-full pl-9 pr-3 py-2.5 text-sm rounded-xl outline-none placeholder:text-slate-400 text-slate-800 transition-shadow"
           />
         </div>
@@ -141,7 +143,7 @@ export default function SearchFilters({
           className="block text-[11px] font-semibold text-slate-500 uppercase mb-2"
           style={{ letterSpacing: "0.08em" }}
         >
-          Miasto
+          {s.city}
         </label>
         <div className="relative">
           <svg
@@ -162,7 +164,7 @@ export default function SearchFilters({
             onBlur={() => {
               if (city !== (currentCity ?? "")) applyFilters({ city });
             }}
-            placeholder="np. Warszawa"
+            placeholder={s.cityPlaceholder}
             className="input-glass w-full pl-9 pr-3 py-2.5 text-sm rounded-xl outline-none placeholder:text-slate-400 text-slate-800 transition-shadow"
           />
         </div>
@@ -175,7 +177,7 @@ export default function SearchFilters({
           className="block text-[11px] font-semibold text-slate-500 uppercase mb-2"
           style={{ letterSpacing: "0.08em" }}
         >
-          Kategoria
+          {s.category}
         </label>
         <div className="relative">
           <select
@@ -187,7 +189,7 @@ export default function SearchFilters({
             }}
             className="input-glass w-full appearance-none pl-3 pr-9 py-2.5 text-sm rounded-xl outline-none text-slate-800 transition-shadow cursor-pointer"
           >
-            <option value="">Wszystkie kategorie</option>
+            <option value="">{s.allCategories}</option>
             {visibleCategories().map((cat) => (
               <option key={cat.value} value={cat.value}>
                 {cat.label}
@@ -209,13 +211,13 @@ export default function SearchFilters({
           className="block text-[11px] font-semibold text-slate-500 uppercase mb-2"
           style={{ letterSpacing: "0.08em" }}
         >
-          Dostępność
+          {s.availability}
         </label>
         <div className="flex flex-wrap gap-2">
           {[
-            { key: "", label: "Dowolny termin" },
-            { key: "today", label: "Dostępne dziś" },
-            { key: "tomorrow", label: "Dostępne jutro" },
+            { key: "", label: s.anyDate },
+            { key: "today", label: s.availableToday },
+            { key: "tomorrow", label: s.availableTomorrow },
           ].map((opt) => {
             const active = !date && (available || "") === opt.key;
             return (
@@ -247,7 +249,7 @@ export default function SearchFilters({
             setAvailable("");
             applyFilters({ date: e.target.value, available: "" });
           }}
-          aria-label="Dostępne w konkretnym dniu"
+          aria-label={s.dateSpecific}
           className="input-glass w-full mt-2 px-3 py-2.5 text-sm rounded-xl outline-none text-slate-800"
         />
       </div>
@@ -259,7 +261,7 @@ export default function SearchFilters({
           onClick={handleReset}
           className="w-full text-sm text-slate-500 hover:text-slate-900 underline underline-offset-4 transition-colors py-1"
         >
-          Wyczyść filtry
+          {s.clearFilters}
         </button>
       )}
     </div>
@@ -279,6 +281,7 @@ export function FilterPanel(props: SearchFiltersProps) {
 // ─── Mobile: "Filtry" pill + bottom sheet ────────────────────────────────────
 
 export function MobileFilters(props: SearchFiltersProps) {
+  const s = useT().search;
   const [open, setOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
   const reduceMotion = useReducedMotion();
@@ -325,7 +328,7 @@ export function MobileFilters(props: SearchFiltersProps) {
         <svg className="w-4 h-4 text-slate-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} aria-hidden="true">
           <path strokeLinecap="round" strokeLinejoin="round" d="M3 4.5h18l-7 8.5v6l-4 1.5v-7.5l-7-8.5Z" />
         </svg>
-        Filtry
+        {s.filters}
         {activeCount > 0 && (
           <span
             className="inline-flex items-center justify-center w-5 h-5 rounded-full text-[11px] font-bold text-white tabular-nums"
@@ -351,7 +354,7 @@ export function MobileFilters(props: SearchFiltersProps) {
             onClick={() => setOpen(false)}
             role="dialog"
             aria-modal="true"
-            aria-label="Filtry wyszukiwania"
+            aria-label={s.filtersAria}
           >
             <motion.div
               initial={reduceMotion ? { opacity: 0 } : { y: "100%" }}
@@ -375,12 +378,12 @@ export function MobileFilters(props: SearchFiltersProps) {
 
               <div className="flex items-center justify-between mb-4">
                 <h2 className="text-base font-bold text-slate-900" style={{ letterSpacing: "-0.02em" }}>
-                  Filtry
+                  {s.filters}
                 </h2>
                 <button
                   type="button"
                   onClick={() => setOpen(false)}
-                  aria-label="Zamknij filtry"
+                  aria-label={s.closeFilters}
                   className="w-8 h-8 flex items-center justify-center rounded-lg text-slate-400 hover:text-slate-700 transition-colors"
                 >
                   <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} aria-hidden="true">

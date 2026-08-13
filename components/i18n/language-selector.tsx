@@ -3,11 +3,23 @@
 import { useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { setLocale } from "@/lib/actions/locale";
-import { LOCALES, LOCALE_LABEL, LOCALE_FLAG, type Locale } from "@/lib/i18n/config";
+import { LOCALES, LOCALE_LABEL, LOCALE_FLAG, LOCALE_CODE, type Locale } from "@/lib/i18n/config";
 import { useI18n } from "@/components/i18n/i18n-provider";
 
-/** Compact language switcher (native select — accessible, low-noise). */
-export function LanguageSelector({ className }: { className?: string }) {
+/**
+ * Language switcher (native <select> — accessible, low-noise, one-tap).
+ *
+ * `compact` renders just "🇵🇱 PL" (flag + standard code) for tight spots like the
+ * mobile header, sitting NEXT TO the menu button rather than inside the menu.
+ * Non-compact shows the full endonym ("Polski", "Deutsch", …) for desktop.
+ */
+export function LanguageSelector({
+  className,
+  compact = false,
+}: {
+  className?: string;
+  compact?: boolean;
+}) {
   const { locale, t } = useI18n();
   const router = useRouter();
   const [pending, start] = useTransition();
@@ -21,6 +33,10 @@ export function LanguageSelector({ className }: { className?: string }) {
     });
   }
 
+  const defaultCls = compact
+    ? "cursor-pointer rounded-lg border border-slate-200/70 bg-white/70 px-1.5 py-1.5 text-xs font-semibold text-slate-700 outline-none hover:bg-white disabled:opacity-60"
+    : "cursor-pointer rounded-lg border border-slate-200 bg-white/70 px-2 py-1.5 text-sm text-slate-700 outline-none hover:bg-white disabled:opacity-60";
+
   return (
     <select
       value={locale}
@@ -28,14 +44,11 @@ export function LanguageSelector({ className }: { className?: string }) {
       onChange={(e) => change(e.target.value)}
       aria-label={t.lang.change}
       title={t.lang.change}
-      className={
-        className ??
-        "cursor-pointer rounded-lg border border-slate-200 bg-white/70 px-2 py-1.5 text-sm text-slate-700 outline-none hover:bg-white disabled:opacity-60"
-      }
+      className={className ?? defaultCls}
     >
       {LOCALES.map((l) => (
         <option key={l} value={l}>
-          {LOCALE_FLAG[l]} {LOCALE_LABEL[l]}
+          {LOCALE_FLAG[l]} {compact ? LOCALE_CODE[l] : LOCALE_LABEL[l]}
         </option>
       ))}
     </select>

@@ -30,6 +30,14 @@ export const LOCALE_FLAG: Record<Locale, string> = {
   tr: "🇹🇷",
 };
 
+/** Short standard codes for compact controls (never "ANG" — always PL/EN/DE/TR). */
+export const LOCALE_CODE: Record<Locale, string> = {
+  pl: "PL",
+  en: "EN",
+  de: "DE",
+  tr: "TR",
+};
+
 export function isLocale(v: unknown): v is Locale {
   return typeof v === "string" && (LOCALES as readonly string[]).includes(v);
 }

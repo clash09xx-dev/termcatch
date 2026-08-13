@@ -9,6 +9,8 @@ import Link from "next/link";
 import { cn } from "@/lib/utils";
 import { discoverSalons } from "@/lib/actions/discovery";
 import type { AssistantReply, DiscoveryResult } from "@/lib/discovery";
+import { useT } from "@/components/i18n/i18n-provider";
+import { interpolate } from "@/lib/i18n/dictionaries";
 
 type Turn = { role: "user" | "assistant"; text: string; results?: DiscoveryResult[] };
 
@@ -21,6 +23,8 @@ const CARD: React.CSSProperties = {
 };
 
 export function DiscoveryAssistant() {
+  const t = useT();
+  const s = t.search;
   const [open, setOpen] = useState(false);
   const [turns, setTurns] = useState<Turn[]>([]);
   const [input, setInput] = useState("");
@@ -38,7 +42,7 @@ export function DiscoveryAssistant() {
       try {
         reply = await discoverSalons(userTurns.filter((t) => t.role === "user").map((t) => t.text));
       } catch {
-        reply = { kind: "empty", text: "Coś poszło nie tak. Spróbuj ponownie." };
+        reply = { kind: "empty", text: t.errors.generic };
       }
       setTurns((prev) => [
         ...prev,
@@ -65,7 +69,7 @@ export function DiscoveryAssistant() {
         <svg className="w-4 h-4 text-slate-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} aria-hidden="true">
           <path strokeLinecap="round" strokeLinejoin="round" d="M8.625 12a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm3.75 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm3.75 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0ZM21 12c0 4.556-4.03 8.25-9 8.25a9.76 9.76 0 0 1-2.555-.337A5.972 5.972 0 0 1 5.41 20.97a5.969 5.969 0 0 1-.474-.065 4.48 4.48 0 0 0 .978-2.025c.09-.457-.133-.901-.467-1.226C3.93 16.178 3 14.189 3 12c0-4.556 4.03-8.25 9-8.25s9 3.694 9 8.25Z" />
         </svg>
-        Opisz, czego szukasz — pomożemy
+        {s.openCta}
         <span className="text-[10px] font-semibold uppercase tracking-wide px-1.5 py-0.5 rounded" style={{ background: "rgba(203,213,225,0.30)", color: "#64748B" }}>
           Beta
         </span>
@@ -74,10 +78,10 @@ export function DiscoveryAssistant() {
   }
 
   return (
-    <section aria-label="Asystent wyszukiwania TermCatch" className="rounded-[20px] overflow-hidden" style={CARD}>
+    <section aria-label={s.title} className="rounded-[20px] overflow-hidden" style={CARD}>
       <div className="flex items-center justify-between px-4 py-3" style={{ borderBottom: "1px solid rgba(203,213,225,0.30)" }}>
         <p className="text-sm font-semibold text-slate-800">
-          Asystent wyszukiwania TermCatch
+          {s.title}
           <span className="ml-2 text-[10px] font-semibold uppercase tracking-wide px-1.5 py-0.5 rounded align-middle" style={{ background: "rgba(203,213,225,0.30)", color: "#64748B" }}>
             Beta
           </span>
@@ -85,7 +89,7 @@ export function DiscoveryAssistant() {
         <button
           type="button"
           onClick={() => setOpen(false)}
-          aria-label="Zamknij asystenta"
+          aria-label={s.close}
           className="p-1.5 rounded-lg text-slate-400 hover:text-slate-700"
         >
           <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}><path d="M18 6 6 18M6 6l12 12" /></svg>
@@ -95,8 +99,7 @@ export function DiscoveryAssistant() {
       <div className="px-4 py-3 space-y-2.5 max-h-80 overflow-y-auto">
         {turns.length === 0 && (
           <p className="text-xs text-slate-500 leading-relaxed">
-            Np. „Znajdź mi dobry salon w Warszawie, który specjalizuje się w kręconych włosach.”
-            Odpowiadamy wyłącznie na podstawie prawdziwych salonów w TermCatch.
+            {s.example}
           </p>
         )}
         {turns.map((t, i) => (
@@ -119,7 +122,7 @@ export function DiscoveryAssistant() {
                       >
                         <span className="flex items-center justify-between gap-2">
                           <span className="text-sm font-semibold text-slate-900 truncate">{r.name}</span>
-                          {r.priceFrom != null && <span className="text-xs text-slate-500 tabular-nums flex-shrink-0">od {Math.round(r.priceFrom)} zł</span>}
+                          {r.priceFrom != null && <span className="text-xs text-slate-500 tabular-nums flex-shrink-0">{interpolate(s.priceFrom, { price: Math.round(r.priceFrom) })}</span>}
                         </span>
                         <span className="block text-[11px] text-slate-500 mt-0.5 truncate">{r.reasons.join(" · ")}</span>
                       </Link>
@@ -130,7 +133,7 @@ export function DiscoveryAssistant() {
             </div>
           </div>
         ))}
-        {isPending && <p className="text-xs text-slate-400">Szukam…</p>}
+        {isPending && <p className="text-xs text-slate-400">{s.searching}</p>}
       </div>
 
       <form
@@ -145,8 +148,8 @@ export function DiscoveryAssistant() {
           ref={inputRef}
           value={input}
           onChange={(e) => setInput(e.target.value)}
-          placeholder="Opisz, czego szukasz…"
-          aria-label="Twoje pytanie do asystenta"
+          placeholder={s.placeholder}
+          aria-label={s.inputAria}
           className="input-glass flex-1 px-3.5 py-2 text-sm rounded-xl outline-none text-slate-800 placeholder:text-slate-400"
         />
         <button
@@ -155,7 +158,7 @@ export function DiscoveryAssistant() {
           className="btn-spring px-4 py-2 rounded-xl text-sm font-semibold text-white disabled:opacity-40"
           style={{ background: "linear-gradient(180deg,#1E293B,#0F172A)", border: "1px solid #0F172A" }}
         >
-          Wyślij
+          {s.send}
         </button>
       </form>
     </section>

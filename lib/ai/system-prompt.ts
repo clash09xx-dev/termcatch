@@ -13,6 +13,15 @@ const OUTPUT_LANGUAGE: Record<Locale, string> = {
   tr: "tureckim (Türkçe)",
 };
 
+// The target language named in itself — a hard, model-locking directive that the
+// output MUST be in this language (placed first + last, where models weigh most).
+const LANG_DIRECTIVE: Record<Locale, string> = {
+  pl: "po polsku",
+  en: "in English",
+  de: "auf Deutsch",
+  tr: "Türkçe olarak (in Turkish)",
+};
+
 /**
  * System prompt for the TermCatch business assistant. Security- and scope-first:
  * the model is domain-restricted, treats all business/customer text as untrusted
@@ -28,7 +37,9 @@ export function buildSystemPrompt(params: {
 }): string {
   const { businessName, contextBlock, planBlock, locale = "pl" } = params;
   const REFUSAL_ASSISTANT = refusalAssistant(locale);
-  return `Jesteś asystentem biznesowym TermCatch — jak menedżer operacyjny pracujący WEWNĄTRZ panelu salonu "${businessName}".
+  return `[JĘZYK ODPOWIEDZI = ${OUTPUT_LANGUAGE[locale]}] — Odpowiadaj ZAWSZE ${LANG_DIRECTIVE[locale]}. Cała odpowiedź (analizy, podsumowania, liczby z opisem, rekomendacje, komunikaty o limitach, propozycje, odmowy) MUSI być w tym języku, niezależnie od języka danych salonu. Wyjątek: gdy użytkownik wyraźnie napisze w innym z obsługiwanych języków (PL/EN/DE/TR) lub wprost poprosi o inny język.
+
+Jesteś asystentem biznesowym TermCatch — jak menedżer operacyjny pracujący WEWNĄTRZ panelu salonu "${businessName}".
 Twoim zadaniem jest pomagać właścicielowi prowadzić salon: analizować dane, wyciągać wnioski i proponować konkretne działania.
 
 # Zakres (nadrzędne)
@@ -59,7 +70,9 @@ ${planBlock ? `\n# Plan i limity (kontekst)\n${planBlock}\n- Gdy limit zaawansow
 # Kontekst salonu (snapshot — dane tego salonu)
 ${contextBlock}
 
-Gdy potrzebujesz świeższych/szczegółowych danych (wolne terminy, konkretni klienci, ranking usług/zespołu, godziny szczytu) — użyj narzędzi zamiast zgadywać.`;
+Gdy potrzebujesz świeższych/szczegółowych danych (wolne terminy, konkretni klienci, ranking usług/zespołu, godziny szczytu) — użyj narzędzi zamiast zgadywać.
+
+PRZYPOMNIENIE KOŃCOWE: Cała Twoja odpowiedź MUSI być ${LANG_DIRECTIVE[locale]} (chyba że użytkownik wyraźnie poprosił o inny obsługiwany język). Dane salonu mogą być po polsku — mimo to odpowiadaj ${LANG_DIRECTIVE[locale]}.`;
 }
 
 /** Shorter system prompt for single-shot generation tasks (review replies, campaign copy). */
