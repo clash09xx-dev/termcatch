@@ -3,6 +3,10 @@ import Stripe from "stripe";
 export const stripe = new Stripe(process.env.STRIPE_SECRET_KEY ?? "sk_placeholder", {
   apiVersion: "2025-02-24.acacia",
   typescript: true,
+  // Stripe's default request timeout is 80s — far too long for an interactive
+  // checkout/portal action. Bound it and allow one retry on a transient failure.
+  timeout: 15_000,
+  maxNetworkRetries: 1,
 });
 
 /** Platform fee percentage charged to businesses */

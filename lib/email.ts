@@ -1,5 +1,6 @@
 import { Resend } from "resend";
 import { toLocale, type Locale } from "@/lib/i18n/config";
+import { withTimeout } from "@/lib/with-timeout";
 
 /** Pick a locale variant, falling back to Polish (the default/governing copy). */
 function L<T>(locale: Locale, m: Record<Locale, T>): T {
@@ -152,14 +153,18 @@ export async function sendEmail(params: SendEmailParams): Promise<{ sent: boolea
     return { sent: false };
   }
   try {
-    const { error } = await client.emails.send({
-      from: FROM,
-      to: params.to,
-      replyTo: params.replyTo ?? REPLY_TO,
-      subject: params.subject,
-      html: renderHtml(params),
-      text: renderText(params),
-    });
+    const { error } = await withTimeout(
+      client.emails.send({
+        from: FROM,
+        to: params.to,
+        replyTo: params.replyTo ?? REPLY_TO,
+        subject: params.subject,
+        html: renderHtml(params),
+        text: renderText(params),
+      }),
+      10_000,
+      "resend.emails.send"
+    );
     if (error) {
       console.error("[email:error]", error);
       return { sent: false };

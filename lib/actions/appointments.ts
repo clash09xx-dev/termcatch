@@ -28,6 +28,7 @@ import { computeBookingTotals, evaluateCoupon } from "@/lib/booking-pricing";
 import { isFutureStart, changeAllowedByPolicy } from "@/lib/appointment-rules";
 import { assertCustomerBookableSlot } from "@/lib/availability";
 import { lockBusinessForBooking, assertSlotAvailable, mapBookingWriteError } from "@/lib/booking-conflict";
+import { perf } from "@/lib/perf";
 
 /** SMS/WhatsApp to the salon per its per-event preferences — never throws. */
 async function notifySalonChannels(businessId: string, message: string, event: SalonEventKey) {
@@ -220,34 +221,37 @@ export type CreateAppointmentInput = {
 // ─── Customer: Create ─────────────────────────────────────────
 
 export async function createAppointment(data: CreateAppointmentInput) {
-  const customer = await getDbUser();
+  const t = perf("createAppointment");
 
-  // Compute the UTC instant from Warsaw-local date + time
+  // Compute the UTC instant from Warsaw-local date + time (cheap, no I/O)
   const start = warsawDateTimeToUtc(data.date, data.time);
   if (isNaN(start.getTime())) throw new Error("Nieprawidłowa data wizyty.");
   if (!isFutureStart(start)) throw new Error("Data wizyty musi być w przyszłości.");
 
-  // Validate business is published (authoritative gate — same as public surfaces)
-  const business = await prisma.business.findUnique({
-    where: { id: data.businessId },
-    select: { id: true, status: true, isActive: true, name: true, slug: true, ownerId: true, email: true },
-  });
+  // Auth (session + user row) and the authoritative business/service lookups are
+  // independent, so run them in parallel instead of three sequential round trips.
+  const [customer, business, service] = await Promise.all([
+    getDbUser(),
+    // Validate business is published (authoritative gate — same as public surfaces)
+    prisma.business.findUnique({
+      where: { id: data.businessId },
+      select: { id: true, status: true, isActive: true, name: true, slug: true, ownerId: true, email: true },
+    }),
+    // Fetch service — validates it's active and belongs to this business
+    prisma.service.findFirst({
+      where: { id: data.serviceId, businessId: data.businessId, isActive: true },
+    }),
+  ]);
+  t.mark("auth+lookups");
+
   if (!business) throw new Error("Nie znaleziono salonu.");
   if (!isPubliclyVisible(business))
     throw new Error("Salon jest obecnie niedostępny.");
-
-  // Fetch service — validates it's active and belongs to this business
-  const service = await prisma.service.findFirst({
-    where: {
-      id: data.serviceId,
-      businessId: data.businessId,
-      isActive: true,
-    },
-  });
   if (!service) throw new Error("Usługa jest niedostępna lub nie istnieje.");
 
   // Resolve + validate add-ons server-side (business + service + active + quantity).
   // Client-submitted prices/durations are never trusted — recomputed from the DB.
+  // Kept AFTER service validation so a bad service still throws its own message.
   const addonLines = await resolveBookingAddons(data.businessId, data.serviceId, data.addons);
   const basePrice = service.discountedPrice ?? service.price;
   const base = computeBookingTotals({ basePrice, baseDuration: service.duration, addonLines });
@@ -262,6 +266,7 @@ export async function createAppointment(data: CreateAppointmentInput) {
     timeHHMM: data.time,
     durationMin: base.totalDuration,
   });
+  t.mark("validate");
 
   const couponCode = data.couponCode?.trim();
 
@@ -354,6 +359,7 @@ export async function createAppointment(data: CreateAppointmentInput) {
       include: { business: true, service: true, employee: true, addons: true },
     });
   }).catch(mapBookingWriteError);
+  t.mark("tx");
 
   const slotLabel = describeSlot(start);
 
@@ -428,6 +434,7 @@ export async function createAppointment(data: CreateAppointmentInput) {
   revalidatePath("/business/dashboard");
   revalidatePath("/business/calendar");
 
+  t.end();
   return appointment;
 }
 
@@ -440,15 +447,20 @@ export async function rescheduleAppointment(input: {
   /** Warsaw-local time "HH:MM" */
   time: string;
 }) {
-  const customer = await getDbUser();
-
-  const appointment = await prisma.appointment.findUnique({
-    where: { id: input.appointmentId },
-    include: {
-      business: { select: { id: true, name: true, ownerId: true, email: true } },
-      service: { select: { name: true, duration: true } },
-    },
-  });
+  const t = perf("rescheduleAppointment");
+  // Auth + fetch in parallel; the business select carries the reschedule policy
+  // fields so we skip a second business query below.
+  const [customer, appointment] = await Promise.all([
+    getDbUser(),
+    prisma.appointment.findUnique({
+      where: { id: input.appointmentId },
+      include: {
+        business: { select: { id: true, name: true, ownerId: true, email: true, cancellationHours: true, phone: true } },
+        service: { select: { name: true, duration: true } },
+      },
+    }),
+  ]);
+  t.mark("auth+fetch");
 
   if (!appointment) throw new Error("Nie znaleziono rezerwacji.");
   if (appointment.customerId !== customer.id)
@@ -463,14 +475,10 @@ export async function rescheduleAppointment(input: {
   }
 
   // Uczciwa polityka: przełożenie możliwe do X godzin przed wizytą (ustala salon)
-  const policy = await prisma.business.findUnique({
-    where: { id: appointment.businessId },
-    select: { cancellationHours: true, phone: true },
-  });
-  const limitHours = policy?.cancellationHours ?? 24;
+  const limitHours = appointment.business.cancellationHours ?? 24;
   if (!changeAllowedByPolicy(appointment.startTime, new Date(), limitHours)) {
     throw new Error(
-      `Wizytę można przełożyć najpóźniej ${limitHours} godz. przed terminem.${policy?.phone ? ` W nagłych przypadkach zadzwoń do salonu: ${policy.phone}.` : " W nagłych przypadkach skontaktuj się z salonem."}`
+      `Wizytę można przełożyć najpóźniej ${limitHours} godz. przed terminem.${appointment.business.phone ? ` W nagłych przypadkach zadzwoń do salonu: ${appointment.business.phone}.` : " W nagłych przypadkach skontaktuj się z salonem."}`
     );
   }
 
@@ -513,6 +521,7 @@ export async function rescheduleAppointment(input: {
       },
     });
   }).catch(mapBookingWriteError);
+  t.mark("tx");
 
   const newSlotLabel = describeSlot(newStart);
 
@@ -565,20 +574,26 @@ export async function rescheduleAppointment(input: {
   revalidatePath("/customer/dashboard");
   revalidatePath("/business/dashboard");
   revalidatePath("/business/calendar");
+  t.end();
 }
 
 // ─── Customer: Cancel ─────────────────────────────────────────
 
 export async function cancelAppointment(appointmentId: string) {
-  const customer = await getDbUser();
-
-  const appointment = await prisma.appointment.findUnique({
-    where: { id: appointmentId },
-    include: {
-      business: { select: { id: true, name: true, ownerId: true, email: true } },
-      service: { select: { name: true } },
-    },
-  });
+  const t = perf("cancelAppointment");
+  // Auth + fetch in parallel; the business select carries the cancellation
+  // policy fields so we don't need a second business query below.
+  const [customer, appointment] = await Promise.all([
+    getDbUser(),
+    prisma.appointment.findUnique({
+      where: { id: appointmentId },
+      include: {
+        business: { select: { id: true, name: true, ownerId: true, email: true, cancellationHours: true, phone: true } },
+        service: { select: { name: true } },
+      },
+    }),
+  ]);
+  t.mark("auth+fetch");
 
   if (!appointment)
     throw new Error("Nie znaleziono rezerwacji.");
@@ -598,14 +613,10 @@ export async function cancelAppointment(appointmentId: string) {
   // Uczciwa polityka: anulowanie do X godzin przed wizytą (ustala salon).
   // Wizyty jeszcze niepotwierdzone przez salon można anulować zawsze.
   if (appointment.status === AppointmentStatus.CONFIRMED) {
-    const policy = await prisma.business.findUnique({
-      where: { id: appointment.businessId },
-      select: { cancellationHours: true, phone: true },
-    });
-    const limitHours = policy?.cancellationHours ?? 24;
+    const limitHours = appointment.business.cancellationHours ?? 24;
     if (!changeAllowedByPolicy(appointment.startTime, new Date(), limitHours)) {
       throw new Error(
-        `Potwierdzoną wizytę można anulować najpóźniej ${limitHours} godz. przed terminem.${policy?.phone ? ` W nagłych przypadkach zadzwoń do salonu: ${policy.phone}.` : ""}`
+        `Potwierdzoną wizytę można anulować najpóźniej ${limitHours} godz. przed terminem.${appointment.business.phone ? ` W nagłych przypadkach zadzwoń do salonu: ${appointment.business.phone}.` : ""}`
       );
     }
   }
@@ -618,6 +629,7 @@ export async function cancelAppointment(appointmentId: string) {
       cancelledBy: customer.id,
     },
   });
+  t.mark("update");
 
   after(() => Promise.allSettled([
     notifySalonInApp(appointment.business.id, "cancellation", {
@@ -658,21 +670,26 @@ export async function cancelAppointment(appointmentId: string) {
   revalidatePath("/customer/dashboard");
   revalidatePath("/business/dashboard");
   revalidatePath("/business/calendar");
+  t.end();
 }
 
 // ─── Business: Confirm ────────────────────────────────────────
 
 export async function confirmAppointment(appointmentId: string) {
-  const businessId = await getOwnedBusinessId();
-
-  const appointment = await prisma.appointment.findUnique({
-    where: { id: appointmentId },
-    include: {
-      business: { select: { id: true, name: true } },
-      service: { select: { name: true } },
-      customer: { select: { id: true, email: true, firstName: true, phone: true, smsNotifications: true, locale: true } },
-    },
-  });
+  const t = perf("confirmAppointment");
+  // Auth and the appointment fetch are independent (ownership is checked after).
+  const [businessId, appointment] = await Promise.all([
+    getOwnedBusinessId(),
+    prisma.appointment.findUnique({
+      where: { id: appointmentId },
+      include: {
+        business: { select: { id: true, name: true } },
+        service: { select: { name: true } },
+        customer: { select: { id: true, email: true, firstName: true, phone: true, smsNotifications: true, locale: true } },
+      },
+    }),
+  ]);
+  t.mark("auth+fetch");
 
   if (!appointment) throw new Error("Nie znaleziono rezerwacji.");
   if (appointment.businessId !== businessId)
@@ -684,10 +701,12 @@ export async function confirmAppointment(appointmentId: string) {
     where: { id: appointmentId },
     data: { status: AppointmentStatus.CONFIRMED },
   });
+  t.mark("update");
 
   const slotLabel = describeSlot(appointment.startTime);
 
-  await Promise.allSettled([
+  // Customer notification/email/SMS run AFTER the response — never block confirm.
+  after(() => Promise.allSettled([
     notify({
       userId: appointment.customer.id,
       businessId: appointment.business.id,
@@ -713,32 +732,38 @@ export async function confirmAppointment(appointmentId: string) {
         slotLabel: smsSlotLabel(appointment.startTime, toLocale(appointment.customer.locale)),
       }),
     }),
-  ]);
+  ]));
 
   revalidatePath("/business/dashboard");
   revalidatePath("/business/calendar");
   revalidatePath("/customer/dashboard");
+  t.end();
 }
 
 // ─── Business: Decline / Cancel ───────────────────────────────
 
 export async function declineAppointment(appointmentId: string, reasonRaw: string) {
-  const businessId = await getOwnedBusinessId();
+  const t = perf("declineAppointment");
 
   // A salon cancellation ALWAYS requires a reason — it is stored and shown to
-  // the customer. Private salon notes are never used for this.
+  // the customer. Private salon notes are never used for this. (Pure validation
+  // runs before any I/O.)
   const reason = (reasonRaw ?? "").trim();
   if (reason.length < 3) throw new Error("Podaj powód odwołania wizyty (min. 3 znaki).");
   if (reason.length > 500) throw new Error("Powód odwołania jest zbyt długi (maks. 500 znaków).");
 
-  const appointment = await prisma.appointment.findUnique({
-    where: { id: appointmentId },
-    include: {
-      business: { select: { id: true, name: true, slug: true, ownerId: true } },
-      service: { select: { name: true } },
-      customer: { select: { id: true, email: true, firstName: true, phone: true, smsNotifications: true, locale: true } },
-    },
-  });
+  const [businessId, appointment] = await Promise.all([
+    getOwnedBusinessId(),
+    prisma.appointment.findUnique({
+      where: { id: appointmentId },
+      include: {
+        business: { select: { id: true, name: true, slug: true, ownerId: true } },
+        service: { select: { name: true } },
+        customer: { select: { id: true, email: true, firstName: true, phone: true, smsNotifications: true, locale: true } },
+      },
+    }),
+  ]);
+  t.mark("auth+fetch");
 
   if (!appointment) throw new Error("Nie znaleziono rezerwacji.");
   if (appointment.businessId !== businessId)
@@ -763,10 +788,12 @@ export async function declineAppointment(appointmentId: string, reasonRaw: strin
     },
   });
 
+  t.mark("update");
   const slotLabel = describeSlot(appointment.startTime);
   const rebookLink = `/b/${appointment.business.slug}`;
 
-  await Promise.allSettled([
+  // Customer notification/email/SMS run AFTER the response — never block decline.
+  after(() => Promise.allSettled([
     notify({
       userId: appointment.customer.id,
       businessId: appointment.business.id,
@@ -795,12 +822,13 @@ export async function declineAppointment(appointmentId: string, reasonRaw: strin
         reason,
       }),
     }),
-  ]);
+  ]));
 
   revalidatePath("/business/dashboard");
   revalidatePath("/business/calendar");
   revalidatePath("/customer/dashboard");
   revalidatePath("/customer/history");
+  t.end();
 }
 
 // ─── Business: Change time (salon-proposed) ───────────────────
@@ -818,16 +846,19 @@ export async function businessRescheduleAppointment(input: {
   /** Warsaw-local time "HH:MM" */
   time: string;
 }) {
-  const businessId = await getOwnedBusinessId();
-
-  const appointment = await prisma.appointment.findUnique({
-    where: { id: input.appointmentId },
-    include: {
-      business: { select: { id: true, name: true, ownerId: true } },
-      service: { select: { name: true } },
-      customer: { select: { id: true, email: true, firstName: true, phone: true, smsNotifications: true, locale: true } },
-    },
-  });
+  const t = perf("businessRescheduleAppointment");
+  const [businessId, appointment] = await Promise.all([
+    getOwnedBusinessId(),
+    prisma.appointment.findUnique({
+      where: { id: input.appointmentId },
+      include: {
+        business: { select: { id: true, name: true, ownerId: true } },
+        service: { select: { name: true } },
+        customer: { select: { id: true, email: true, firstName: true, phone: true, smsNotifications: true, locale: true } },
+      },
+    }),
+  ]);
+  t.mark("auth+fetch");
 
   if (!appointment) throw new Error("Nie znaleziono rezerwacji.");
   if (appointment.businessId !== businessId)
@@ -868,10 +899,12 @@ export async function businessRescheduleAppointment(input: {
     });
   }).catch(mapBookingWriteError);
 
+  t.mark("tx");
   const oldSlotLabel = describeSlot(originalStart);
   const newSlotLabel = describeSlot(newStart);
 
-  await Promise.allSettled([
+  // Customer notification/email/SMS run AFTER the response — never block the change.
+  after(() => Promise.allSettled([
     notify({
       userId: appointment.customer.id,
       businessId: appointment.business.id,
@@ -906,26 +939,30 @@ export async function businessRescheduleAppointment(input: {
       }),
       dedupeSuffix: `:${newStart.toISOString()}`,
     }),
-  ]);
+  ]));
 
   revalidatePath("/business/dashboard");
   revalidatePath("/business/calendar");
   revalidatePath("/customer/dashboard");
+  t.end();
 }
 
 // ─── Business: Complete ───────────────────────────────────────
 
 export async function completeAppointment(appointmentId: string) {
-  const businessId = await getOwnedBusinessId();
-
-  const appointment = await prisma.appointment.findUnique({
-    where: { id: appointmentId },
-    include: {
-      business: { select: { id: true, name: true, slug: true } },
-      customer: { select: { id: true, email: true, locale: true } },
-      service: { select: { name: true } },
-    },
-  });
+  const t = perf("completeAppointment");
+  const [businessId, appointment] = await Promise.all([
+    getOwnedBusinessId(),
+    prisma.appointment.findUnique({
+      where: { id: appointmentId },
+      include: {
+        business: { select: { id: true, name: true, slug: true } },
+        customer: { select: { id: true, email: true, locale: true } },
+        service: { select: { name: true } },
+      },
+    }),
+  ]);
+  t.mark("auth+fetch");
 
   if (!appointment) throw new Error("Nie znaleziono rezerwacji.");
   if (appointment.businessId !== businessId)
@@ -943,10 +980,11 @@ export async function completeAppointment(appointmentId: string) {
     where: { id: appointmentId },
     data: { status: AppointmentStatus.COMPLETED },
   });
+  t.mark("update");
 
-  // Ask the customer for a review — in-app + email (email was previously missing).
+  // Ask the customer for a review — in-app + email — AFTER the response.
   const reviewUrl = `${getAppUrl()}/b/${appointment.business.slug}?review=${appointmentId}`;
-  await Promise.allSettled([
+  after(() => Promise.allSettled([
     notify({
       userId: appointment.customer.id,
       businessId: appointment.business.id,
@@ -964,11 +1002,12 @@ export async function completeAppointment(appointmentId: string) {
           locale: appointment.customer.locale,
         })
       : Promise.resolve(),
-  ]);
+  ]));
 
   revalidatePath("/business/dashboard");
   revalidatePath("/business/calendar");
   revalidatePath("/customer/dashboard");
+  t.end();
 }
 
 // ─── Business: No-show ────────────────────────────────────────
@@ -1042,18 +1081,22 @@ export type ManualAppointmentInput = {
 };
 
 export async function createManualAppointment(input: ManualAppointmentInput) {
+  const t = perf("createManualAppointment");
   const businessId = await getOwnedBusinessId();
 
-  const business = await prisma.business.findUnique({
-    where: { id: businessId },
-    select: { id: true, name: true, ownerId: true },
-  });
+  // business + service lookups are independent → run together.
+  const [business, service] = await Promise.all([
+    prisma.business.findUnique({
+      where: { id: businessId },
+      select: { id: true, name: true, ownerId: true },
+    }),
+    prisma.service.findFirst({
+      where: { id: input.serviceId, businessId, isActive: true },
+    }),
+  ]);
   if (!business) throw new Error("Nie znaleziono salonu.");
-
-  const service = await prisma.service.findFirst({
-    where: { id: input.serviceId, businessId, isActive: true },
-  });
   if (!service) throw new Error("Usługa jest niedostępna lub nie istnieje.");
+  t.mark("auth+lookups");
 
   if (input.employeeId) {
     const employee = await prisma.employee.findFirst({
@@ -1152,9 +1195,10 @@ export async function createManualAppointment(input: ManualAppointmentInput) {
 
   const slotLabel = describeSlot(start);
 
-  // Notify only real platform customers (walk-in records have no inbox)
+  // Notify only real platform customers (walk-in records have no inbox) — and
+  // only AFTER the response, so the owner never waits on Resend.
   if (isPlatformCustomer) {
-    await Promise.allSettled([
+    after(() => Promise.allSettled([
       notify({
         userId: appointment.customer.id,
         businessId: business.id,
@@ -1170,13 +1214,14 @@ export async function createManualAppointment(input: ManualAppointmentInput) {
         slotLabel,
         locale: appointment.customer.locale,
       }),
-    ]);
+    ]));
   }
 
   revalidatePath("/business/dashboard");
   revalidatePath("/business/calendar");
   revalidatePath("/business/crm");
 
+  t.end();
   return { id: appointment.id };
 }
 

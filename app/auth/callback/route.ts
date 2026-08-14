@@ -2,7 +2,8 @@ import { createClient } from "@/lib/supabase/server";
 import { prisma } from "@/lib/prisma";
 import { maybeSendWelcomeEmail } from "@/lib/welcome";
 import { LOCALE_COOKIE, isLocale } from "@/lib/i18n/config";
-import { NextResponse } from "next/server";
+import { perf } from "@/lib/perf";
+import { NextResponse, after } from "next/server";
 
 // Nigdy nie prerenderuj i zawsze wykonuj na Node (Prisma nie działa na edge)
 export const dynamic = "force-dynamic";
@@ -31,6 +32,7 @@ function safeInternalPath(path: string | null): string | null {
 
 export async function GET(request: Request) {
   const base = getBaseUrl(request);
+  const t = perf("authCallback");
 
   const fail = () =>
     NextResponse.redirect(`${base}/login?error=oauth_callback_failed`);
@@ -48,6 +50,7 @@ export async function GET(request: Request) {
     // Wymiana kodu na sesję — ustawia cookies auth przez klienta SSR
     const supabase = await createClient();
     const { data, error } = await supabase.auth.exchangeCodeForSession(code);
+    t.mark("exchange");
 
     if (error || !data.user) {
       console.error("[auth/callback] exchangeCodeForSession:", error?.message);
@@ -113,8 +116,9 @@ export async function GET(request: Request) {
       // Kontynuujemy — użytkownik jest zalogowany, sync nadrobi się przy następnym żądaniu
     }
 
-    // First-time signup → exactly one welcome email (idempotent; never on repeat Google login).
-    await maybeSendWelcomeEmail(user.id);
+    // First-time signup → exactly one welcome email (idempotent; never on repeat
+    // Google login). Runs AFTER the redirect response so OAuth isn't blocked on Resend.
+    after(() => maybeSendWelcomeEmail(user.id).catch(() => {}));
 
     // Cel przekierowania: ?next=... albo dashboard wg roli
     let destination = nextParam;
@@ -128,7 +132,9 @@ export async function GET(request: Request) {
       }
     }
 
+    t.mark("db");
     const res = NextResponse.redirect(`${base}${destination}`);
+    t.end();
     // Follow the account's saved language on a device that hasn't chosen one yet
     // (so the selected language survives the Google sign-in) — never override an
     // explicit choice already in this browser.

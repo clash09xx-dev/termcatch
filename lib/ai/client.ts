@@ -15,7 +15,10 @@ import { logAiUsage } from "./usage";
 
 let client: OpenAI | null = null;
 export function getOpenAI(): OpenAI {
-  if (!client) client = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+  // The SDK default timeout is 10 minutes with 2 retries — an unbounded hang for
+  // an interactive assistant. Cap the request time and retries so a stuck call
+  // fails fast instead of holding the action open.
+  if (!client) client = new OpenAI({ apiKey: process.env.OPENAI_API_KEY, timeout: 60_000, maxRetries: 1 });
   return client;
 }
 

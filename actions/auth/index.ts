@@ -1,8 +1,10 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { after } from "next/server";
 import { redirect } from "next/navigation";
 import { maybeSendWelcomeEmail } from "@/lib/welcome";
+import { perf } from "@/lib/perf";
 import { cookies } from "next/headers";
 import { createClient } from "@/lib/supabase/server";
 import { prisma } from "@/lib/prisma";
@@ -344,9 +346,13 @@ export async function loginAction(
   }
 
   const { email, password } = parsed.data;
+  const t = perf("loginAction");
   const supabase = await createClient();
 
-  const { error } = await supabase.auth.signInWithPassword({ email, password });
+  // signInWithPassword already returns the authenticated user — no need for a
+  // second round trip to Supabase via getUser().
+  const { data: signIn, error } = await supabase.auth.signInWithPassword({ email, password });
+  t.mark("signin");
 
   if (error) {
     if (error.message.includes("Invalid login credentials")) {
@@ -358,12 +364,10 @@ export async function loginAction(
     return { error: "Wystąpił błąd. Spróbuj ponownie." };
   }
 
-  // Fetch role and redirect accordingly
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = signIn.user;
 
   if (user) {
+    // Only this read is on the critical path (drives the post-login route).
     const dbUser = await prisma.user
       .findUnique({
         where: { supabaseId: user.id },
@@ -374,16 +378,22 @@ export async function loginAction(
         },
       })
       .catch(() => null);
+    t.mark("db");
 
-    await prisma.user
-      .update({ where: { supabaseId: user.id }, data: { lastLoginAt: new Date() } })
-      .catch(() => {});
+    // lastLoginAt is a non-critical write — do it after the redirect response.
+    after(() =>
+      prisma.user
+        .update({ where: { supabaseId: user.id }, data: { lastLoginAt: new Date() } })
+        .then(() => undefined)
+        .catch(() => {})
+    );
 
     // Follow the account's language on a fresh device (never overrides a choice
-    // already made in this browser).
+    // already made in this browser) — cookie must be set before the redirect.
     await syncLocaleCookie(dbUser?.locale);
 
     revalidatePath("/", "layout");
+    t.end();
 
     if (safeRedirect) {
       redirect(safeRedirect);
