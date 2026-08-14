@@ -53,6 +53,9 @@ function LoginForm() {
 
       <div className="space-y-2.5">
         <form action={signInWithGoogleAction}>
+          {/* Carry the post-login target (e.g. a booking-in-progress) through
+              the Google OAuth round-trip so the selection isn't lost. */}
+          <input type="hidden" name="redirect" value={redirectTo} />
           <button
             type="submit"
             className="w-full flex items-center justify-center gap-3 px-4 py-2.5 rounded-xl text-sm font-medium transition-colors btn-spring"

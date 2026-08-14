@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { LandingNav } from "@/components/layout/landing-nav";
 import { isPubliclyVisible } from "@/lib/publication";
+import { getServerUser } from "@/lib/supabase/server";
 import BookingWizard from "./booking-wizard";
 
 // Ambient chrome mesh — same recipe as the marketing hero
@@ -23,6 +24,11 @@ export default async function BookPage({
 }) {
   const { slug } = await params;
   const { serviceId } = await searchParams;
+
+  // Drives login-first-then-book at the confirmation step (preserves the whole
+  // selection across the OAuth round-trip instead of losing it).
+  const user = await getServerUser();
+  const isAuthenticated = Boolean(user);
 
   const business = await prisma.business.findUnique({
     where: { slug },
@@ -118,6 +124,7 @@ export default async function BookPage({
             closeTime: wh.closeTime,
           }))}
           initialServiceId={serviceId}
+          isAuthenticated={isAuthenticated}
         />
       </div>
     </div>

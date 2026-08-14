@@ -2,11 +2,14 @@
 
 import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
 import { stepSlide, stepFade } from "@/lib/motion";
 import { formatCurrency, formatDuration, formatDate, getInitials, cn } from "@/lib/utils";
 import { previewCoupon, type CouponPreview } from "@/lib/actions/coupon-redemption";
+import { useLocale } from "@/components/i18n/i18n-provider";
+import { bookingResumePath, decodeBookingIntent } from "@/lib/booking-intent";
+import { bookingErrorText } from "@/lib/booking-messages";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -60,6 +63,8 @@ interface BookingWizardProps {
   employees: Employee[];
   workingHours: WorkingHours[];
   initialServiceId?: string;
+  /** Whether the visitor already has a session — decides login-vs-book at confirm. */
+  isAuthenticated?: boolean;
 }
 
 type Step = 1 | 2 | 3 | 4 | 5;
@@ -310,19 +315,39 @@ export default function BookingWizard({
   employees,
   workingHours,
   initialServiceId,
+  isAuthenticated = false,
 }: BookingWizardProps) {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const locale = useLocale();
   const reduceMotion = useReducedMotion();
   const hasEmployees = employees.length > 0;
 
-  const [step, setStep] = useState<Step>(1);
+  // Booking intent restored after a login / Google-OAuth round-trip. Only
+  // IDENTIFIERS are carried in the URL — price, duration, discount and final
+  // availability are always re-derived and re-checked server-side at confirm.
+  const intent = decodeBookingIntent(searchParams);
+  const resumeIntent = intent.resume;
+  const intentServiceId = initialServiceId ?? intent.serviceId ?? "";
+  const intentEmployeeId = intent.employeeId;
+  const intentDate = intent.date;
+  const intentTime = intent.time;
+
+  const [step, setStep] = useState<Step>(
+    // Returning from login with a complete selection → drop straight back on the
+    // confirmation step so the customer just re-confirms (server re-validates).
+    resumeIntent && intentServiceId && intentDate && intentTime ? 4 : 1
+  );
   const [direction, setDirection] = useState(1);
   const [selectedServiceId, setSelectedServiceId] = useState<string>(
-    initialServiceId ?? services[0]?.id ?? ""
+    intentServiceId || services[0]?.id || ""
   );
-  const [selectedEmployeeId, setSelectedEmployeeId] = useState<string | null>(null); // null = "dowolny"
-  const [selectedDate, setSelectedDate] = useState<string>("");
-  const [selectedTime, setSelectedTime] = useState<string>("");
+  const [selectedEmployeeId, setSelectedEmployeeId] = useState<string | null>(
+    // Only honour a restored employee that still exists + is bookable here.
+    intentEmployeeId && employees.some((e) => e.id === intentEmployeeId) ? intentEmployeeId : null
+  ); // null = "dowolny"
+  const [selectedDate, setSelectedDate] = useState<string>(resumeIntent ? intentDate : "");
+  const [selectedTime, setSelectedTime] = useState<string>(resumeIntent ? intentTime : "");
   const [availableSlots, setAvailableSlots] = useState<string[]>([]);
   const [loadingSlots, setLoadingSlots] = useState(false);
   const [slotsError, setSlotsError] = useState(false);
@@ -481,8 +506,27 @@ export default function BookingWizard({
     }
   };
 
+  // The full booking selection, encoded as URL params so it survives a login /
+  // Google-OAuth round-trip. Identifiers only — never price/discount/duration.
+  const loginRedirectWithIntent = useCallback(() => {
+    const target = bookingResumePath(business.slug, {
+      serviceId: selectedServiceId,
+      employeeId: selectedEmployeeId,
+      date: selectedDate,
+      time: selectedTime,
+    });
+    router.push(`/login?redirect=${encodeURIComponent(target)}`);
+  }, [router, business.slug, selectedServiceId, selectedEmployeeId, selectedDate, selectedTime]);
+
   const handleConfirm = async () => {
     if (!selectedService || !selectedDate || !selectedTime) return;
+
+    // Not signed in yet → send them to log in FIRST, carrying the whole
+    // selection, then bring them straight back to this confirmation step.
+    if (!isAuthenticated) {
+      loginRedirectWithIntent();
+      return;
+    }
 
     setIsSubmitting(true);
     setSubmitError("");
@@ -506,13 +550,14 @@ export default function BookingWizard({
       setStep(5);
     } catch (err) {
       const error = err as { message?: string };
-      if (error.message?.includes("login") || error.message?.includes("auth") || error.message?.includes("Unauthorized")) {
-        router.push(
-          `/login?redirect=${encodeURIComponent(`/b/${business.slug}/book?serviceId=${selectedServiceId}`)}`
-        );
+      const msg = error.message ?? "";
+      // Session expired mid-flow → re-auth, preserving the selection.
+      if (msg.includes("login") || msg.includes("auth") || msg.includes("Unauthorized")) {
+        loginRedirectWithIntent();
         return;
       }
-      setSubmitError(error.message ?? "Wystąpił błąd. Spróbuj ponownie.");
+      // SLOT_TAKEN → friendly localized "slot no longer available"; else its message.
+      setSubmitError(bookingErrorText(msg, locale));
     } finally {
       setIsSubmitting(false);
     }

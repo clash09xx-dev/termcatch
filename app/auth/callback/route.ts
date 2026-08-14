@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { prisma } from "@/lib/prisma";
 import { maybeSendWelcomeEmail } from "@/lib/welcome";
+import { LOCALE_COOKIE, isLocale } from "@/lib/i18n/config";
 import { NextResponse } from "next/server";
 
 // Nigdy nie prerenderuj i zawsze wykonuj na Node (Prisma nie działa na edge)
@@ -70,6 +71,7 @@ export async function GET(request: Request) {
     // Błąd DB nie może zerwać logowania — sesja już istnieje.
     let role: string = chosenRole;
     let hasBusiness = false;
+    let localePref: string | null = null;
 
     try {
       const dbUser = await prisma.user.upsert({
@@ -99,11 +101,13 @@ export async function GET(request: Request) {
         },
         select: {
           role: true,
+          locale: true,
           ownedBusinesses: { select: { id: true }, take: 1 },
         },
       });
       role = dbUser.role;
       hasBusiness = (dbUser.ownedBusinesses?.length ?? 0) > 0;
+      localePref = dbUser.locale ?? null;
     } catch (dbErr) {
       console.error("[auth/callback] DB sync error:", dbErr);
       // Kontynuujemy — użytkownik jest zalogowany, sync nadrobi się przy następnym żądaniu
@@ -124,7 +128,14 @@ export async function GET(request: Request) {
       }
     }
 
-    return NextResponse.redirect(`${base}${destination}`);
+    const res = NextResponse.redirect(`${base}${destination}`);
+    // Follow the account's saved language on a device that hasn't chosen one yet
+    // (so the selected language survives the Google sign-in) — never override an
+    // explicit choice already in this browser.
+    if (localePref && isLocale(localePref) && !request.headers.get("cookie")?.includes(`${LOCALE_COOKIE}=`)) {
+      res.cookies.set(LOCALE_COOKIE, localePref, { path: "/", maxAge: 60 * 60 * 24 * 365, sameSite: "lax" });
+    }
+    return res;
   } catch (err) {
     // Absolutny bezpiecznik — route NIGDY nie zwraca nic poza redirectem
     console.error("[auth/callback] unexpected error:", err);

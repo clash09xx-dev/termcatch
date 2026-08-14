@@ -132,8 +132,10 @@ export default function RegisterPage() {
       {/* OAuth buttons */}
       <div className="space-y-2.5">
         <form action={signInWithGoogleAction}>
-          {/* Preserve the selected role through the Google OAuth round-trip. */}
+          {/* Preserve the selected role + post-auth target (e.g. a booking in
+              progress) through the Google OAuth round-trip. */}
           <input type="hidden" name="role" value={role} />
+          <input type="hidden" name="next" value={next} />
           <button
             type="submit"
             className="w-full flex items-center justify-center gap-3 px-4 py-2.5 rounded-xl text-sm font-medium transition-colors btn-spring"

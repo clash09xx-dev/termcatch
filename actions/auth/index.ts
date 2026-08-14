@@ -6,7 +6,17 @@ import { maybeSendWelcomeEmail } from "@/lib/welcome";
 import { cookies } from "next/headers";
 import { createClient } from "@/lib/supabase/server";
 import { prisma } from "@/lib/prisma";
+import { LOCALE_COOKIE, isLocale } from "@/lib/i18n/config";
 import { z } from "zod";
+
+/** Adopt the account's saved language on a device that hasn't chosen one yet —
+ *  never overrides an explicit local selection already in the cookie. */
+async function syncLocaleCookie(accountLocale: string | null | undefined): Promise<void> {
+  if (!accountLocale || !isLocale(accountLocale)) return;
+  const jar = await cookies();
+  if (jar.get(LOCALE_COOKIE)) return; // respect an explicit on-device choice
+  jar.set(LOCALE_COOKIE, accountLocale, { path: "/", maxAge: 60 * 60 * 24 * 365, sameSite: "lax" });
+}
 
 /** Server-built app origin (never trusts the client). */
 function appUrl(): string {
@@ -359,6 +369,7 @@ export async function loginAction(
         where: { supabaseId: user.id },
         select: {
           role: true,
+          locale: true,
           ownedBusinesses: { select: { id: true }, take: 1 },
         },
       })
@@ -367,6 +378,10 @@ export async function loginAction(
     await prisma.user
       .update({ where: { supabaseId: user.id }, data: { lastLoginAt: new Date() } })
       .catch(() => {});
+
+    // Follow the account's language on a fresh device (never overrides a choice
+    // already made in this browser).
+    await syncLocaleCookie(dbUser?.locale);
 
     revalidatePath("/", "layout");
 
@@ -426,7 +441,20 @@ export async function signInWithGoogleAction(formData?: FormData): Promise<void>
   // and re-validated against the enum in the callback. Absent on the login page.
   const roleRaw = formData ? String(formData.get("role") ?? "") : "";
   const role = roleRaw === "BUSINESS_OWNER" || roleRaw === "CUSTOMER" ? roleRaw : "";
-  const callback = role ? `${appUrl()}/auth/callback?role=${role}` : `${appUrl()}/auth/callback`;
+
+  // Where to land after OAuth (e.g. a booking-in-progress). Only internal paths
+  // are honoured — the callback re-validates via safeInternalPath too. This is
+  // what preserves the selected appointment across a Google sign-in. Login sends
+  // "redirect"; register sends "next" — accept either.
+  const redirectRaw = formData ? String(formData.get("redirect") ?? formData.get("next") ?? "") : "";
+  const nextPath =
+    redirectRaw.startsWith("/") && !redirectRaw.startsWith("//") ? redirectRaw : "";
+
+  const params = new URLSearchParams();
+  if (role) params.set("role", role);
+  if (nextPath) params.set("next", nextPath);
+  const qs = params.toString();
+  const callback = qs ? `${appUrl()}/auth/callback?${qs}` : `${appUrl()}/auth/callback`;
   const supabase = await createClient();
   const { data, error } = await supabase.auth.signInWithOAuth({
     provider: "google",

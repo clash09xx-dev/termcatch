@@ -5,7 +5,7 @@ import { after } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getServerUser } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
-import { AppointmentStatus, NotificationType, Prisma } from "@prisma/client";
+import { AppointmentStatus, NotificationType } from "@prisma/client";
 import { warsawDateTimeToUtc, warsawTimeString } from "@/lib/timezone";
 import {
   sendBookingConfirmationEmail,
@@ -27,6 +27,7 @@ import { resolveBookingAddons, type AddonSelection } from "@/lib/booking-addons"
 import { computeBookingTotals, evaluateCoupon } from "@/lib/booking-pricing";
 import { isFutureStart, changeAllowedByPolicy } from "@/lib/appointment-rules";
 import { assertCustomerBookableSlot } from "@/lib/availability";
+import { lockBusinessForBooking, assertSlotAvailable, mapBookingWriteError } from "@/lib/booking-conflict";
 
 /** SMS/WhatsApp to the salon per its per-event preferences — never throws. */
 async function notifySalonChannels(businessId: string, message: string, event: SalonEventKey) {
@@ -71,51 +72,9 @@ import { formatDate } from "@/lib/utils";
 
 // ─── Helpers ──────────────────────────────────────────────────
 
-/**
- * Serialize slot writes for one business so the "is the slot free? → insert"
- * sequence is atomic across concurrent requests — the guarantee a plain
- * SELECT-then-INSERT lacks under READ COMMITTED (which let two simultaneous
- * bookings take the same slot). Must be the FIRST statement inside the
- * transaction; the Postgres advisory lock auto-releases at transaction end.
- * Scoped per business (bookings are low-frequency, so coarse locking is fine).
- */
-async function lockBusinessForBooking(tx: Prisma.TransactionClient, businessId: string): Promise<void> {
-  await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtextextended(${businessId}, 0))`;
-}
-
-/**
- * Throw if the [start,end) slot isn't bookable. A SPECIFIC employee is one chair
- * (blocked by any overlap of theirs). "Dowolny specjalista" (employeeId null) is
- * blocked only when EVERY chair is taken — capacity = active accepting employees
- * (min 1, so a solo salon still books). Call inside the locked transaction so
- * the count + insert are atomic (no double-book / over-capacity race).
- */
-async function assertSlotAvailable(
-  tx: Prisma.TransactionClient,
-  args: { businessId: string; employeeId: string | null; start: Date; end: Date; excludeId?: string }
-): Promise<void> {
-  const overlap = {
-    ...(args.excludeId ? { id: { not: args.excludeId } } : {}),
-    businessId: args.businessId,
-    status: { notIn: [AppointmentStatus.CANCELLED_CUSTOMER, AppointmentStatus.CANCELLED_BUSINESS] },
-    startTime: { lt: args.end },
-    endTime: { gt: args.start },
-  };
-  if (args.employeeId) {
-    const conflict = await tx.appointment.findFirst({
-      where: { ...overlap, employeeId: args.employeeId },
-      select: { id: true },
-    });
-    if (conflict) throw new Error("Ten termin jest już zajęty. Wybierz inną godzinę.");
-    return;
-  }
-  const capacity = Math.max(
-    1,
-    await tx.employee.count({ where: { businessId: args.businessId, isActive: true, isAccepting: true } })
-  );
-  const concurrent = await tx.appointment.count({ where: overlap });
-  if (concurrent >= capacity) throw new Error("Ten termin jest już zajęty. Wybierz inną godzinę.");
-}
+// lockBusinessForBooking + assertSlotAvailable now live in @/lib/booking-conflict
+// (testable, and callable from non-action code). See that module for the
+// three-layer double-booking defence.
 
 async function getDbUser() {
   const user = await getServerUser();
@@ -394,7 +353,7 @@ export async function createAppointment(data: CreateAppointmentInput) {
       },
       include: { business: true, service: true, employee: true, addons: true },
     });
-  });
+  }).catch(mapBookingWriteError);
 
   const slotLabel = describeSlot(start);
 
@@ -553,7 +512,7 @@ export async function rescheduleAppointment(input: {
         reminderSentAt: null,
       },
     });
-  });
+  }).catch(mapBookingWriteError);
 
   const newSlotLabel = describeSlot(newStart);
 
@@ -907,7 +866,7 @@ export async function businessRescheduleAppointment(input: {
       // reminderSentAt reset → the reminder cron re-sends for the new time.
       data: { startTime: newStart, endTime: newEnd, reminderSentAt: null },
     });
-  });
+  }).catch(mapBookingWriteError);
 
   const oldSlotLabel = describeSlot(originalStart);
   const newSlotLabel = describeSlot(newStart);
@@ -1189,7 +1148,7 @@ export async function createManualAppointment(input: ManualAppointmentInput) {
       },
       include: { customer: { select: { id: true, email: true, firstName: true, lastName: true, locale: true } } },
     });
-  });
+  }).catch(mapBookingWriteError);
 
   const slotLabel = describeSlot(start);
 

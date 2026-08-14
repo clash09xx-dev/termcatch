@@ -15,6 +15,7 @@ import {
   searchClients,
   createManualAppointment,
 } from "@/lib/actions/appointments";
+import { bookingErrorText } from "@/lib/booking-messages";
 
 type ServiceOption = {
   id: string;
@@ -198,7 +199,7 @@ export function NewAppointmentSheet({
       router.refresh();
     } catch (err) {
       const e = err as { message?: string };
-      setError(e.message ?? "Wystąpił błąd. Spróbuj ponownie.");
+      setError(bookingErrorText(e.message));
     } finally {
       setSubmitting(false);
     }

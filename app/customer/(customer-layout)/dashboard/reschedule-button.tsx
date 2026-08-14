@@ -3,6 +3,8 @@
 import { useState, useEffect, useCallback, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { rescheduleAppointment } from "@/lib/actions/appointments";
+import { bookingErrorText } from "@/lib/booking-messages";
+import { useLocale } from "@/components/i18n/i18n-provider";
 import { cn } from "@/lib/utils";
 import { GlassModal, ModalInkButton, ModalGlassButton } from "@/components/ui/glass-modal";
 import { INK_GRADIENT, OVERLINE_CLS } from "@/components/ui/glass/tokens";
@@ -57,6 +59,7 @@ export default function RescheduleButton({
   const [loadingSlots, setLoadingSlots] = useState(false);
   const [error, setError] = useState("");
   const [isPending, startTransition] = useTransition();
+  const locale = useLocale();
 
   const days = getNext14Days();
 
@@ -110,7 +113,7 @@ export default function RescheduleButton({
         router.refresh();
       } catch (err) {
         const e = err as { message?: string };
-        setError(e.message ?? "Wystąpił błąd. Spróbuj ponownie.");
+        setError(bookingErrorText(e.message, locale));
       }
     });
   };

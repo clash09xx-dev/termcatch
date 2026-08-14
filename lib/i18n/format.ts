@@ -7,6 +7,11 @@
  */
 import type { Locale } from "./config";
 
+// Salon times are ALWAYS Europe/Warsaw (CET/CEST, DST-aware). Pinning it here
+// means a raw appointment Date can never be rendered in the server's zone (UTC
+// on Railway) or the viewer's zone — a caller may still override via opts.
+const SALON_TZ = "Europe/Warsaw";
+
 // UI language → the BCP-47 tag whose formatting conventions best match it.
 // (Deliberately not tied to a country: this drives number/date shape only.)
 const BCP47: Record<Locale, string> = {
@@ -32,7 +37,7 @@ export function formatDate(
 ): string {
   return new Intl.DateTimeFormat(
     intlLocale(locale),
-    opts ?? { day: "numeric", month: "long", year: "numeric" },
+    { timeZone: SALON_TZ, ...(opts ?? { day: "numeric", month: "long", year: "numeric" }) },
   ).format(toDate(d));
 }
 
@@ -44,7 +49,7 @@ export function formatTime(
 ): string {
   return new Intl.DateTimeFormat(
     intlLocale(locale),
-    opts ?? { hour: "2-digit", minute: "2-digit", hour12: false },
+    { timeZone: SALON_TZ, ...(opts ?? { hour: "2-digit", minute: "2-digit", hour12: false }) },
   ).format(toDate(d));
 }
 

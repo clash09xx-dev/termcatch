@@ -7,6 +7,7 @@ import {
   confirmAppointment, declineAppointment, completeAppointment, markNoShow,
   businessRescheduleAppointment,
 } from "@/lib/actions/appointments";
+import { bookingErrorText } from "@/lib/booking-messages";
 import { GlassModal, ModalInkButton, ModalGlassButton } from "@/components/ui/glass-modal";
 import { NewAppointmentSheet } from "@/components/business/new-appointment-sheet";
 import { Segmented } from "@/components/ui/segmented";
@@ -151,7 +152,7 @@ export function CalendarClient(props: Props) {
     setActionError(""); setPending(true);
     businessRescheduleAppointment({ appointmentId: selected.id, date: reDate, time: reTime })
       .then(() => { setSelected(null); router.refresh(); })
-      .catch((e: { message?: string }) => setActionError(e.message ?? "Wystąpił błąd."))
+      .catch((e: { message?: string }) => setActionError(bookingErrorText(e.message)))
       .finally(() => setPending(false));
   }
 
