@@ -1,7 +1,15 @@
 import Link from "next/link";
+import type { Metadata } from "next";
 import { LandingNav } from "@/components/layout/landing-nav";
 import { LandingFooter } from "@/components/layout/landing-footer";
 import { INK_BTN } from "@/components/ui/glass/tokens";
+import { getServerI18n } from "@/lib/i18n/server";
+
+export async function generateMetadata(): Promise<Metadata> {
+  const { dict } = await getServerI18n();
+  const T = dict.publicPages.careers;
+  return { title: T.seoTitle, description: T.seoDescription, alternates: { canonical: "/careers" } };
+}
 
 const BG = [
   "radial-gradient(ellipse 120% 80% at 85% -20%, rgba(203,213,225,0.70) 0%, transparent 50%)",
@@ -10,7 +18,10 @@ const BG = [
   "linear-gradient(168deg, #E8EFF8 0%, #F1F6FB 40%, #E5EEF9 100%)",
 ].join(", ");
 
-export default function CareersPage() {
+export default async function CareersPage() {
+  const { dict } = await getServerI18n();
+  const T = dict.publicPages.careers;
+
   return (
     <div className="min-h-screen" style={{ background: BG }}>
       <LandingNav />
@@ -24,16 +35,16 @@ export default function CareersPage() {
               color: "#64748B",
             }}
           >
-            Kariera
+            {T.eyebrow}
           </div>
           <h1
             className="text-4xl font-bold mb-4"
             style={{ letterSpacing: "var(--track-display)", color: "#0F172A" }}
           >
-            Dołącz do zespołu
+            {T.title}
           </h1>
           <p className="mb-10 leading-relaxed text-sm" style={{ color: "#64748B" }}>
-            Budujemy przyszłość rezerwacji online w Polsce. Wkrótce opublikujemy pierwsze oferty.
+            {T.lede}
           </p>
           <div
             className="inline-flex items-center gap-2 px-5 py-3 rounded-xl mb-10 text-sm"
@@ -51,11 +62,11 @@ export default function CareersPage() {
                 boxShadow: "var(--e1)",
               }}
             />
-            Oferty pracy wkrótce
+            {T.openingsSoon}
           </div>
           <div className="mt-6">
             <p className="text-sm mb-4" style={{ color: "#94A3B8" }}>
-              Chcesz nas poznać wcześniej? Napisz do nas.
+              {T.contactPrompt}
             </p>
             <Link
               href="/contact"
@@ -63,7 +74,7 @@ export default function CareersPage() {
               data-on-ink
               style={{ ...INK_BTN, display: "inline-flex", borderRadius: "10px" }}
             >
-              Skontaktuj się
+              {T.contactCta}
             </Link>
           </div>
         </div>
@@ -83,14 +94,13 @@ export default function CareersPage() {
             className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full mb-5 text-xs font-semibold uppercase tracking-widest"
             style={{ background: "var(--selected)", border: "1px solid var(--hairline)", color: "#64748B" }}
           >
-            Program poleceń
+            {T.referralEyebrow}
           </div>
           <h2 className="text-3xl font-bold mb-3" style={{ letterSpacing: "var(--track-display)", color: "#0F172A" }}>
-            Zaproś i zarób
+            {T.referralTitle}
           </h2>
           <p className="mb-7 leading-relaxed text-sm max-w-lg mx-auto" style={{ color: "#64748B" }}>
-            Znasz właścicieli salonów, którym przyda się TermCatch? Poleć nas dalej. Przygotowujemy
-            program nagród za polecenia. Napisz do nas, a przekażemy Ci szczegóły i Twój link polecający.
+            {T.referralBody}
           </p>
           <Link
             href="/contact"
@@ -101,7 +111,7 @@ export default function CareersPage() {
               boxShadow: "0 1px 2px rgba(0,0,0,0.20), inset 0 1px 0 rgba(255,255,255,0.15)",
             }}
           >
-            Dołącz do programu
+            {T.referralCta}
           </Link>
         </div>
       </section>

@@ -394,6 +394,134 @@
   .track-overline { letter-spacing: var(--track-overline); }
 }
 
+/* ═══ Composition — the editorial layer ═════════════════════
+   The previous pass fixed the *material*. This one fixes the
+   *composition*: the page was one continuous silver wash with a
+   card in every slot, so nothing framed anything else.
+
+   Three devices do the work, and only three:
+     1. an ink band — one dark, full-bleed anchor per page
+     2. an editorial rail — a hairline + overline that indexes a
+        section instead of wrapping it in yet another card
+     3. a real display scale — type that actually changes shape
+        with size, rather than three weights of the same thing */
+
+/* ── 1. The ink band ──────────────────────────────────────────
+   A full-bleed graphite section. Exactly one per page: it is the
+   tonal anchor that lets the silver read as silver rather than as
+   undifferentiated grey. Never two in a row. */
+.band-ink {
+  position: relative;
+  background:
+    radial-gradient(ellipse 90% 70% at 12% 0%, rgba(148, 163, 184, 0.16) 0%, transparent 55%),
+    radial-gradient(ellipse 70% 60% at 88% 100%, rgba(203, 213, 225, 0.10) 0%, transparent 55%),
+    linear-gradient(168deg, #16202F 0%, #0F172A 45%, #131C2B 100%);
+  color: #E8EEF6;
+  isolation: isolate;
+}
+/* A single hairline of caught light along the top edge — the same
+   machined-edge signature the elevation ladder uses, inverted. */
+.band-ink::before {
+  content: '';
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(226, 232, 240, 0.34) 30%, rgba(226, 232, 240, 0.34) 70%, transparent);
+  pointer-events: none;
+}
+.band-ink .on-ink-primary  { color: #F1F5F9; }
+.band-ink .on-ink-secondary { color: #9FB0C6; }
+.band-ink .on-ink-muted     { color: #74869E; }
+.band-ink .hairline-ink     { background: rgba(226, 232, 240, 0.14); }
+
+/* A quiet surface *inside* the ink band — never white, never glass.
+   Just a half-step lift so grouped content reads as grouped. */
+.on-ink-surface {
+  background: rgba(226, 232, 240, 0.055);
+  border: 1px solid rgba(226, 232, 240, 0.12);
+}
+
+/* ── 2. The editorial rail ────────────────────────────────────
+   Replaces the "eyebrow pill in a rounded chip" that opened every
+   section. A rule plus a label indexes the section without adding
+   another box to a page already made of boxes. */
+.rail {
+  display: flex;
+  align-items: center;
+  gap: 0.875rem;
+}
+.rail::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: linear-gradient(90deg, var(--hairline) 0%, transparent 100%);
+}
+.band-ink .rail::after {
+  background: linear-gradient(90deg, rgba(226, 232, 240, 0.22) 0%, transparent 100%);
+}
+
+/* A section divider that is a rule, not a gradient smudge. */
+.rule {
+  height: 1px;
+  background: var(--hairline-soft);
+}
+
+/* ── 3. Display type ──────────────────────────────────────────
+   Fluid, so the headline is genuinely large on a large screen and
+   still fits a 360px phone. Leading tightens as size grows and the
+   tracking follows it — a fixed letter-spacing is wrong somewhere. */
+.type-display {
+  font-size: clamp(2.75rem, 7.2vw, 6rem);
+  line-height: 0.94;
+  letter-spacing: -0.042em;
+  font-weight: 700;
+}
+.type-section {
+  font-size: clamp(1.875rem, 3.4vw, 2.75rem);
+  line-height: 1.06;
+  letter-spacing: -0.032em;
+  font-weight: 700;
+}
+/* The size that was missing entirely: a lede is not body copy. */
+.type-lede {
+  font-size: clamp(1rem, 1.35vw, 1.1875rem);
+  line-height: 1.55;
+  letter-spacing: -0.006em;
+}
+/* Oversized index numerals. Tabular so a column of them aligns. */
+.type-numeral {
+  font-size: clamp(2.25rem, 4vw, 3.25rem);
+  line-height: 0.9;
+  letter-spacing: -0.04em;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ── Product stage ────────────────────────────────────────────
+   The hero preview is not a card sitting on the right. It is a
+   window onto the product, deliberately larger than its frame and
+   clipped by the section edge, so it reads as a real screen rather
+   than an illustration that happens to be rectangular. */
+.stage {
+  position: relative;
+  border-radius: 20px 0 0 20px;
+  background: var(--surface);
+  border: 1px solid var(--hairline);
+  border-right: 0;
+  box-shadow:
+    0 0 0 0.5px rgba(203, 213, 225, 0.42),
+    0 2px 6px rgba(15, 23, 42, 0.06),
+    -24px 40px 80px -32px rgba(15, 23, 42, 0.22);
+  overflow: hidden;
+}
+@media (max-width: 1023px) {
+  .stage {
+    border-radius: 18px;
+    border-right: 1px solid var(--hairline);
+    box-shadow: var(--e3);
+  }
+}
+
 /* ═══ Keyframes ═════════════════════════════════════════════ */
 
 /* Tailwind ships 1s; 0.7 reads noticeably more responsive for the same wait. */
@@ -483,4 +611,23 @@
     -webkit-backdrop-filter: none !important;
   }
   :focus-visible { outline-width: 3px; }
+
+  /* The ink band drops its ambient glows and goes flat and dark, so
+     every foreground weight lands on one predictable ground. */
+  .band-ink {
+    background: #0B1220;
+    color: #FFFFFF;
+  }
+  .band-ink .on-ink-secondary { color: #C7D3E2; }
+  .band-ink .on-ink-muted     { color: #AEBCCE; }
+  .on-ink-surface {
+    background: rgba(255, 255, 255, 0.10);
+    border-color: rgba(255, 255, 255, 0.34);
+  }
+}
+
+/* Everything inside the ink band focuses against the dark ground, so
+   the ring inverts there without every element having to opt in. */
+.band-ink :focus-visible {
+  outline-color: rgba(255, 255, 255, 0.92);
 }

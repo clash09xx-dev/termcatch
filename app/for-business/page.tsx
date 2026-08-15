@@ -1,12 +1,12 @@
 import type { Metadata } from "next";
 import { ForBusinessClient } from "./for-business-client";
+import { getServerI18n } from "@/lib/i18n/server";
 
-export const metadata: Metadata = {
-  title: "Dla salonów i specjalistów — kalendarz online i rezerwacje | TermCatch",
-  description:
-    "TermCatch dla właścicieli salonów: kalendarz online 24/7, automatyczne przypomnienia, CRM, płatności i analityka w jednym miejscu. Zacznij za darmo.",
-  alternates: { canonical: "/for-business" },
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const { dict } = await getServerI18n();
+  const T = dict.publicPages.forBusiness;
+  return { title: T.seoTitle, description: T.seoDescription, alternates: { canonical: "/for-business" } };
+}
 
 export default function ForBusinessPage() {
   return <ForBusinessClient />;

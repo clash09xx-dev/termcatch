@@ -5,9 +5,11 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
 import { EASE_OUT, SPRING, stepFade, stepSlide } from "@/lib/motion";
-import { formatCurrency, formatDuration, formatDate, getInitials, cn } from "@/lib/utils";
+import { formatCurrency, formatDuration, getInitials, cn } from "@/lib/utils";
 import { previewCoupon, type CouponPreview } from "@/lib/actions/coupon-redemption";
-import { useLocale } from "@/components/i18n/i18n-provider";
+import { useLocale, useT } from "@/components/i18n/i18n-provider";
+import { interpolate } from "@/lib/i18n/dictionaries";
+import { formatDate as fmtDate } from "@/lib/i18n/format";
 import { bookingResumePath, decodeBookingIntent } from "@/lib/booking-intent";
 import { bookingErrorText } from "@/lib/booking-messages";
 
@@ -174,8 +176,6 @@ function GhostBtn({
 
 // ─── Step indicator ──────────────────────────────────────────────────────────
 
-const STEP_LABELS = ["Usługa", "Specjalista", "Termin", "Potwierdzenie"];
-
 function StepIndicator({
   current,
   hasEmployees,
@@ -183,6 +183,8 @@ function StepIndicator({
   current: Step;
   hasEmployees: boolean;
 }) {
+  const T = useT().booking;
+  const STEP_LABELS = [T.stepService, T.stepSpecialist, T.stepDate, T.stepConfirm];
   const steps = hasEmployees ? STEP_LABELS : STEP_LABELS.filter((_, i) => i !== 1);
   // Map internal step (1,2,3,4 with employees / 1,3,4 without) to display position 1..n
   const displayStep =
@@ -197,7 +199,7 @@ function StepIndicator({
       : 3;
 
   return (
-    <ol className="flex items-center mb-8" aria-label={`Krok ${displayStep} z ${steps.length}`}>
+    <ol className="flex items-center mb-8" aria-label={interpolate(T.stepAria, { current: displayStep, total: steps.length })}>
       {steps.map((label, i) => {
         const stepNum = i + 1;
         const isDone = displayStep > stepNum;
@@ -265,12 +267,6 @@ function StepIndicator({
 
 // ─── Date helpers ────────────────────────────────────────────────────────────
 
-const DAY_SHORT = ["Nd", "Pn", "Wt", "Śr", "Cz", "Pt", "Sb"];
-const MONTH_SHORT = [
-  "sty", "lut", "mar", "kwi", "maj", "cze",
-  "lip", "sie", "wrz", "paź", "lis", "gru",
-];
-
 function getNext14Days(): Date[] {
   const days: Date[] = [];
   const today = new Date();
@@ -308,6 +304,7 @@ export default function BookingWizard({
   const router = useRouter();
   const searchParams = useSearchParams();
   const locale = useLocale();
+  const T = useT().booking;
   const reduceMotion = useReducedMotion();
   const hasEmployees = employees.length > 0;
 
@@ -418,7 +415,7 @@ export default function BookingWizard({
         .map(([addonId, quantity]) => ({ addonId, quantity })),
     })
       .then((res) => setCouponPreview(res))
-      .catch(() => setCouponPreview({ ok: false, message: "Nie udało się sprawdzić kuponu." }))
+      .catch(() => setCouponPreview({ ok: false, message: T.couponCheckFailed }))
       .finally(() => setCouponPending(false));
   }, [couponInput, business.id, selectedServiceId, selectedAddons]);
   const selectedEmployee =
@@ -562,7 +559,7 @@ export default function BookingWizard({
         formatDuration(finalDuration),
         selectedEmployee ? `${selectedEmployee.firstName} ${selectedEmployee.lastName.charAt(0)}.` : null,
         selectedDate && selectedTime
-          ? `${formatDate(selectedDate, { day: "numeric", month: "short" })} · ${selectedTime}`
+          ? `${fmtDate(selectedDate, locale, { day: "numeric", month: "short" })} · ${selectedTime}`
           : null,
       ].filter(Boolean).join(" · ")
     : "";
@@ -582,7 +579,7 @@ export default function BookingWizard({
               <span className="truncate max-w-[280px]">{business.name}</span>
             </Link>
             <h1 className="text-[1.75rem] font-bold text-slate-900 leading-tight" style={{ letterSpacing: "var(--track-display)" }}>
-              Rezerwacja
+              {T.title}
             </h1>
           </div>
           <StepIndicator current={step} hasEmployees={hasEmployees} />
@@ -611,20 +608,20 @@ export default function BookingWizard({
               {step === 1 && (
                 <div className="pb-5">
                   <h2 className="text-base font-bold text-slate-900 mb-4" style={{ letterSpacing: "var(--track-heading)" }}>
-                    Wybierz usługę
+                    {T.pickService}
                   </h2>
                   {services.length === 0 ? (
                     <div className="text-center py-10 rounded-2xl" style={S.panel}>
-                      <p className="text-sm text-slate-500">Ten salon nie ma jeszcze dostępnych usług.</p>
+                      <p className="text-sm text-slate-500">{T.noServices}</p>
                       <Link
                         href={`/b/${business.slug}`}
                         className="inline-block mt-3 text-sm font-semibold text-slate-700 underline underline-offset-2"
                       >
-                        Wróć do profilu salonu
+                        {T.backToProfile}
                       </Link>
                     </div>
                   ) : (
-                    <div className="space-y-2" role="group" aria-label="Usługa">
+                    <div className="space-y-2" role="group" aria-label={T.stepService}>
                       {services.map((service) => {
                         const isSelected = selectedServiceId === service.id;
                         return (
@@ -691,10 +688,10 @@ export default function BookingWizard({
                   {selectedService && serviceAddons.length > 0 && (
                     <div className="mt-6">
                       <h3 className="text-sm font-bold text-slate-900" style={{ letterSpacing: "var(--track-heading)" }}>
-                        Dodatki <span className="font-normal text-slate-400">(opcjonalnie)</span>
+                        {T.addons} <span className="font-normal text-slate-400">{T.addonsOptional}</span>
                       </h3>
-                      <p className="text-xs text-slate-500 mt-0.5 mb-3">Rozszerz wizytę. Dodatki wpływają na czas i cenę.</p>
-                      <div className="space-y-2" role="group" aria-label="Dodatki do usługi">
+                      <p className="text-xs text-slate-500 mt-0.5 mb-3">{T.addonsHint}</p>
+                      <div className="space-y-2" role="group" aria-label={T.addonsAria}>
                         {serviceAddons.map((a) => {
                           const qty = selectedAddons[a.id] ?? 0;
                           const on = qty > 0;
@@ -711,7 +708,7 @@ export default function BookingWizard({
                                 type="button"
                                 role="checkbox"
                                 aria-checked={on}
-                                aria-label={`${a.name}, +${a.priceIncrease} zł${a.durationIncrease > 0 ? `, +${a.durationIncrease} minut` : ""}`}
+                                aria-label={`${a.name}, +${formatCurrency(a.priceIncrease)}${a.durationIncrease > 0 ? `, +${a.durationIncrease} ${T.minutesShort}` : ""}`}
                                 onClick={() =>
                                   setSelectedAddons((prev) => {
                                     const next = { ...prev };
@@ -749,10 +746,10 @@ export default function BookingWizard({
                               </button>
 
                               {on && a.hasQuantity && (
-                                <div className="flex items-center gap-2 flex-shrink-0" role="group" aria-label={`Ilość · ${a.name}`}>
+                                <div className="flex items-center gap-2 flex-shrink-0" role="group" aria-label={interpolate(T.quantityOf, { name: a.name })}>
                                   <button
                                     type="button"
-                                    aria-label="Mniej"
+                                    aria-label={T.less}
                                     disabled={qty <= a.minQuantity}
                                     onClick={() => setSelectedAddons((p) => ({ ...p, [a.id]: Math.max(a.minQuantity, (p[a.id] ?? a.defaultQuantity) - 1) }))}
                                     className="w-7 h-7 rounded-lg flex items-center justify-center text-slate-700 disabled:opacity-30"
@@ -763,7 +760,7 @@ export default function BookingWizard({
                                   <span className="text-sm font-bold text-slate-900 tabular-nums w-5 text-center" aria-live="polite">{qty}</span>
                                   <button
                                     type="button"
-                                    aria-label="Więcej"
+                                    aria-label={T.more}
                                     disabled={qty >= a.maxQuantity}
                                     onClick={() => setSelectedAddons((p) => ({ ...p, [a.id]: Math.min(a.maxQuantity, (p[a.id] ?? a.defaultQuantity) + 1) }))}
                                     className="w-7 h-7 rounded-lg flex items-center justify-center text-slate-700 disabled:opacity-30"
@@ -779,7 +776,7 @@ export default function BookingWizard({
                       </div>
 
                       <div className="mt-3 flex items-center justify-between px-1 text-sm">
-                        <span className="text-slate-500">Razem z dodatkami</span>
+                        <span className="text-slate-500">{T.withAddons}</span>
                         <span className="font-bold text-slate-900 tabular-nums">
                           {formatCurrency(subtotal)} · {formatDuration(finalDuration)}
                         </span>
@@ -793,9 +790,9 @@ export default function BookingWizard({
               {step === 2 && hasEmployees && (
                 <div className="pb-5">
                   <h2 className="text-base font-bold text-slate-900 mb-4" style={{ letterSpacing: "var(--track-heading)" }}>
-                    Wybierz specjalistę
+                    {T.pickSpecialist}
                   </h2>
-                  <div className="space-y-2" role="group" aria-label="Specjalista">
+                  <div className="space-y-2" role="group" aria-label={T.stepSpecialist}>
                     {/* Any employee option */}
                     <button
                       type="button"
@@ -821,10 +818,10 @@ export default function BookingWizard({
                       </div>
                       <div>
                         <p className={cn("text-sm font-semibold", selectedEmployeeId === null ? "text-white" : "text-slate-900")}>
-                          Dowolny specjalista
+                          {T.anySpecialist}
                         </p>
                         <p className={cn("text-xs", selectedEmployeeId === null ? "text-slate-300" : "text-slate-500")}>
-                          Pierwszy dostępny
+                          {T.firstAvailable}
                         </p>
                       </div>
                     </button>
@@ -878,7 +875,7 @@ export default function BookingWizard({
               {step === 3 && (
                 <div className="pb-5">
                   <h2 className="text-base font-bold text-slate-900 mb-4" style={{ letterSpacing: "var(--track-heading)" }}>
-                    Wybierz termin
+                    {T.pickDate}
                   </h2>
 
                   {/* Date rail */}
@@ -889,7 +886,7 @@ export default function BookingWizard({
                     <div
                       className="flex gap-2 overflow-x-auto pb-2 -mx-1 px-1 no-scrollbar snap-x"
                       role="group"
-                      aria-label="Data wizyty"
+                      aria-label={T.dateLabel}
                     >
                       {days.map((day) => {
                         const dateStr = dateToString(day);
@@ -907,7 +904,7 @@ export default function BookingWizard({
                             type="button"
                             disabled={!isOpen}
                             aria-pressed={isSelected}
-                            aria-label={`${day.toLocaleDateString("pl-PL", { weekday: "long", day: "numeric", month: "long" })}${!isOpen ? " (zamknięte)" : ""}`}
+                            aria-label={`${fmtDate(day, locale, { weekday: "long", day: "numeric", month: "long" })}${!isOpen ? T.closedSuffix : ""}`}
                             onClick={() => {
                               setSelectedDate(dateStr);
                               setSelectedTime("");
@@ -919,17 +916,17 @@ export default function BookingWizard({
                             style={isSelected ? S.rowSelected : S.row}
                           >
                             <span className={cn("text-[10px] font-medium", isSelected ? "text-slate-300" : "text-slate-500")}>
-                              {DAY_SHORT[dayOfWeekIdx]}
+                              {fmtDate(day, locale, { weekday: "short" })}
                             </span>
                             <span className={cn("text-sm font-bold mt-0.5 tabular-nums", isSelected ? "text-white" : "text-slate-800")}>
                               {day.getDate()}
                             </span>
                             <span className={cn("text-[10px]", isSelected ? "text-slate-300" : "text-slate-500")}>
-                              {MONTH_SHORT[day.getMonth()]}
+                              {fmtDate(day, locale, { month: "short" })}
                             </span>
                             {isToday && (
                               <span className={cn("text-[9px] font-semibold mt-0.5", isSelected ? "text-slate-200" : "text-slate-400")}>
-                                dziś
+                                {T.today}
                               </span>
                             )}
                           </button>
@@ -942,11 +939,11 @@ export default function BookingWizard({
                   {selectedDate && (
                     <div className="mt-5" aria-busy={loadingSlots} aria-live="polite">
                       <p className="text-[11px] font-semibold text-slate-500 uppercase mb-2" style={{ letterSpacing: "0.08em" }}>
-                        Godzina
+                        {T.time}
                       </p>
                       {loadingSlots ? (
                         <>
-                          <p className="text-sm text-slate-500 mb-2">Sprawdzamy dostępność…</p>
+                          <p className="text-sm text-slate-500 mb-2">{T.checkingAvailability}</p>
                           <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
                             {Array.from({ length: 8 }).map((_, i) => (
                               <div
@@ -962,13 +959,13 @@ export default function BookingWizard({
                           className="text-center py-8 rounded-xl"
                           style={{ border: "1px dashed rgba(244,63,94,0.35)", background: "rgba(254,242,242,0.60)" }}
                         >
-                          <p className="text-sm text-slate-700">Nie udało się sprawdzić dostępności.</p>
+                          <p className="text-sm text-slate-700">{T.availabilityFailed}</p>
                           <button
                             type="button"
                             onClick={() => fetchSlots(selectedDate)}
                             className="mt-2 text-sm font-semibold text-slate-900 underline underline-offset-4"
                           >
-                            Spróbuj ponownie
+                            {T.tryAgain}
                           </button>
                         </div>
                       ) : availableSlots.length === 0 ? (
@@ -976,11 +973,11 @@ export default function BookingWizard({
                           className="text-center py-8 rounded-xl"
                           style={{ border: "1px dashed rgba(148,163,184,0.45)", background: "rgba(248,250,252,0.60)" }}
                         >
-                          <p className="text-sm text-slate-600">Brak dostępnych terminów na ten dzień</p>
-                          <p className="text-xs text-slate-500 mt-1">Wybierz inną datę powyżej</p>
+                          <p className="text-sm text-slate-600">{T.noSlots}</p>
+                          <p className="text-xs text-slate-500 mt-1">{T.pickAnotherDate}</p>
                         </div>
                       ) : (
-                        <div className="grid grid-cols-3 sm:grid-cols-4 gap-2" role="group" aria-label="Godzina wizyty">
+                        <div className="grid grid-cols-3 sm:grid-cols-4 gap-2" role="group" aria-label={T.timeLabel}>
                           {availableSlots.map((slot) => {
                             const isSelected = selectedTime === slot;
                             return (
@@ -1010,38 +1007,38 @@ export default function BookingWizard({
               {step === 4 && selectedService && (
                 <div className="pb-5">
                   <h2 className="text-base font-bold text-slate-900 mb-4" style={{ letterSpacing: "var(--track-heading)" }}>
-                    Potwierdź rezerwację
+                    {T.confirm}
                   </h2>
 
                   {/* Summary */}
                   <dl className="rounded-2xl p-4 space-y-3 mb-5" style={S.panel}>
                     {([
-                      { label: "Usługa", value: selectedService.name, bold: true },
+                      { label: T.stepService, value: selectedService.name, bold: true },
                       ...addonLines.map((l) => ({
                         label: l.quantity > 1 ? `+ ${l.name} ×${l.quantity}` : `+ ${l.name}`,
                         value: `+${formatCurrency(l.totalPrice)}`,
                         bold: false,
                         nums: true,
                       })),
-                      { label: "Czas trwania", value: formatDuration(finalDuration) },
+                      { label: T.duration, value: formatDuration(finalDuration) },
                       ...(appliedCoupon
                         ? [
-                            { label: "Suma", value: formatCurrency(appliedCoupon.subtotal), nums: true },
-                            { label: `Rabat (${appliedCoupon.code})`, value: `−${formatCurrency(appliedCoupon.discountAmount)}`, nums: true },
-                            { label: "Do zapłaty", value: price, bold: true, nums: true },
+                            { label: T.sum, value: formatCurrency(appliedCoupon.subtotal), nums: true },
+                            { label: `${T.discount} (${appliedCoupon.code})`, value: `−${formatCurrency(appliedCoupon.discountAmount)}`, nums: true },
+                            { label: T.toPay, value: price, bold: true, nums: true },
                           ]
-                        : [{ label: addonLines.length > 0 ? "Razem" : "Cena", value: price, bold: true, nums: true }]),
+                        : [{ label: addonLines.length > 0 ? T.total : T.price, value: price, bold: true, nums: true }]),
                       {
-                        label: "Specjalista",
+                        label: T.stepSpecialist,
                         value: selectedEmployee
                           ? `${selectedEmployee.firstName} ${selectedEmployee.lastName}`
-                          : "Dowolny specjalista",
+                          : T.anySpecialist,
                       },
                       {
-                        label: "Data",
-                        value: formatDate(selectedDate, { weekday: "long", day: "numeric", month: "long" }),
+                        label: T.date,
+                        value: fmtDate(selectedDate, locale, { weekday: "long", day: "numeric", month: "long" }),
                       },
-                      { label: "Godzina", value: selectedTime, bold: true, nums: true },
+                      { label: T.time, value: selectedTime, bold: true, nums: true },
                     ] as { label: string; value: string; bold?: boolean; nums?: boolean }[]).map((row, i, arr) => (
                       <div key={row.label}>
                         <div className="flex items-start justify-between gap-2">
@@ -1066,7 +1063,7 @@ export default function BookingWizard({
                   {/* Coupon */}
                   <div className="mb-4">
                     <label htmlFor="booking-coupon" className="block text-xs font-semibold text-slate-600 mb-1.5">
-                      Kod rabatowy <span className="text-slate-400 font-normal">(opcjonalnie)</span>
+                      {T.couponLabel} <span className="text-slate-400 font-normal">{T.addonsOptional}</span>
                     </label>
                     <div className="flex gap-2">
                       <input
@@ -1079,7 +1076,7 @@ export default function BookingWizard({
                             applyCoupon();
                           }
                         }}
-                        placeholder="Kod rabatowy"
+                        placeholder={T.couponLabel}
                         disabled={!!appliedCoupon}
                         className="input-glass flex-1 px-3.5 py-2.5 text-sm rounded-xl outline-none text-slate-800 placeholder:text-slate-400 uppercase tabular-nums disabled:opacity-60"
                       />
@@ -1093,7 +1090,7 @@ export default function BookingWizard({
                           className="px-4 rounded-xl text-sm font-semibold text-slate-600 flex-shrink-0"
                           style={{ background: "var(--surface)", border: "1px solid var(--hairline)" }}
                         >
-                          Usuń
+                          {T.couponRemove}
                         </button>
                       ) : (
                         <button
@@ -1103,7 +1100,7 @@ export default function BookingWizard({
                           className="px-4 rounded-xl text-sm font-semibold disabled:opacity-50 flex-shrink-0"
                           style={{ background: INK, border: "1px solid #0F172A", color: "#F8FAFC" }}
                         >
-                          {couponPending ? "…" : "Zastosuj"}
+                          {couponPending ? "…" : T.couponApply}
                         </button>
                       )}
                     </div>
@@ -1120,13 +1117,13 @@ export default function BookingWizard({
                   <div className="mb-4">
                     <label htmlFor="booking-notes" className="block text-xs font-semibold text-slate-600 mb-1.5">
                       Uwagi dla specjalisty{" "}
-                      <span className="text-slate-400 font-normal">(opcjonalnie)</span>
+                      <span className="text-slate-400 font-normal">{T.addonsOptional}</span>
                     </label>
                     <textarea
                       id="booking-notes"
                       value={notes}
                       onChange={(e) => setNotes(e.target.value)}
-                      placeholder="Np. alergie, preferencje, pytania..."
+                      placeholder={T.notesPlaceholder}
                       rows={3}
                       className="input-glass w-full px-3.5 py-2.5 text-sm rounded-xl outline-none placeholder:text-slate-400 text-slate-800 resize-none transition-shadow"
                     />
@@ -1138,7 +1135,7 @@ export default function BookingWizard({
                       <circle cx="12" cy="12" r="10" />
                       <path strokeLinecap="round" d="M12 8v4M12 16h.01" />
                     </svg>
-                    Wizytę możesz bezpłatnie odwołać lub przełożyć w swoim panelu klienta.
+                    {T.cancelNote}
                   </p>
 
                   {submitError && (
@@ -1180,21 +1177,21 @@ export default function BookingWizard({
                   </motion.div>
 
                   <h2 className="text-xl font-bold text-slate-900 mb-1" style={{ letterSpacing: "var(--track-title)" }}>
-                    Rezerwacja potwierdzona!
+                    {T.title} potwierdzona!
                   </h2>
                   <p className="text-sm text-slate-500 mb-6 max-w-xs mx-auto">
-                    Twoja wizyta jest potwierdzona. Szczegóły wysłaliśmy e-mailem i w powiadomieniach.
+                    {T.confirmedBody}
                   </p>
 
                   {/* Appointment card */}
                   <div className="rounded-2xl p-4 space-y-2.5 mb-6 text-left" style={S.panel}>
                     <div className="flex items-center justify-between text-sm">
-                      <span className="text-slate-500">Salon</span>
+                      <span className="text-slate-500">{T.salon}</span>
                       <span className="font-semibold text-slate-900">{business.name}</span>
                     </div>
                     <div className="h-px" style={{ background: "rgba(203,213,225,0.40)" }} />
                     <div className="flex items-center justify-between text-sm">
-                      <span className="text-slate-500">Usługa</span>
+                      <span className="text-slate-500">{T.stepService}</span>
                       <span className="font-medium text-slate-900">{selectedService.name}</span>
                     </div>
                     <div className="h-px" style={{ background: "rgba(203,213,225,0.40)" }} />
@@ -1208,7 +1205,7 @@ export default function BookingWizard({
                       </div>
                     ))}
                     <div className="flex items-center justify-between text-sm">
-                      <span className="text-slate-500">Czas trwania</span>
+                      <span className="text-slate-500">{T.duration}</span>
                       <span className="font-medium text-slate-900 tabular-nums">{formatDuration(finalDuration)}</span>
                     </div>
                     <div className="h-px" style={{ background: "rgba(203,213,225,0.40)" }} />
@@ -1217,14 +1214,14 @@ export default function BookingWizard({
                       <span className="font-medium text-slate-900">
                         {selectedEmployee
                           ? `${selectedEmployee.firstName} ${selectedEmployee.lastName}`
-                          : "Dowolny specjalista"}
+                          : T.anySpecialist}
                       </span>
                     </div>
                     <div className="h-px" style={{ background: "rgba(203,213,225,0.40)" }} />
                     <div className="flex items-center justify-between text-sm">
-                      <span className="text-slate-500">Data i godzina</span>
+                      <span className="text-slate-500">{T.dateAndTime}</span>
                       <span className="font-semibold text-slate-900 tabular-nums">
-                        {formatDate(selectedDate, { day: "numeric", month: "short" })} · {selectedTime}
+                        {fmtDate(selectedDate, locale, { day: "numeric", month: "short" })} · {selectedTime}
                       </span>
                     </div>
                     <div className="h-px" style={{ background: "rgba(203,213,225,0.40)" }} />
@@ -1240,7 +1237,7 @@ export default function BookingWizard({
                       </>
                     )}
                     <div className="flex items-center justify-between text-sm">
-                      <span className="text-slate-500">Do zapłaty</span>
+                      <span className="text-slate-500">{T.toPay}</span>
                       <span className="font-bold text-slate-900 tabular-nums">{price}</span>
                     </div>
                   </div>
@@ -1252,7 +1249,7 @@ export default function BookingWizard({
                         className="block w-full py-3 rounded-xl text-sm font-semibold text-center"
                         style={{ background: INK, border: "1px solid #0F172A", color: "#F8FAFC", boxShadow: INK_SHADOW }}
                       >
-                        Moje rezerwacje
+                        {T.myBookings}
                       </Link>
                     </div>
                     <div >
@@ -1266,7 +1263,7 @@ export default function BookingWizard({
                           boxShadow: "var(--e1)",
                         }}
                       >
-                        Wróć do salonu
+                        {T.backToSalon}
                       </Link>
                     </div>
                   </div>
@@ -1293,7 +1290,7 @@ export default function BookingWizard({
             <div className="flex gap-2.5">
               {step > 1 && (
                 <GhostBtn onClick={goBack} disabled={isSubmitting} className="px-5">
-                  Wstecz
+                  {T.back}
                 </GhostBtn>
               )}
               {step === 4 ? (
@@ -1303,15 +1300,15 @@ export default function BookingWizard({
                       <svg className="w-4 h-4 animate-spin" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} aria-hidden="true">
                         <path strokeLinecap="round" strokeLinejoin="round" d="M4 12a8 8 0 0 1 8-8" />
                       </svg>
-                      Potwierdzanie...
+                      {T.confirming}
                     </span>
                   ) : (
-                    "Potwierdź rezerwację"
+                    T.confirm
                   )}
                 </PrimaryBtn>
               ) : (
                 <PrimaryBtn onClick={goNext} disabled={nextDisabled} className="flex-1">
-                  Dalej
+                  {T.next}
                 </PrimaryBtn>
               )}
             </div>

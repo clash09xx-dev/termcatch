@@ -1,11 +1,13 @@
 import { LandingNav } from "@/components/layout/landing-nav";
 import { LandingFooter } from "@/components/layout/landing-footer";
 import type { Metadata } from "next";
+import { getServerI18n } from "@/lib/i18n/server";
 
-export const metadata: Metadata = {
-  title: "O nas — TermCatch",
-  description: "Poznaj historię i misję TermCatch, platformy rezerwacji online dla polskiego rynku beauty.",
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const { dict } = await getServerI18n();
+  const T = dict.publicPages.about;
+  return { title: T.seoTitle, description: T.seoDescription };
+}
 
 const G = {
   bg: [
@@ -50,29 +52,23 @@ const G = {
 
 import React from "react";
 
-const VALUES = [
-  {
-    title: "Prostota",
-    desc: "Instalacja w 5 minut. Bez IT, bez szkoleń, bez komplikacji. Twój salon online tego samego dnia.",
-  },
-  {
-    title: "Polskie wsparcie",
-    desc: "Odbieramy telefon. Rozumiemy lokalny rynek i specyfikę polskich salonów beauty.",
-  },
-  {
-    title: "Uczciwe ceny",
-    desc: "Zakładasz konto za darmo. Płacisz miesięczny abonament, a prowizję 20% tylko od pierwszej wizyty nowego klienta pozyskanego przez TermCatch.",
-  },
-];
+export default async function AboutPage() {
+  const { dict } = await getServerI18n();
+  const T = dict.publicPages.about;
 
-const STATS = [
-  { value: "24/7", label: "Rezerwacje online" },
-  { value: "20%", label: "Prowizja tylko od 1. wizyty" },
-  { value: "5 min", label: "Czas konfiguracji" },
-  { value: "100%", label: "Polskie wsparcie" },
-];
+  const VALUES = [
+    { title: T.value1Title, desc: T.value1Desc },
+    { title: T.value2Title, desc: T.value2Desc },
+    { title: T.value3Title, desc: T.value3Desc },
+  ];
 
-export default function AboutPage() {
+  const STATS = [
+    { value: "24/7", label: T.statBookings },
+    { value: "20%", label: T.statCommission },
+    { value: "5 min", label: T.statSetup },
+    { value: "100%", label: T.value2Title },
+  ];
+
   return (
     <div className="min-h-screen" style={{ background: G.bg }}>
       <LandingNav />
@@ -88,13 +84,13 @@ export default function AboutPage() {
               color: "#64748B",
             }}
           >
-            O nas
+            {T.eyebrow}
           </div>
           <h1
             className="text-5xl sm:text-6xl font-bold leading-[1.05] mb-6"
             style={{ letterSpacing: "var(--track-display)", color: "#0F172A" }}
           >
-            Rezerwacje bez telefonu.
+            {T.headlineTop}
             <br />
             <span
               style={{
@@ -104,13 +100,11 @@ export default function AboutPage() {
                 backgroundClip: "text",
               }}
             >
-              Budujemy to dla Polski.
+              {T.headlineBottom}
             </span>
           </h1>
           <p className="text-lg leading-relaxed max-w-2xl mx-auto" style={{ color: "#64748B" }}>
-            TermCatch powstał z prostej obserwacji: właściciele salonów tracą godziny dziennie
-            na odbieranie telefonów, a klienci frustrują się brakiem dostępności online.
-            Postanowiliśmy to zmienić.
+            {T.lede}
           </p>
         </div>
       </div>
@@ -168,12 +162,10 @@ export default function AboutPage() {
               </svg>
             </div>
             <h2 className="text-xl font-bold mb-3" style={{ letterSpacing: "var(--track-display)", color: "#0F172A" }}>
-              Nasza misja
+              {T.missionTitle}
             </h2>
             <p className="text-sm leading-relaxed" style={{ color: "#64748B" }}>
-              Chcemy sprawić, żeby każdy salon w Polsce, niezależnie od wielkości, miał dostęp
-              do profesjonalnego systemu rezerwacji online. Bez skomplikowanej konfiguracji,
-              bez drogich abonamentów, bez pośredników.
+              {T.missionBody}
             </p>
           </div>
 
@@ -187,12 +179,10 @@ export default function AboutPage() {
               </svg>
             </div>
             <h2 className="text-xl font-bold mb-3" style={{ letterSpacing: "var(--track-display)", color: "#0F172A" }}>
-              Dla kogo
+              {T.audienceTitle}
             </h2>
             <p className="text-sm leading-relaxed" style={{ color: "#64748B" }}>
-              Budujemy dla fryzjerów, barberów, kosmetyczek, masażystów, tatuatorów
-              i wszystkich specjalistów, którzy chcą skupić się na pracy,
-              a nie na administracji.
+              {T.audienceBody}
             </p>
           </div>
         </div>
@@ -206,7 +196,7 @@ export default function AboutPage() {
               className="text-2xl font-bold mb-8 text-center"
               style={{ letterSpacing: "var(--track-display)", color: "#0F172A" }}
             >
-              Co nas wyróżnia
+              {T.valuesTitle}
             </h2>
             <div className="grid md:grid-cols-3 gap-6">
               {VALUES.map((v, i) => (
@@ -249,10 +239,10 @@ export default function AboutPage() {
             className="text-3xl font-bold mb-4"
             style={{ letterSpacing: "var(--track-display)", color: "#0F172A" }}
           >
-            Masz pytania?
+            {T.contactTitle}
           </h2>
           <p className="mb-8 text-sm" style={{ color: "#64748B" }}>
-            Napisz do nas, a odpowiemy tak szybko, jak to możliwe.
+            {T.contactBody}
           </p>
           <a
             href="mailto:hello@termcatch.com"

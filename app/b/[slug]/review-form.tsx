@@ -5,6 +5,8 @@ import { useRouter, usePathname } from "next/navigation";
 import { createReview } from "@/lib/actions/reviews";
 import { cn } from "@/lib/utils";
 import { GlassModal, ModalInkButton } from "@/components/ui/glass-modal";
+import { useT } from "@/components/i18n/i18n-provider";
+import { interpolate } from "@/lib/i18n/dictionaries";
 import { DANGER_TINT, SUCCESS_TINT } from "@/components/ui/glass/tokens";
 
 interface ReviewFormProps {
@@ -20,6 +22,8 @@ export default function ReviewForm({
 }: ReviewFormProps) {
   const router = useRouter();
   const pathname = usePathname();
+  const t = useT();
+  const T = t.salonProfile.review;
   const [rating, setRating] = useState(0);
   const [hover, setHover] = useState(0);
   const [comment, setComment] = useState("");
@@ -31,7 +35,7 @@ export default function ReviewForm({
 
   const submit = () => {
     if (rating < 1) {
-      setError("Wybierz ocenę w skali 1-5.");
+      setError(T.pickRating);
       return;
     }
     setError("");
@@ -41,7 +45,7 @@ export default function ReviewForm({
         setDone(true);
       } catch (err) {
         const e = err as { message?: string };
-        setError(e.message ?? "Wystąpił błąd. Spróbuj ponownie.");
+        setError(e.message ?? T.genericError);
       }
     });
   };
@@ -54,7 +58,7 @@ export default function ReviewForm({
     <GlassModal
       open
       onOpenChange={(o) => { if (!o) close(); }}
-      title={done ? "Dziękujemy za opinię!" : "Oceń wizytę"}
+      title={done ? T.thanks : T.rate}
       description={done ? undefined : `${serviceName} · ${businessName}`}
     >
       {done ? (
@@ -68,14 +72,14 @@ export default function ReviewForm({
             </svg>
           </div>
           <p className="text-[13.5px] leading-[1.55] text-secondary mb-6">
-            Twoja ocena pomaga innym wybrać najlepszy salon.
+            {T.thanksBody}
           </p>
-          <ModalInkButton onClick={close}>Zamknij</ModalInkButton>
+          <ModalInkButton onClick={close}>{t.common.close}</ModalInkButton>
         </div>
       ) : (
         <>
           {/* Stars — 44px targets, and the fill is the feedback, not a bounce. */}
-          <div className="flex items-center justify-center gap-1 mb-5" role="group" aria-label="Ocena w skali 1-5">
+          <div className="flex items-center justify-center gap-1 mb-5" role="group" aria-label={T.ratingGroup}>
             {[1, 2, 3, 4, 5].map((star) => {
               const active = (hover || rating) >= star;
               return (
@@ -85,7 +89,7 @@ export default function ReviewForm({
                   onClick={() => setRating(star)}
                   onPointerEnter={() => setHover(star)}
                   onPointerLeave={() => setHover(0)}
-                  aria-label={`Ocena ${star} z 5`}
+                  aria-label={interpolate(T.starLabel, { n: star })}
                   aria-pressed={rating >= star}
                   className="btn-spring w-11 h-11 flex items-center justify-center rounded-xl"
                 >
@@ -108,12 +112,12 @@ export default function ReviewForm({
             })}
           </div>
 
-          <label htmlFor="review-comment" className="sr-only">Komentarz (opcjonalnie)</label>
+          <label htmlFor="review-comment" className="sr-only">{T.commentLabel}</label>
           <textarea
             id="review-comment"
             value={comment}
             onChange={(e) => setComment(e.target.value)}
-            placeholder="Opisz swoje wrażenia (opcjonalnie)"
+            placeholder={T.commentPlaceholder}
             rows={4}
             maxLength={1000}
             className="input-glass w-full px-3.5 py-3 text-sm rounded-xl outline-none placeholder:text-slate-400 text-slate-800 resize-none mb-4"
@@ -126,7 +130,7 @@ export default function ReviewForm({
           )}
 
           <ModalInkButton onClick={submit} disabled={isPending}>
-            {isPending ? "Wysyłanie..." : "Wyślij opinię"}
+            {isPending ? T.submitting : T.submit}
           </ModalInkButton>
         </>
       )}

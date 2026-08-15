@@ -47,9 +47,17 @@ describe("public copy consistency — no fabricated/outdated phrases", () => {
     });
   }
 
-  test("the 7-day trial ('7 dni') is present on the pricing page", () => {
-    const pricing = files.find((f) => f.endsWith("app/pricing/page.tsx"));
-    assert.ok(pricing, "pricing page not found");
-    assert.ok(readFileSync(pricing!, "utf8").includes("7 dni"), "expected '7 dni' trial copy on pricing");
+  // The pricing copy now lives in the dictionary rather than inline in the
+  // page, so the guarantee is asserted where the words actually are — and in
+  // every locale, not just Polish.
+  test("the 7-day trial promise is present in the pricing copy, in all four locales", () => {
+    const trial: Record<string, string> = { pl: "7 dni", en: "7 days", de: "7 Tage", tr: "7 gün" };
+    for (const [loc, needle] of Object.entries(trial)) {
+      const src = readFileSync(`lib/i18n/dictionaries/${loc}.ts`, "utf8");
+      const start = src.indexOf("    pricing: {");
+      assert.ok(start > 0, `${loc}: publicPages.pricing block not found`);
+      const block = src.slice(start, src.indexOf("\n    about: {", start));
+      assert.ok(block.includes(needle), `${loc}: expected the "${needle}" trial promise in the pricing copy`);
+    }
   });
 });

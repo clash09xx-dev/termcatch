@@ -88,6 +88,34 @@ export const SCRIM: CSSProperties = {
   background: "var(--scrim)",
 };
 
+// ── On-ink — the inverted half of the system ──────────────────
+// Used only inside `.band-ink`, the single dark anchor a page is
+// allowed. Kept here so an inverted surface is a token like any
+// other, rather than a one-off rgba written at the call site.
+
+/** A button that reads as primary *on* the dark band: silver on ink. */
+export const ON_INK_BTN: CSSProperties = {
+  background: "#F1F5F9",
+  border: "1px solid #F1F5F9",
+  color: "#0F172A",
+  boxShadow: "0 1px 2px rgba(0,0,0,0.28), 0 8px 20px -8px rgba(0,0,0,0.45)",
+};
+
+/** Its quiet counterpart: outlined, no fill. */
+export const ON_INK_GHOST_BTN: CSSProperties = {
+  background: "transparent",
+  border: "1px solid rgba(226,232,240,0.28)",
+  color: "#E2E8F0",
+};
+
+/** A grouped region inside the band. A half-step lift, never white. */
+export const ON_INK_SURFACE: CSSProperties = {
+  background: "rgba(226,232,240,0.055)",
+  border: "1px solid rgba(226,232,240,0.12)",
+};
+
+export const ON_INK_HAIRLINE = "1px solid rgba(226,232,240,0.14)";
+
 // ── Ink — the one primary colour ──────────────────────────────
 
 export const INK_GRADIENT = "var(--ink-raised)";

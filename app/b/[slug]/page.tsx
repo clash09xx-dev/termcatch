@@ -14,18 +14,13 @@ import ReviewForm from "./review-form";
 import FavouriteButton from "@/components/booking/favourite-button";
 import { isFavourite } from "@/lib/actions/favourites";
 import { getServerUser } from "@/lib/supabase/server";
+import { getServerI18n } from "@/lib/i18n/server";
+import { interpolate } from "@/lib/i18n/dictionaries";
+import { categoryLabelFor } from "@/lib/categories";
+import type { Dictionary } from "@/lib/i18n/dictionaries";
+import type { Locale } from "@/lib/i18n/config";
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
-
-const DAY_LABELS: Record<string, string> = {
-  MONDAY: "Poniedziałek",
-  TUESDAY: "Wtorek",
-  WEDNESDAY: "Środa",
-  THURSDAY: "Czwartek",
-  FRIDAY: "Piątek",
-  SATURDAY: "Sobota",
-  SUNDAY: "Niedziela",
-};
 
 const DAY_ORDER: Record<string, number> = {
   MONDAY: 0,
@@ -50,7 +45,7 @@ function Star({ className }: { className?: string }) {
 
 // Five-star row filled to the exact average (fractional fill via width clip —
 // no SVG gradient ids, so it is safe to repeat in RSC lists).
-// Rendered only for rated salons; unrated ones get the "Nowy salon" chip.
+// Rendered only for rated salons; unrated ones get the "new salon" chip.
 function StarRow({ rating, sizeClass = "w-3.5 h-3.5" }: { rating: number; sizeClass?: string }) {
   return (
     <span className="inline-flex items-center gap-0.5" aria-hidden="true">
@@ -106,31 +101,10 @@ function Rating({
   );
 }
 
-const CATEGORY_LABELS: Record<string, string> = {
-  HAIR_SALON: "Fryzjer",
-  BARBER: "Barber",
-  NAIL_SALON: "Paznokcie",
-  MASSAGE: "Masaż",
-  SPA: "SPA",
-  BEAUTY_CLINIC: "Klinika urody",
-  EYEBROWS_LASHES: "Brwi & Rzęsy",
-  MAKEUP: "Makijaż",
-  TATTOO: "Tatuaż",
-  PIERCING: "Piercing",
-  TANNING: "Solarium",
-  PHYSIOTHERAPY: "Fizjoterapia",
-  PERSONAL_TRAINER: "Trener personalny",
-  YOGA: "Joga",
-  PILATES: "Pilates",
-  NUTRITIONIST: "Dietetyk",
-  PSYCHOLOGIST: "Psycholog",
-  GENERAL_PHYSICIAN: "Lekarz ogólny",
-  DENTIST: "Stomatolog",
-};
-
 // "Otwarte · do 18:00" — computed per-request in Europe/Warsaw
 function getOpenStatus(
-  hours: { dayOfWeek: string; isOpen: boolean; openTime: string; closeTime: string }[]
+  hours: { dayOfWeek: string; isOpen: boolean; openTime: string; closeTime: string }[],
+  T: Dictionary["salonProfile"],
 ): { open: boolean; label: string } {
   const now = new Date();
   const dayName = now
@@ -144,10 +118,10 @@ function getOpenStatus(
   }).format(now);
 
   const today = hours.find((h) => h.dayOfWeek === dayName);
-  if (!today || !today.isOpen) return { open: false, label: "Dziś zamknięte" };
-  if (hm < today.openTime) return { open: false, label: `Otwiera o ${today.openTime}` };
-  if (hm < today.closeTime) return { open: true, label: `Otwarte · do ${today.closeTime}` };
-  return { open: false, label: "Dziś zamknięte" };
+  if (!today || !today.isOpen) return { open: false, label: T.closedToday };
+  if (hm < today.openTime) return { open: false, label: interpolate(T.opensAt, { time: today.openTime }) };
+  if (hm < today.closeTime) return { open: true, label: interpolate(T.openUntil, { time: today.closeTime }) };
+  return { open: false, label: T.closedToday };
 }
 
 // ─── Metadata (SEO) ──────────────────────────────────────────────────────────
@@ -172,18 +146,20 @@ export async function generateMetadata({
     },
   });
 
+  const { locale, dict } = await getServerI18n();
+
   if (!business || !isPubliclyVisible(business)) {
-    return { title: "Salon nie znaleziony" };
+    return { title: dict.salonProfile.notFoundTitle };
   }
 
-  const categoryLabel = CATEGORY_LABELS[business.category] ?? "Salon";
+  const categoryLabel = categoryLabelFor(business.category, locale as Locale);
   const title =
     business.metaTitle ??
-    `${business.name} — ${categoryLabel}, ${business.city} | Rezerwacja online`;
+    `${business.name} — ${categoryLabel}, ${business.city} | ${dict.salonProfile.seoTitleSuffix}`;
   const description =
     business.metaDescription ??
     business.shortDescription ??
-    `Umów wizytę online w ${business.name} (${categoryLabel}, ${business.city}). Sprawdź usługi, ceny i wolne terminy. Rezerwacja 24/7 przez TermCatch.`;
+    interpolate(dict.salonProfile.seoDesc, { name: business.name, category: categoryLabel, city: business.city ?? "" });
 
   return {
     title,
@@ -204,6 +180,8 @@ export default async function BusinessProfilePage({
 }) {
   const { slug } = await params;
   const { review: reviewAppointmentId } = await searchParams;
+  const { locale, dict } = await getServerI18n();
+  const T = dict.salonProfile;
 
   const business = await prisma.business.findUnique({
     where: { slug },
@@ -266,13 +244,13 @@ export default async function BusinessProfilePage({
     }
   }
 
-  const categoryLabel = CATEGORY_LABELS[business.category] ?? business.category;
+  const categoryLabel = categoryLabelFor(business.category, locale as Locale);
 
   const sortedWorkingHours = [...business.workingHours].sort(
     (a, b) => (DAY_ORDER[a.dayOfWeek] ?? 0) - (DAY_ORDER[b.dayOfWeek] ?? 0)
   );
 
-  const openStatus = sortedWorkingHours.length > 0 ? getOpenStatus(sortedWorkingHours) : null;
+  const openStatus = sortedWorkingHours.length > 0 ? getOpenStatus(sortedWorkingHours, T) : null;
 
   // Verified location = coordinates stored from a real Google Places selection.
   // Without them we NEVER guess a pin — address text + an address-only search
@@ -447,7 +425,7 @@ export default async function BusinessProfilePage({
                   className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold"
                   style={{ background: "var(--surface)", border: "1px solid var(--hairline)", color: "#475569", boxShadow: "inset 0 1px 0 rgba(255,255,255,0.90)" }}
                 >
-                  Nowy salon
+                  {T.newSalon}
                 </span>
               )}
               <div className="flex items-center gap-1.5 text-sm text-slate-500">
@@ -481,10 +459,10 @@ export default async function BusinessProfilePage({
           <div className="flex-1 min-w-0 space-y-10">
             {/* Services */}
             <section className="fade-rise fade-rise-d1">
-              <h2 className="text-lg font-bold text-slate-900 mb-4" style={{ letterSpacing: "var(--track-title)" }}>Usługi</h2>
+              <h2 className="text-lg font-bold text-slate-900 mb-4" style={{ letterSpacing: "var(--track-title)" }}>{T.services}</h2>
               {business.services.length === 0 ? (
                 <div className="rounded-2xl p-8 text-center" style={glassCard}>
-                  <p className="text-slate-500 text-sm">Ten salon nie dodał jeszcze usług.</p>
+                  <p className="text-slate-500 text-sm">{T.noServices}</p>
                 </div>
               ) : (
                 <div className="space-y-2.5">
@@ -533,7 +511,7 @@ export default async function BusinessProfilePage({
                             boxShadow: "var(--e1)",
                           }}
                         >
-                          Umów
+                          {T.book}
                         </Link>
                       </div>
                     </div>
@@ -545,7 +523,7 @@ export default async function BusinessProfilePage({
             {/* About */}
             {(business.description || business.shortDescription) && (
               <section className="fade-rise fade-rise-d2">
-                <h2 className="text-lg font-bold text-slate-900 mb-4" style={{ letterSpacing: "var(--track-title)" }}>O nas</h2>
+                <h2 className="text-lg font-bold text-slate-900 mb-4" style={{ letterSpacing: "var(--track-title)" }}>{T.aboutUs}</h2>
                 <div className="rounded-2xl p-5" style={glassCard}>
                   <p className="text-sm text-slate-600 leading-relaxed whitespace-pre-line">
                     {business.description ?? business.shortDescription}
@@ -557,7 +535,7 @@ export default async function BusinessProfilePage({
             {/* Gallery */}
             {business.images.length > 0 && (
               <section className="fade-rise fade-rise-d2">
-                <h2 className="text-lg font-bold text-slate-900 mb-4" style={{ letterSpacing: "var(--track-title)" }}>Galeria</h2>
+                <h2 className="text-lg font-bold text-slate-900 mb-4" style={{ letterSpacing: "var(--track-title)" }}>{T.gallery}</h2>
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
                   {business.images.map((src, i) => (
                     <div
@@ -568,7 +546,7 @@ export default async function BusinessProfilePage({
                       {/* eslint-disable-next-line @next/next/no-img-element */}
                       <img
                         src={src}
-                        alt={`${business.name} — zdjęcie ${i + 1}`}
+                        alt={interpolate(T.photoAlt, { name: business.name, n: i + 1 })}
                         loading="lazy"
                         className="w-full h-full object-cover transition-transform duration-500 hover:scale-[1.04]"
                       />
@@ -581,7 +559,7 @@ export default async function BusinessProfilePage({
             {/* Team */}
             {business.employees.length > 0 && (
               <section className="fade-rise fade-rise-d3">
-                <h2 className="text-lg font-bold text-slate-900 mb-4" style={{ letterSpacing: "var(--track-title)" }}>Zespół</h2>
+                <h2 className="text-lg font-bold text-slate-900 mb-4" style={{ letterSpacing: "var(--track-title)" }}>{T.team}</h2>
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
                   {business.employees.map((employee) => (
                     <div
@@ -626,7 +604,7 @@ export default async function BusinessProfilePage({
 
             {/* Working hours + contact */}
             <section className="fade-rise fade-rise-d4">
-              <h2 className="text-lg font-bold text-slate-900 mb-4" style={{ letterSpacing: "var(--track-title)" }}>Informacje</h2>
+              <h2 className="text-lg font-bold text-slate-900 mb-4" style={{ letterSpacing: "var(--track-title)" }}>{T.info}</h2>
               <div className="rounded-2xl overflow-hidden" style={glassCard}>
                 {/* Working hours */}
                 {sortedWorkingHours.length > 0 && (
@@ -636,7 +614,7 @@ export default async function BusinessProfilePage({
                         <svg className="w-4 h-4 text-slate-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} aria-hidden="true">
                           <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
                         </svg>
-                        Godziny otwarcia
+                        {T.openingHours}
                       </h3>
                       {openStatus && (
                         <span
@@ -658,10 +636,10 @@ export default async function BusinessProfilePage({
                             <span className="flex items-center gap-2">
                               {isToday && <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 flex-shrink-0" />}
                               {!isToday && <span className="w-1.5 h-1.5 flex-shrink-0" />}
-                              {DAY_LABELS[wh.dayOfWeek]}
+                              {dict.weekdays.full[wh.dayOfWeek as keyof typeof dict.weekdays.full]}
                             </span>
                             <span className={cn("tabular-nums", !wh.isOpen && "text-slate-400")}>
-                              {wh.isOpen ? `${wh.openTime}–${wh.closeTime}` : "Nieczynne"}
+                              {wh.isOpen ? `${wh.openTime}–${wh.closeTime}` : T.closed}
                             </span>
                           </div>
                         );
@@ -677,7 +655,7 @@ export default async function BusinessProfilePage({
                       <path strokeLinecap="round" strokeLinejoin="round" d="M15 10.5a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
                       <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1 1 15 0Z" />
                     </svg>
-                    Adres
+                    {T.address}
                   </h3>
                   <p className="text-sm text-slate-600">{business.address}, {business.postalCode} {business.city}</p>
                   {hasVerifiedLocation && browserMapsKey ? (
@@ -696,12 +674,11 @@ export default async function BusinessProfilePage({
                       className="mt-3 rounded-xl px-3.5 py-3 text-xs text-slate-500 leading-relaxed"
                       style={{ background: "var(--selected)", border: "1px dashed rgba(148,163,184,0.4)" }}
                     >
-                      Nie udało się potwierdzić dokładnej lokalizacji na mapie. Skorzystaj z adresu powyżej
-                      lub wyszukaj go w Google Maps.
+                      {T.mapUnverified}
                     </div>
                   ) : null}
                   <a href={mapsUrl} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1.5 mt-3 text-xs font-semibold text-slate-600 hover:text-slate-900 hover:underline underline-offset-4 transition-colors">
-                    {hasVerifiedLocation ? "Prowadź w Google Maps" : "Wyszukaj adres w Google Maps"}
+                    {hasVerifiedLocation ? T.directions : T.searchInMaps}
                     <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} aria-hidden="true">
                       <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 6H5.25A2.25 2.25 0 0 0 3 8.25v10.5A2.25 2.25 0 0 0 5.25 21h10.5A2.25 2.25 0 0 0 18 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25" />
                     </svg>
@@ -715,7 +692,7 @@ export default async function BusinessProfilePage({
                       <svg className="w-4 h-4 text-slate-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} aria-hidden="true">
                         <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 6.75c0 8.284 6.716 15 15 15h2.25a2.25 2.25 0 0 0 2.25-2.25v-1.372c0-.516-.351-.966-.852-1.091l-4.423-1.106c-.44-.11-.902.055-1.173.417l-.97 1.293c-.282.376-.769.542-1.21.38a12.035 12.035 0 0 1-7.143-7.143c-.162-.441.004-.928.38-1.21l1.293-.97c.363-.271.527-.734.417-1.173L6.963 3.102a1.125 1.125 0 0 0-1.091-.852H4.5A2.25 2.25 0 0 0 2.25 4.5v2.25Z" />
                       </svg>
-                      Kontakt
+                      {T.contact}
                     </h3>
                     <div className="space-y-1.5">
                       {business.phone && <a href={`tel:${business.phone}`} className="block text-sm text-slate-600 hover:text-slate-900 transition-colors tabular-nums">{business.phone}</a>}
@@ -750,9 +727,9 @@ export default async function BusinessProfilePage({
                       <path strokeLinecap="round" strokeLinejoin="round" d={STAR_PATH} />
                     </svg>
                   </div>
-                  <p className="text-sm font-semibold text-slate-800">Ten salon nie ma jeszcze opinii</p>
+                  <p className="text-sm font-semibold text-slate-800">{T.noReviews}</p>
                   <p className="text-xs text-slate-500 mt-1 max-w-xs mx-auto leading-relaxed">
-                    Opinię może wystawić tylko klient po zakończonej wizycie, dzięki czemu wszystkie oceny są prawdziwe.
+                    {T.reviewsTrust}
                   </p>
                 </div>
               ) : (
@@ -869,7 +846,7 @@ export default async function BusinessProfilePage({
         >
           <div className="flex items-center gap-3 max-w-6xl mx-auto">
             <div className="flex-1 min-w-0">
-              <p className="text-xs text-slate-500">Usługi od</p>
+              <p className="text-xs text-slate-500">{T.servicesFrom}</p>
               <p className="text-base font-bold text-slate-900 tabular-nums" style={{ letterSpacing: "var(--track-heading)" }}>
                 {formatCurrency(Math.min(...business.services.map((s) => s.discountedPrice ?? s.price)))}
               </p>
@@ -884,7 +861,7 @@ export default async function BusinessProfilePage({
                 boxShadow: "0 1px 2px rgba(0,0,0,0.20), 0 10px 24px rgba(15,23,42,0.28), inset 0 1px 0 rgba(255,255,255,0.15)",
               }}
             >
-              Zarezerwuj wizytę
+              {T.bookVisit}
             </Link>
           </div>
         </div>

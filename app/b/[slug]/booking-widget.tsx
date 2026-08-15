@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { formatCurrency, formatDuration } from "@/lib/utils";
+import { useT } from "@/components/i18n/i18n-provider";
 
 interface Service {
   id: string;
@@ -32,6 +33,8 @@ const PANEL: React.CSSProperties = {
 };
 
 export default function BookingWidget({ slug, services }: BookingWidgetProps) {
+  const t = useT();
+  const T = t.salonProfile;
   const [selectedServiceId, setSelectedServiceId] = useState<string>(
     services[0]?.id ?? ""
   );
@@ -41,17 +44,17 @@ export default function BookingWidget({ slug, services }: BookingWidgetProps) {
   return (
     <div className="rounded-2xl p-5" style={CARD}>
       <h2 className="text-base font-bold text-slate-900 mb-4" style={{ letterSpacing: "var(--track-heading)" }}>
-        Zarezerwuj wizytę
+        {T.bookVisit}
       </h2>
 
       {services.length === 0 ? (
-        <p className="text-sm text-slate-500">Ten salon nie ma dostępnych usług.</p>
+        <p className="text-sm text-slate-500">{T.widgetNoServices}</p>
       ) : (
         <div className="space-y-4">
           {/* Service selector */}
           <div>
             <label htmlFor="widget-service" className="block text-xs font-semibold text-slate-600 mb-1.5">
-              Wybierz usługę
+              {T.widgetPickService}
             </label>
             <div className="relative">
               <select
@@ -83,14 +86,14 @@ export default function BookingWidget({ slug, services }: BookingWidgetProps) {
           {selected && (
             <div className="rounded-xl p-3.5 space-y-2" style={PANEL}>
               <div className="flex items-center justify-between text-sm">
-                <span className="text-slate-500">Czas trwania</span>
+                <span className="text-slate-500">{t.booking.duration}</span>
                 <span className="font-medium text-slate-900">
                   {formatDuration(selected.duration)}
                 </span>
               </div>
               <div className="h-px" style={{ background: "rgba(203,213,225,0.40)" }} />
               <div className="flex items-center justify-between text-sm">
-                <span className="text-slate-500">Cena</span>
+                <span className="text-slate-500">{t.booking.price}</span>
                 <div className="text-right">
                   {selected.discountedPrice ? (
                     <div className="flex items-center gap-1.5">
@@ -123,11 +126,11 @@ export default function BookingWidget({ slug, services }: BookingWidgetProps) {
                 "0 1px 2px rgba(0,0,0,0.20), 0 10px 24px rgba(15,23,42,0.28), 0 2px 6px rgba(15,23,42,0.18), inset 0 1px 0 rgba(255,255,255,0.15)",
             }}
           >
-            Wybierz termin
+            {T.widgetPickTime}
           </Link>
 
           <p className="text-center text-xs text-slate-500">
-            Potwierdzenie otrzymasz e-mailem
+            {T.widgetEmailNote}
           </p>
         </div>
       )}

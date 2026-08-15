@@ -67,39 +67,34 @@ const G = {
   divider: { borderBottom: "1px solid var(--hairline-soft)" } as React.CSSProperties,
 };
 
-// ── Section backgrounds — premium ambient mesh ────────────────────────────────
-// Layered cool-chrome radial glows on white/near-white base.
-// Glass elements need colored surfaces underneath to look physical.
+// ── Section grounds ───────────────────────────────────────────────────────────
+// These used to be five near-identical silver meshes, which is why the page read
+// as one long undifferentiated wash: nothing framed anything else.
+//
+// Now they carry actual rhythm — light, then near-white, then the ink band, then
+// near-white again. The tonal drop in the middle is what makes the silver read
+// as silver rather than as grey, and it gives the eye somewhere to land.
 const BG = {
+  // Hero: light and cool, with the luminance gathered top-left behind the
+  // headline so the type sits in the brightest part of the frame.
   hero: [
-    "radial-gradient(ellipse 120% 80% at 85% -20%, rgba(203,213,225,0.70) 0%, transparent 50%)",
-    "radial-gradient(ellipse 80% 70% at -8% 90%, rgba(148,163,184,0.28) 0%, transparent 55%)",
-    "radial-gradient(ellipse 60% 50% at 50% 55%, rgba(226,232,240,0.65) 0%, transparent 65%)",
-    "radial-gradient(ellipse 40% 35% at 20% 25%, rgba(203,213,225,0.35) 0%, transparent 60%)",
-    "linear-gradient(168deg, #E8EFF8 0%, #F1F6FB 40%, #E5EEF9 100%)",
+    "radial-gradient(ellipse 70% 55% at 8% 0%, rgba(255,255,255,0.92) 0%, transparent 60%)",
+    "radial-gradient(ellipse 90% 70% at 92% 8%, rgba(186,203,224,0.42) 0%, transparent 58%)",
+    "radial-gradient(ellipse 60% 50% at 40% 100%, rgba(203,213,225,0.30) 0%, transparent 62%)",
+    "linear-gradient(172deg, #EDF2F9 0%, #F5F8FC 46%, #E7EEF7 100%)",
   ].join(", "),
 
-  steps: [
-    "radial-gradient(ellipse 90% 70% at 50% 60%, rgba(203,213,225,0.24) 0%, transparent 65%)",
-    "radial-gradient(ellipse 55% 45% at 90% 10%, rgba(148,163,184,0.16) 0%, transparent 55%)",
-    "#EEF3FA",
-  ].join(", "),
+  // Steps: the quietest surface on the page. The section is an editorial list,
+  // so the ground gets out of its way entirely.
+  steps: "#FAFCFE",
 
-  business: [
-    "radial-gradient(ellipse 100% 65% at 20% 50%, rgba(203,213,225,0.22) 0%, transparent 60%)",
-    "radial-gradient(ellipse 65% 55% at 85% 80%, rgba(148,163,184,0.16) 0%, transparent 55%)",
-    "#E9EFF8",
-  ].join(", "),
+  // Trust: a hairline row on near-white, deliberately almost nothing.
+  numbers: "#F6F9FC",
 
-  numbers: [
-    "radial-gradient(ellipse 80% 65% at 50% 50%, rgba(203,213,225,0.26) 0%, transparent 65%)",
-    "#EEF3FA",
-  ].join(", "),
-
+  // Closing: one soft floor glow, so the page settles rather than stopping.
   cta: [
-    "radial-gradient(ellipse 90% 70% at 50% 85%, rgba(203,213,225,0.24) 0%, transparent 60%)",
-    "radial-gradient(ellipse 65% 55% at 15% 15%, rgba(148,163,184,0.18) 0%, transparent 55%)",
-    "#EBF1F9",
+    "radial-gradient(ellipse 100% 60% at 50% 108%, rgba(148,163,184,0.22) 0%, transparent 62%)",
+    "linear-gradient(180deg, #F7FAFD 0%, #EDF2F8 100%)",
   ].join(", "),
 };
 
@@ -121,45 +116,43 @@ function BookingWidget() {
 
   return (
     <motion.div
-      initial={{ opacity: 0, x: 40, y: 10 }}
-      animate={{ opacity: 1, x: 0, y: 0 }}
-      transition={{ duration: 0.55, delay: 0.2, ease: [0.22, 1, 0.36, 1] }}
-      className="relative"
+      initial={{ opacity: 0, y: 18 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ ...SPRING, delay: 0.22 }}
+      className="stage"
     >
-      {/* Main glass card */}
-      <div className="relative rounded-3xl overflow-hidden" style={G.card}>
-        {/* Top specular catch-light */}
-        <div className="absolute inset-0 bg-gradient-to-br from-white/60 via-transparent to-transparent pointer-events-none" />
-        {/* Chrome top edge */}
-        <div className="absolute top-0 left-8 right-8 h-px pointer-events-none" style={{ background: "linear-gradient(90deg, transparent, rgba(255,255,255,0.95), transparent)" }} />
+      <div className="relative">
 
-        {/* Header */}
-        <div className="relative flex items-center gap-3 px-5 py-4" style={G.divider}>
+        {/* Stage chrome — the toolbar of the screen you are looking into. */}
+        <div
+          className="relative flex items-center gap-3 px-6 sm:px-7 py-4"
+          style={{ borderBottom: "1px solid var(--hairline-soft)", background: "var(--surface-2)" }}
+        >
           <div
-            className="w-10 h-10 rounded-xl flex items-center justify-center text-sm font-bold flex-shrink-0"
-            style={{ background: "rgba(148,163,184,0.22)", border: "1px solid rgba(148,163,184,0.32)", color: "#475569" }}
+            className="w-9 h-9 rounded-[10px] flex items-center justify-center text-[13px] font-bold flex-shrink-0"
+            style={{ background: "var(--ink-raised)", color: "#F8FAFC" }}
           >
             T
           </div>
           <div className="min-w-0">
-            <p className="text-sm font-semibold truncate text-slate-800">{h.yourSalon}</p>
-            <p className="text-xs text-slate-400">{h.previewSubtitle}</p>
+            <p className="text-[13.5px] font-semibold truncate text-slate-900 track-heading">{h.yourSalon}</p>
+            <p className="text-[11.5px] text-slate-500">{h.previewSubtitle}</p>
           </div>
-          <span className="ml-auto text-[11px] font-medium px-2.5 py-1 rounded-full flex-shrink-0 text-slate-500" style={G.pill}>
+          <span className="ml-auto text-[10.5px] font-semibold uppercase track-overline text-slate-500 flex-shrink-0">
             {h.preview}
           </span>
         </div>
 
-        <div className="relative px-5 pt-4 pb-5 space-y-4">
+        <div className="relative px-6 sm:px-7 pt-5 pb-7 space-y-5">
           {/* Services */}
           <div>
-            <p className="text-[10px] font-semibold uppercase tracking-widest mb-2 text-slate-400">{h.service}</p>
+            <p className="text-[10.5px] font-semibold uppercase track-overline mb-2.5 text-slate-500">{h.service}</p>
             <div className="space-y-1.5">
               {SERVICES.map((s, i) => (
                 <button
                   key={i}
                   onClick={() => setSvc(i)}
-                  className="w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-sm transition-colors duration-150"
+                  className="w-full flex items-center justify-between px-4 py-3 rounded-[11px] text-sm transition-colors duration-150"
                   style={svc === i
                     ? { background: "var(--selected)", border: "1px solid var(--hairline)", color: "#1E293B", boxShadow: "var(--e1)" }
                     : { ...G.innerBtn, color: "#64748B" }
@@ -176,13 +169,13 @@ function BookingWidget() {
 
           {/* Days */}
           <div>
-            <p className="text-[10px] font-semibold uppercase tracking-widest mb-2 text-slate-400">{h.time}</p>
+            <p className="text-[10.5px] font-semibold uppercase track-overline mb-2.5 text-slate-500">{h.time}</p>
             <div className="flex gap-1.5">
               {DAYS.map((d, i) => (
                 <button
                   key={i}
                   onClick={() => { setDay(i); setSlot(null); }}
-                  className="flex-1 py-2 rounded-lg text-xs font-semibold transition-colors duration-150"
+                  className="flex-1 py-2.5 rounded-[9px] text-xs font-semibold transition-colors duration-150"
                   style={day === i
                     ? { background: "var(--selected)", border: "1px solid var(--hairline)", color: "#334155", boxShadow: "var(--e1)" }
                     : { ...G.innerBtn, color: "#94A3B8" }
@@ -200,7 +193,7 @@ function BookingWidget() {
               <button
                 key={i}
                 onClick={() => setSlot(i)}
-                className="py-2 rounded-lg text-xs font-medium transition-colors duration-150"
+                className="py-2.5 rounded-[9px] text-xs font-medium tabular-nums transition-colors duration-150"
                 style={slot === i
                   ? { background: "rgba(100,116,139,0.22)", border: "1px solid rgba(100,116,139,0.38)", color: "#334155" }
                   : { ...G.innerBtn, color: "#94A3B8" }
@@ -223,28 +216,6 @@ function BookingWidget() {
         </div>
       </div>
 
-      {/* Floating chips */}
-      <motion.div
-        initial={{ opacity: 0, y: 8 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ ...SPRING, delay: 0.55 }}
-        className="absolute -top-6 -right-6 rounded-2xl px-4 py-3 hidden sm:block"
-        style={G.chip}
-      >
-        <p className="text-[10px] font-medium tracking-wide text-slate-400 uppercase">{h.chipNewBooking}</p>
-        <p className="text-sm font-semibold text-slate-700 mt-0.5">{h.chipToday}</p>
-      </motion.div>
-
-      <motion.div
-        initial={{ opacity: 0, y: 8 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ ...SPRING, delay: 0.7 }}
-        className="absolute -bottom-6 -left-6 rounded-2xl px-4 py-3 hidden sm:block"
-        style={G.chip}
-      >
-        <p className="text-[10px] font-medium tracking-wide text-slate-400 uppercase">{h.chipNotification}</p>
-        <p className="text-sm font-semibold text-slate-700 mt-0.5">{h.chipConfirmed}</p>
-      </motion.div>
     </motion.div>
   );
 }

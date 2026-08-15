@@ -3,6 +3,7 @@
 import { useActionState } from "react";
 import { submitContactAction, type ContactState } from "@/lib/actions/contact";
 import { INK_BTN } from "@/components/ui/glass/tokens";
+import { useT } from "@/components/i18n/i18n-provider";
 
 const initialState: ContactState = {};
 
@@ -16,15 +17,10 @@ const inputStyle: React.CSSProperties = {
   boxShadow: "0 1px 2px rgba(0,0,0,0.04), inset 0 1.5px 3px rgba(0,0,0,0.04)",
 };
 
-const TOPICS = [
-  "Pytanie ogólne",
-  "Wsparcie techniczne",
-  "Enterprise / sieć salonów",
-  "Partnerstwo",
-  "Inne",
-];
+const TOPIC_KEYS = ["general", "support", "enterprise", "partnership", "other"] as const;
 
 export default function ContactForm() {
+  const T = useT().publicPages.contact;
   const [state, formAction, isPending] = useActionState(submitContactAction, initialState);
 
   if (state.success) {
@@ -50,7 +46,7 @@ export default function ContactForm() {
           </svg>
         </div>
         <h2 className="text-lg font-semibold mb-1" style={{ color: "#0F172A", letterSpacing: "var(--track-title)" }}>
-          Wiadomość wysłana
+          {T.sent}
         </h2>
         <p className="text-sm" style={{ color: "#64748B" }}>{state.success}</p>
       </div>
@@ -71,7 +67,7 @@ export default function ContactForm() {
         className="text-lg font-semibold mb-6"
         style={{ color: "#0F172A", letterSpacing: "var(--track-title)" }}
       >
-        Napisz do nas
+        {T.formTitle}
       </h2>
       <form action={formAction} className="space-y-4">
         {/* Honeypot */}
@@ -90,13 +86,13 @@ export default function ContactForm() {
               className="block text-sm font-medium mb-1.5"
               style={{ color: "#475569" }}
             >
-              Imię
+              {T.firstName}
             </label>
             <input
               type="text"
               name="firstName"
               required
-              placeholder="Jan"
+              placeholder={T.firstNamePlaceholder}
               className={inputCls}
               style={inputStyle}
             />
@@ -106,13 +102,13 @@ export default function ContactForm() {
               className="block text-sm font-medium mb-1.5"
               style={{ color: "#475569" }}
             >
-              Nazwisko
+              {T.lastName}
             </label>
             <input
               type="text"
               name="lastName"
               required
-              placeholder="Kowalski"
+              placeholder={T.lastNamePlaceholder}
               className={inputCls}
               style={inputStyle}
             />
@@ -121,13 +117,13 @@ export default function ContactForm() {
 
         <div>
           <label className="block text-sm font-medium mb-1.5" style={{ color: "#475569" }}>
-            E-mail
+            {T.email}
           </label>
           <input
             type="email"
             name="email"
             required
-            placeholder="twoj@email.pl"
+            placeholder={T.emailPlaceholder}
             className={inputCls}
             style={inputStyle}
           />
@@ -135,29 +131,29 @@ export default function ContactForm() {
 
         <div>
           <label className="block text-sm font-medium mb-1.5" style={{ color: "#475569" }}>
-            Temat
+            {T.topic}
           </label>
           <select
             name="topic"
             className={inputCls}
             style={{ ...inputStyle, color: "#475569" }}
           >
-            {TOPICS.map((t) => (
-              <option key={t} value={t}>{t}</option>
+            {TOPIC_KEYS.map((k) => (
+              <option key={k} value={k}>{T.topics[k]}</option>
             ))}
           </select>
         </div>
 
         <div>
           <label className="block text-sm font-medium mb-1.5" style={{ color: "#475569" }}>
-            Wiadomość
+            {T.message}
           </label>
           <textarea
             name="message"
             required
             minLength={10}
             rows={4}
-            placeholder="Opisz swoje pytanie lub projekt..."
+            placeholder={T.messagePlaceholder}
             className={`${inputCls} resize-none`}
             style={inputStyle}
           />
@@ -187,7 +183,7 @@ export default function ContactForm() {
             cursor: isPending ? "not-allowed" : "pointer",
           }}
         >
-          {isPending ? "Wysyłanie..." : "Wyślij wiadomość"}
+          {isPending ? T.submitting : T.submit}
         </button>
       </form>
     </div>

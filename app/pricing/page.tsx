@@ -2,13 +2,14 @@ import Link from "next/link";
 import { LandingNav } from "@/components/layout/landing-nav";
 import { LandingFooter } from "@/components/layout/landing-footer";
 import type { Metadata } from "next";
+import { getServerI18n } from "@/lib/i18n/server";
+import { interpolate } from "@/lib/i18n/dictionaries";
 
-export const metadata: Metadata = {
-  title: "Cennik — System, który zarabia sam na siebie",
-  description:
-    "Przejrzysty cennik TermCatch: cztery plany od 99 zł/mies. 7 dni za darmo na start. Pierwsze 100 salonów dostaje dodatkowo 3 miesiące bez opłat.",
-  alternates: { canonical: "/pricing" },
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const { dict } = await getServerI18n();
+  const T = dict.publicPages.pricing;
+  return { title: T.seoTitle, description: T.seoDescription, alternates: { canonical: "/pricing" } };
+}
 
 const BG = [
   "radial-gradient(ellipse 120% 80% at 85% -20%, rgba(203,213,225,0.70) 0%, transparent 50%)",
@@ -71,108 +72,13 @@ const divider: React.CSSProperties = {
 
 import React from "react";
 
-const PLANS = [
-  {
-    name: "Solo",
-    oldPrice: "139 zł",
-    price: "99 zł",
-    period: "miesiąc",
-    desc: "Dla specjalisty prowadzącego jednoosobowy salon.",
-    cta: "Załóż konto salonu",
-    href: "/register?role=business&plan=solo",
-    highlight: false,
-    features: [
-      "Dla jednoosobowej działalności",
-      "1 specjalista",
-      "1 lokalizacja",
-      "Podstawowe funkcje rezerwacji",
-      "Kalendarz i zarządzanie wizytami",
-      "Profil salonu w TermCatch",
-      "20% od pierwszej wizyty",
-    ],
-  },
-  {
-    name: "Team",
-    oldPrice: "249 zł",
-    price: "199 zł",
-    period: "miesiąc",
-    desc: "Dla małych zespołów w jednej lokalizacji.",
-    cta: "Załóż konto salonu",
-    href: "/register?role=business&plan=team",
-    highlight: false,
-    features: [
-      "Wszystko, co w planie Solo",
-      "Maksymalnie 4 specjalistów",
-      "1 lokalizacja",
-      "Comiesięczne raporty",
-      "Zarządzanie zespołem",
-      "20% od pierwszej wizyty",
-    ],
-  },
-  {
-    name: "Professional",
-    oldPrice: "439 zł",
-    price: "369 zł",
-    period: "miesiąc",
-    desc: "Dla rozwijających się salonów z większym zespołem.",
-    cta: "Załóż konto salonu",
-    href: "/register?role=business&plan=pro",
-    highlight: true,
-    features: [
-      "Wszystko, co w planie Team",
-      "Do 15 specjalistów",
-      "Do 2 lokalizacji",
-      "Asystent AI (do 30 zapytań dziennie)",
-      "Priorytetowa pomoc w nagłych sytuacjach",
-      "20% od pierwszej wizyty",
-    ],
-  },
-  {
-    name: "Ultimate",
-    oldPrice: "799 zł",
-    price: "499 zł",
-    period: "miesiąc",
-    desc: "Dla sieci salonów i zespołów bez limitów.",
-    cta: "Załóż konto salonu",
-    href: "/register?role=business&plan=ultimate",
-    highlight: false,
-    features: [
-      "Wszystko, co w planie Professional",
-      "Nielimitowana liczba specjalistów",
-      "Nielimitowana liczba lokalizacji",
-      "Asystent AI bez limitu",
-      "Priorytetowa pomoc w nagłych sytuacjach",
-      "20% od pierwszej wizyty",
-    ],
-  },
-];
-
-const FAQ = [
-  {
-    q: "Czy jest okres próbny?",
-    a: "Tak, każdy nowy salon zaczyna od 7 dni za darmo, bez podawania karty na start. Po zakończeniu okresu próbnego przechodzisz na wybrany płatny plan.",
-  },
-  {
-    q: "Na czym polega oferta startowa i czy łączy się z okresem próbnym?",
-    a: "To osobna, ograniczona promocja: pierwsze 100 salonów otrzymuje dodatkowo 3 miesiące bez opłat. Nie łączy się automatycznie z 7-dniowym okresem próbnym — obowiązuje jedna oferta na subskrypcję.",
-  },
-  {
-    q: "Dlaczego TermCatch?",
-    a: "Płacisz jedną przewidywalną stawkę za plan. Nie pobieramy opłat za pozyskanie klienta, którego już masz, a wszystkie najważniejsze narzędzia salonu są w jednym miejscu.",
-  },
-  {
-    q: "Czy jest ukryta opłata za instalację?",
-    a: "Nie. Rejestracja i konfiguracja są bezpłatne. Płacisz tylko za wybrany plan i tylko wtedy, kiedy chcesz.",
-  },
-  {
-    q: "Czy mogę zmienić plan w dowolnym momencie?",
-    a: "Tak. Upgrade działa natychmiast, a downgrade od następnego okresu rozliczeniowego. Możesz też zrezygnować w każdej chwili, bez okresu wypowiedzenia.",
-  },
-  {
-    q: "Jak działają płatności online?",
-    a: "Integrujemy się ze Stripe. Pieniądze za wizyty trafiają bezpośrednio na Twoje konto. Opłata 20% dotyczy wyłącznie pierwszej wizyty nowego klienta pozyskanego przez TermCatch.",
-  },
-];
+/** Prices, links and the highlight flag are product data, not copy. */
+const PLAN_DATA = [
+  { name: "Solo", oldPrice: "139 zł", price: "99 zł", href: "/register?role=business&plan=solo", highlight: false },
+  { name: "Team", oldPrice: "249 zł", price: "199 zł", href: "/register?role=business&plan=team", highlight: false },
+  { name: "Professional", oldPrice: "439 zł", price: "369 zł", href: "/register?role=business&plan=pro", highlight: true },
+  { name: "Ultimate", oldPrice: "799 zł", price: "499 zł", href: "/register?role=business&plan=ultimate", highlight: false },
+] as const;
 
 function CheckIcon({ highlight }: { highlight: boolean }) {
   return (
@@ -188,7 +94,26 @@ function CheckIcon({ highlight }: { highlight: boolean }) {
   );
 }
 
-export default function PricingPage() {
+export default async function PricingPage() {
+  const { dict } = await getServerI18n();
+  const T = dict.publicPages.pricing;
+
+  // Product data joined with its copy, in the same order as before.
+  const planCopy = [
+    { desc: T.soloDesc, features: T.soloFeatures },
+    { desc: T.teamDesc, features: T.teamFeatures },
+    { desc: T.proDesc, features: T.proFeatures },
+    { desc: T.ultimateDesc, features: T.ultimateFeatures },
+  ];
+  const PLANS = PLAN_DATA.map((p, i) => ({
+    ...p,
+    period: T.period,
+    cta: T.planCta,
+    desc: planCopy[i].desc,
+    features: planCopy[i].features,
+  }));
+  const FAQ = T.faq;
+
   return (
     <div className="min-h-screen" style={{ background: BG }}>
       <LandingNav />
@@ -206,13 +131,13 @@ export default function PricingPage() {
                 color: "#64748B",
               }}
             >
-              Cennik
+              {T.eyebrow}
             </div>
             <h1
               className="text-5xl font-bold mb-4"
               style={{ letterSpacing: "var(--track-display)", color: "#0F172A" }}
             >
-              System, który{" "}
+              {T.headlineLead}{" "}
               <span
                 style={{
                   background: "linear-gradient(135deg, #1E293B 0%, #334155 50%, #1E293B 100%)",
@@ -221,11 +146,11 @@ export default function PricingPage() {
                   backgroundClip: "text",
                 }}
               >
-                zarabia sam na siebie.
+                {T.headlineAccent}
               </span>
             </h1>
             <p className="text-lg" style={{ color: "#64748B" }}>
-              Jedna przewidywalna stawka. Bez ukrytych opłat. 7 dni za darmo na start, bez karty.
+              {T.lede}
             </p>
           </div>
 
@@ -251,10 +176,10 @@ export default function PricingPage() {
               </div>
               <div className="flex-1">
                 <p className="font-bold text-base" style={{ color: "#0F172A", letterSpacing: "var(--track-title)" }}>
-                  Pierwsze 3 miesiące bez opłat z kodem WELCOME, dla pierwszych 100 salonów.
+                  {T.offerTitle}
                 </p>
                 <p className="text-sm mt-0.5" style={{ color: "#64748B" }}>
-                  Pełny plan, zero kosztów, bez karty. Wystarczy rejestracja salonu.
+                  {T.offerBody}
                 </p>
               </div>
               <Link
@@ -268,7 +193,7 @@ export default function PricingPage() {
                   boxShadow: "0 1px 2px rgba(0,0,0,0.20), 0 10px 24px rgba(15,23,42,0.28), inset 0 1px 0 rgba(255,255,255,0.15)",
                 }}
               >
-                Odbierz ofertę
+                {T.offerCta}
               </Link>
             </div>
           </div>
@@ -290,7 +215,7 @@ export default function PricingPage() {
                       color: "#475569",
                     }}
                   >
-                    Najczęściej wybierany
+                    {T.mostPopular}
                   </div>
                 )}
 
@@ -304,7 +229,7 @@ export default function PricingPage() {
                   <p
                     className="text-sm font-medium tabular-nums"
                     style={{ color: "#94A3B8", textDecoration: "line-through", textDecorationColor: "rgba(148,163,184,0.7)" }}
-                    aria-label={`Cena regularna ${plan.oldPrice}`}
+                    aria-label={interpolate(T.regularPrice, { price: plan.oldPrice })}
                   >
                     {plan.oldPrice}
                   </p>
@@ -352,7 +277,7 @@ export default function PricingPage() {
                   {plan.cta}
                 </Link>
                 <p className="text-[11px] text-center mt-2.5" style={{ color: "#94A3B8" }}>
-                  7 dni za darmo, potem {plan.price} / {plan.period}
+                  {interpolate(T.trialThen, { price: plan.price, period: plan.period })}
                 </p>
               </div>
             ))}
@@ -360,7 +285,7 @@ export default function PricingPage() {
 
           {/* Commission note */}
           <p className="text-center text-sm mb-6" style={{ color: "#94A3B8" }}>
-            Opłata dotyczy pierwszej wizyty nowego klienta pozyskanego przez TermCatch.
+            {T.commissionNote}
           </p>
 
           <div style={{ ...divider, margin: "4rem 0" }} />
@@ -371,7 +296,7 @@ export default function PricingPage() {
               className="text-2xl font-bold mb-8 text-center"
               style={{ letterSpacing: "var(--track-display)", color: "#0F172A" }}
             >
-              Najczęstsze pytania
+              {T.faqTitle}
             </h2>
             <div className="space-y-3">
               {FAQ.map((item) => (
@@ -395,14 +320,14 @@ export default function PricingPage() {
 
             <div className="mt-12 text-center">
               <p className="text-sm mb-4" style={{ color: "#94A3B8" }}>
-                Masz pytania? Odpowiemy tak szybko, jak to możliwe.
+                {T.contactPrompt}
               </p>
               <Link
                 href="/contact"
                 className="text-sm font-semibold btn-spring"
                 style={{ color: "#475569" }}
               >
-                Napisz do nas →
+                {T.contactCta}
               </Link>
             </div>
           </div>

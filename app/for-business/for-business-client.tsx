@@ -4,6 +4,7 @@ import Link from "next/link";
 import { motion } from "framer-motion";
 import { reveal, revealFade, REVEAL_VIEWPORT, SPRING, useReducedMotion } from "@/lib/motion";
 import { LandingNav } from "@/components/layout/landing-nav";
+import { useT } from "@/components/i18n/i18n-provider";
 import { LandingFooter } from "@/components/layout/landing-footer";
 
 // ── Glass style constants ─────────────────────────────────────────────────────
@@ -67,14 +68,18 @@ const BG = {
 
 // ── Dashboard Preview Widget ──────────────────────────────────────────────────
 
-const BOOKINGS = [
-  { time: "09:00", name: "Ania K.", service: "Strzyżenie", price: "80 zł", active: true },
-  { time: "10:30", name: "Marek B.", service: "Fade klasyczny", price: "60 zł", active: false },
-  { time: "12:00", name: "Kasia W.", service: "Manicure", price: "90 zł", active: false },
-  { time: "14:00", name: "Tomek S.", service: "Broda", price: "50 zł", active: false },
+const BOOKING_DATA = [
+  { time: "09:00", name: "Ania K.", price: "80 zł", active: true },
+  { time: "10:30", name: "Marek B.", price: "60 zł", active: false },
+  { time: "12:00", name: "Kasia W.", price: "90 zł", active: false },
+  { time: "14:00", name: "Tomek S.", price: "50 zł", active: false },
 ];
 
 function DashboardPreview() {
+  const T = useT().publicPages.forBusiness;
+  const services = [T.previewService1, T.previewService2, T.previewService3, T.previewService4];
+  const BOOKINGS = BOOKING_DATA.map((b, i) => ({ ...b, service: services[i] }));
+
   return (
     <motion.div
       initial={{ opacity: 0, x: 40, y: 10 }}
@@ -97,16 +102,16 @@ function DashboardPreview() {
               T
             </div>
             <div>
-              <p className="text-xs font-semibold text-slate-800 leading-none">Twój salon</p>
-              <p className="text-[10px] text-slate-400 mt-0.5">Panel zarządzania</p>
+              <p className="text-xs font-semibold text-slate-800 leading-none">{T.previewSalon}</p>
+              <p className="text-[10px] text-slate-400 mt-0.5">{T.previewPanel}</p>
             </div>
           </div>
-          <span className="text-[10px] font-medium px-2.5 py-1 rounded-full text-slate-500" style={G.pill}>Przykład</span>
+          <span className="text-[10px] font-medium px-2.5 py-1 rounded-full text-slate-500" style={G.pill}>{T.previewBadge}</span>
         </div>
 
         {/* Bookings */}
         <div className="relative px-4 pt-3 pb-2 space-y-1.5">
-          <p className="text-[9px] font-semibold uppercase tracking-widest mb-2 text-slate-400">Harmonogram dnia</p>
+          <p className="text-[9px] font-semibold uppercase tracking-widest mb-2 text-slate-400">{T.previewSchedule}</p>
           {BOOKINGS.map((b, i) => (
             <div
               key={i}
@@ -135,9 +140,9 @@ function DashboardPreview() {
         {/* Footer stats */}
         <div className="grid grid-cols-3 gap-2 px-4 py-3">
           {[
-            { num: "4", label: "wizyty dziś" },
-            { num: "280 zł", label: "przychód" },
-            { num: "97%", label: "zajętość" },
+            { num: "4", label: T.previewVisitsToday },
+            { num: "280 zł", label: T.previewRevenue },
+            { num: "97%", label: T.previewOccupancy },
           ].map((s) => (
             <div key={s.label} className="p-2.5 rounded-xl text-center" style={G.panel}>
               <p className="text-sm font-bold text-slate-800">{s.num}</p>
@@ -155,8 +160,8 @@ function DashboardPreview() {
         className="absolute -top-6 -right-5 rounded-2xl px-4 py-3"
         style={G.chip}
       >
-        <p className="text-[10px] font-medium tracking-wide text-slate-400 uppercase">Nowa rezerwacja</p>
-        <p className="text-sm font-semibold text-slate-700 mt-0.5">Jutro · 11:00</p>
+        <p className="text-[10px] font-medium tracking-wide text-slate-400 uppercase">{T.previewChipBooking}</p>
+        <p className="text-sm font-semibold text-slate-700 mt-0.5">{T.previewChipBookingWhen}</p>
       </motion.div>
 
       {/* Floating SMS chip */}
@@ -167,8 +172,8 @@ function DashboardPreview() {
         className="absolute -bottom-5 -left-5 rounded-2xl px-4 py-3"
         style={G.chip}
       >
-        <p className="text-[10px] font-medium tracking-wide text-slate-400 uppercase">Przypomnienie SMS</p>
-        <p className="text-sm font-semibold text-slate-700 mt-0.5">Wysłano do 3 klientów</p>
+        <p className="text-[10px] font-medium tracking-wide text-slate-400 uppercase">{T.previewChipSms}</p>
+        <p className="text-sm font-semibold text-slate-700 mt-0.5">{T.previewChipSmsBody}</p>
       </motion.div>
     </motion.div>
   );
@@ -176,11 +181,9 @@ function DashboardPreview() {
 
 // ── Feature cards data ────────────────────────────────────────────────────────
 
-const FEATURES = [
+const FEATURE_ICONS = [
   {
     n: "01",
-    title: "Kalendarz online 24/7",
-    desc: "Klienci rezerwują sami o dowolnej porze, bez dzwonienia. Ty dostajesz powiadomienie i Twój kalendarz jest zawsze aktualny.",
     icon: (
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
         <rect width="18" height="18" x="3" y="4" rx="2" />
@@ -192,8 +195,6 @@ const FEATURES = [
   },
   {
     n: "02",
-    title: "Mniej nieobecności",
-    desc: "Automatyczne przypomnienia SMS i e-mail przed każdą wizytą. Mniej pustych slotów, więcej realnych spotkań i spokojniejszy dzień pracy.",
     icon: (
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
         <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
@@ -203,8 +204,6 @@ const FEATURES = [
   },
   {
     n: "03",
-    title: "Zarządzanie personelem",
-    desc: "Każdy pracownik ma własny harmonogram, usługi i dostępność. Klienci mogą wybrać konkretną osobę lub losowego specjalistę.",
     icon: (
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
         <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
@@ -215,8 +214,6 @@ const FEATURES = [
   },
   {
     n: "04",
-    title: "Płatności i depozyty",
-    desc: "Przyjmuj płatności online lub depozyty przy rezerwacji. Integracja ze Stripe sprawia, że pieniądze trafiają bezpośrednio do Ciebie.",
     icon: (
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
         <rect width="20" height="14" x="2" y="5" rx="2" />
@@ -226,8 +223,6 @@ const FEATURES = [
   },
   {
     n: "05",
-    title: "CRM i historia klientów",
-    desc: "Pełna historia wizyt, notatki i preferencje każdego klienta. Buduj relacje i wracający biznes.",
     icon: (
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
         <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
@@ -238,8 +233,6 @@ const FEATURES = [
   },
   {
     n: "06",
-    title: "Analityka i raporty",
-    desc: "Przychody, popularne usługi i najlepsi klienci w ujęciu dziennym, tygodniowym i miesięcznym, w jednym miejscu.",
     icon: (
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
         <line x1="18" x2="18" y1="20" y2="10" />
@@ -250,16 +243,27 @@ const FEATURES = [
   },
 ];
 
-const STEPS = [
-  { n: "01", title: "Zarejestruj salon", desc: "Wypełnij formularz w 5 minut: kategoria, lokalizacja, godziny pracy." },
-  { n: "02", title: "Dodaj usługi i personel", desc: "Dodaj usługi z cenami i pracowników z własnymi harmonogramami." },
-  { n: "03", title: "Wyślij link klientom", desc: "Twoja strona rezerwacji gotowa. Link do bio, do SMS, do Google." },
-];
-
 // ── Page ─────────────────────────────────────────────────────────────────────
 
 export function ForBusinessClient() {
   const fade = useReducedMotion() ? revealFade : reveal;
+  const T = useT().publicPages.forBusiness;
+
+  const STEPS = [
+    { n: "01", title: T.step1Title, desc: T.step1Desc },
+    { n: "02", title: T.step2Title, desc: T.step2Desc },
+    { n: "03", title: T.step3Title, desc: T.step3Desc },
+  ];
+  const featureCopy = [
+    { title: T.f1Title, desc: T.f1Desc },
+    { title: T.f2Title, desc: T.f2Desc },
+    { title: T.f3Title, desc: T.f3Desc },
+    { title: T.f4Title, desc: T.f4Desc },
+    { title: T.f5Title, desc: T.f5Desc },
+    { title: T.f6Title, desc: T.f6Desc },
+  ];
+  const FEATURES = FEATURE_ICONS.map((f, i) => ({ ...f, ...featureCopy[i] }));
+
   return (
     <div className="min-h-screen overflow-x-hidden" style={{ background: BG.hero }}>
       <LandingNav />
@@ -292,7 +296,7 @@ export function ForBusinessClient() {
                   style={{ background: "#94A3B8", animation: "dot-pulse 2s cubic-bezier(0.4,0,0.6,1) infinite" }} />
                 <span className="relative inline-flex rounded-full h-2 w-2" style={{ background: "#CBD5E1" }} />
               </span>
-              Dla właścicieli salonów i specjalistów
+              {T.eyebrow}
             </motion.div>
 
             <motion.h1
@@ -302,14 +306,14 @@ export function ForBusinessClient() {
               className="text-6xl sm:text-7xl xl:text-8xl font-bold leading-[0.95] text-slate-900"
               style={{ letterSpacing: "var(--track-display)" }}
             >
-              Mniej administracji.<br />
+              {T.headlineTop}<br />
               <span className="italic font-bold" style={{
                 background: "linear-gradient(135deg, #1E293B 0%, #334155 50%, #1E293B 100%)",
                 WebkitBackgroundClip: "text",
                 WebkitTextFillColor: "transparent",
                 backgroundClip: "text",
               }}>
-                Więcej klientów.
+                {T.headlineBottom}
               </span>
             </motion.h1>
 
@@ -319,7 +323,7 @@ export function ForBusinessClient() {
               transition={{ duration: 0.42, delay: 0.2 }}
               className="mt-7 text-lg max-w-md leading-relaxed text-slate-500"
             >
-              Jeden link i gotowa strona rezerwacji. Klienci wybierają termin sami, a Ty skupiasz się na pracy.
+              {T.lede}
             </motion.p>
 
             <motion.div
@@ -335,7 +339,7 @@ export function ForBusinessClient() {
                   className="inline-flex items-center justify-center px-7 py-3.5 font-semibold text-sm rounded-xl"
                   style={G.inkBtn}
                 >
-                  Zarejestruj salon za darmo
+                  {T.ctaPrimary}
                   <svg className="ml-2 w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
                     <path d="m9 18 6-6-6-6" />
                   </svg>
@@ -349,7 +353,7 @@ export function ForBusinessClient() {
               transition={{ delay: 0.6 }}
               className="mt-5 text-xs text-slate-500"
             >
-              Bez karty kredytowej · Instalacja w 5 minut · Pierwsze 100 salonów: 3 miesiące bez opłat
+              {T.trust}
             </motion.p>
           </div>
 
@@ -373,10 +377,10 @@ export function ForBusinessClient() {
       >
         <div className="max-w-4xl mx-auto grid grid-cols-2 md:grid-cols-4 gap-4">
           {[
-            { num: "Mniej", label: "telefonów dzięki rezerwacjom online" },
-            { num: "24/7", label: "dostępność kalendarza" },
-            { num: "5 min", label: "konfiguracja salonu" },
-            { num: "3 mies.", label: "bez opłat dla pierwszych 100 salonów" },
+            { num: T.statLessLabel, label: T.statLessValue },
+            { num: "24/7", label: T.statAvailability },
+            { num: "5 min", label: T.statSetupSalon },
+            { num: T.statMonthsValue, label: T.statFreeMonths },
           ].map((s, i) => (
             <motion.div
               key={s.label}
@@ -407,10 +411,10 @@ export function ForBusinessClient() {
         <div className="max-w-5xl mx-auto">
           <motion.div initial="hidden" whileInView="show" viewport={REVEAL_VIEWPORT} variants={fade} className="mb-16">
             <span className="inline-block text-xs font-semibold uppercase tracking-widest mb-4 px-3 py-1 rounded-full text-slate-500" style={G.pill}>
-              Jak zacząć
+              {T.stepsEyebrow}
             </span>
             <h2 className="text-4xl font-bold text-slate-900" style={{ letterSpacing: "var(--track-display)" }}>
-              Zacznij w trzy kroki.
+              {T.stepsTitle}
             </h2>
           </motion.div>
 
@@ -443,13 +447,13 @@ export function ForBusinessClient() {
         <div className="max-w-5xl mx-auto">
           <motion.div initial="hidden" whileInView="show" viewport={REVEAL_VIEWPORT} variants={fade} className="mb-16">
             <span className="inline-block text-xs font-semibold uppercase tracking-widest mb-4 px-3 py-1 rounded-full text-slate-500" style={G.pill}>
-              Funkcje
+              {T.featuresEyebrow}
             </span>
             <h2 className="text-4xl font-bold text-slate-900" style={{ letterSpacing: "var(--track-display)" }}>
-              Wszystko w jednym miejscu.
+              {T.featuresTitle}
             </h2>
             <p className="mt-3 max-w-sm text-sm text-slate-500">
-              Bez żadnych integracji. Bez skomplikowanej konfiguracji. Jeden panel, który zastępuje pięć narzędzi.
+              {T.featuresLede}
             </p>
           </motion.div>
 
@@ -507,10 +511,10 @@ export function ForBusinessClient() {
               </div>
 
               <h2 className="text-4xl font-bold mb-4 text-slate-900" style={{ letterSpacing: "var(--track-display)" }}>
-                Gotowy na więcej klientów?
+                {T.ctaTitle}
               </h2>
               <p className="mb-10 max-w-sm mx-auto text-base text-slate-500">
-                Zarejestruj salon w 5 minut i zacznij przyjmować rezerwacje online, bez karty kredytowej.
+                {T.ctaLede}
               </p>
 
               <div className="flex flex-col sm:flex-row gap-3 justify-center">
@@ -521,7 +525,7 @@ export function ForBusinessClient() {
                     className="inline-flex items-center justify-center px-7 py-3.5 font-semibold text-sm rounded-xl"
                     style={G.inkBtn}
                   >
-                    Zarejestruj salon za darmo
+                    {T.ctaPrimary}
                   </Link>
                 </div>
                 <div 
@@ -531,7 +535,7 @@ export function ForBusinessClient() {
                     className="inline-flex items-center justify-center px-7 py-3.5 font-semibold text-sm rounded-xl text-slate-600"
                     style={G.innerBtn}
                   >
-                    Przeglądaj salony →
+                    {T.browseSalons}
                   </Link>
                 </div>
               </div>

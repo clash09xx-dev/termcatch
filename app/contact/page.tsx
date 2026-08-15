@@ -1,12 +1,15 @@
 import { LandingNav } from "@/components/layout/landing-nav";
 import { LandingFooter } from "@/components/layout/landing-footer";
 import ContactForm from "./contact-form";
+import { getServerI18n } from "@/lib/i18n/server";
+import { LEGAL } from "@/lib/legal";
 import type { Metadata } from "next";
 
-export const metadata: Metadata = {
-  title: "Kontakt — TermCatch",
-  description: "Skontaktuj się z TermCatch. Jesteśmy tu, żeby pomóc.",
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const { dict } = await getServerI18n();
+  const T = dict.publicPages.contact;
+  return { title: T.seoTitle, description: T.seoDescription };
+}
 
 const BG = [
   "radial-gradient(ellipse 120% 80% at 85% -20%, rgba(203,213,225,0.70) 0%, transparent 50%)",
@@ -15,13 +18,16 @@ const BG = [
   "linear-gradient(168deg, #E8EFF8 0%, #F1F6FB 40%, #E5EEF9 100%)",
 ].join(", ");
 
-const CONTACTS = [
-  { label: "E-mail", value: "hello@termcatch.com", href: "mailto:hello@termcatch.com" },
-  { label: "Wsparcie techniczne", value: "hello@termcatch.com", href: "mailto:hello@termcatch.com" },
-  { label: "Sprzedaż i Enterprise", value: "hello@termcatch.com", href: "mailto:hello@termcatch.com" },
-];
+export default async function ContactPage() {
+  const { dict } = await getServerI18n();
+  const T = dict.publicPages.contact;
+  const EMAIL = LEGAL.CONTACT_EMAIL;
+  const CONTACTS = [
+    { label: T.channelEmail, value: EMAIL, href: `mailto:${EMAIL}` },
+    { label: T.channelSupport, value: EMAIL, href: `mailto:${EMAIL}` },
+    { label: T.channelSales, value: EMAIL, href: `mailto:${EMAIL}` },
+  ];
 
-export default function ContactPage() {
   return (
     <div className="min-h-screen" style={{ background: BG }}>
       <LandingNav />
@@ -40,17 +46,16 @@ export default function ContactPage() {
                   color: "#64748B",
                 }}
               >
-                Kontakt
+                {T.eyebrow}
               </div>
               <h1
                 className="text-4xl font-bold mb-5"
                 style={{ letterSpacing: "var(--track-display)", color: "#0F172A" }}
               >
-                Jesteśmy tutaj.
+                {T.title}
               </h1>
               <p className="leading-relaxed mb-10 text-sm" style={{ color: "#64748B" }}>
-                Masz pytanie o TermCatch? Chcesz omówić wdrożenie dla sieci salonów?
-                Piszesz do nas, a my odpowiemy tak szybko, jak to możliwe.
+                {T.lede}
               </p>
 
               <div className="space-y-4">
