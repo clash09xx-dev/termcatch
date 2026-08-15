@@ -29,6 +29,10 @@ export type CustomerSummary = {
   /** avg days between completed visits, null if < 2 completed */
   cadenceDays: number | null;
   appointments: CustomerVisit[];
+  /** Bookings still ahead, soonest first — the thing an owner looks for first. */
+  upcoming: CustomerVisit[];
+  /** Free-text card note, scoped to this business (CrmContact.notes). */
+  notes: string | null;
 };
 
 async function getCrmData(supabaseId: string) {
@@ -85,6 +89,8 @@ export default async function CrmPage() {
         totalSpent: 0,
         cadenceDays: null,
         appointments: [],
+        upcoming: [],
+        notes: null,
         _completedTimes: [],
       };
       map.set(id, c);
@@ -97,11 +103,21 @@ export default async function CrmPage() {
       c._completedTimes.push(apt.startTime.getTime());
     }
     if (apt.status === "NO_SHOW") c.noShowCount++;
-    if ((apt.status === "PENDING" || apt.status === "CONFIRMED") && apt.startTime.getTime() > now) c.upcomingCount++;
+    if ((apt.status === "PENDING" || apt.status === "CONFIRMED") && apt.startTime.getTime() > now) {
+      c.upcomingCount++;
+      c.upcoming.push(visit);
+    }
     // appointments are desc → first seen is latest, keep updating earliest
     if (!c.lastVisit) c.lastVisit = visit.startTime;
     c.firstVisit = visit.startTime;
   }
+
+  // Notes live on CrmContact, created lazily the first time an owner writes one.
+  const noteRows = await prisma.crmContact.findMany({
+    where: { businessId: business.id, userId: { in: Array.from(map.keys()) } },
+    select: { userId: true, notes: true },
+  });
+  const notesByUser = new Map(noteRows.map((n) => [n.userId, n.notes]));
 
   const customers: CustomerSummary[] = Array.from(map.values()).map(({ _completedTimes, ...c }) => {
     let cadenceDays: number | null = null;
@@ -111,7 +127,13 @@ export default async function CrmPage() {
       for (let i = 1; i < sorted.length; i++) sum += sorted[i] - sorted[i - 1];
       cadenceDays = Math.round(sum / (sorted.length - 1) / 86400_000);
     }
-    return { ...c, cadenceDays };
+    // Appointments arrive newest-first; upcoming reads better soonest-first.
+    return {
+      ...c,
+      cadenceDays,
+      upcoming: [...c.upcoming].reverse(),
+      notes: notesByUser.get(c.id) ?? null,
+    };
   }).sort((a, b) => b.totalSpent - a.totalSpent);
 
   return <CrmClient customers={customers} />;

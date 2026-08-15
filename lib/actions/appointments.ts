@@ -22,6 +22,7 @@ import { toLocale } from "@/lib/i18n/config";
 import { bookingSmsBody, smsSlotLabel } from "@/lib/i18n/sms-templates";
 import { getBusinessNotificationSettings, salonWants, type SalonEventKey } from "@/lib/notification-settings";
 import { isPubliclyVisible } from "@/lib/publication";
+import { hasBlockedBusiness } from "@/lib/moderation";
 import { getAppUrl } from "@/lib/app-url";
 import { resolveBookingAddons, type AddonSelection } from "@/lib/booking-addons";
 import { computeBookingTotals, evaluateCoupon } from "@/lib/booking-pricing";
@@ -246,6 +247,10 @@ export async function createAppointment(data: CreateAppointmentInput) {
 
   if (!business) throw new Error("Nie znaleziono salonu.");
   if (!isPubliclyVisible(business))
+    throw new Error("Salon jest obecnie niedostępny.");
+  // A block has to mean something. Someone who hid this salon should not be
+  // able to book it through a stale tab or a saved deep link.
+  if (await hasBlockedBusiness(customer.id, business.id))
     throw new Error("Salon jest obecnie niedostępny.");
   if (!service) throw new Error("Usługa jest niedostępna lub nie istnieje.");
 

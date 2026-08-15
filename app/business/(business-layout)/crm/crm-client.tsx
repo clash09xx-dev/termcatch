@@ -1,18 +1,20 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useTransition } from "react";
 import { useSearchParams } from "next/navigation";
 import { getInitials } from "@/lib/utils";
 import { useT, useLocale } from "@/components/i18n/i18n-provider";
-import { formatCurrency as fmtMoney, formatDate as fmtDate, formatRelative } from "@/lib/i18n/format";
+import { formatCurrency as fmtMoney, formatDate as fmtDate, formatTime as fmtTime, formatRelative } from "@/lib/i18n/format";
 import { interpolate } from "@/lib/i18n/dictionaries";
 import type { Dictionary } from "@/lib/i18n/dictionaries";
 import type { Locale } from "@/lib/i18n/config";
 import type { CustomerSummary } from "./page";
 import {
   PageHeader, GlassCard, EmptyState, StatusBadge, ChromeAvatar, InkLink, GlassLink,
-  Overline, SplitShell, DetailEmpty, Timeline, TimelineRow, HAIRLINE, CHIP, STATUS_TINT, type StatusKey,
+  Overline, SplitShell, DetailEmpty, Timeline, TimelineRow, GlassButton, HAIRLINE, CHIP, STATUS_TINT, type StatusKey,
 } from "@/components/ui/glass";
+import { notify } from "@/lib/notify";
+import { saveCustomerNote } from "@/lib/actions/crm-notes";
 import { Segmented } from "@/components/ui/segmented";
 import { cn } from "@/lib/utils";
 
@@ -233,6 +235,43 @@ function ClientProfile({ customer: c, onBack, t, locale }: { customer: CustomerS
         </div>
       )}
 
+      {/* Upcoming — the first thing an owner wants when a client calls. */}
+      <div className="p-5" style={{ borderBottom: HAIRLINE }}>
+        <Overline className="mb-3">{T.upcomingTitle}</Overline>
+        {c.upcoming.length === 0 ? (
+          <p className="text-sm text-slate-500">{T.noUpcoming}</p>
+        ) : (
+          <div className="space-y-2">
+            {c.upcoming.map((v) => (
+              <div
+                key={v.id}
+                className="flex items-center justify-between gap-3 px-3.5 py-2.5 rounded-xl"
+                style={{ background: "var(--surface-inset)", border: "1px solid var(--hairline-soft)" }}
+              >
+                <div className="min-w-0">
+                  <p className="text-sm font-medium text-slate-800 truncate">{v.service.name}</p>
+                  <p className="text-xs text-slate-500 tabular-nums mt-0.5">
+                    {fmtDate(new Date(v.startTime), locale, { weekday: "short", day: "numeric", month: "short" })}
+                    {" · "}
+                    {fmtTime(new Date(v.startTime), locale)}
+                  </p>
+                </div>
+                <StatusBadge
+                  status={v.status}
+                  label={t.statuses[v.status as keyof Dictionary["statuses"]] ?? v.status}
+                  className="flex-shrink-0"
+                />
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Notes — the card a paper client record would have had. */}
+      <div className="p-5" style={{ borderBottom: HAIRLINE }}>
+        <CustomerNotes customerId={c.id} initial={c.notes} />
+      </div>
+
       {/* Visit history */}
       <div className="p-5">
         <Overline className="mb-3">{T.historyTitle}</Overline>
@@ -267,6 +306,56 @@ function Stat({ label, value, sub, tone }: { label: string; value: React.ReactNo
       <p className="text-[10px] font-semibold uppercase tracking-[0.08em] text-slate-500">{label}</p>
       <p className={cn("text-lg font-bold tabular-nums mt-0.5", tone === "warn" ? "text-amber-700" : "text-slate-900")}>{value}</p>
       {sub && <p className="text-[10px] text-slate-400 tabular-nums">{sub}</p>}
+    </div>
+  );
+}
+
+// ── Notes ────────────────────────────────────────────────────────────────────
+// Saves on blur as well as on the button: an owner typing between clients will
+// click away far more often than they will hunt for a save control.
+
+function CustomerNotes({ customerId, initial }: { customerId: string; initial: string | null }) {
+  const t = useT();
+  const T = t.pages.crm;
+  const [value, setValue] = useState(initial ?? "");
+  const [saved, setSaved] = useState(initial ?? "");
+  const [isPending, start] = useTransition();
+
+  const dirty = value !== saved;
+
+  function persist() {
+    if (!dirty) return;
+    start(async () => {
+      const res = await saveCustomerNote(customerId, value);
+      if (res.ok) {
+        setSaved(value);
+        notify.saved(t.feedback.saved);
+      } else {
+        notify.error(res.error);
+      }
+    });
+  }
+
+  return (
+    <div>
+      <Overline className="mb-3">{T.notesTitle}</Overline>
+      <textarea
+        value={value}
+        onChange={(e) => setValue(e.target.value)}
+        onBlur={persist}
+        rows={3}
+        maxLength={4000}
+        placeholder={T.notesPh}
+        aria-label={T.notesTitle}
+        className="input-glass w-full px-3.5 py-2.5 text-sm rounded-xl outline-none text-slate-800 placeholder:text-slate-400 resize-none"
+      />
+      {dirty && (
+        <div className="mt-2 flex justify-end">
+          <GlassButton size="sm" onClick={persist} disabled={isPending}>
+            {T.notesSave}
+          </GlassButton>
+        </div>
+      )}
     </div>
   );
 }

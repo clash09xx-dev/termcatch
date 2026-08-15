@@ -428,35 +428,3 @@ export function ChromeAvatar({
   );
 }
 
-// ── Coming soon — shared quiet treatment for waitlist pages ───
-
-export function ComingSoon({
-  title,
-  body,
-  icon,
-  badge,
-}: {
-  title: string;
-  body: string;
-  icon: React.ReactNode;
-  /** Localized "coming soon" chip, e.g. t.pages.payments.soon. */
-  badge: string;
-}) {
-  return (
-    <div className="max-w-lg mx-auto mt-10 fade-rise">
-      <div className="rounded-[20px] p-10 text-center" style={ELEV_RAISED}>
-        <div
-          className="w-12 h-12 rounded-2xl flex items-center justify-center mx-auto mb-4 text-slate-500"
-          style={CHIP}
-        >
-          {icon}
-        </div>
-        <h1 className={TITLE_CLS}>{title}</h1>
-        <p className="text-[14px] text-secondary mt-2.5 leading-[1.55] max-w-[40ch] mx-auto">{body}</p>
-        <p className="mt-5 inline-flex items-center px-2.5 py-1 rounded-full text-[11px] font-semibold text-slate-600" style={CHIP}>
-          {badge}
-        </p>
-      </div>
-    </div>
-  );
-}

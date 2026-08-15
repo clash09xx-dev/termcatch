@@ -11,7 +11,8 @@ import { CustomerAssistant } from "@/components/assistant/customer-assistant";
 import { useT, useLocale } from "@/components/i18n/i18n-provider";
 import { interpolate } from "@/lib/i18n/dictionaries";
 import { visibleCategoriesFor } from "@/lib/categories";
-import { INK_BTN, ON_INK_BTN, ON_INK_GHOST_BTN } from "@/components/ui/glass/tokens";
+import { BRAND_TAGLINE_LINES } from "@/lib/brand";
+import { ELEV_RAISED, INK_BTN, ON_INK_BTN, ON_INK_GHOST_BTN } from "@/components/ui/glass/tokens";
 
 // ── Landing surfaces ─────────────────────────────────────────────────────────
 //
@@ -70,6 +71,126 @@ const BG = {
     "linear-gradient(180deg, #F7FAFD 0%, #EDF2F8 100%)",
   ].join(", "),
 };
+
+
+// ── Step visuals ─────────────────────────────────────────────────────────────
+// Small, static diagrams of the three steps, drawn with the product's own
+// shapes. No images, no icons library, no text that would need translating
+// beyond the day labels the booking widget already uses.
+
+const BAR = "rounded-full";
+
+function Bar({ w, tone = "soft" }: { w: string; tone?: "soft" | "firm" }) {
+  return (
+    <span
+      className={`block h-2 ${BAR}`}
+      style={{ width: w, background: tone === "firm" ? "rgba(15,23,42,0.16)" : "rgba(15,23,42,0.075)" }}
+    />
+  );
+}
+
+/** 01 — a search field with two results beneath it. */
+function StepSearchVisual() {
+  return (
+    <div className="space-y-2.5">
+      <div
+        className="flex items-center gap-2.5 h-10 px-3 rounded-[10px]"
+        style={{ background: "var(--surface)", border: "1px solid var(--hairline)", boxShadow: "inset 0 1px 2px rgba(15,23,42,0.04)" }}
+      >
+        <svg className="w-3.5 h-3.5 flex-shrink-0 text-slate-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+          <circle cx="11" cy="11" r="8" /><path d="m21 21-4.35-4.35" />
+        </svg>
+        <Bar w="52%" />
+      </div>
+      {[0, 1].map((i) => (
+        <div
+          key={i}
+          className="flex items-center gap-2.5 h-10 px-3 rounded-[10px]"
+          style={{ background: "var(--surface)", border: "1px solid var(--hairline-soft)" }}
+        >
+          <span className="w-5 h-5 rounded-full flex-shrink-0" style={{ background: "var(--selected)" }} />
+          <span className="flex-1 space-y-1.5">
+            <Bar w={i === 0 ? "58%" : "44%"} tone="firm" />
+            <Bar w={i === 0 ? "34%" : "40%"} />
+          </span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+/** 02 — days across the top, times below, one of each chosen. */
+function StepSlotsVisual({ days }: { days: string[] }) {
+  const picked = 2;
+  return (
+    <div className="space-y-2.5">
+      <div className="flex gap-1.5">
+        {days.slice(0, 5).map((d, i) => (
+          <span
+            key={i}
+            className="flex-1 h-8 rounded-[8px] flex items-center justify-center text-[10.5px] font-semibold"
+            style={
+              i === picked
+                ? { background: "var(--ink-raised)", color: "#F8FAFC" }
+                : { background: "var(--surface)", border: "1px solid var(--hairline-soft)", color: "#8593A8" }
+            }
+          >
+            {d}
+          </span>
+        ))}
+      </div>
+      <div className="grid grid-cols-4 gap-1.5">
+        {["09:00", "10:30", "12:00", "13:30"].map((t, i) => (
+          <span
+            key={t}
+            className="h-8 rounded-[8px] flex items-center justify-center text-[10.5px] font-medium tabular-nums"
+            style={
+              i === 1
+                ? { background: "var(--selected)", border: "1px solid var(--hairline)", color: "#334155" }
+                : { background: "var(--surface)", border: "1px solid var(--hairline-soft)", color: "#8593A8" }
+            }
+          >
+            {t}
+          </span>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+/** 03 — the confirmation the customer ends up with. */
+function StepConfirmVisual() {
+  return (
+    <div className="space-y-2.5">
+      <div
+        className="flex items-center gap-3 h-[52px] px-3.5 rounded-[10px]"
+        style={{ background: "var(--surface)", border: "1px solid var(--hairline)", boxShadow: "var(--e1)" }}
+      >
+        <span
+          className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0"
+          style={{ background: "var(--ink-raised)" }}
+        >
+          <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="#F8FAFC" strokeWidth="3">
+            <path strokeLinecap="round" strokeLinejoin="round" d="m5 13 4 4L19 7" />
+          </svg>
+        </span>
+        <span className="flex-1 space-y-1.5">
+          <Bar w="62%" tone="firm" />
+          <Bar w="38%" />
+        </span>
+      </div>
+      <div
+        className="flex items-center gap-2.5 h-10 px-3.5 rounded-[10px]"
+        style={{ background: "var(--surface-inset)", border: "1px solid var(--hairline-soft)" }}
+      >
+        <svg className="w-3.5 h-3.5 flex-shrink-0 text-slate-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+          <rect width="18" height="18" x="3" y="4" rx="2" /><path d="M3 10h18M8 2v4M16 2v4" />
+        </svg>
+        <Bar w="46%" />
+      </div>
+    </div>
+  );
+}
 
 // ── Interactive Booking Widget ────────────────────────────────────────────────
 
@@ -254,13 +375,18 @@ function HeroSearch() {
 const HOME_JSON_LD = {
   "@context": "https://schema.org",
   "@graph": [
-    { "@type": "Organization", name: "TermCatch", url: "https://termcatch.com", logo: "https://termcatch.com/opengraph-image", email: "hello@termcatch.com", description: "Polska platforma rezerwacji online dla salonów beauty i wellness.", areaServed: "PL" },
+    // No areaServed: the platform is not restricted to one market, and naming
+    // a single country here told search engines the opposite. Markets that are
+    // actually launched are expressed by the salons listed, not by a claim.
+    { "@type": "Organization", name: "TermCatch", url: "https://termcatch.com", logo: "https://termcatch.com/opengraph-image", email: "hello@termcatch.com", description: "Online booking platform for salons, wellness and service businesses." },
     { "@type": "WebSite", name: "TermCatch", url: "https://termcatch.com", inLanguage: "pl-PL", potentialAction: { "@type": "SearchAction", target: "https://termcatch.com/search?q={search_term_string}", "query-input": "required name=search_term_string" } },
   ],
 };
 
 export default function HomePage() {
   const fade = useReducedMotion() ? revealFade : reveal;
+  // Reused by the step visual so the two previews speak the same language.
+  const DAYS_DEMO = useT().home.demoDays.split(",");
   const t = useT();
   const h = t.home;
   const locale = useLocale();
@@ -268,7 +394,7 @@ export default function HomePage() {
   return (
     <div className="min-h-screen overflow-x-hidden text-slate-900" style={{ background: BG.hero }}>
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(HOME_JSON_LD) }} />
-      <LandingNav variant="marketing" />
+      <LandingNav />
 
       {/* ── HERO ─────────────────────────────────────────────────── */}
       <section className="relative overflow-hidden pt-24 md:pt-32 pb-16 md:pb-24">
@@ -311,13 +437,17 @@ export default function HomePage() {
               transition={{ duration: 0.5, delay: 0.05, ease: [0.22, 1, 0.36, 1] }}
               className="type-display text-slate-900"
             >
-              {h.heroLine1}<br />
-              {h.heroLine2}<br />
-              {/* The third line is the one that carries the promise, so it gets
-                  a different voice: lighter weight, optical outdent, ink rule. */}
-              <span className="relative inline-block font-normal text-slate-500">
-                {h.heroLine3}
-              </span>
+              {/* "Book. Manage. Grow." is a brand string, so it comes from
+                  lib/brand and is identical in every locale — there is no
+                  dictionary key for a translator to reach. The line beneath it
+                  IS translated, so a visitor who does not read English still
+                  learns what TermCatch does.
+
+                  Typographically the three lines build to the payoff: the two
+                  actions recede, "Grow." lands in full ink. */}
+              <span className="text-slate-500">{BRAND_TAGLINE_LINES[0]}</span><br />
+              <span className="text-slate-500">{BRAND_TAGLINE_LINES[1]}</span><br />
+              <span className="text-slate-900">{BRAND_TAGLINE_LINES[2]}</span>
             </motion.h1>
 
             <motion.p
@@ -408,10 +538,10 @@ export default function HomePage() {
         </div>
       </div>
 
-      {/* ── HOW IT WORKS — an editorial list, not three cards ────── */}
-      <section className="py-24 md:py-36 px-6" style={{ background: BG.steps }}>
+      {/* ── HOW IT WORKS — three steps that show the product ────── */}
+      <section className="py-24 md:py-32 px-6" style={{ background: BG.steps }}>
         <div className="max-w-6xl mx-auto">
-          <motion.div initial="hidden" whileInView="show" viewport={REVEAL_VIEWPORT} variants={fade} className="mb-14 md:mb-20 max-w-2xl">
+          <motion.div initial="hidden" whileInView="show" viewport={REVEAL_VIEWPORT} variants={fade} className="mb-12 md:mb-16 max-w-2xl">
             <div className="rail mb-6">
               <span className="text-[11px] font-semibold uppercase track-overline text-slate-500 flex-shrink-0">
                 {h.howBadge}
@@ -420,25 +550,36 @@ export default function HomePage() {
             <h2 className="type-section text-slate-900">{h.howTitle}</h2>
           </motion.div>
 
-          {/* Numbers do the structuring; hairlines do the separating. No boxes. */}
-          <div>
+          <div className="grid md:grid-cols-3 gap-4 lg:gap-5">
             {[
-              { n: "01", title: h.step1Title, desc: h.step1Desc },
-              { n: "02", title: h.step2Title, desc: h.step2Desc },
-              { n: "03", title: h.step3Title, desc: h.step3Desc },
+              { n: "01", title: h.step1Title, desc: h.step1Desc, visual: <StepSearchVisual /> },
+              { n: "02", title: h.step2Title, desc: h.step2Desc, visual: <StepSlotsVisual days={DAYS_DEMO} /> },
+              { n: "03", title: h.step3Title, desc: h.step3Desc, visual: <StepConfirmVisual /> },
             ].map((step, i) => (
               <motion.div
                 key={step.n}
                 initial="hidden" whileInView="show" viewport={REVEAL_VIEWPORT} custom={i} variants={fade}
-                className="grid grid-cols-[auto_minmax(0,1fr)] md:grid-cols-[7rem_minmax(0,26rem)_minmax(0,1fr)] gap-x-6 md:gap-x-10 gap-y-2 py-8 md:py-11"
-                style={{ borderTop: "1px solid var(--hairline-soft)" }}
+                className="rounded-[18px] overflow-hidden flex flex-col"
+                style={ELEV_RAISED}
               >
-                <span className="type-numeral text-muted-glass select-none row-span-2 md:row-span-1">{step.n}</span>
-                <h3 className="text-[19px] md:text-[22px] font-semibold text-slate-900 track-title self-center">{step.title}</h3>
-                <p className="text-[14.5px] leading-[1.65] text-secondary max-w-[52ch] self-center col-start-2 md:col-start-3">{step.desc}</p>
+                {/* The visual sits in a recessed well so the card reads as a
+                    frame around a piece of product, not as a picture card. */}
+                <div
+                  className="px-5 pt-5 pb-5"
+                  style={{ background: "var(--surface-2)", borderBottom: "1px solid var(--hairline-soft)" }}
+                  aria-hidden="true"
+                >
+                  {step.visual}
+                </div>
+                <div className="p-5 flex-1">
+                  <p className="text-[11px] font-semibold uppercase track-overline text-slate-400 mb-2.5 tabular-nums">
+                    {step.n}
+                  </p>
+                  <h3 className="text-[16px] font-semibold text-slate-900 track-heading mb-1.5">{step.title}</h3>
+                  <p className="text-[13.5px] leading-[1.6] text-secondary">{step.desc}</p>
+                </div>
               </motion.div>
             ))}
-            <div className="rule" />
           </div>
         </div>
       </section>

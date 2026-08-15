@@ -7,11 +7,14 @@ import { startViewAs } from "@/lib/actions/view-as";
 import { CHIP } from "@/components/ui/glass/tokens";
 import { useT } from "@/components/i18n/i18n-provider";
 import { notify } from "@/lib/notify";
+import { interpolate } from "@/lib/i18n/dictionaries";
 
 export function EmployeeAccountControls({
-  employeeId, hasAccount, hasEmail, inviteStatus,
+  employeeId, hasAccount, hasEmail, inviteStatus, salonName,
 }: {
   employeeId: string; hasAccount: boolean; hasEmail: boolean; inviteStatus: string | null;
+  /** The invite is to THIS salon, not to TermCatch in general. */
+  salonName: string;
 }) {
   const t = useT();
   const T = t.pages.staff;
@@ -59,7 +62,7 @@ export function EmployeeAccountControls({
           <button type="button" disabled={pending || !hasEmail} onClick={() => act(() => inviteEmployee(employeeId), t.feedback.sent)}
             title={hasEmail ? undefined : T.inviteNeedsEmail}
             className="text-xs font-semibold text-slate-700 hover:text-slate-900 disabled:opacity-50">
-            {pending ? T.inviting : T.invite}
+            {pending ? T.inviting : interpolate(T.inviteToSalon, { salon: salonName })}
           </button>
         </>
       )}

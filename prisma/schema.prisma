@@ -283,6 +283,8 @@ model User {
   crmEntries        CrmContact[]        @relation("CrmContactUser")
   medicalProfile    MedicalProfile?
   aiConversations   AiConversation[]
+  blockedBusinesses BlockedBusiness[]   @relation("UserBlocks")
+  reportsFiled      Report[]            @relation("UserReports")
 
   @@index([email])
   @@index([supabaseId])
@@ -386,6 +388,18 @@ model Business {
   verifiedAt  DateTime? @map("verified_at")
   verifiedBy  String?   @map("verified_by")
 
+  // Join code — how a specialist who already has a TermCatch account attaches
+  // themselves to this salon (Settings → "Join a salon"). Complements the
+  // e-mail invitation flow rather than replacing it: e-mail is owner-initiated,
+  // this is specialist-initiated.
+  //
+  // Nullable because it is minted lazily on first use, and unique so a lookup
+  // is one indexed read. Regenerating overwrites the value, which is what
+  // invalidates the previous code — there is deliberately no history table,
+  // because keeping old codes around is the opposite of revoking them.
+  joinCode          String?   @unique @map("join_code")
+  joinCodeUpdatedAt DateTime? @map("join_code_updated_at")
+
   isActive    Boolean  @default(true) @map("is_active")
   createdAt   DateTime @default(now()) @map("created_at")
   updatedAt   DateTime @updatedAt @map("updated_at")
@@ -414,6 +428,7 @@ model Business {
   billingCustomer     BillingCustomer?     // Stripe billing (one customer per business)
   promoRedemptions    PromoRedemption[]    // WELCOME etc.
   fakturowniaConnection FakturowniaConnection? // per-business Fakturownia credentials (own account)
+  blockedBy           BlockedBusiness[]    @relation("BusinessBlockedBy")
 
   @@index([city, category])
   @@index([slug])
@@ -1586,3 +1601,58 @@ model ProcessedWebhookEvent {
   @@map("processed_webhook_events")
 }
 
+
+// ============================================================
+// MODERATION — blocking and reporting
+// ============================================================
+// The product's only user-to-user surface is customer ↔ business, so that is
+// the only relationship these two models cover. There is no messaging and no
+// customer-to-customer interaction to moderate.
+
+// A customer hiding a business from themselves.
+// 
+// This is a real filter, not a flag: lib/moderation reads it and the search
+// page and the booking action both honour it, so a blocked salon disappears
+// from results and cannot be booked. Deliberately one-directional — a business
+// cannot block a customer this way; that is what CrmContact.isBlacklisted is
+// for on the business side.
+model BlockedBusiness {
+  id         String   @id @default(cuid())
+  userId     String   @map("user_id")
+  businessId String   @map("business_id")
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  user     User     @relation("UserBlocks", fields: [userId], references: [id], onDelete: Cascade)
+  business Business @relation("BusinessBlockedBy", fields: [businessId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, businessId])
+  @@index([userId])
+  @@index([businessId])
+  @@map("blocked_businesses")
+}
+
+// A report raised for moderation.
+// 
+// `targetType` + `targetId` rather than a relation per target so a report can
+// point at a business today and a review tomorrow without a schema change.
+// `status` is the moderation queue: open → reviewing → resolved | dismissed.
+model Report {
+  id          String   @id @default(cuid())
+  reporterId  String   @map("reporter_id")
+  targetType  String   @map("target_type") // "business" | "review"
+  targetId    String   @map("target_id")
+  reason      String   // spam | inappropriate | wrong_info | other
+  details     String?  @db.Text
+  status      String   @default("open") // open | reviewing | resolved | dismissed
+  handledBy   String?  @map("handled_by")
+  handledAt   DateTime? @map("handled_at")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  reporter User @relation("UserReports", fields: [reporterId], references: [id], onDelete: Cascade)
+
+  @@index([status, createdAt])
+  @@index([targetType, targetId])
+  @@index([reporterId])
+  @@map("reports")
+}

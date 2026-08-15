@@ -203,12 +203,6 @@ export default async function PaymentsPage() {
       <PageHeader title={T.title} subtitle={T.subtitle} />
 
       <SubscriptionCard sub={sub} usage={usage} T={T} locale={locale} plans={dict.plans} />
-
-      {/* Honest forward-looking note — NOT a promise that it already works. */}
-      <GlassCard className="p-5 fade-rise fade-rise-d2">
-        <Overline>{T.soon}</Overline>
-        <p className="text-sm text-slate-500 mt-2 leading-relaxed">{T.soonBody}</p>
-      </GlassCard>
     </div>
   );
 }

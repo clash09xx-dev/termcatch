@@ -13,6 +13,8 @@ import {
 } from "@/components/ui/glass";
 import { useT } from "@/components/i18n/i18n-provider";
 import { LanguageSelector } from "@/components/i18n/language-selector";
+import { JoinSalonCard } from "@/components/customer/join-salon-card";
+import { DeleteAccountCard } from "@/components/customer/delete-account-card";
 
 interface ProfileFormProps {
   smsNotifications: boolean;
@@ -146,6 +148,9 @@ export default function ProfileForm({ firstName, lastName, phone, email, smsNoti
         <LanguageSelector className="w-full max-w-xs cursor-pointer rounded-xl border border-slate-200 bg-white/70 px-3.5 py-2.5 text-sm text-slate-800 outline-none" />
       </GlassCard>
 
+      {/* Join a salon — how a specialist attaches to a business they work at. */}
+      <JoinSalonCard />
+
       {/* Account */}
       <GlassCard className="fade-rise fade-rise-d3 p-6">
         <h3 className="text-sm font-semibold text-slate-900 mb-4">Konto</h3>
@@ -153,6 +158,9 @@ export default function ProfileForm({ firstName, lastName, phone, email, smsNoti
           <GlassButton type="submit">Wyloguj się</GlassButton>
         </form>
       </GlassCard>
+
+      {/* Danger zone — last on the page, as the most destructive action. */}
+      <DeleteAccountCard />
     </div>
   );
 }

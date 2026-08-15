@@ -21,7 +21,7 @@ export const metadata: Metadata = {
     default: "TermCatch — Rezerwacje online dla salonów beauty | Fryzjer, barber, masaż",
   },
   description:
-    "Rezerwacja wizyt online w salonach beauty: fryzjer, barber, paznokcie, masaż. Umów wizytę 24/7 w Krakowie i całej Polsce. System, który zarabia sam na siebie.",
+    "Rezerwacja wizyt online w salonach beauty: fryzjer, barber, paznokcie, masaż. Umów wizytę 24/7. System rezerwacji, który zarabia sam na siebie.",
   keywords: [
     "rezerwacja wizyt online",
     "umów wizytę online",
@@ -34,7 +34,7 @@ export const metadata: Metadata = {
     "manicure Kraków",
     "system rezerwacji dla salonu",
     "system rezerwacji online dla salonów",
-    "polska aplikacja do rezerwacji",
+    "aplikacja do rezerwacji online",
     "online booking",
     "appointment booking",
     "beauty salon booking",
@@ -52,12 +52,12 @@ export const metadata: Metadata = {
     siteName: "TermCatch",
     title: "TermCatch — Rezerwacje online dla salonów i usług",
     description:
-      "Zarezerwuj wizytę w najlepszych salonach i u specjalistów w Polsce.",
+      "Zarezerwuj wizytę w najlepszych salonach i u specjalistów.",
   },
   twitter: {
     card: "summary_large_image",
     title: "TermCatch",
-    description: "Rezerwacje online dla salonów i usług w Polsce.",
+    description: "Rezerwacje online dla salonów i usług.",
   },
   robots: {
     index: true,

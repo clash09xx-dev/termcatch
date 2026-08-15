@@ -10,6 +10,8 @@ export const metadata = {
 import { Suspense } from "react";
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
+import { getServerUser } from "@/lib/supabase/server";
+import { blockedBusinessIds } from "@/lib/moderation";
 import { LandingNav } from "@/components/layout/landing-nav";
 import { formatCurrency, cn } from "@/lib/utils";
 import { ServiceCategory } from "@prisma/client";
@@ -271,11 +273,21 @@ async function SearchResults({ searchParams }: { searchParams: SearchParams }) {
 
   // Single synonym-aware, publication-gated, medical-filtered where clause —
   // shared with category pages. "fryzjer" now resolves to HAIR_SALON businesses.
-  const where = buildBusinessSearchWhere({
+  const baseWhere = buildBusinessSearchWhere({
     q: searchParams.q,
     city: searchParams.city,
     category: searchParams.category,
   });
+
+  // A salon the signed-in customer has blocked never appears in results. Done
+  // in the query rather than by filtering afterwards, so paging and counts stay
+  // correct instead of showing "12 results" and rendering 11.
+  const viewer = await getServerUser();
+  const viewerDbUser = viewer
+    ? await prisma.user.findUnique({ where: { supabaseId: viewer.id }, select: { id: true } })
+    : null;
+  const blocked = await blockedBusinessIds(viewerDbUser?.id);
+  const where = blocked.length > 0 ? { ...baseWhere, id: { notIn: blocked } } : baseWhere;
 
   let businesses: BusinessWithServices[] = [];
   let totalCount = 0;

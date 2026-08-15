@@ -12,7 +12,10 @@ async function getStaffData(supabaseId: string) {
     include: {
       ownedBusinesses: {
         take: 1,
-        include: {
+        select: {
+          id: true,
+          name: true,
+          joinCode: true,
           employees: {
             orderBy: [{ displayOrder: "asc" }, { createdAt: "asc" }],
             include: {
@@ -70,6 +73,8 @@ export default async function StaffPage() {
       availableServices={business.services}
       weekLoad={weekLoad}
       inviteStatus={inviteStatus}
+      salonName={business.name}
+      joinCode={business.joinCode}
     />
   );
 }

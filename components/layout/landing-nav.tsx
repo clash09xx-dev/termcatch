@@ -1,7 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { useState, useEffect } from "react";
+import { usePathname } from "next/navigation";
+import { useMemo, useState, useEffect } from "react";
 import { cn } from "@/lib/utils";
 import { Wordmark } from "@/components/brand/wordmark";
 import { createClient } from "@/lib/supabase/client";
@@ -10,10 +11,34 @@ import { useT } from "@/components/i18n/i18n-provider";
 import { LanguageSelector } from "@/components/i18n/language-selector";
 import { SPRING } from "@/lib/motion";
 
-type AuthState =
-  | { status: "loading" }
-  | { status: "guest" }
-  | { status: "authed"; dashboardHref: string };
+type AuthState = "loading" | "guest" | "authed";
+
+/**
+ * Routes that get the full marketing nav. Everything public that is NOT in this
+ * list is a task context (search, a salon profile, the booking flow) where the
+ * marketing links are noise, so it gets the minimal nav instead.
+ *
+ * Adding a marketing page means adding it here — one list, not one prop per
+ * page — and the legal pages are included because they are reached from the
+ * footer of the marketing site and should not dead-end the visitor.
+ */
+const MARKETING_ROUTES = [
+  "/",
+  "/about",
+  "/pricing",
+  "/careers",
+  "/for-business",
+  "/faq",
+  "/contact",
+  "/terms",
+  "/privacy",
+  "/gdpr",
+  "/cookies",
+];
+
+function isMarketingRoute(pathname: string): boolean {
+  return MARKETING_ROUTES.includes(pathname);
+}
 
 // ── Chrome glass pill styles ──────────────────────────────────────────────────
 
@@ -35,20 +60,12 @@ const AFFILIATE_CTA: React.CSSProperties = {
   boxShadow: "0 1px 2px rgba(0,0,0,0.20), 0 8px 20px rgba(15,23,42,0.22), inset 0 1px 0 rgba(255,255,255,0.15)",
 };
 
-export type LandingNavVariant = "marketing" | "customer-discovery";
-
-export function LandingNav({
-  variant = "customer-discovery",
-}: {
-  /** "marketing" (homepage) shows the full nav (Szukaj, Zarejestruj salon,
-   *  Cennik, Kariera, O nas + the "Zaproś i zarób" CTA). The default
-   *  customer-discovery/booking variant stays minimal ("Szukaj" only). */
-  variant?: LandingNavVariant;
-}) {
+export function LandingNav() {
   const t = useT();
+  const pathname = usePathname() ?? "/";
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileOpen, setIsMobileOpen] = useState(false);
-  const [auth, setAuth] = useState<AuthState>({ status: "loading" });
+  const [auth, setAuth] = useState<AuthState>("loading");
 
   useEffect(() => {
     const onScroll = () => setIsScrolled(window.scrollY > 24);
@@ -56,38 +73,51 @@ export function LandingNav({
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
+  // Presence only. The destination is resolved server-side by /dashboard from
+  // the real ownership record — user_metadata.role is self-writable and goes
+  // stale, so the navbar deliberately does not read it.
   useEffect(() => {
+    let cancelled = false;
     const supabase = createClient();
     supabase.auth
       .getUser()
-      .then(({ data: { user } }) => {
-        if (!user) { setAuth({ status: "guest" }); return; }
-        const role = user.user_metadata?.role as string | undefined;
-        setAuth({
-          status: "authed",
-          dashboardHref: role === "BUSINESS_OWNER" ? "/business/dashboard" : "/customer/dashboard",
-        });
-      })
-      .catch(() => setAuth({ status: "guest" }));
+      .then(({ data: { user } }) => { if (!cancelled) setAuth(user ? "authed" : "guest"); })
+      .catch(() => { if (!cancelled) setAuth("guest"); });
+    // Keep the nav honest if the session changes in another tab.
+    const { data: sub } = supabase.auth.onAuthStateChange((_e, session) => {
+      if (!cancelled) setAuth(session?.user ? "authed" : "guest");
+    });
+    return () => { cancelled = true; sub.subscription.unsubscribe(); };
   }, []);
 
-  // Marketing (homepage) shows the full B2B/discovery nav; customer discovery /
-  // booking contexts stay intentionally minimal ("Szukaj" only).
-  const isMarketing = variant === "marketing";
-  const links = isMarketing
-    ? [
-        { href: "/search", label: t.nav.search },
-        { href: "/register?role=business", label: t.nav.registerSalon },
-        { href: "/pricing", label: t.nav.pricing },
-        { href: "/careers", label: t.nav.careers },
-        { href: "/about", label: t.nav.about },
-      ]
-    : [{ href: "/search", label: t.nav.search }];
+  // A signed-in visitor is not being marketed to: "Register your salon",
+  // "Pricing" and "Careers" are acquisition links and they disappear once the
+  // person already has an account. Guests on a marketing route get everything.
+  const isAuthed = auth === "authed";
+  const isMarketing = !isAuthed && isMarketingRoute(pathname);
+
+  const links = useMemo(() => {
+    const all = isMarketing
+      ? [
+          { href: "/search", label: t.nav.search },
+          { href: "/register?role=business", label: t.nav.registerSalon },
+          { href: "/pricing", label: t.nav.pricing },
+          { href: "/careers", label: t.nav.careers },
+          { href: "/about", label: t.nav.about },
+        ]
+      : [{ href: "/search", label: t.nav.search }];
+    // Never link to the page you are already on — that is what made the nav on
+    // /search show a redundant "Search" to someone already searching.
+    return all.filter((l) => l.href.split("?")[0] !== pathname);
+  }, [isMarketing, pathname, t]);
+
   // "Zaproś i zarób" — the stronger CTA → affiliate section under Careers.
   const affiliateHref = "/careers#zaros-i-zarob";
-  // Fuller marketing nav needs a later breakpoint so it never overflows the pill.
-  const desktopNavCls = isMarketing ? "hidden lg:flex items-center gap-0.5" : "hidden md:flex items-center gap-0.5";
-  const desktopActionsCls = isMarketing ? "hidden lg:flex items-center gap-1.5" : "hidden md:flex items-center gap-1.5";
+  // The fuller marketing nav needs a later breakpoint so it never overflows the
+  // pill; once the links collapse to one, md is enough.
+  const wide = links.length > 2;
+  const desktopNavCls = wide ? "hidden lg:flex items-center gap-0.5" : "hidden md:flex items-center gap-0.5";
+  const desktopActionsCls = wide ? "hidden lg:flex items-center gap-1.5" : "hidden md:flex items-center gap-1.5";
 
   return (
     <header className="fixed top-0 inset-x-0 z-50 px-4 pt-3">
@@ -126,9 +156,9 @@ export function LandingNav({
                 {t.nav.inviteEarn}
               </Link>
             )}
-            {auth.status === "authed" ? (
-              <ChromeBtn href={auth.dashboardHref}>{t.nav.dashboard}</ChromeBtn>
-            ) : auth.status === "guest" ? (
+            {auth === "authed" ? (
+              <ChromeBtn href="/dashboard">{t.nav.dashboard}</ChromeBtn>
+            ) : auth === "guest" ? (
               <>
                 <NavLink href="/login">{t.nav.login}</NavLink>
                 <ChromeBtn href="/register">{t.nav.register}</ChromeBtn>
@@ -140,7 +170,7 @@ export function LandingNav({
 
           {/* Mobile: compact language control sits NEXT TO the menu button
               (flag + PL/EN/DE/TR) — visible without opening the menu. */}
-          <div className={isMarketing ? "flex items-center gap-1.5 lg:hidden" : "flex items-center gap-1.5 md:hidden"}>
+          <div className={wide ? "flex items-center gap-1.5 lg:hidden" : "flex items-center gap-1.5 md:hidden"}>
             <LanguageSelector compact />
             <button
               className="p-2 rounded-xl nav-link"
@@ -203,9 +233,9 @@ export function LandingNav({
                     {t.nav.inviteEarn}
                   </Link>
                 )}
-                {auth.status === "authed" ? (
+                {auth === "authed" ? (
                   <Link
-                    href={auth.dashboardHref}
+                    href="/dashboard"
                     onClick={() => setIsMobileOpen(false)}
                     className="block w-full text-center px-4 py-2.5 text-sm font-semibold rounded-xl transition-colors"
                     style={{

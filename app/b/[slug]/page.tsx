@@ -14,6 +14,8 @@ import ReviewForm from "./review-form";
 import FavouriteButton from "@/components/booking/favourite-button";
 import { isFavourite } from "@/lib/actions/favourites";
 import { getServerUser } from "@/lib/supabase/server";
+import { hasBlockedBusiness } from "@/lib/moderation";
+import { SalonModeration } from "@/components/booking/salon-moderation";
 import { getServerI18n } from "@/lib/i18n/server";
 import { interpolate } from "@/lib/i18n/dictionaries";
 import { categoryLabelFor } from "@/lib/categories";
@@ -216,6 +218,14 @@ export default async function BusinessProfilePage({
   }
 
   const favourite = await isFavourite(business.id);
+
+  // Moderation state for the signed-in viewer. Guests get no controls, so this
+  // is the only lookup the feature costs on a public profile.
+  const viewer = await getServerUser();
+  const viewerDbUser = viewer
+    ? await prisma.user.findUnique({ where: { supabaseId: viewer.id }, select: { id: true } })
+    : null;
+  const viewerBlocked = await hasBlockedBusiness(viewerDbUser?.id, business.id);
 
   // Review modal — only for the customer's own COMPLETED, unreviewed appointment
   let reviewAppointment: { id: string; serviceName: string } | null = null;
@@ -832,6 +842,16 @@ export default async function BusinessProfilePage({
             </div>
           </div>
         </div>
+      </div>
+
+      {/* Block / report — last-resort actions, deliberately at the very bottom
+          and only for a signed-in viewer. */}
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 pb-10">
+        <SalonModeration
+          businessId={business.id}
+          isBlocked={viewerBlocked}
+          isSignedIn={Boolean(viewerDbUser)}
+        />
       </div>
 
       {/* Mobile sticky CTA */}

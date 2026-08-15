@@ -14,9 +14,18 @@ import type { PlanLimitInfo } from "@/lib/entitlements";
 import { useT } from "@/components/i18n/i18n-provider";
 import { notify, errorText } from "@/lib/notify";
 import { ConfirmDialog } from "@/components/ui/glass-modal";
+import { JoinCodeCard } from "@/components/business/join-code-card";
 
 type EmpWithServices = Employee & { services: (EmployeeService & { service: Service })[] };
-type Props = { employees: EmpWithServices[]; availableServices: Service[]; weekLoad: Record<string, number>; inviteStatus?: Record<string, string> };
+type Props = {
+  employees: EmpWithServices[];
+  availableServices: Service[];
+  weekLoad: Record<string, number>;
+  inviteStatus?: Record<string, string>;
+  /** Used for the salon-specific invite wording and the join-code panel. */
+  salonName: string;
+  joinCode: string | null;
+};
 type Form = { firstName: string; lastName: string; email: string; phone: string; title: string; bio: string; avatarUrl: string; color: string; isActive: boolean; isAccepting: boolean; serviceIds: string[] };
 
 const COLORS = ["#334155", "#2563eb", "#0891b2", "#16a34a", "#65a30d", "#d97706", "#dc2626", "#db2777", "#7c3aed", "#0f766e", "#b45309", "#64748B"];
@@ -24,7 +33,7 @@ const EMPTY: Form = { firstName: "", lastName: "", email: "", phone: "", title: 
 const toForm = (e: EmpWithServices): Form => ({ firstName: e.firstName, lastName: e.lastName, email: e.email ?? "", phone: e.phone ?? "", title: e.title ?? "", bio: e.bio ?? "", avatarUrl: e.avatarUrl ?? "", color: e.color, isActive: e.isActive, isAccepting: e.isAccepting, serviceIds: e.services.map((s) => s.serviceId) });
 const INPUT = "input-glass w-full px-3.5 py-2.5 text-sm rounded-xl outline-none text-slate-800 placeholder:text-slate-400";
 
-export function StaffClient({ employees, availableServices, weekLoad, inviteStatus = {} }: Props) {
+export function StaffClient({ employees, availableServices, weekLoad, inviteStatus = {}, salonName, joinCode }: Props) {
   const t = useT();
   const T = t.pages.staff;
   const router = useRouter();
@@ -108,6 +117,10 @@ export function StaffClient({ employees, availableServices, weekLoad, inviteStat
         actions={<InkButton onClick={openAdd}><svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5}><path d="M12 5v14M5 12h14" /></svg>{T.add}</InkButton>}
       />
 
+      {/* How a specialist who already has an account joins this salon. Sits
+          above the team so it is where the owner looks when adding people. */}
+      <JoinCodeCard code={joinCode} salonName={salonName} />
+
       {employees.length === 0 ? (
         <GlassCard className="fade-rise fade-rise-d1">
           <EmptyState
@@ -157,7 +170,7 @@ export function StaffClient({ employees, availableServices, weekLoad, inviteStat
                   <button onClick={() => setConfirmId(e.id)} disabled={deletingId === e.id} className="p-2 rounded-lg transition-colors" style={{ color: "#94A3B8" }} onMouseOver={(ev) => (ev.currentTarget.style.color = "#BE123C")} onMouseOut={(ev) => (ev.currentTarget.style.color = "#94A3B8")} aria-label={t.common.delete}><svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8}><path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" /></svg></button>
                 </div>
 
-                <EmployeeAccountControls employeeId={e.id} hasAccount={Boolean(e.userId)} hasEmail={Boolean(e.email)} inviteStatus={inviteStatus[e.id] ?? null} />
+                <EmployeeAccountControls employeeId={e.id} hasAccount={Boolean(e.userId)} hasEmail={Boolean(e.email)} inviteStatus={inviteStatus[e.id] ?? null} salonName={salonName} />
               </div>
             );
           })}
