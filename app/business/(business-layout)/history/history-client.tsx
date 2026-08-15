@@ -1,6 +1,10 @@
 import Link from "next/link";
-import { formatCurrency, formatDate, formatDuration, cn } from "@/lib/utils";
+import { formatDuration, cn } from "@/lib/utils";
 import { PageHeader, GlassCard, EmptyState, Overline } from "@/components/ui/glass";
+import { formatCurrency as fmtMoney, formatDate as fmtDate, intlLocale } from "@/lib/i18n/format";
+import { interpolate } from "@/lib/i18n/dictionaries";
+import type { Dictionary } from "@/lib/i18n/dictionaries";
+import type { Locale } from "@/lib/i18n/config";
 
 type Row = {
   id: string;
@@ -13,21 +17,16 @@ type Row = {
   employee: string | null;
 };
 
-const FILTERS = [
-  { key: "all", label: "Wszystkie" },
-  { key: "completed", label: "Zakończone" },
-  { key: "cancelled", label: "Anulowane" },
-  { key: "noshow", label: "Nieobecność" },
-] as const;
+const FILTER_KEYS = ["all", "completed", "cancelled", "noshow"] as const;
 
-const STATUS_TINT: Record<string, { label: string; bg: string; fg: string }> = {
-  COMPLETED: { label: "Zakończona", bg: "rgba(16,185,129,0.12)", fg: "#047857" },
-  CANCELLED_CUSTOMER: { label: "Anulowana (klient)", bg: "rgba(148,163,184,0.18)", fg: "#475569" },
-  CANCELLED_BUSINESS: { label: "Anulowana (salon)", bg: "rgba(148,163,184,0.18)", fg: "#475569" },
-  NO_SHOW: { label: "Nieobecność", bg: "rgba(244,63,94,0.10)", fg: "#BE123C" },
+const STATUS_TINT: Record<string, { bg: string; fg: string }> = {
+  COMPLETED: { bg: "rgba(16,185,129,0.12)", fg: "#047857" },
+  CANCELLED_CUSTOMER: { bg: "rgba(148,163,184,0.18)", fg: "#475569" },
+  CANCELLED_BUSINESS: { bg: "rgba(148,163,184,0.18)", fg: "#475569" },
+  NO_SHOW: { bg: "rgba(244,63,94,0.10)", fg: "#BE123C" },
 };
 
-const INK = "linear-gradient(180deg, #1E293B 0%, #0F172A 100%)";
+const INK = "var(--ink-raised)";
 
 function href(filter: string, page: number): string {
   const p = new URLSearchParams();
@@ -43,33 +42,46 @@ export function HistoryClient({
   page,
   totalPages,
   total,
+  t,
+  locale,
 }: {
   rows: Row[];
   filter: string;
   page: number;
   totalPages: number;
   total: number;
+  t: Dictionary["pages"]["history"];
+  locale: Locale;
 }) {
+  const FILTER_LABEL: Record<(typeof FILTER_KEYS)[number], string> = {
+    all: t.fAll, completed: t.fCompleted, cancelled: t.fCancelled, noshow: t.fNoShow,
+  };
+  const STATUS_LABEL: Record<string, string> = {
+    COMPLETED: t.stCompleted,
+    CANCELLED_CUSTOMER: t.stCancelledCustomer,
+    CANCELLED_BUSINESS: t.stCancelledBusiness,
+    NO_SHOW: t.stNoShow,
+  };
   return (
     <div className="max-w-3xl mx-auto space-y-5">
-      <PageHeader title="Historia" subtitle="Zakończone, anulowane i nieodbyte wizyty" />
+      <PageHeader title={t.title} subtitle={t.subtitle} />
 
       {/* Filters — URL-driven (server-side filtered + paginated) */}
-      <div className="flex flex-wrap gap-2" role="group" aria-label="Filtruj historię">
-        {FILTERS.map((f) => {
-          const active = filter === f.key;
+      <div className="flex flex-wrap gap-2" role="group" aria-label={t.filterAria}>
+        {FILTER_KEYS.map((key) => {
+          const active = filter === key;
           return (
             <Link
-              key={f.key}
-              href={href(f.key, 1)}
+              key={key}
+              href={href(key, 1)}
               aria-current={active ? "true" : undefined}
               className={cn(
                 "px-3.5 py-1.5 rounded-xl text-sm font-semibold transition-colors border",
                 active ? "text-white border-transparent" : "text-slate-600 border-slate-200 hover:text-slate-900"
               )}
-              style={active ? { background: INK } : { background: "rgba(255,255,255,0.70)" }}
+              style={active ? { background: INK } : { background: "var(--surface)" }}
             >
-              {f.label}
+              {FILTER_LABEL[key]}
             </Link>
           );
         })}
@@ -84,14 +96,14 @@ export function HistoryClient({
               <path d="M12 7.5v5l3 2" />
             </svg>
           }
-          title="Brak wizyt w tej kategorii"
-          body="Zakończone i anulowane wizyty pojawią się tutaj."
+          title={t.emptyTitle}
+          body={t.emptyBody}
         />
       ) : (
         <GlassCard className="overflow-hidden">
           <div className="divide-y" style={{ borderColor: "rgba(203,213,225,0.35)" }}>
             {rows.map((r) => {
-              const tint = STATUS_TINT[r.status] ?? { label: r.status, bg: "rgba(148,163,184,0.18)", fg: "#475569" };
+              const tint = STATUS_TINT[r.status] ?? { bg: "rgba(148,163,184,0.18)", fg: "#475569" };
               const d = new Date(r.startTime);
               return (
                 <div key={r.id} className="px-4 sm:px-5 py-3.5 flex items-center justify-between gap-3">
@@ -100,17 +112,17 @@ export function HistoryClient({
                       {r.customer} · {r.service}
                     </p>
                     <p className="text-xs text-slate-500 mt-0.5 tabular-nums">
-                      {formatDate(d, { day: "numeric", month: "short", year: "numeric" })} ·{" "}
-                      {d.toLocaleTimeString("pl-PL", { hour: "2-digit", minute: "2-digit", timeZone: "Europe/Warsaw" })} ·{" "}
+                      {fmtDate(d, locale, { day: "numeric", month: "short", year: "numeric" })} ·{" "}
+                      {new Intl.DateTimeFormat(intlLocale(locale), { hour: "2-digit", minute: "2-digit", hour12: false, timeZone: "Europe/Warsaw" }).format(d)} ·{" "}
                       {formatDuration(r.duration)}
                       {r.employee ? ` · ${r.employee}` : ""}
                     </p>
                   </div>
                   <span className="text-[11px] font-semibold px-2.5 py-1 rounded-full flex-shrink-0" style={{ background: tint.bg, color: tint.fg }}>
-                    {tint.label}
+                    {STATUS_LABEL[r.status] ?? r.status}
                   </span>
                   <span className="text-sm font-bold text-slate-900 tabular-nums flex-shrink-0 w-20 text-right">
-                    {formatCurrency(r.price)}
+                    {fmtMoney(r.price, locale)}
                   </span>
                 </div>
               );
@@ -124,23 +136,23 @@ export function HistoryClient({
         <div className="flex items-center justify-center gap-3">
           {page > 1 ? (
             <Link href={href(filter, page - 1)} className="px-4 py-2 text-sm font-medium rounded-xl border border-slate-200 text-slate-600 hover:text-slate-900">
-              Poprzednia
+              {t.prev}
             </Link>
           ) : (
-            <span className="px-4 py-2 text-sm text-slate-300">Poprzednia</span>
+            <span className="px-4 py-2 text-sm text-slate-300">{t.prev}</span>
           )}
-          <span className="text-sm text-slate-500 tabular-nums">Strona {page} z {totalPages}</span>
+          <span className="text-sm text-slate-500 tabular-nums">{interpolate(t.pageOf, { page, total: totalPages })}</span>
           {page < totalPages ? (
             <Link href={href(filter, page + 1)} className="px-4 py-2 text-sm font-semibold rounded-xl text-white" style={{ background: INK }}>
-              Następna
+              {t.next}
             </Link>
           ) : (
-            <span className="px-4 py-2 text-sm text-slate-300">Następna</span>
+            <span className="px-4 py-2 text-sm text-slate-300">{t.next}</span>
           )}
         </div>
       )}
 
-      <Overline className="block text-center">{total} {total === 1 ? "wizyta" : "wizyt"} w historii</Overline>
+      <Overline className="block text-center">{interpolate(total === 1 ? t.totalOne : t.totalMany, { n: total })}</Overline>
     </div>
   );
 }

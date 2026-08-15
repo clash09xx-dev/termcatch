@@ -3,13 +3,13 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
-import { motion } from "framer-motion";
 import { Wordmark } from "@/components/brand/wordmark";
+import { useT } from "@/components/i18n/i18n-provider";
 
 const NAV_ITEMS = [
   {
     href: "/customer/dashboard",
-    label: "Moje wizyty",
+    key: "navVisits" as const,
     icon: (
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
         <rect width="18" height="18" x="3" y="4" rx="2" ry="2" />
@@ -21,7 +21,7 @@ const NAV_ITEMS = [
   },
   {
     href: "/customer/favourites",
-    label: "Ulubione",
+    key: "navFavourites" as const,
     icon: (
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
         <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
@@ -30,7 +30,7 @@ const NAV_ITEMS = [
   },
   {
     href: "/customer/history",
-    label: "Historia",
+    key: "navHistory" as const,
     icon: (
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
         <polyline points="12 8 12 12 14 14" />
@@ -40,7 +40,7 @@ const NAV_ITEMS = [
   },
   {
     href: "/customer/profile",
-    label: "Mój profil",
+    key: "navProfile" as const,
     icon: (
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
         <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
@@ -50,7 +50,7 @@ const NAV_ITEMS = [
   },
   {
     href: "/customer/notifications",
-    label: "Powiadomienia",
+    key: "navNotifications" as const,
     icon: (
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
         <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
@@ -61,21 +61,23 @@ const NAV_ITEMS = [
 ];
 
 export function CustomerSidebar() {
+  const t = useT();
+  const c = t.customer;
   const pathname = usePathname();
 
   return (
     <aside
-      className="hidden md:flex flex-col w-56 h-screen shrink-0"
+      className="hidden md:flex flex-col w-56 h-[100dvh] shrink-0"
       style={{
-        background: "rgba(255,255,255,0.78)",
-        backdropFilter: "blur(40px) saturate(200%)",
-        WebkitBackdropFilter: "blur(40px) saturate(200%)",
-        borderRight: "1px solid rgba(203,213,225,0.45)",
-        boxShadow: "4px 0 24px rgba(100,116,139,0.08), inset -1px 0 0 rgba(255,255,255,0.80)",
+        background: "var(--chrome)",
+        backdropFilter: "var(--chrome-blur)",
+        WebkitBackdropFilter: "var(--chrome-blur)",
+        borderRight: "1px solid var(--hairline)",
+        boxShadow: "var(--e1)",
       }}
     >
       {/* Logo */}
-      <div className="flex items-center gap-2.5 px-4 h-16" style={{ borderBottom: "1px solid rgba(203,213,225,0.28)" }}>
+      <div className="flex items-center gap-2.5 px-4 h-16" style={{ borderBottom: "1px solid var(--hairline-soft)" }}>
         <Link href="/" className="flex items-center">
           <Wordmark className="text-base" variant="light" />
         </Link>
@@ -83,29 +85,26 @@ export function CustomerSidebar() {
 
       {/* Find button */}
       <div className="px-3 py-4">
-        <motion.div
-          whileHover={{ scale: 1.02, y: -0.5 }}
-          whileTap={{ scale: 0.975 }}
-          transition={{ type: "spring", stiffness: 420, damping: 26 }}
-          className="glass-shimmer-wrap rounded-xl"
+        <div 
+          className="btn-spring rounded-xl"
         >
           <Link
             href="/search"
             className="flex items-center gap-2.5 w-full px-3 py-2.5 text-sm font-medium rounded-xl"
             style={{
               background: "rgba(203,213,225,0.20)",
-              border: "1px solid rgba(203,213,225,0.55)",
+              border: "1px solid var(--hairline)",
               color: "#334155",
-              boxShadow: "0 0 0 0.5px rgba(203,213,225,0.20), inset 0 1px 0 rgba(255,255,255,0.80)",
+              boxShadow: "var(--e1)",
             }}
           >
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
               <circle cx="11" cy="11" r="8" />
               <path d="m21 21-4.35-4.35" />
             </svg>
-            Zarezerwuj wizytę
+            {c.bookVisit}
           </Link>
-        </motion.div>
+        </div>
       </div>
 
       {/* Nav */}
@@ -117,36 +116,30 @@ export function CustomerSidebar() {
               {isActive && (
                 <span
                   className="absolute left-0 top-[5px] bottom-[5px] w-[3px] rounded-full"
-                  style={{ background: "linear-gradient(180deg, #CBD5E1 0%, #94A3B8 50%, #CBD5E1 100%)" }}
+                  style={{ background: "var(--ink)" }}
                 />
               )}
-              <motion.div
-                whileHover={!isActive ? { x: 1 } : {}}
-                transition={{ type: "spring", stiffness: 400, damping: 30 }}
+              <Link
+                href={item.href}
+                aria-current={isActive ? "page" : undefined}
+                className={`flex items-center gap-3 px-3 min-h-[40px] py-2 rounded-[9px] text-sm font-medium${isActive ? "" : " nav-item"}`}
+                style={isActive ? {
+                  background: "var(--selected)",
+                  color: "#1E293B",
+                } : undefined}
               >
-                <Link
-                  href={item.href}
-                  className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium${isActive ? "" : " nav-item"}`}
-                  style={isActive ? {
-                    background: "rgba(203,213,225,0.22)",
-                    color: "#1E293B",
-                    border: "1px solid rgba(203,213,225,0.50)",
-                    boxShadow: "0 0 0 0.5px rgba(203,213,225,0.20), inset 0 1px 0 rgba(255,255,255,0.90)",
-                  } : undefined}
-                >
-                  <span className="flex-shrink-0" style={{ color: isActive ? "#64748B" : "inherit" }}>
-                    {item.icon}
-                  </span>
-                  {item.label}
-                </Link>
-              </motion.div>
+                <span className="flex-shrink-0" style={{ color: isActive ? "#334155" : "inherit" }}>
+                  {item.icon}
+                </span>
+                {c[item.key]}
+              </Link>
             </div>
           );
         })}
       </nav>
 
       {/* Bottom */}
-      <div className="p-3" style={{ borderTop: "1px solid rgba(203,213,225,0.28)" }}>
+      <div className="p-3" style={{ borderTop: "1px solid var(--hairline-soft)" }}>
         <Link
           href="/customer/profile"
           className="flex items-center gap-3 px-3 py-2 rounded-lg row-hover"
@@ -154,13 +147,13 @@ export function CustomerSidebar() {
         >
           <div
             className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-semibold flex-shrink-0"
-            style={{ background: "rgba(203,213,225,0.25)", border: "1px solid rgba(203,213,225,0.55)", color: "#475569", boxShadow: "inset 0 1px 0 rgba(255,255,255,0.70)" }}
+            style={{ background: "rgba(203,213,225,0.25)", border: "1px solid var(--hairline)", color: "#475569", boxShadow: "inset 0 1px 0 rgba(255,255,255,0.70)" }}
           >
             U
           </div>
           <div className="flex-1 min-w-0">
-            <p className="text-xs font-medium text-slate-700 truncate">Mój profil</p>
-            <p className="text-[10px] text-slate-400 truncate">Edytuj dane</p>
+            <p className="text-xs font-medium text-slate-700 truncate">{c.navProfile}</p>
+            <p className="text-[10px] text-slate-400 truncate">{c.navProfileHint}</p>
           </div>
         </Link>
       </div>

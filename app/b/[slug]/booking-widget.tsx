@@ -17,20 +17,17 @@ interface BookingWidgetProps {
   services: Service[];
 }
 
-const INK = "linear-gradient(180deg, #1E293B 0%, #0F172A 100%)";
+const INK = "var(--ink-raised)";
 
 const CARD: React.CSSProperties = {
-  background: "rgba(255,255,255,0.80)",
-  backdropFilter: "blur(28px) saturate(190%)",
-  WebkitBackdropFilter: "blur(28px) saturate(190%)",
-  border: "1px solid rgba(203,213,225,0.50)",
-  boxShadow:
-    "0 0 0 0.5px rgba(203,213,225,0.35), 0 1px 2px rgba(0,0,0,0.03), 0 8px 24px rgba(100,116,139,0.09), inset 0 1px 0 rgba(255,255,255,0.95)",
+  background: "var(--surface)",
+  border: "1px solid var(--hairline)",
+  boxShadow: "var(--e2)",
 };
 
 const PANEL: React.CSSProperties = {
   background: "rgba(248,250,252,0.85)",
-  border: "1px solid rgba(203,213,225,0.45)",
+  border: "1px solid var(--hairline)",
   boxShadow: "inset 0 1px 0 rgba(255,255,255,0.95)",
 };
 
@@ -43,7 +40,7 @@ export default function BookingWidget({ slug, services }: BookingWidgetProps) {
 
   return (
     <div className="rounded-2xl p-5" style={CARD}>
-      <h2 className="text-base font-bold text-slate-900 mb-4" style={{ letterSpacing: "-0.015em" }}>
+      <h2 className="text-base font-bold text-slate-900 mb-4" style={{ letterSpacing: "var(--track-heading)" }}>
         Zarezerwuj wizytę
       </h2>
 

@@ -6,7 +6,7 @@ import CookieSettingsButton from "./cookie-settings-button";
 export const metadata: Metadata = {
   title: "Polityka Cookies TermCatch",
   description:
-    "Polityka cookies TermCatch — jakich plików cookie i podobnych technologii używamy, w jakim celu, przez jaki czas oraz jak zarządzać zgodą.",
+    "Polityka cookies TermCatch: jakich plików cookie i podobnych technologii używamy, w jakim celu, przez jaki czas oraz jak zarządzać zgodą.",
 };
 
 const E = LEGAL.CONTACT_EMAIL;
@@ -31,7 +31,7 @@ const sections: LegalSection[] = [
     <>
       <div className="my-3 overflow-x-auto rounded-xl border" style={{ borderColor: "rgba(203,213,225,0.6)" }}>
         <table className="w-full text-[13px] border-collapse min-w-[640px]">
-          <thead style={{ background: "rgba(203,213,225,0.18)" }}>
+          <thead style={{ background: "var(--selected)" }}>
             <tr>
               <th className={th}>Nazwa</th>
               <th className={th}>Dostawca</th>

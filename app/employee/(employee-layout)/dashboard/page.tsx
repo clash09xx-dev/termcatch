@@ -9,11 +9,13 @@ import { warsawDateString, warsawDayStartUtc, warsawTimeString } from "@/lib/tim
 import { PageHeader, GlassCard, CardHeader, EmptyState, Overline } from "@/components/ui/glass";
 import { CHIP, HAIRLINE, INK_GRADIENT } from "@/components/ui/glass/tokens";
 import { ApptRow, EMPLOYEE_APPT_SELECT } from "@/components/employee/appt-row";
+import { getServerI18n } from "@/lib/i18n/server";
 
 const CANCELLED: AppointmentStatus[] = ["CANCELLED_CUSTOMER", "CANCELLED_BUSINESS"];
 const WD_LONG = new Intl.DateTimeFormat("en-US", { timeZone: "Europe/Warsaw", weekday: "long" });
 
 export default async function EmployeeDashboard() {
+  const { dict } = await getServerI18n();
   const ctx = await resolveEmployeeContext();
   if (!ctx) redirect("/");
 
@@ -54,12 +56,12 @@ export default async function EmployeeDashboard() {
           <div className="px-5 py-2.5" style={{ background: INK_GRADIENT }}>
             <span className="text-[11px] font-semibold uppercase tracking-wider text-white/80">Następna wizyta · {warsawTimeString(nextAppt.startTime)}</span>
           </div>
-          <ApptRow a={nextAppt} first />
+          <ApptRow statusLabel={dict.statuses[nextAppt.status]} a={nextAppt} first />
         </GlassCard>
       ) : (
         <GlassCard className="p-5">
           <p className="text-sm font-semibold text-slate-800">Brak kolejnych wizyt.</p>
-          <p className="text-xs text-slate-500">Ciesz się wolną chwilą — nowe rezerwacje pojawią się tutaj.</p>
+          <p className="text-xs text-slate-500">Ciesz się wolną chwilą. Nowe rezerwacje pojawią się tutaj.</p>
         </GlassCard>
       )}
 
@@ -89,7 +91,7 @@ export default async function EmployeeDashboard() {
         {todayAppts.length === 0 ? (
           <div className="p-6"><EmptyState icon={<CalIcon />} title="Brak wizyt na dziś" body="Twój dzisiejszy grafik jest pusty." /></div>
         ) : (
-          <div>{todayAppts.map((a, i) => <ApptRow key={a.id} a={a} first={i === 0} />)}</div>
+          <div>{todayAppts.map((a, i) => <ApptRow statusLabel={dict.statuses[a.status]} key={a.id} a={a} first={i === 0} />)}</div>
         )}
       </GlassCard>
 
@@ -99,7 +101,7 @@ export default async function EmployeeDashboard() {
         {tomorrowAppts.length === 0 ? (
           <div className="px-5 py-4"><p className="text-sm text-slate-500">Na jutro nie masz jeszcze wizyt.</p></div>
         ) : (
-          <div>{tomorrowAppts.map((a, i) => <ApptRow key={a.id} a={a} first={i === 0} />)}</div>
+          <div>{tomorrowAppts.map((a, i) => <ApptRow statusLabel={dict.statuses[a.status]} key={a.id} a={a} first={i === 0} />)}</div>
         )}
       </GlassCard>
     </div>

@@ -1,14 +1,15 @@
 import Link from "next/link";
 import type { Insight, InsightSeverity } from "@/lib/ai/insights-types";
 import { GlassCard, Overline } from "@/components/ui/glass";
+import type { Dictionary } from "@/lib/i18n/dictionaries";
 
-const TINT: Record<InsightSeverity, { rail: string; label: string; text: string }> = {
-  warning: { rail: "#E11D48", label: "Wymaga uwagi", text: "#9F1239" },
-  opportunity: { rail: "#0D9488", label: "Szansa", text: "#0F766E" },
-  info: { rail: "#64748B", label: "Obserwacja", text: "#475569" },
+const TINT: Record<InsightSeverity, { rail: string; text: string }> = {
+  warning: { rail: "#E11D48", text: "#9F1239" },
+  opportunity: { rail: "#0D9488", text: "#0F766E" },
+  info: { rail: "#64748B", text: "#475569" },
 };
 
-export function InsightCard({ insight }: { insight: Insight }) {
+export function InsightCard({ insight, severityLabels }: { insight: Insight; severityLabels: Dictionary["insightSeverity"] }) {
   const tint = TINT[insight.severity];
   return (
     <GlassCard className="relative overflow-hidden p-4">
@@ -16,10 +17,10 @@ export function InsightCard({ insight }: { insight: Insight }) {
       <div className="pl-2">
         <div className="flex items-center justify-between gap-2">
           <Overline>
-            <span style={{ color: tint.text }}>{tint.label}</span>
+            <span style={{ color: tint.text }}>{severityLabels[insight.severity]}</span>
           </Overline>
           {insight.metric && (
-            <span className="text-lg font-bold text-slate-900 tabular-nums" style={{ letterSpacing: "-0.02em" }}>
+            <span className="text-lg font-bold text-slate-900 tabular-nums" style={{ letterSpacing: "var(--track-title)" }}>
               {insight.metric}
             </span>
           )}
@@ -42,12 +43,12 @@ export function InsightCard({ insight }: { insight: Insight }) {
   );
 }
 
-export function InsightCards({ insights, className }: { insights: Insight[]; className?: string }) {
+export function InsightCards({ insights, severityLabels, className }: { insights: Insight[]; severityLabels: Dictionary["insightSeverity"]; className?: string }) {
   if (insights.length === 0) return null;
   return (
     <div className={className ?? "grid gap-3 sm:grid-cols-2 lg:grid-cols-3"}>
       {insights.map((i) => (
-        <InsightCard key={i.id} insight={i} />
+        <InsightCard key={i.id} insight={i} severityLabels={severityLabels} />
       ))}
     </div>
   );

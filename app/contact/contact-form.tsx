@@ -2,16 +2,17 @@
 
 import { useActionState } from "react";
 import { submitContactAction, type ContactState } from "@/lib/actions/contact";
+import { INK_BTN } from "@/components/ui/glass/tokens";
 
 const initialState: ContactState = {};
 
 const inputCls =
-  "w-full px-3.5 py-2.5 text-sm rounded-xl transition-all outline-none" +
+  "w-full px-3.5 py-2.5 text-sm rounded-xl transition-colors outline-none" +
   " placeholder:text-[#94A3B8] text-[#0F172A]";
 
 const inputStyle: React.CSSProperties = {
-  background: "rgba(255,255,255,0.80)",
-  border: "1px solid rgba(203,213,225,0.60)",
+  background: "var(--surface)",
+  border: "1px solid var(--hairline)",
   boxShadow: "0 1px 2px rgba(0,0,0,0.04), inset 0 1.5px 3px rgba(0,0,0,0.04)",
 };
 
@@ -29,29 +30,26 @@ export default function ContactForm() {
   if (state.success) {
     return (
       <div
-        className="p-8 text-center glass-shimmer-wrap"
+        className="p-8 text-center"
         style={{
-          background: "rgba(255,255,255,0.72)",
-          backdropFilter: "blur(40px) saturate(200%)",
-          WebkitBackdropFilter: "blur(40px) saturate(200%)",
-          border: "1px solid rgba(203,213,225,0.55)",
+          background: "var(--surface)",
+          border: "1px solid var(--hairline)",
           borderRadius: "1.25rem",
-          boxShadow:
-            "0 0 0 0.5px rgba(203,213,225,0.45), 0 1px 2px rgba(0,0,0,0.04), 0 6px 20px rgba(100,116,139,0.09), inset 0 1px 0 rgba(255,255,255,0.95)",
+          boxShadow: "var(--e2)",
         }}
       >
         <div
           className="w-14 h-14 rounded-2xl flex items-center justify-center mx-auto mb-4"
           style={{
-            background: "rgba(203,213,225,0.30)",
-            border: "1px solid rgba(203,213,225,0.50)",
+            background: "var(--selected)",
+            border: "1px solid var(--hairline)",
           }}
         >
           <svg className="w-7 h-7" viewBox="0 0 24 24" fill="none" stroke="#64748B" strokeWidth={2}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75 11.25 15 15 9.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
           </svg>
         </div>
-        <h2 className="text-lg font-semibold mb-1" style={{ color: "#0F172A", letterSpacing: "-0.02em" }}>
+        <h2 className="text-lg font-semibold mb-1" style={{ color: "#0F172A", letterSpacing: "var(--track-title)" }}>
           Wiadomość wysłana
         </h2>
         <p className="text-sm" style={{ color: "#64748B" }}>{state.success}</p>
@@ -61,20 +59,17 @@ export default function ContactForm() {
 
   return (
     <div
-      className="p-8 glass-shimmer-wrap"
+      className="p-8"
       style={{
-        background: "rgba(255,255,255,0.72)",
-        backdropFilter: "blur(40px) saturate(200%)",
-        WebkitBackdropFilter: "blur(40px) saturate(200%)",
-        border: "1px solid rgba(203,213,225,0.55)",
+        background: "var(--surface)",
+        border: "1px solid var(--hairline)",
         borderRadius: "1.25rem",
-        boxShadow:
-          "0 0 0 0.5px rgba(203,213,225,0.45), 0 1px 2px rgba(0,0,0,0.04), 0 6px 20px rgba(100,116,139,0.09), 0 20px 48px rgba(100,116,139,0.05), inset 0 1px 0 rgba(255,255,255,0.95), inset 0 -1px 0 rgba(203,213,225,0.10)",
+        boxShadow: "var(--e3)",
       }}
     >
       <h2
         className="text-lg font-semibold mb-6"
-        style={{ color: "#0F172A", letterSpacing: "-0.02em" }}
+        style={{ color: "#0F172A", letterSpacing: "var(--track-title)" }}
       >
         Napisz do nas
       </h2>
@@ -184,12 +179,10 @@ export default function ContactForm() {
         <button
           type="submit"
           disabled={isPending}
-          className="w-full py-2.5 text-sm font-semibold rounded-xl btn-spring glass-shimmer-wrap"
+          className="w-full py-[11px] min-h-[44px] text-sm font-semibold rounded-[10px] btn-spring"
+          data-on-ink
           style={{
-            background: "linear-gradient(135deg, #CBD5E1 0%, #94A3B8 50%, #CBD5E1 100%)",
-            color: "#0F172A",
-            border: "1px solid rgba(148,163,184,0.45)",
-            boxShadow: "0 1px 2px rgba(0,0,0,0.10), inset 0 1px 0 rgba(255,255,255,0.40)",
+            ...INK_BTN,
             opacity: isPending ? 0.6 : 1,
             cursor: isPending ? "not-allowed" : "pointer",
           }}

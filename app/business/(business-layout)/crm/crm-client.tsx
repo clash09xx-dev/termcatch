@@ -2,7 +2,12 @@
 
 import { useState, useMemo } from "react";
 import { useSearchParams } from "next/navigation";
-import { formatCurrency, getInitials, formatRelativeTime, formatDate } from "@/lib/utils";
+import { getInitials } from "@/lib/utils";
+import { useT, useLocale } from "@/components/i18n/i18n-provider";
+import { formatCurrency as fmtMoney, formatDate as fmtDate, formatRelative } from "@/lib/i18n/format";
+import { interpolate } from "@/lib/i18n/dictionaries";
+import type { Dictionary } from "@/lib/i18n/dictionaries";
+import type { Locale } from "@/lib/i18n/config";
 import type { CustomerSummary } from "./page";
 import {
   PageHeader, GlassCard, EmptyState, StatusBadge, ChromeAvatar, InkLink, GlassLink,
@@ -13,20 +18,20 @@ import { cn } from "@/lib/utils";
 
 const DAY = 86400_000;
 
-function displayContact(c: { email: string; phone: string | null }): string {
-  if (c.email.endsWith("@termcatch.local")) return c.phone ?? "dodano ręcznie";
+function displayContact(c: { email: string; phone: string | null }, manual: string): string {
+  if (c.email.endsWith("@termcatch.local")) return c.phone ?? manual;
   return c.phone ?? c.email;
 }
 function ageDays(iso: string | null): number | null {
   if (!iso) return null;
   return Math.floor((Date.now() - new Date(iso).getTime()) / DAY);
 }
-function freshness(c: CustomerSummary): { color: string; label: string } {
+function freshness(c: CustomerSummary, T: Dictionary["pages"]["crm"]): { color: string; label: string } {
   const a = ageDays(c.lastVisit);
-  if (a === null) return { color: "#CBD5E1", label: "—" };
-  if (a <= 30) return { color: "#059669", label: "aktywny" };
-  if (a <= 60) return { color: "#D97706", label: "stygnie" };
-  return { color: "#94A3B8", label: "uśpiony" };
+  if (a === null) return { color: "#CBD5E1", label: "" };
+  if (a <= 30) return { color: "#059669", label: T.fresh };
+  if (a <= 60) return { color: "#D97706", label: T.cooling };
+  return { color: "#94A3B8", label: T.dormant };
 }
 type Segment = "all" | "new" | "returning" | "dormant";
 function segmentOf(c: CustomerSummary): Segment[] {
@@ -39,6 +44,9 @@ function segmentOf(c: CustomerSummary): Segment[] {
 }
 
 export function CrmClient({ customers }: { customers: CustomerSummary[] }) {
+  const t = useT();
+  const T = t.pages.crm;
+  const locale = useLocale();
   const searchParams = useSearchParams();
   const [search, setSearch] = useState(searchParams.get("q") ?? "");
   const [segment, setSegment] = useState<Segment>("all");
@@ -64,42 +72,42 @@ export function CrmClient({ customers }: { customers: CustomerSummary[] }) {
       return (`${c.firstName} ${c.lastName}`.toLowerCase().includes(q) || c.email.toLowerCase().includes(q) || (c.phone ?? "").includes(q));
     });
     return [...filtered].sort((a, b) => {
-      if (sort === "firstName") return a.firstName.localeCompare(b.firstName, "pl") || a.lastName.localeCompare(b.lastName, "pl");
-      if (sort === "lastName") return a.lastName.localeCompare(b.lastName, "pl") || a.firstName.localeCompare(b.firstName, "pl");
+      if (sort === "firstName") return a.firstName.localeCompare(b.firstName, locale) || a.lastName.localeCompare(b.lastName, locale);
+      if (sort === "lastName") return a.lastName.localeCompare(b.lastName, locale) || a.firstName.localeCompare(b.firstName, locale);
       return b.totalSpent - a.totalSpent; // default: by value
     });
-  }, [customers, search, segment, sort]);
+  }, [customers, search, segment, sort, locale]);
 
   const selected = customers.find((c) => c.id === selectedId) ?? null;
 
   return (
     <div className="max-w-6xl mx-auto space-y-5">
       <PageHeader
-        title="Klienci"
-        subtitle={<span className="tabular-nums">{customers.length} {customers.length === 1 ? "klient" : "w bazie"}</span>}
+        title={T.title}
+        subtitle={<span className="tabular-nums">{customers.length} {customers.length === 1 ? T.one : T.many}</span>}
       />
 
       {/* Controls */}
       <div className="fade-rise fade-rise-d1 flex flex-col sm:flex-row gap-3 sm:items-center">
         <div className="relative flex-1 max-w-sm">
           <svg className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}><circle cx="11" cy="11" r="8" /><path d="m21 21-4.35-4.35" /></svg>
-          <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Szukaj klienta…" aria-label="Szukaj klienta" className="input-glass w-full pl-10 pr-3.5 py-2.5 text-sm rounded-xl outline-none placeholder:text-slate-400 text-slate-800" />
+          <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder={T.searchPh} aria-label={T.searchAria} className="input-glass w-full pl-10 pr-3.5 py-2.5 text-sm rounded-xl outline-none placeholder:text-slate-400 text-slate-800" />
         </div>
         <Segmented
-          ariaLabel="Segment klientów" idBase="crm-seg" size="sm" value={segment} onChange={(v) => setSegment(v as Segment)}
+          ariaLabel={T.segmentAria} idBase="crm-seg" size="sm" value={segment} onChange={(v) => setSegment(v as Segment)}
           options={[
-            { value: "all", label: "Wszyscy", count: counts.all },
-            { value: "returning", label: "Wracający", count: counts.returning },
-            { value: "new", label: "Nowi", count: counts.new },
-            { value: "dormant", label: "Uśpieni", count: counts.dormant },
+            { value: "all", label: T.segAll, count: counts.all },
+            { value: "returning", label: T.segReturning, count: counts.returning },
+            { value: "new", label: T.segNew, count: counts.new },
+            { value: "dormant", label: T.segDormant, count: counts.dormant },
           ]}
         />
         <Segmented
-          ariaLabel="Sortowanie klientów" idBase="crm-sort" size="sm" value={sort} onChange={(v) => setSort(v as typeof sort)}
+          ariaLabel={T.sortAria} idBase="crm-sort" size="sm" value={sort} onChange={(v) => setSort(v as typeof sort)}
           options={[
-            { value: "spend", label: "Wg wartości" },
-            { value: "firstName", label: "Imię A–Z" },
-            { value: "lastName", label: "Nazwisko A–Z" },
+            { value: "spend", label: T.sortValue },
+            { value: "firstName", label: T.sortFirst },
+            { value: "lastName", label: T.sortLast },
           ]}
         />
       </div>
@@ -108,9 +116,9 @@ export function CrmClient({ customers }: { customers: CustomerSummary[] }) {
         <GlassCard className="fade-rise fade-rise-d2">
           <EmptyState
             icon={<svg className="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5}><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" /></svg>}
-            title="Brak klientów"
-            body="Klienci pojawią się tu po pierwszej rezerwacji — online albo dodanej ręcznie."
-            action={<InkLink href="/business/calendar?action=new" size="sm">Zapisz pierwszego klienta</InkLink>}
+            title={T.emptyTitle}
+            body={T.emptyBody}
+            action={<InkLink href="/business/calendar?action=new" size="sm">{T.emptyAction}</InkLink>}
           />
         </GlassCard>
       ) : (
@@ -120,18 +128,18 @@ export function CrmClient({ customers }: { customers: CustomerSummary[] }) {
             list={
               <GlassCard className="overflow-hidden">
                 {list.length === 0 ? (
-                  <p className="px-5 py-8 text-center text-sm text-slate-500">Brak klientów w tym segmencie.</p>
+                  <p className="px-5 py-8 text-center text-sm text-slate-500">{T.emptySegment}</p>
                 ) : (
-                  <div className="max-h-[calc(100vh-260px)] overflow-y-auto">
+                  <div className="max-h-[calc(100dvh-260px)] overflow-y-auto">
                     {list.map((c, i) => {
-                      const f = freshness(c);
+                      const f = freshness(c, T);
                       const active = c.id === selectedId;
                       return (
                         <button
                           key={c.id}
                           onClick={() => setSelectedId(c.id)}
                           className={cn("w-full flex items-center gap-3 px-4 py-3 text-left transition-colors", active ? "" : "row-hover")}
-                          style={{ ...(i > 0 ? { borderTop: HAIRLINE } : {}), ...(active ? { background: "rgba(203,213,225,0.28)" } : {}) }}
+                          style={{ ...(i > 0 ? { borderTop: HAIRLINE } : {}), ...(active ? { background: "var(--selected)" } : {}) }}
                         >
                           <span className="relative flex-shrink-0">
                             <ChromeAvatar initials={getInitials(c.firstName, c.lastName)} />
@@ -139,9 +147,9 @@ export function CrmClient({ customers }: { customers: CustomerSummary[] }) {
                           </span>
                           <div className="flex-1 min-w-0">
                             <p className="text-sm font-semibold text-slate-900 truncate">{c.firstName} {c.lastName}</p>
-                            <p className="text-xs text-slate-500 truncate tabular-nums">{c.totalAppointments} {c.totalAppointments === 1 ? "wizyta" : "wizyt"}{c.lastVisit && ` · ${formatRelativeTime(new Date(c.lastVisit))}`}</p>
+                            <p className="text-xs text-slate-500 truncate tabular-nums">{c.totalAppointments} {c.totalAppointments === 1 ? T.visitOne : T.visitMany}{c.lastVisit && ` · ${formatRelative(new Date(c.lastVisit), locale, t.common.justNow)}`}</p>
                           </div>
-                          <span className="text-sm font-bold text-slate-900 tabular-nums flex-shrink-0">{formatCurrency(c.totalSpent)}</span>
+                          <span className="text-sm font-bold text-slate-900 tabular-nums flex-shrink-0">{fmtMoney(c.totalSpent, locale)}</span>
                         </button>
                       );
                     })}
@@ -151,12 +159,12 @@ export function CrmClient({ customers }: { customers: CustomerSummary[] }) {
             }
             detail={
               selected ? (
-                <ClientProfile customer={selected} onBack={() => setSelectedId(null)} />
+                <ClientProfile customer={selected} onBack={() => setSelectedId(null)} t={t} locale={locale} />
               ) : (
                 <DetailEmpty
                   icon={<svg className="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5}><circle cx="12" cy="8" r="4" /><path d="M4 21a8 8 0 0 1 16 0" /></svg>}
-                  title="Wybierz klienta"
-                  body="Kliknij osobę z listy, aby zobaczyć historię wizyt, wartość i sugestię kolejnego kroku."
+                  title={T.pickTitle}
+                  body={T.pickBody}
                 />
               )
             }
@@ -167,20 +175,27 @@ export function CrmClient({ customers }: { customers: CustomerSummary[] }) {
   );
 }
 
-function ClientProfile({ customer: c, onBack }: { customer: CustomerSummary; onBack: () => void }) {
+function ClientProfile({ customer: c, onBack, t, locale }: { customer: CustomerSummary; onBack: () => void; t: Dictionary; locale: Locale }) {
+  const T = t.pages.crm;
+  const ago = (iso: string) => formatRelative(new Date(iso), locale, t.common.justNow);
   const a = ageDays(c.lastVisit);
   const dormant = a !== null && a > 60 && c.completedCount >= 1;
 
   // Honest, history-based next step (never a prediction)
   let suggestion: { text: string; strong?: string } | null = null;
   if (dormant) {
-    suggestion = { text: c.cadenceDays ? `Nie było od ${formatRelativeTime(new Date(c.lastVisit!))} — zwykle wraca co ~${c.cadenceDays} dni.` : `Nie było od ${formatRelativeTime(new Date(c.lastVisit!))}.`, strong: "Dobry moment na zaproszenie z powrotem." };
+    suggestion = {
+      text: c.cadenceDays
+        ? interpolate(T.sugDormantCadence, { ago: ago(c.lastVisit!), days: c.cadenceDays })
+        : interpolate(T.sugDormant, { ago: ago(c.lastVisit!) }),
+      strong: T.sugDormantStrong,
+    };
   } else if (c.upcomingCount > 0) {
-    suggestion = { text: `Ma ${c.upcomingCount} ${c.upcomingCount === 1 ? "nadchodzącą wizytę" : "nadchodzące wizyty"}.` };
+    suggestion = { text: interpolate(c.upcomingCount === 1 ? T.sugUpcomingOne : T.sugUpcomingMany, { n: c.upcomingCount }) };
   } else if (c.totalAppointments === 1) {
-    suggestion = { text: "Nowy klient — jedna wizyta.", strong: "Zadbaj o powrót." };
+    suggestion = { text: T.sugNew, strong: T.sugNewStrong };
   } else if (c.cadenceDays) {
-    suggestion = { text: `Bywa regularnie, co ~${c.cadenceDays} dni.` };
+    suggestion = { text: interpolate(T.sugCadence, { days: c.cadenceDays }) };
   }
 
   return (
@@ -188,21 +203,21 @@ function ClientProfile({ customer: c, onBack }: { customer: CustomerSummary; onB
       {/* Header */}
       <div className="p-5" style={{ borderBottom: HAIRLINE }}>
         <div className="flex items-start gap-4">
-          <button onClick={onBack} className="lg:hidden icon-btn p-2 -ml-2 rounded-lg flex-shrink-0" style={{ color: "#94A3B8" }} aria-label="Wróć do listy">
+          <button onClick={onBack} className="lg:hidden icon-btn p-2 -ml-2 rounded-lg flex-shrink-0" style={{ color: "#94A3B8" }} aria-label={T.backToList}>
             <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}><path d="m15 18-6-6 6-6" /></svg>
           </button>
           <ChromeAvatar size="lg" initials={getInitials(c.firstName, c.lastName)} />
           <div className="flex-1 min-w-0">
-            <h2 className="text-lg font-bold text-slate-900" style={{ letterSpacing: "-0.01em" }}>{c.firstName} {c.lastName}</h2>
-            <p className="text-sm text-slate-500 truncate">{displayContact(c)}</p>
+            <h2 className="text-lg font-bold text-slate-900" style={{ letterSpacing: "var(--track-heading)" }}>{c.firstName} {c.lastName}</h2>
+            <p className="text-sm text-slate-500 truncate">{displayContact(c, T.addedManually)}</p>
           </div>
-          <InkLink href="/business/calendar?action=new" size="sm" className="flex-shrink-0">Umów</InkLink>
+          <InkLink href="/business/calendar?action=new" size="sm" className="flex-shrink-0">{T.book}</InkLink>
         </div>
         {/* Stat chips */}
         <div className="grid grid-cols-3 gap-2 mt-4">
-          <Stat label="Wizyty" value={c.completedCount} sub={`${c.totalAppointments} łącznie`} />
-          <Stat label="Wartość" value={formatCurrency(c.totalSpent)} />
-          <Stat label="No-show" value={c.noShowCount} tone={c.noShowCount > 0 ? "warn" : undefined} />
+          <Stat label={T.statVisits} value={c.completedCount} sub={interpolate(T.statTotal, { n: c.totalAppointments })} />
+          <Stat label={T.statValue} value={fmtMoney(c.totalSpent, locale)} />
+          <Stat label={T.statNoShow} value={c.noShowCount} tone={c.noShowCount > 0 ? "warn" : undefined} />
         </div>
       </div>
 
@@ -220,21 +235,21 @@ function ClientProfile({ customer: c, onBack }: { customer: CustomerSummary; onB
 
       {/* Visit history */}
       <div className="p-5">
-        <Overline className="mb-3">Historia wizyt</Overline>
+        <Overline className="mb-3">{T.historyTitle}</Overline>
         {c.appointments.length === 0 ? (
-          <p className="text-sm text-slate-500">Brak wizyt.</p>
+          <p className="text-sm text-slate-500">{T.noVisits}</p>
         ) : (
           <Timeline>
             {c.appointments.map((v, i) => {
               const rail = STATUS_TINT[v.status as StatusKey]?.rail ?? "#94A3B8";
               return (
-                <TimelineRow key={v.id} time={formatDate(new Date(v.startTime), { day: "numeric", month: "short" })} sub={new Date(v.startTime).getFullYear() !== new Date().getFullYear() ? String(new Date(v.startTime).getFullYear()) : undefined} dotColor={rail} connector={i < c.appointments.length - 1}>
+                <TimelineRow key={v.id} time={fmtDate(new Date(v.startTime), locale, { day: "numeric", month: "short" })} sub={new Date(v.startTime).getFullYear() !== new Date().getFullYear() ? String(new Date(v.startTime).getFullYear()) : undefined} dotColor={rail} connector={i < c.appointments.length - 1}>
                   <div className="flex items-center justify-between gap-3 pb-1">
                     <div className="min-w-0">
                       <p className="text-sm font-medium text-slate-800 truncate">{v.service.name}</p>
-                      <StatusBadge status={v.status} className="mt-1" />
+                      <StatusBadge status={v.status} label={t.statuses[v.status as keyof Dictionary["statuses"]] ?? v.status} className="mt-1" />
                     </div>
-                    <span className="text-sm font-semibold text-slate-900 tabular-nums flex-shrink-0">{formatCurrency(v.price)}</span>
+                    <span className="text-sm font-semibold text-slate-900 tabular-nums flex-shrink-0">{fmtMoney(v.price, locale)}</span>
                   </div>
                 </TimelineRow>
               );

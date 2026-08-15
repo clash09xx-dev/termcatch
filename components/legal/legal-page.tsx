@@ -27,11 +27,9 @@ const BG = [
 ].join(", ");
 
 const CARD: React.CSSProperties = {
-  background: "rgba(255,255,255,0.82)",
-  backdropFilter: "blur(20px) saturate(180%)",
-  WebkitBackdropFilter: "blur(20px) saturate(180%)",
-  border: "1px solid rgba(203,213,225,0.55)",
-  boxShadow: "0 0 0 0.5px rgba(203,213,225,0.35), inset 0 1px 0 rgba(255,255,255,0.9)",
+  background: "var(--surface)",
+  border: "1px solid var(--hairline)",
+  boxShadow: "var(--e1)",
 };
 
 function SectionBody({ body }: { body: LegalSection["body"] }) {
@@ -76,7 +74,7 @@ export function LegalPage({
       <main className="max-w-[1120px] mx-auto px-4 sm:px-6 pt-28 pb-12 sm:pb-16">
         {/* Header */}
         <header className="mb-8 sm:mb-10">
-          <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 tracking-tight" style={{ letterSpacing: "-0.02em" }}>
+          <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 tracking-tight" style={{ letterSpacing: "var(--track-title)" }}>
             {title}
           </h1>
           {subtitle && <p className="mt-2 text-sm text-slate-500">{subtitle}</p>}
@@ -113,7 +111,7 @@ export function LegalPage({
                 <TocList sections={sections} className="mt-3" />
               </details>
             </div>
-            <div className="hidden lg:block sticky top-24 self-start max-h-[calc(100vh-7rem)] overflow-auto rounded-2xl p-4" style={CARD}>
+            <div className="hidden lg:block sticky top-24 self-start max-h-[calc(100dvh-7rem)] overflow-auto rounded-2xl p-4" style={CARD}>
               <p className="text-xs font-semibold uppercase tracking-[0.1em] text-slate-500 mb-3">Spis treści</p>
               <TocList sections={sections} />
             </div>
@@ -128,7 +126,7 @@ export function LegalPage({
               </section>
             ))}
 
-            <p className="mt-10 pt-6 text-xs text-slate-400 leading-relaxed" style={{ borderTop: "1px solid rgba(203,213,225,0.5)" }}>
+            <p className="mt-10 pt-6 text-xs text-slate-400 leading-relaxed" style={{ borderTop: "1px solid var(--hairline)" }}>
               Dokument dotyczy platformy {LEGAL.BRAND} ({LEGAL.DOMAIN}). W razie rozbieżności językowych wiążąca jest
               wersja polska. Kontakt: {LEGAL.CONTACT_EMAIL}.
             </p>

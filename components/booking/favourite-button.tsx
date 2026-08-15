@@ -4,6 +4,7 @@ import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { toggleFavourite } from "@/lib/actions/favourites";
 import { cn } from "@/lib/utils";
+import { useT } from "@/components/i18n/i18n-provider";
 
 interface FavouriteButtonProps {
   businessId: string;
@@ -21,6 +22,7 @@ export default function FavouriteButton({
   size = "md",
   className,
 }: FavouriteButtonProps) {
+  const c = useT().customer;
   const router = useRouter();
   const [isFav, setIsFav] = useState(initialIsFavourite);
   const [isPending, startTransition] = useTransition();
@@ -51,11 +53,11 @@ export default function FavouriteButton({
       type="button"
       onClick={handleClick}
       disabled={isPending}
-      aria-label={isFav ? "Usuń z ulubionych" : "Dodaj do ulubionych"}
-      title={isFav ? "Usuń z ulubionych" : "Dodaj do ulubionych"}
+      aria-label={isFav ? c.favRemove : c.favAdd}
+      title={isFav ? c.favRemove : c.favAdd}
       className={cn(
         box,
-        "flex items-center justify-center border transition-all active:scale-90",
+        "flex items-center justify-center border transition-colors active:scale-90",
         isFav
           ? "bg-red-50 border-red-100 text-red-500 hover:bg-red-100"
           : "bg-white border-gray-200 text-gray-400 hover:text-gray-600 hover:border-gray-300",

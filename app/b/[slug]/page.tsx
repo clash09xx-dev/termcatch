@@ -183,7 +183,7 @@ export async function generateMetadata({
   const description =
     business.metaDescription ??
     business.shortDescription ??
-    `Umów wizytę online w ${business.name} (${categoryLabel}, ${business.city}). Sprawdź usługi, ceny i wolne terminy — rezerwacja 24/7 przez TermCatch.`;
+    `Umów wizytę online w ${business.name} (${categoryLabel}, ${business.city}). Sprawdź usługi, ceny i wolne terminy. Rezerwacja 24/7 przez TermCatch.`;
 
   return {
     title,
@@ -333,21 +333,19 @@ export default async function BusinessProfilePage({
   };
 
   const glassCard = {
-    background: "rgba(255,255,255,0.72)",
-    backdropFilter: "blur(36px) saturate(200%)",
-    WebkitBackdropFilter: "blur(36px) saturate(200%)",
-    border: "1px solid rgba(203,213,225,0.45)",
-    boxShadow: "0 0 0 0.5px rgba(203,213,225,0.30), 0 1px 2px rgba(0,0,0,0.03), 0 6px 20px rgba(100,116,139,0.08), inset 0 1px 0 rgba(255,255,255,0.95), inset 0 -1px 0 rgba(203,213,225,0.08)",
+    background: "var(--surface)",
+    border: "1px solid var(--hairline)",
+    boxShadow: "var(--e2)",
   } as React.CSSProperties;
 
   // Solid-white row card — repeats in lists, so no backdrop blur (perf)
   const rowCard = {
-    background: "rgba(255,255,255,0.80)",
-    border: "1px solid rgba(203,213,225,0.45)",
-    boxShadow: "0 0 0 0.5px rgba(203,213,225,0.22), 0 1px 2px rgba(0,0,0,0.02), 0 4px 14px rgba(100,116,139,0.06), inset 0 1px 0 rgba(255,255,255,0.92)",
+    background: "var(--surface)",
+    border: "1px solid var(--hairline)",
+    boxShadow: "var(--e1)",
   } as React.CSSProperties;
 
-  const INK = "linear-gradient(180deg, #1E293B 0%, #0F172A 100%)";
+  const INK = "var(--ink-raised)";
 
   return (
     <div
@@ -383,7 +381,7 @@ export default async function BusinessProfilePage({
       <div className="max-w-6xl mx-auto px-4 sm:px-6">
         <div
           className="fade-rise relative -mt-10 flex items-end gap-4 sm:gap-5 pb-6"
-          style={{ borderBottom: "1px solid rgba(203,213,225,0.28)" }}
+          style={{ borderBottom: "1px solid var(--hairline-soft)" }}
         >
           {/* Logo */}
           <div
@@ -417,7 +415,7 @@ export default async function BusinessProfilePage({
             <div className="flex flex-wrap items-center gap-2 mb-1.5">
               <span
                 className="inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-medium"
-                style={{ background: "rgba(203,213,225,0.22)", border: "1px solid rgba(203,213,225,0.50)", color: "#475569", boxShadow: "inset 0 1px 0 rgba(255,255,255,0.70)" }}
+                style={{ background: "var(--selected)", border: "1px solid var(--hairline)", color: "#475569", boxShadow: "inset 0 1px 0 rgba(255,255,255,0.70)" }}
               >
                 {categoryLabel}
               </span>
@@ -427,7 +425,7 @@ export default async function BusinessProfilePage({
                   style={
                     openStatus.open
                       ? { background: "rgba(16,185,129,0.10)", border: "1px solid rgba(16,185,129,0.25)", color: "#047857" }
-                      : { background: "rgba(203,213,225,0.18)", border: "1px solid rgba(203,213,225,0.45)", color: "#64748B" }
+                      : { background: "var(--selected)", border: "1px solid var(--hairline)", color: "#64748B" }
                   }
                 >
                   <span
@@ -438,7 +436,7 @@ export default async function BusinessProfilePage({
                 </span>
               )}
             </div>
-            <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 leading-tight" style={{ letterSpacing: "-0.03em" }}>
+            <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 leading-tight" style={{ letterSpacing: "var(--track-display)" }}>
               {business.name}
             </h1>
             <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 mt-2">
@@ -447,7 +445,7 @@ export default async function BusinessProfilePage({
               ) : (
                 <span
                   className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold"
-                  style={{ background: "rgba(255,255,255,0.70)", border: "1px solid rgba(203,213,225,0.55)", color: "#475569", boxShadow: "inset 0 1px 0 rgba(255,255,255,0.90)" }}
+                  style={{ background: "var(--surface)", border: "1px solid var(--hairline)", color: "#475569", boxShadow: "inset 0 1px 0 rgba(255,255,255,0.90)" }}
                 >
                   Nowy salon
                 </span>
@@ -483,7 +481,7 @@ export default async function BusinessProfilePage({
           <div className="flex-1 min-w-0 space-y-10">
             {/* Services */}
             <section className="fade-rise fade-rise-d1">
-              <h2 className="text-lg font-bold text-slate-900 mb-4" style={{ letterSpacing: "-0.025em" }}>Usługi</h2>
+              <h2 className="text-lg font-bold text-slate-900 mb-4" style={{ letterSpacing: "var(--track-title)" }}>Usługi</h2>
               {business.services.length === 0 ? (
                 <div className="rounded-2xl p-8 text-center" style={glassCard}>
                   <p className="text-slate-500 text-sm">Ten salon nie dodał jeszcze usług.</p>
@@ -497,7 +495,7 @@ export default async function BusinessProfilePage({
                       style={rowCard}
                     >
                       <div className="flex-1 min-w-0">
-                        <p className="text-[15px] font-semibold text-slate-900" style={{ letterSpacing: "-0.01em" }}>
+                        <p className="text-[15px] font-semibold text-slate-900" style={{ letterSpacing: "var(--track-heading)" }}>
                           {service.name}
                         </p>
                         {service.description && (
@@ -515,12 +513,12 @@ export default async function BusinessProfilePage({
                           {service.discountedPrice ? (
                             <div className="flex items-baseline gap-2">
                               <span className="text-xs text-slate-400 line-through tabular-nums">{formatCurrency(service.price)}</span>
-                              <span className="text-base font-bold text-slate-900 tabular-nums" style={{ letterSpacing: "-0.01em" }}>
+                              <span className="text-base font-bold text-slate-900 tabular-nums" style={{ letterSpacing: "var(--track-heading)" }}>
                                 {formatCurrency(service.discountedPrice)}
                               </span>
                             </div>
                           ) : (
-                            <span className="text-base font-bold text-slate-900 tabular-nums" style={{ letterSpacing: "-0.01em" }}>
+                            <span className="text-base font-bold text-slate-900 tabular-nums" style={{ letterSpacing: "var(--track-heading)" }}>
                               {formatCurrency(service.price)}
                             </span>
                           )}
@@ -529,10 +527,10 @@ export default async function BusinessProfilePage({
                           href={`/b/${slug}/book?serviceId=${service.id}`}
                           className="btn-spring px-4 py-2 rounded-xl text-xs font-semibold whitespace-nowrap"
                           style={{
-                            background: "rgba(203,213,225,0.22)",
-                            border: "1px solid rgba(203,213,225,0.55)",
+                            background: "var(--selected)",
+                            border: "1px solid var(--hairline)",
                             color: "#334155",
-                            boxShadow: "0 0 0 0.5px rgba(203,213,225,0.20), inset 0 1px 0 rgba(255,255,255,0.80)",
+                            boxShadow: "var(--e1)",
                           }}
                         >
                           Umów
@@ -547,7 +545,7 @@ export default async function BusinessProfilePage({
             {/* About */}
             {(business.description || business.shortDescription) && (
               <section className="fade-rise fade-rise-d2">
-                <h2 className="text-lg font-bold text-slate-900 mb-4" style={{ letterSpacing: "-0.025em" }}>O nas</h2>
+                <h2 className="text-lg font-bold text-slate-900 mb-4" style={{ letterSpacing: "var(--track-title)" }}>O nas</h2>
                 <div className="rounded-2xl p-5" style={glassCard}>
                   <p className="text-sm text-slate-600 leading-relaxed whitespace-pre-line">
                     {business.description ?? business.shortDescription}
@@ -559,13 +557,13 @@ export default async function BusinessProfilePage({
             {/* Gallery */}
             {business.images.length > 0 && (
               <section className="fade-rise fade-rise-d2">
-                <h2 className="text-lg font-bold text-slate-900 mb-4" style={{ letterSpacing: "-0.025em" }}>Galeria</h2>
+                <h2 className="text-lg font-bold text-slate-900 mb-4" style={{ letterSpacing: "var(--track-title)" }}>Galeria</h2>
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
                   {business.images.map((src, i) => (
                     <div
                       key={`${src}-${i}`}
                       className="relative aspect-[4/3] rounded-xl overflow-hidden"
-                      style={{ border: "1px solid rgba(203,213,225,0.45)", boxShadow: "0 1px 2px rgba(0,0,0,0.03), 0 4px 14px rgba(100,116,139,0.07)" }}
+                      style={{ border: "1px solid var(--hairline)", boxShadow: "var(--e1)" }}
                     >
                       {/* eslint-disable-next-line @next/next/no-img-element */}
                       <img
@@ -583,7 +581,7 @@ export default async function BusinessProfilePage({
             {/* Team */}
             {business.employees.length > 0 && (
               <section className="fade-rise fade-rise-d3">
-                <h2 className="text-lg font-bold text-slate-900 mb-4" style={{ letterSpacing: "-0.025em" }}>Zespół</h2>
+                <h2 className="text-lg font-bold text-slate-900 mb-4" style={{ letterSpacing: "var(--track-title)" }}>Zespół</h2>
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
                   {business.employees.map((employee) => (
                     <div
@@ -597,7 +595,7 @@ export default async function BusinessProfilePage({
                           src={employee.avatarUrl}
                           alt=""
                           className="w-12 h-12 rounded-xl object-cover"
-                          style={{ border: "1px solid rgba(203,213,225,0.45)" }}
+                          style={{ border: "1px solid var(--hairline)" }}
                         />
                       ) : (
                         <div
@@ -628,11 +626,11 @@ export default async function BusinessProfilePage({
 
             {/* Working hours + contact */}
             <section className="fade-rise fade-rise-d4">
-              <h2 className="text-lg font-bold text-slate-900 mb-4" style={{ letterSpacing: "-0.025em" }}>Informacje</h2>
+              <h2 className="text-lg font-bold text-slate-900 mb-4" style={{ letterSpacing: "var(--track-title)" }}>Informacje</h2>
               <div className="rounded-2xl overflow-hidden" style={glassCard}>
                 {/* Working hours */}
                 {sortedWorkingHours.length > 0 && (
-                  <div className="p-5" style={{ borderBottom: "1px solid rgba(203,213,225,0.25)" }}>
+                  <div className="p-5" style={{ borderBottom: "1px solid var(--hairline-soft)" }}>
                     <div className="flex items-center justify-between gap-3 mb-3">
                       <h3 className="text-sm font-semibold text-slate-700 flex items-center gap-2">
                         <svg className="w-4 h-4 text-slate-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} aria-hidden="true">
@@ -663,7 +661,7 @@ export default async function BusinessProfilePage({
                               {DAY_LABELS[wh.dayOfWeek]}
                             </span>
                             <span className={cn("tabular-nums", !wh.isOpen && "text-slate-400")}>
-                              {wh.isOpen ? `${wh.openTime} — ${wh.closeTime}` : "Nieczynne"}
+                              {wh.isOpen ? `${wh.openTime}–${wh.closeTime}` : "Nieczynne"}
                             </span>
                           </div>
                         );
@@ -673,7 +671,7 @@ export default async function BusinessProfilePage({
                 )}
 
                 {/* Address + map */}
-                <div className="p-5" style={{ borderBottom: "1px solid rgba(203,213,225,0.25)" }}>
+                <div className="p-5" style={{ borderBottom: "1px solid var(--hairline-soft)" }}>
                   <h3 className="text-sm font-semibold text-slate-700 mb-2 flex items-center gap-2">
                     <svg className="w-4 h-4 text-slate-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} aria-hidden="true">
                       <path strokeLinecap="round" strokeLinejoin="round" d="M15 10.5a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
@@ -683,7 +681,7 @@ export default async function BusinessProfilePage({
                   </h3>
                   <p className="text-sm text-slate-600">{business.address}, {business.postalCode} {business.city}</p>
                   {hasVerifiedLocation && browserMapsKey ? (
-                    <div className="mt-3 rounded-xl overflow-hidden" style={{ border: "1px solid rgba(203,213,225,0.35)" }}>
+                    <div className="mt-3 rounded-xl overflow-hidden" style={{ border: "1px solid var(--hairline-soft)" }}>
                       <iframe
                         title={`Mapa dojazdu — ${business.name}`}
                         src={embedUrl(browserMapsKey, { latitude: business.latitude!, longitude: business.longitude!, placeId: business.placeId })}
@@ -696,7 +694,7 @@ export default async function BusinessProfilePage({
                   ) : !hasVerifiedLocation ? (
                     <div
                       className="mt-3 rounded-xl px-3.5 py-3 text-xs text-slate-500 leading-relaxed"
-                      style={{ background: "rgba(203,213,225,0.14)", border: "1px dashed rgba(148,163,184,0.4)" }}
+                      style={{ background: "var(--selected)", border: "1px dashed rgba(148,163,184,0.4)" }}
                     >
                       Nie udało się potwierdzić dokładnej lokalizacji na mapie. Skorzystaj z adresu powyżej
                       lub wyszukaj go w Google Maps.
@@ -731,7 +729,7 @@ export default async function BusinessProfilePage({
 
             {/* Reviews */}
             <section className="fade-rise fade-rise-d5">
-              <h2 className="text-lg font-bold text-slate-900 mb-4" style={{ letterSpacing: "-0.025em" }}>
+              <h2 className="text-lg font-bold text-slate-900 mb-4" style={{ letterSpacing: "var(--track-title)" }}>
                 Opinie{" "}
                 {business.totalReviews > 0 && (
                   <span className="text-slate-400 font-normal text-base">({business.totalReviews})</span>
@@ -743,9 +741,9 @@ export default async function BusinessProfilePage({
                   <div
                     className="w-12 h-12 rounded-2xl flex items-center justify-center mx-auto mb-3"
                     style={{
-                      background: "rgba(255,255,255,0.78)",
-                      border: "1px solid rgba(203,213,225,0.50)",
-                      boxShadow: "0 0 0 0.5px rgba(203,213,225,0.25), inset 0 1px 0 rgba(255,255,255,0.90)",
+                      background: "var(--surface)",
+                      border: "1px solid var(--hairline)",
+                      boxShadow: "var(--e1)",
                     }}
                   >
                     <svg className="w-6 h-6 text-slate-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} aria-hidden="true">
@@ -754,7 +752,7 @@ export default async function BusinessProfilePage({
                   </div>
                   <p className="text-sm font-semibold text-slate-800">Ten salon nie ma jeszcze opinii</p>
                   <p className="text-xs text-slate-500 mt-1 max-w-xs mx-auto leading-relaxed">
-                    Opinię może wystawić tylko klient po zakończonej wizycie — dzięki temu wszystkie oceny są prawdziwe.
+                    Opinię może wystawić tylko klient po zakończonej wizycie, dzięki czemu wszystkie oceny są prawdziwe.
                   </p>
                 </div>
               ) : (
@@ -762,7 +760,7 @@ export default async function BusinessProfilePage({
                 {business.averageRating > 0 && (
                   <div className="rounded-2xl p-5 mb-3 flex items-center gap-6" style={glassCard}>
                     <div className="text-center flex-shrink-0">
-                      <p className="text-4xl font-bold text-slate-900 tabular-nums" style={{ letterSpacing: "-0.03em" }}>
+                      <p className="text-4xl font-bold text-slate-900 tabular-nums" style={{ letterSpacing: "var(--track-display)" }}>
                         {business.averageRating.toFixed(1)}
                       </p>
                       <div className="flex justify-center mt-1.5">
@@ -780,7 +778,7 @@ export default async function BusinessProfilePage({
                             <div key={star} className="flex items-center gap-2.5">
                               <span className="w-3 text-xs font-medium text-slate-500 tabular-nums text-right">{star}</span>
                               <Star className="w-3 h-3 flex-shrink-0" />
-                              <div className="flex-1 h-1.5 rounded-full overflow-hidden" style={{ background: "rgba(203,213,225,0.35)" }}>
+                              <div className="flex-1 h-1.5 rounded-full overflow-hidden" style={{ background: "var(--selected)" }}>
                                 <div
                                   className="h-full rounded-full"
                                   style={{ width: `${pct}%`, background: INK }}
@@ -793,7 +791,7 @@ export default async function BusinessProfilePage({
                       </div>
                     ) : (
                       <>
-                        <div className="h-12 w-px flex-shrink-0" style={{ background: "rgba(203,213,225,0.35)" }} />
+                        <div className="h-12 w-px flex-shrink-0" style={{ background: "var(--selected)" }} />
                         <p className="text-sm text-slate-500">
                           Na podstawie{" "}
                           <span className="font-semibold text-slate-800">{business.totalReviews}</span>{" "}
@@ -811,7 +809,7 @@ export default async function BusinessProfilePage({
                         <div className="flex items-center gap-3">
                           <div
                             className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0"
-                            style={{ background: "linear-gradient(140deg, rgba(226,232,240,0.70) 0%, rgba(203,213,225,0.40) 100%)", border: "1px solid rgba(203,213,225,0.55)", boxShadow: "inset 0 1px 0 rgba(255,255,255,0.80)" }}
+                            style={{ background: "linear-gradient(140deg, rgba(226,232,240,0.70) 0%, rgba(203,213,225,0.40) 100%)", border: "1px solid var(--hairline)", boxShadow: "inset 0 1px 0 rgba(255,255,255,0.80)" }}
                           >
                             <span className="text-xs font-bold text-slate-600">
                               {review.customer.firstName[0]}{review.customer.lastName[0]}
@@ -864,17 +862,15 @@ export default async function BusinessProfilePage({
         <div
           className="lg:hidden fixed bottom-0 inset-x-0 z-40 px-4 py-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))]"
           style={{
-            background: "rgba(255,255,255,0.90)",
-            backdropFilter: "blur(24px) saturate(200%)",
-            WebkitBackdropFilter: "blur(24px) saturate(200%)",
-            borderTop: "1px solid rgba(203,213,225,0.35)",
-            boxShadow: "0 -8px 24px rgba(100,116,139,0.08)",
+            background: "var(--surface)",
+            borderTop: "1px solid var(--hairline-soft)",
+            boxShadow: "var(--e2)",
           }}
         >
           <div className="flex items-center gap-3 max-w-6xl mx-auto">
             <div className="flex-1 min-w-0">
               <p className="text-xs text-slate-500">Usługi od</p>
-              <p className="text-base font-bold text-slate-900 tabular-nums" style={{ letterSpacing: "-0.01em" }}>
+              <p className="text-base font-bold text-slate-900 tabular-nums" style={{ letterSpacing: "var(--track-heading)" }}>
                 {formatCurrency(Math.min(...business.services.map((s) => s.discountedPrice ?? s.price)))}
               </p>
             </div>

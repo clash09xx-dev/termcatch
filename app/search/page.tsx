@@ -27,7 +27,7 @@ import { DiscoveryAssistant } from "@/components/search/discovery-assistant";
 const PAGE_SIZE = 20;
 const PRICE_SORT_CAP = 500;
 
-const INK = "linear-gradient(180deg, #1E293B 0%, #0F172A 100%)";
+const INK = "var(--ink-raised)";
 
 const STAR_PATH =
   "M11.48 3.499a.562.562 0 0 1 1.04 0l2.125 5.111a.563.563 0 0 0 .475.345l5.518.442c.499.04.701.663.321.988l-4.204 3.602a.563.563 0 0 0-.182.557l1.285 5.385a.562.562 0 0 1-.84.61l-4.725-2.885a.562.562 0 0 0-.586 0L6.982 20.54a.562.562 0 0 1-.84-.61l1.285-5.386a.562.562 0 0 0-.182-.557l-4.204-3.602a.562.562 0 0 1 .321-.988l5.518-.442a.563.563 0 0 0 .475-.345L11.48 3.5Z";
@@ -101,12 +101,10 @@ function BusinessCard({ business, locale }: { business: BusinessWithServices; lo
         <span
           className="absolute top-3 left-3 inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-medium"
           style={{
-            background: "rgba(255,255,255,0.88)",
-            backdropFilter: "blur(20px) saturate(200%)",
-            WebkitBackdropFilter: "blur(20px) saturate(200%)",
-            border: "1px solid rgba(203,213,225,0.50)",
+            background: "var(--surface)",
+            border: "1px solid var(--hairline)",
             color: "#475569",
-            boxShadow: "0 0 0 0.5px rgba(203,213,225,0.25), inset 0 1px 0 rgba(255,255,255,0.95)",
+            boxShadow: "var(--e1)",
           }}
         >
           {categoryLabelFor(business.category, locale)}
@@ -117,7 +115,7 @@ function BusinessCard({ business, locale }: { business: BusinessWithServices; lo
       <div className="p-4">
         <h3
           className="font-semibold text-slate-900 text-[15px] leading-snug line-clamp-1"
-          style={{ letterSpacing: "-0.01em" }}
+          style={{ letterSpacing: "var(--track-heading)" }}
         >
           {business.name}
         </h3>
@@ -161,8 +159,8 @@ function BusinessCard({ business, locale }: { business: BusinessWithServices; lo
             <span
               className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-semibold text-slate-600"
               style={{
-                background: "rgba(255,255,255,0.70)",
-                border: "1px solid rgba(203,213,225,0.55)",
+                background: "var(--surface)",
+                border: "1px solid var(--hairline)",
                 boxShadow: "inset 0 1px 0 rgba(255,255,255,0.90)",
               }}
             >
@@ -171,7 +169,7 @@ function BusinessCard({ business, locale }: { business: BusinessWithServices; lo
           )}
 
           {minPrice !== null && (
-            <span className="text-sm font-bold text-slate-900 tabular-nums" style={{ letterSpacing: "-0.01em" }}>
+            <span className="text-sm font-bold text-slate-900 tabular-nums" style={{ letterSpacing: "var(--track-heading)" }}>
               od {formatCurrency(minPrice)}
             </span>
           )}
@@ -188,9 +186,9 @@ function SkeletonCard() {
     <div
       className="rounded-2xl overflow-hidden"
       style={{
-        background: "rgba(255,255,255,0.65)",
-        border: "1px solid rgba(203,213,225,0.40)",
-        boxShadow: "0 0 0 0.5px rgba(203,213,225,0.25), 0 2px 12px rgba(100,116,139,0.06), inset 0 1px 0 rgba(255,255,255,0.90)",
+        background: "var(--surface)",
+        border: "1px solid var(--hairline-soft)",
+        boxShadow: "var(--e1)",
       }}
     >
       <div className="h-44 skeleton" style={{ borderRadius: 0 }} />
@@ -355,11 +353,9 @@ async function SearchResults({ searchParams }: { searchParams: SearchParams }) {
         <div
           className="w-14 h-14 rounded-2xl flex items-center justify-center mb-4"
           style={{
-            background: "rgba(255,255,255,0.78)",
-            backdropFilter: "blur(24px) saturate(200%)",
-            WebkitBackdropFilter: "blur(24px) saturate(200%)",
-            border: "1px solid rgba(203,213,225,0.45)",
-            boxShadow: "0 0 0 0.5px rgba(203,213,225,0.25), 0 4px 16px rgba(100,116,139,0.08), inset 0 1px 0 rgba(255,255,255,0.90)",
+            background: "var(--surface)",
+            border: "1px solid var(--hairline)",
+            boxShadow: "var(--e2)",
           }}
         >
           <svg className="w-7 h-7 text-slate-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} aria-hidden="true">
@@ -408,9 +404,9 @@ async function SearchResults({ searchParams }: { searchParams: SearchParams }) {
         <div
           className="inline-flex items-center gap-0.5 p-0.5 rounded-xl"
           style={{
-            background: "rgba(255,255,255,0.65)",
-            border: "1px solid rgba(203,213,225,0.45)",
-            boxShadow: "0 0 0 0.5px rgba(203,213,225,0.20), inset 0 1px 0 rgba(255,255,255,0.90)",
+            background: "var(--surface)",
+            border: "1px solid var(--hairline)",
+            boxShadow: "var(--e1)",
           }}
           role="group"
           aria-label="Sortowanie wyników"
@@ -449,7 +445,7 @@ async function SearchResults({ searchParams }: { searchParams: SearchParams }) {
             <Link
               href={buildSearchUrl(searchParams, { page: String(page - 1) })}
               className="btn-spring px-4 py-2 text-sm font-medium rounded-xl"
-              style={{ background: "rgba(255,255,255,0.78)", backdropFilter: "blur(20px) saturate(200%)", WebkitBackdropFilter: "blur(20px) saturate(200%)", border: "1px solid rgba(203,213,225,0.45)", color: "#475569", boxShadow: "0 0 0 0.5px rgba(203,213,225,0.25), inset 0 1px 0 rgba(255,255,255,0.90)" }}
+              style={{ background: "var(--surface)", border: "1px solid var(--hairline)", color: "#475569", boxShadow: "var(--e1)" }}
             >
               Poprzednia
             </Link>
@@ -502,7 +498,7 @@ export default async function SearchPage({
       <div className="max-w-7xl mx-auto px-4 sm:px-6 pt-24 pb-16">
         {/* Header */}
         <div className="mb-6 fade-rise">
-          <h1 className="text-2xl sm:text-[1.75rem] font-bold text-slate-900" style={{ letterSpacing: "-0.03em" }}>
+          <h1 className="text-2xl sm:text-[1.75rem] font-bold text-slate-900" style={{ letterSpacing: "var(--track-display)" }}>
             {title}
           </h1>
           <p className="text-sm text-slate-500 mt-1">{subtitle}</p>

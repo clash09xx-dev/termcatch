@@ -5,7 +5,7 @@ import type { Metadata } from "next";
 
 export const metadata: Metadata = {
   title: "Kontakt — TermCatch",
-  description: "Skontaktuj się z TermCatch — jesteśmy tu, żeby pomóc.",
+  description: "Skontaktuj się z TermCatch. Jesteśmy tu, żeby pomóc.",
 };
 
 const BG = [
@@ -35,8 +35,8 @@ export default function ContactPage() {
               <div
                 className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full mb-6 text-xs font-semibold uppercase tracking-widest"
                 style={{
-                  background: "rgba(203,213,225,0.28)",
-                  border: "1px solid rgba(203,213,225,0.50)",
+                  background: "var(--selected)",
+                  border: "1px solid var(--hairline)",
                   color: "#64748B",
                 }}
               >
@@ -44,28 +44,25 @@ export default function ContactPage() {
               </div>
               <h1
                 className="text-4xl font-bold mb-5"
-                style={{ letterSpacing: "-0.04em", color: "#0F172A" }}
+                style={{ letterSpacing: "var(--track-display)", color: "#0F172A" }}
               >
                 Jesteśmy tutaj.
               </h1>
               <p className="leading-relaxed mb-10 text-sm" style={{ color: "#64748B" }}>
                 Masz pytanie o TermCatch? Chcesz omówić wdrożenie dla sieci salonów?
-                Piszesz do nas — odpowiemy tak szybko, jak to możliwe.
+                Piszesz do nas, a my odpowiemy tak szybko, jak to możliwe.
               </p>
 
               <div className="space-y-4">
                 {CONTACTS.map((c) => (
                   <div
                     key={c.label}
-                    className="px-5 py-4 glass-shimmer-wrap"
+                    className="px-5 py-4"
                     style={{
-                      background: "rgba(255,255,255,0.72)",
-                      backdropFilter: "blur(40px) saturate(200%)",
-                      WebkitBackdropFilter: "blur(40px) saturate(200%)",
-                      border: "1px solid rgba(203,213,225,0.55)",
+                      background: "var(--surface)",
+                      border: "1px solid var(--hairline)",
                       borderRadius: "0.875rem",
-                      boxShadow:
-                        "0 1px 2px rgba(0,0,0,0.04), 0 4px 12px rgba(100,116,139,0.07), inset 0 1px 0 rgba(255,255,255,0.95)",
+                      boxShadow: "var(--e1)",
                     }}
                   >
                     <p

@@ -7,6 +7,7 @@ import { loginAction, signInWithGoogleAction, signInWithAppleAction } from "@/ac
 import type { AuthState } from "@/actions/auth";
 import { PasswordInput } from "@/components/ui/password-input";
 import { useT } from "@/components/i18n/i18n-provider";
+import { INK_BTN } from "@/components/ui/glass/tokens";
 
 const initialState: AuthState = {};
 
@@ -14,7 +15,7 @@ const initialState: AuthState = {};
 const APPLE_SIGNIN_ENABLED = false;
 
 const inputCls =
-  "w-full px-3.5 py-2.5 rounded-xl text-sm text-[#0F172A] placeholder:text-[#94A3B8] outline-none transition-all input-glass";
+  "w-full px-3.5 py-2.5 rounded-xl text-sm text-[#0F172A] placeholder:text-[#94A3B8] outline-none transition-colors input-glass";
 
 export default function LoginPage() {
   return (
@@ -43,7 +44,7 @@ function LoginForm() {
           {t.auth.noAccount}{" "}
           <Link
             href={redirectTo ? `/register?next=${encodeURIComponent(redirectTo)}` : "/register"}
-            className="text-gray-900 font-medium underline underline-offset-2 hover:no-underline transition-all"
+            className="text-gray-900 font-medium underline underline-offset-2 hover:no-underline transition-colors"
           >
             {t.auth.signUp}
           </Link>
@@ -60,8 +61,8 @@ function LoginForm() {
             type="submit"
             className="w-full flex items-center justify-center gap-3 px-4 py-2.5 rounded-xl text-sm font-medium transition-colors btn-spring"
             style={{
-              background: "rgba(255,255,255,0.80)",
-              border: "1px solid rgba(203,213,225,0.55)",
+              background: "var(--surface)",
+              border: "1px solid var(--hairline)",
               color: "#475569",
               boxShadow: "0 1px 2px rgba(0,0,0,0.04), inset 0 1px 0 rgba(255,255,255,0.90)",
             }}
@@ -148,13 +149,9 @@ function LoginForm() {
         <button
           type="submit"
           disabled={isPending}
-          className="w-full py-2.5 px-4 font-semibold text-sm rounded-xl flex items-center justify-center gap-2 btn-spring glass-shimmer-wrap disabled:opacity-50 disabled:cursor-not-allowed"
-          style={{
-            background: "linear-gradient(135deg, #CBD5E1 0%, #94A3B8 50%, #CBD5E1 100%)",
-            color: "#0F172A",
-            border: "1px solid rgba(148,163,184,0.45)",
-            boxShadow: "0 1px 2px rgba(0,0,0,0.10), inset 0 1px 0 rgba(255,255,255,0.40)",
-          }}
+          className="w-full py-[11px] min-h-[44px] px-4 font-semibold text-sm rounded-[10px] flex items-center justify-center gap-2 btn-spring disabled:opacity-50 disabled:cursor-not-allowed"
+          data-on-ink
+          style={INK_BTN}
         >
           {isPending ? (
             <>

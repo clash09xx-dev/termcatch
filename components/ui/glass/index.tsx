@@ -1,7 +1,10 @@
-// ─── Glass primitives — server-safe ──────────────────────────────────────────
-// No hooks, no handlers: usable directly in RSC pages. Interactive springs
-// come from CSS (.btn-spring, .row-hover, .card-hover-lift) so pages stay
-// server components. Modals/sheets live in glass-modal.tsx (client).
+// ─── Surface primitives — server-safe ────────────────────────────────────────
+// No hooks, no handlers: usable directly in RSC pages. Press and hover feedback
+// comes from CSS (.btn-spring, .row-hover, .card-hover-lift) so pages stay
+// server components. Modals and sheets live in glass-modal.tsx (client).
+//
+// Everything here is a CONTENT surface, and content is opaque. The translucent
+// material is reserved for chrome and overlays — see ./tokens.
 
 import Link from "next/link";
 import { cn } from "@/lib/utils";
@@ -16,6 +19,8 @@ import {
   DANGER_BTN,
   STATUS_TINT,
   OVERLINE_CLS,
+  TITLE_CLS,
+  HEADING_CLS,
   type StatusKey,
 } from "./tokens";
 
@@ -37,10 +42,8 @@ export function PageHeader({
   return (
     <div className={cn("fade-rise flex flex-wrap items-end justify-between gap-3", className)}>
       <div className="min-w-0">
-        <h1 className="text-xl font-semibold text-slate-900" style={{ letterSpacing: "-0.02em" }}>
-          {title}
-        </h1>
-        {subtitle && <p className="text-sm text-slate-500 mt-0.5">{subtitle}</p>}
+        <h1 className={TITLE_CLS}>{title}</h1>
+        {subtitle && <p className="mt-1 text-[13.5px] leading-[1.45] text-secondary track-caption">{subtitle}</p>}
       </div>
       {actions && <div className="flex items-center gap-2 flex-shrink-0">{actions}</div>}
     </div>
@@ -80,9 +83,7 @@ export function CardHeader({
       className={cn("flex items-center justify-between gap-3 px-5 py-3.5", className)}
       style={{ borderBottom: HAIRLINE }}
     >
-      <h3 className="text-sm font-semibold text-slate-800" style={{ letterSpacing: "-0.01em" }}>
-        {title}
-      </h3>
+      <h3 className={HEADING_CLS}>{title}</h3>
       {action}
     </div>
   );
@@ -108,7 +109,7 @@ export function StatCard({
   return (
     <div className="rounded-[20px] p-4 sm:p-5" style={ELEV_RAISED}>
       <div className="flex items-start justify-between gap-2">
-        <p className="text-xs font-medium text-slate-500">{label}</p>
+        <p className="text-xs font-medium text-secondary">{label}</p>
         {icon && (
           <span
             className="w-7 h-7 rounded-lg flex items-center justify-center text-slate-500 flex-shrink-0"
@@ -118,13 +119,10 @@ export function StatCard({
           </span>
         )}
       </div>
-      <p
-        className="mt-1.5 text-[22px] leading-7 font-bold text-slate-900 tabular-nums"
-        style={{ letterSpacing: "-0.02em" }}
-      >
+      <p className="mt-2 text-[26px] leading-[1.1] font-semibold text-slate-900 tabular-nums track-title">
         {value}
       </p>
-      {sub && <p className="mt-0.5 text-xs text-slate-500 tabular-nums">{sub}</p>}
+      {sub && <p className="mt-1 text-xs text-muted-glass tabular-nums track-caption">{sub}</p>}
     </div>
   );
 }
@@ -147,43 +145,46 @@ export function EmptyState({
   return (
     <div className={cn("flex flex-col items-center justify-center text-center px-6 py-14", className)}>
       <div
-        className="w-12 h-12 rounded-2xl flex items-center justify-center mb-4 text-slate-400"
-        style={{
-          background: "rgba(255,255,255,0.78)",
-          border: "1px solid rgba(203,213,225,0.50)",
-          boxShadow: "0 0 0 0.5px rgba(203,213,225,0.25), 0 4px 14px rgba(100,116,139,0.07), inset 0 1px 0 rgba(255,255,255,0.90)",
-        }}
+        className="w-11 h-11 rounded-2xl flex items-center justify-center mb-4 text-slate-400"
+        style={{ background: "var(--surface)", border: "1px solid var(--hairline-soft)", boxShadow: "var(--e1)" }}
       >
         {icon}
       </div>
-      <p className="text-sm font-semibold text-slate-800">{title}</p>
-      {body && <p className="text-xs text-slate-500 mt-1 max-w-xs leading-relaxed">{body}</p>}
-      {action && <div className="mt-5">{action}</div>}
+      <p className="text-[15px] font-semibold text-slate-900 track-heading">{title}</p>
+      {body && <p className="text-[13px] text-secondary mt-1.5 max-w-[34ch] leading-[1.5]">{body}</p>}
+      {action && <div className="mt-6">{action}</div>}
     </div>
   );
 }
 
 // ── Status badge — one implementation, glass tints ────────────
 
-export function StatusBadge({ status, className }: { status: string; className?: string }) {
-  const meta = STATUS_TINT[status as StatusKey] ?? {
-    label: status,
-    style: STATUS_TINT.RESCHEDULED.style,
-  };
+/**
+ * Status pill. `label` is REQUIRED and always comes from the dictionary
+ * (`t.statuses[status]`) so this stays server-safe (no hooks) while never
+ * rendering a hardcoded Polish label. The tint still comes from the token file.
+ */
+export function StatusBadge({ status, label, className }: { status: string; label: string; className?: string }) {
+  const meta = STATUS_TINT[status as StatusKey] ?? STATUS_TINT.RESCHEDULED;
   return (
     <span
       className={cn("inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-semibold whitespace-nowrap", className)}
       style={meta.style}
     >
-      {meta.label}
+      {label}
     </span>
   );
 }
 
 // ── Buttons & links — CSS springs, server-safe ────────────────
 
-const BTN_BASE = "btn-spring inline-flex items-center justify-center gap-1.5 rounded-xl text-sm font-semibold";
-const BTN_PAD = { sm: "px-3 py-1.5 text-xs", md: "px-4 py-2", lg: "px-5 py-2.5" } as const;
+const BTN_BASE =
+  "btn-spring inline-flex items-center justify-center gap-1.5 rounded-[10px] text-sm font-semibold select-none";
+const BTN_PAD = {
+  sm: "px-3 py-[7px] text-xs min-h-[32px]",
+  md: "px-4 py-[9px] min-h-[38px]",
+  lg: "px-5 py-[11px] min-h-[44px]",
+} as const;
 
 export function InkLink({
   href,
@@ -197,7 +198,7 @@ export function InkLink({
   className?: string;
 }) {
   return (
-    <Link href={href} className={cn(BTN_BASE, BTN_PAD[size], className)} style={INK_BTN}>
+    <Link href={href} data-on-ink className={cn(BTN_BASE, BTN_PAD[size], className)} style={INK_BTN}>
       {children}
     </Link>
   );
@@ -232,6 +233,7 @@ export function InkButton({
   return (
     <button
       {...props}
+      data-on-ink
       className={cn(BTN_BASE, BTN_PAD[size], "disabled:opacity-50 disabled:cursor-not-allowed", className)}
       style={INK_BTN}
     >
@@ -356,9 +358,9 @@ export function TimelineRow({
       <div className="relative flex flex-col items-center">
         <span
           className="w-2.5 h-2.5 rounded-full mt-1.5 flex-shrink-0"
-          style={{ background: dotColor, boxShadow: "0 0 0 3px rgba(255,255,255,0.85)" }}
+          style={{ background: dotColor, boxShadow: "0 0 0 3px var(--bg-base)" }}
         />
-        {connector && <span className="w-px flex-1 my-1" style={{ background: "rgba(203,213,225,0.5)" }} />}
+        {connector && <span className="w-px flex-1 my-1" style={{ background: "var(--hairline)" }} />}
       </div>
       <div className="flex-1 min-w-0 pb-2.5">{children}</div>
     </div>
@@ -396,11 +398,11 @@ export function DetailEmpty({ icon, title, body }: { icon: React.ReactNode; titl
       className="hidden lg:flex flex-col items-center justify-center text-center rounded-[20px] min-h-[420px] px-8"
       style={ELEV_SURFACE}
     >
-      <div className="w-12 h-12 rounded-2xl flex items-center justify-center mb-4 text-slate-400" style={CHIP}>
+      <div className="w-11 h-11 rounded-2xl flex items-center justify-center mb-4 text-slate-400" style={CHIP}>
         {icon}
       </div>
-      <p className="text-sm font-semibold text-slate-700">{title}</p>
-      {body && <p className="text-xs text-slate-500 mt-1 max-w-xs leading-relaxed">{body}</p>}
+      <p className="text-[15px] font-semibold text-slate-900 track-heading">{title}</p>
+      {body && <p className="text-[13px] text-secondary mt-1.5 max-w-[34ch] leading-[1.5]">{body}</p>}
     </div>
   );
 }
@@ -421,9 +423,9 @@ export function ChromeAvatar({
     <span
       className={cn("rounded-xl flex items-center justify-center font-bold text-slate-600 flex-shrink-0", dims, className)}
       style={{
-        background: "linear-gradient(140deg, rgba(226,232,240,0.70) 0%, rgba(203,213,225,0.40) 100%)",
-        border: "1px solid rgba(203,213,225,0.55)",
-        boxShadow: "inset 0 1px 0 rgba(255,255,255,0.80)",
+        background: "var(--surface-inset)",
+        border: "1px solid var(--hairline-soft)",
+        boxShadow: "inset 0 1px 0 rgba(255,255,255,0.75)",
       }}
     >
       {initials}
@@ -437,26 +439,27 @@ export function ComingSoon({
   title,
   body,
   icon,
+  badge,
 }: {
   title: string;
   body: string;
   icon: React.ReactNode;
+  /** Localized "coming soon" chip, e.g. t.pages.payments.soon. */
+  badge: string;
 }) {
   return (
     <div className="max-w-lg mx-auto mt-10 fade-rise">
-      <div className="rounded-[20px] p-8 text-center" style={ELEV_RAISED}>
+      <div className="rounded-[20px] p-10 text-center" style={ELEV_RAISED}>
         <div
           className="w-12 h-12 rounded-2xl flex items-center justify-center mx-auto mb-4 text-slate-500"
           style={CHIP}
         >
           {icon}
         </div>
-        <h1 className="text-lg font-semibold text-slate-900" style={{ letterSpacing: "-0.02em" }}>
-          {title}
-        </h1>
-        <p className="text-sm text-slate-500 mt-2 leading-relaxed">{body}</p>
+        <h1 className={TITLE_CLS}>{title}</h1>
+        <p className="text-[14px] text-secondary mt-2.5 leading-[1.55] max-w-[40ch] mx-auto">{body}</p>
         <p className="mt-5 inline-flex items-center px-2.5 py-1 rounded-full text-[11px] font-semibold text-slate-600" style={CHIP}>
-          Wkrótce
+          {badge}
         </p>
       </div>
     </div>

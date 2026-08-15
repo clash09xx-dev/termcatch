@@ -48,23 +48,20 @@ type Props = {
 
 type Section = "rezerwacje" | "odwolania" | "powiadomienia" | "profil" | "integracje" | "jezyk" | "strefa";
 
-const SECTIONS: { id: Section; label: string; danger?: boolean }[] = [
-  { id: "rezerwacje", label: "Rezerwacje" },
-  { id: "odwolania", label: "Odwołania" },
-  { id: "powiadomienia", label: "Powiadomienia" },
-  { id: "profil", label: "Profil publiczny" },
-  { id: "integracje", label: "Integracje" },
-  { id: "jezyk", label: "Język" },
-  { id: "strefa", label: "Bezpieczeństwo", danger: true },
+// Section ids are stable; every visible label comes from the dictionary.
+const SECTIONS: { id: Section; danger?: boolean }[] = [
+  { id: "rezerwacje" },
+  { id: "odwolania" },
+  { id: "powiadomienia" },
+  { id: "profil" },
+  { id: "integracje" },
+  { id: "jezyk" },
+  { id: "strefa", danger: true },
 ];
 
 const TIME_SLOT_OPTIONS = [15, 30, 45, 60];
 const CANCELLATION_HOURS_OPTIONS = [12, 24, 48, 72];
-const FEE_OPTIONS = [
-  { value: "", label: "Brak" },
-  { value: "percentage", label: "Procentowa" },
-  { value: "fixed", label: "Stała kwota" },
-];
+const FEE_VALUES = ["", "percentage", "fixed"] as const;
 
 // The six fields persisted by updateBusinessSettings — the dirty-tracked set.
 const TRACKED: (keyof Settings)[] = [
@@ -120,7 +117,7 @@ function SegmentedOption({
       )}
       style={active
         ? { background: INK_GRADIENT, border: "1px solid #0F172A", boxShadow: "0 1px 2px rgba(0,0,0,0.15), inset 0 1px 0 rgba(255,255,255,0.15)" }
-        : { background: "rgba(255,255,255,0.70)", border: "1px solid rgba(203,213,225,0.55)", boxShadow: "inset 0 1px 0 rgba(255,255,255,0.88)" }}
+        : { background: "var(--surface)", border: "1px solid var(--hairline)", boxShadow: "inset 0 1px 0 rgba(255,255,255,0.88)" }}
     >
       {children}
     </button>
@@ -139,7 +136,7 @@ function DecisionCard({
 }) {
   return (
     <GlassCard className="p-5">
-      <h3 className="text-[15px] font-semibold text-slate-900" style={{ letterSpacing: "-0.01em" }}>
+      <h3 className="text-[15px] font-semibold text-slate-900" style={{ letterSpacing: "var(--track-heading)" }}>
         {question}
       </h3>
       <div className="mt-3">{children}</div>
@@ -150,6 +147,21 @@ function DecisionCard({
 
 export function SettingsClient({ settings: initialSettings, notificationSettings, business, smsAvailable, fakturownia }: Props) {
   const t = useT();
+  const T = t.pages.settings;
+  const SECTION_LABEL: Record<Section, string> = {
+    rezerwacje: T.secBooking,
+    odwolania: T.secCancellation,
+    powiadomienia: T.secNotifications,
+    profil: T.secPublicProfile,
+    integracje: t.fakturownia.section,
+    jezyk: t.lang.label,
+    strefa: T.secSecurity,
+  };
+  const FEE_LABEL: Record<(typeof FEE_VALUES)[number], string> = {
+    "": T.feeNone,
+    percentage: T.feePercentage,
+    fixed: T.feeFixed,
+  };
   const router = useRouter();
   // Deep-link: /business/settings?section=integrations opens Integrations.
   const initialSection: Section =
@@ -216,7 +228,7 @@ export function SettingsClient({ settings: initialSettings, notificationSettings
 
   async function handleConfirmDeletion() {
     if (dangerCode.replace(/\s/g, "").length !== 6) {
-      setDangerError("Kod musi mieć 6 cyfr.");
+      setDangerError(T.codeSixDigits);
       return;
     }
     setDangerLoading(true);
@@ -281,14 +293,14 @@ export function SettingsClient({ settings: initialSettings, notificationSettings
   return (
     <div className="max-w-5xl mx-auto space-y-5 pb-4">
       <PageHeader
-        title="Ustawienia"
-        subtitle="Decyzje, które kształtują sposób działania Twojego salonu"
+        title={T.title}
+        subtitle={T.subtitle}
         actions={
           <GlassButton onClick={() => setShowInvite(true)}>
             <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} aria-hidden="true">
               <path strokeLinecap="round" strokeLinejoin="round" d="M12 8.25v-1.5m0 1.5c-1.355 0-2.697.056-4.024.166C6.845 8.51 6 9.473 6 10.608v2.513m6-4.871c1.355 0 2.697.056 4.024.166C17.155 8.51 18 9.473 18 10.608v2.513M15 8.25a3 3 0 1 1-6 0 3 3 0 0 1 6 0Zm-9 4.875v4.905c0 .92.672 1.715 1.625 1.71H16.5c.903 0 1.5-.81 1.5-1.71v-4.905M12 12v8.25" />
             </svg>
-            Zaproś znajomego
+            {T.inviteFriend}
           </GlassButton>
         }
       />
@@ -313,12 +325,12 @@ export function SettingsClient({ settings: initialSettings, notificationSettings
                   style={active
                     ? danger
                       ? DANGER_GHOST
-                      : { background: "rgba(203,213,225,0.22)", border: "1px solid rgba(203,213,225,0.50)", color: "#1E293B", boxShadow: "inset 0 1px 0 rgba(255,255,255,0.90)" }
+                      : { background: "var(--selected)", border: "1px solid var(--hairline)", color: "#1E293B", boxShadow: "inset 0 1px 0 rgba(255,255,255,0.90)" }
                     : danger
                     ? { color: "#BE123C", border: "1px solid transparent" }
                     : undefined}
                 >
-                  {section.id === "jezyk" ? t.lang.label : section.id === "integracje" ? t.fakturownia.section : section.label}
+                  {SECTION_LABEL[section.id]}
                 </button>
               );
             })}
@@ -331,12 +343,12 @@ export function SettingsClient({ settings: initialSettings, notificationSettings
           {activeSection === "rezerwacje" && (
             <>
               <DecisionCard
-                question="Jak daleko w przód klienci mogą rezerwować?"
+                question={T.qAdvance}
                 consequence={
                   <>
-                    Klienci zobaczą wolne terminy na maksymalnie{" "}
-                    <span className="font-medium text-slate-700 tabular-nums">{settings.advanceBookingDays}</span> dni w przód.
-                    Krótszy okres daje pełniejszą kontrolę nad grafikiem; dłuższy — więcej rezerwacji z wyprzedzeniem.
+                    {T.cAdvancePre}{" "}
+                    <span className="font-medium text-slate-700 tabular-nums">{settings.advanceBookingDays}</span>{" "}
+                    {T.cAdvancePost}
                   </>
                 }
               >
@@ -349,22 +361,22 @@ export function SettingsClient({ settings: initialSettings, notificationSettings
                     value={settings.advanceBookingDays}
                     onChange={(e) => update("advanceBookingDays", clampInt(e.target.value, 1, 365, settings.advanceBookingDays))}
                     className={cn(INPUT_CLS, "w-28")}
-                    aria-label="Wyprzedzenie rezerwacji w dniach"
+                    aria-label={T.ariaAdvance}
                   />
-                  <span className="text-sm text-slate-500">dni</span>
+                  <span className="text-sm text-slate-500">{T.days}</span>
                 </div>
               </DecisionCard>
 
               <DecisionCard
-                question="Jak późno przed wizytą można ją jeszcze zarezerwować?"
+                question={T.qMinAdvance}
                 consequence={
                   settings.minAdvanceHours === 0 ? (
-                    "Klienci mogą rezerwować na ostatnią chwilę — nawet tuż przed wizytą."
+                    T.cMinAdvanceZero
                   ) : (
                     <>
-                      Ostatnia rezerwacja możliwa na{" "}
-                      <span className="font-medium text-slate-700 tabular-nums">{settings.minAdvanceHours}</span> godz. przed
-                      wizytą. Większy zapas ogranicza rezerwacje last-minute i daje czas na przygotowanie.
+                      {T.cMinAdvancePre}{" "}
+                      <span className="font-medium text-slate-700 tabular-nums">{settings.minAdvanceHours}</span>{" "}
+                      {T.cMinAdvancePost}
                     </>
                   )
                 }
@@ -378,18 +390,19 @@ export function SettingsClient({ settings: initialSettings, notificationSettings
                     value={settings.minAdvanceHours}
                     onChange={(e) => update("minAdvanceHours", clampInt(e.target.value, 0, 72, settings.minAdvanceHours))}
                     className={cn(INPUT_CLS, "w-28")}
-                    aria-label="Minimalne wyprzedzenie w godzinach"
+                    aria-label={T.ariaMinAdvance}
                   />
-                  <span className="text-sm text-slate-500">godz.</span>
+                  <span className="text-sm text-slate-500">{T.hours}</span>
                 </div>
               </DecisionCard>
 
               <DecisionCard
-                question="Co ile pokazywać wolne terminy?"
+                question={T.qSlot}
                 consequence={
                   <>
-                    Terminy w kalendarzu klienta pojawiają się co{" "}
-                    <span className="font-medium text-slate-700 tabular-nums">{settings.timeSlotDuration}</span> minut.
+                    {T.cSlotPre}{" "}
+                    <span className="font-medium text-slate-700 tabular-nums">{settings.timeSlotDuration}</span>{" "}
+                    {T.cSlotPost}
                   </>
                 }
               >
@@ -408,45 +421,45 @@ export function SettingsClient({ settings: initialSettings, notificationSettings
           {activeSection === "odwolania" && (
             <>
               <DecisionCard
-                question="Do kiedy klient może odwołać lub przełożyć wizytę?"
+                question={T.qCancelWindow}
                 consequence={
                   <>
-                    Klient odwoła lub przełoży wizytę najpóźniej{" "}
-                    <span className="font-medium text-slate-700 tabular-nums">{settings.cancellationHours}</span> godz. przed
-                    terminem — później musi skontaktować się z salonem. Ta zasada działa w panelu klienta.
+                    {T.cCancelWindowPre}{" "}
+                    <span className="font-medium text-slate-700 tabular-nums">{settings.cancellationHours}</span>{" "}
+                    {T.cCancelWindowPost}
                   </>
                 }
               >
                 <div className="flex gap-2 flex-wrap">
                   {CANCELLATION_HOURS_OPTIONS.map((opt) => (
                     <SegmentedOption key={opt} active={settings.cancellationHours === opt} onClick={() => update("cancellationHours", opt)}>
-                      {opt} godz.
+                      {opt} {T.hours}
                     </SegmentedOption>
                   ))}
                 </div>
               </DecisionCard>
 
               <DecisionCard
-                question="Czy stosujesz opłatę za późne odwołanie?"
+                question={T.qFee}
                 consequence={
                   settings.cancellationFeeType === "" ? (
-                    "Późne odwołania są bezpłatne."
+                    T.cFeeNone
                   ) : (
                     <>
-                      Deklarujesz opłatę{" "}
+                      {T.cFeePre}{" "}
                       <span className="font-medium text-slate-700 tabular-nums">
                         {settings.cancellationFeeValue || 0}
                         {feeUnit === "%" ? "%" : " PLN"}
                       </span>{" "}
-                      za późne odwołanie. To Twoja polityka informacyjna — system nie pobiera jej automatycznie.
+                      {T.cFeePost}
                     </>
                   )
                 }
               >
                 <div className="flex gap-2 flex-wrap">
-                  {FEE_OPTIONS.map((opt) => (
-                    <SegmentedOption key={opt.value} active={settings.cancellationFeeType === opt.value} onClick={() => update("cancellationFeeType", opt.value)}>
-                      {opt.label}
+                  {FEE_VALUES.map((v) => (
+                    <SegmentedOption key={v} active={settings.cancellationFeeType === v} onClick={() => update("cancellationFeeType", v)}>
+                      {FEE_LABEL[v]}
                     </SegmentedOption>
                   ))}
                 </div>
@@ -458,7 +471,7 @@ export function SettingsClient({ settings: initialSettings, notificationSettings
                       step={1}
                       value={settings.cancellationFeeValue}
                       onChange={(e) => update("cancellationFeeValue", Math.max(0, parseFloat(e.target.value) || 0))}
-                      aria-label="Wysokość opłaty za anulowanie"
+                      aria-label={T.ariaFee}
                       className={cn(INPUT_CLS, "w-32")}
                     />
                     <span className="text-sm text-slate-500">{feeUnit}</span>
@@ -479,7 +492,7 @@ export function SettingsClient({ settings: initialSettings, notificationSettings
           {/* Profil publiczny */}
           {activeSection === "profil" && (
             <GlassCard className="p-5 sm:p-6">
-              <Overline className="mb-4">Profil publiczny</Overline>
+              <Overline className="mb-4">{T.secPublicProfile}</Overline>
               <PublicVisibilityToggle initialActive={business.isActive} published={business.status === "ACTIVE"} />
               <ProfileClient business={business} embedded />
             </GlassCard>
@@ -509,25 +522,23 @@ export function SettingsClient({ settings: initialSettings, notificationSettings
                   </svg>
                 </div>
                 <div>
-                  <h3 className="text-sm font-semibold" style={{ color: "#BE123C" }}>Niebezpieczna strefa</h3>
-                  <p className="text-sm text-slate-500 mt-1">
-                    Akcje w tej sekcji są nieodwracalne. Każda operacja wymaga potwierdzenia kodem wysłanym na Twój adres e-mail.
-                  </p>
+                  <h3 className="text-sm font-semibold" style={{ color: "#BE123C" }}>{T.dangerTitle}</h3>
+                  <p className="text-sm text-slate-500 mt-1">{T.dangerBody}</p>
                 </div>
               </div>
 
               {[
                 {
                   key: "salon" as const,
-                  title: "Usuń profil salonu",
-                  desc: "Usuwa salon i wszystkie dane (usługi, pracownicy, wizyty, opinie). Twoje konto pozostaje aktywne — możesz zarejestrować nowy salon.",
-                  cta: "Usuń salon",
+                  title: T.deleteSalonTitle,
+                  desc: T.deleteSalonDesc,
+                  cta: T.deleteSalonCta,
                 },
                 {
                   key: "account" as const,
-                  title: "Usuń konto",
-                  desc: "Trwale usuwa salon, wszystkie dane oraz Twoje konto. Nie będziesz mógł się zalogować. Ta akcja nie może zostać cofnięta.",
-                  cta: "Usuń konto",
+                  title: T.deleteAccountTitle,
+                  desc: T.deleteAccountDesc,
+                  cta: T.deleteAccountCta,
                 },
               ].map((item) => (
                 <div key={item.key} className="rounded-2xl p-4" style={{ background: "rgba(244,63,94,0.04)", border: "1px solid rgba(244,63,94,0.18)" }}>
@@ -559,10 +570,10 @@ export function SettingsClient({ settings: initialSettings, notificationSettings
             style={ELEV_OVERLAY}
             role="status"
           >
-            <span className="text-sm text-slate-600">Masz niezapisane zmiany</span>
-            <GlassButton size="sm" onClick={resetChanges} disabled={isPending}>Odrzuć</GlassButton>
+            <span className="text-sm text-slate-600">{t.pages.hours.unsaved}</span>
+            <GlassButton size="sm" onClick={resetChanges} disabled={isPending}>{t.common.cancel}</GlassButton>
             <InkButton size="sm" onClick={handleSave} disabled={isPending}>
-              {isPending ? "Zapisywanie…" : "Zapisz zmiany"}
+              {isPending ? t.pages.hours.saving : t.common.save}
             </InkButton>
           </div>
         </div>
@@ -579,7 +590,7 @@ export function SettingsClient({ settings: initialSettings, notificationSettings
             <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} aria-hidden="true">
               <path strokeLinecap="round" strokeLinejoin="round" d="m5 13 4 4L19 7" />
             </svg>
-            Zapisano zmiany
+            {t.pages.profile.saved}
           </div>
         </div>
       )}
@@ -588,18 +599,15 @@ export function SettingsClient({ settings: initialSettings, notificationSettings
       <GlassModal
         open={dangerStep !== "idle"}
         onOpenChange={(o) => { if (!o) closeDangerModal(); }}
-        title={dangerAction === "salon" ? "Usuń profil salonu" : "Usuń konto"}
+        title={dangerAction === "salon" ? T.deleteSalonTitle : T.deleteAccountTitle}
         accent="#E11D48"
       >
         {dangerStep === "confirm" && (
           <>
-            <p className="text-sm text-slate-600 mb-6 leading-relaxed">
-              Aby potwierdzić tę operację, wyślemy 6-cyfrowy kod na Twój adres e-mail.
-              Wprowadź go w następnym kroku, żeby kontynuować.
-            </p>
+            <p className="text-sm text-slate-600 mb-6 leading-relaxed">{T.dangerIntro}</p>
             {dangerError && errorBox(dangerError)}
             <div className="flex gap-3">
-              <GlassButton onClick={closeDangerModal} className="flex-1">Anuluj</GlassButton>
+              <GlassButton onClick={closeDangerModal} className="flex-1">{t.common.cancel}</GlassButton>
               <button
                 onClick={handleSendCode}
                 disabled={dangerLoading}
@@ -611,7 +619,7 @@ export function SettingsClient({ settings: initialSettings, notificationSettings
                     <path strokeLinecap="round" d="M4 12a8 8 0 0 1 8-8" />
                   </svg>
                 )}
-                Wyślij kod
+                {T.sendCode}
               </button>
             </div>
           </>
@@ -619,10 +627,8 @@ export function SettingsClient({ settings: initialSettings, notificationSettings
 
         {dangerStep === "code" && (
           <>
-            <p className="text-sm text-slate-600 mb-2 leading-relaxed">
-              Kod został wysłany na Twój adres e-mail. Wprowadź go poniżej, aby potwierdzić.
-            </p>
-            <p className="text-xs text-slate-400 mb-5">Kod jest ważny przez 10 minut.</p>
+            <p className="text-sm text-slate-600 mb-2 leading-relaxed">{T.codeSent}</p>
+            <p className="text-xs text-slate-400 mb-5">{T.codeValid}</p>
 
             <input
               type="text"
@@ -631,14 +637,14 @@ export function SettingsClient({ settings: initialSettings, notificationSettings
               placeholder="000000"
               value={dangerCode}
               onChange={(e) => setDangerCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
-              aria-label="Kod potwierdzający"
+              aria-label={T.ariaCode}
               className="input-glass w-full text-center text-2xl tracking-[0.5em] tabular-nums rounded-xl px-4 py-3 mb-4 outline-none text-slate-900"
             />
 
             {dangerError && errorBox(dangerError)}
 
             <div className="flex gap-3">
-              <GlassButton onClick={closeDangerModal} className="flex-1">Anuluj</GlassButton>
+              <GlassButton onClick={closeDangerModal} className="flex-1">{t.common.cancel}</GlassButton>
               <button
                 onClick={handleConfirmDeletion}
                 disabled={dangerLoading || dangerCode.length !== 6}
@@ -650,7 +656,7 @@ export function SettingsClient({ settings: initialSettings, notificationSettings
                     <path strokeLinecap="round" d="M4 12a8 8 0 0 1 8-8" />
                   </svg>
                 )}
-                Potwierdź i usuń
+                {T.confirmDelete}
               </button>
             </div>
 
@@ -659,7 +665,7 @@ export function SettingsClient({ settings: initialSettings, notificationSettings
               disabled={dangerLoading}
               className="w-full mt-3 text-xs text-slate-400 hover:text-slate-600 transition-colors"
             >
-              Nie otrzymałem kodu — wyślij ponownie
+              {T.resendCode}
             </button>
           </>
         )}
@@ -669,8 +675,8 @@ export function SettingsClient({ settings: initialSettings, notificationSettings
       <GlassModal
         open={showInvite}
         onOpenChange={(o) => { if (!o) closeInviteModal(); }}
-        title="Zaproś znajomego"
-        description="Podaj adres e-mail właściciela salonu. Dostanie zaproszenie do TermCatch."
+        title={T.inviteTitle}
+        description={T.inviteDesc}
       >
         {inviteState === "sent" ? (
           <div className="text-center py-4">
@@ -682,10 +688,10 @@ export function SettingsClient({ settings: initialSettings, notificationSettings
                 <path strokeLinecap="round" strokeLinejoin="round" d="m5 13 4 4L19 7" />
               </svg>
             </div>
-            <p className="text-sm font-semibold text-slate-900">Zaproszenie wysłane</p>
+            <p className="text-sm font-semibold text-slate-900">{T.inviteSent}</p>
             <p className="text-xs text-slate-500 mt-1">{inviteEmail}</p>
             <InkButton onClick={closeInviteModal} className="mt-5 px-6">
-              Gotowe
+              {T.done}
             </InkButton>
           </div>
         ) : (
@@ -696,12 +702,12 @@ export function SettingsClient({ settings: initialSettings, notificationSettings
               value={inviteEmail}
               onChange={(e) => setInviteEmail(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && handleSendInvite()}
-              aria-label="Adres e-mail znajomego"
+              aria-label={T.ariaInviteEmail}
               className="input-glass w-full rounded-xl px-3.5 py-2.5 text-sm outline-none text-slate-800 placeholder:text-slate-400 mb-3"
             />
             {inviteError && errorBox(inviteError)}
             <div className="flex gap-3">
-              <GlassButton onClick={closeInviteModal} className="flex-1">Anuluj</GlassButton>
+              <GlassButton onClick={closeInviteModal} className="flex-1">{t.common.cancel}</GlassButton>
               <InkButton
                 onClick={handleSendInvite}
                 disabled={inviteState === "loading" || !inviteEmail.trim()}
@@ -712,7 +718,7 @@ export function SettingsClient({ settings: initialSettings, notificationSettings
                     <path strokeLinecap="round" d="M4 12a8 8 0 0 1 8-8" />
                   </svg>
                 )}
-                Wyślij zaproszenie
+                {T.sendInvite}
               </InkButton>
             </div>
           </>

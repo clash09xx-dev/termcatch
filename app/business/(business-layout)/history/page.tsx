@@ -5,6 +5,7 @@ import { prisma } from "@/lib/prisma";
 import { getOrCreateDbUser } from "@/lib/auth-user";
 import { AppointmentStatus } from "@prisma/client";
 import { HistoryClient } from "./history-client";
+import { getServerI18n } from "@/lib/i18n/server";
 
 // Permanent, owner-scoped home for past appointments (completed / cancelled /
 // no-show). Server-side filtered + PAGINATED — never loads a salon's entire
@@ -29,6 +30,7 @@ export default async function HistoryPage({
   const filter = sp.filter && FILTER_STATUS[sp.filter] ? sp.filter : "all";
   const page = Math.max(1, parseInt(sp.page ?? "1", 10) || 1);
 
+  const { locale, dict } = await getServerI18n();
   const dbUser = await getOrCreateDbUser();
   const business = (
     await prisma.business.findMany({ where: { ownerId: dbUser.id }, take: 1, select: { id: true } })
@@ -57,7 +59,7 @@ export default async function HistoryPage({
     startTime: a.startTime.toISOString(),
     price: a.price,
     duration: a.duration,
-    customer: `${a.customer.firstName} ${a.customer.lastName}`.trim() || "Klient",
+    customer: `${a.customer.firstName} ${a.customer.lastName}`.trim() || dict.pages.history.unnamedClient,
     service: a.service.name,
     employee: a.employee ? `${a.employee.firstName} ${a.employee.lastName}`.trim() : null,
   }));
@@ -69,6 +71,8 @@ export default async function HistoryPage({
       page={page}
       totalPages={Math.max(1, Math.ceil(total / PAGE_SIZE))}
       total={total}
+      t={dict.pages.history}
+      locale={locale}
     />
   );
 }

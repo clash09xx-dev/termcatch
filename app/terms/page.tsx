@@ -5,7 +5,7 @@ import { LEGAL } from "@/lib/legal";
 export const metadata: Metadata = {
   title: "Regulamin Platformy TermCatch",
   description:
-    "Regulamin platformy TermCatch — technologicznego pośrednika umożliwiającego wyszukiwanie usługodawców, rezerwacje online i zarządzanie działalnością usługową.",
+    "Regulamin platformy TermCatch, technologicznego pośrednika umożliwiającego wyszukiwanie usługodawców, rezerwacje online i zarządzanie działalnością usługową.",
 };
 
 const E = LEGAL.CONTACT_EMAIL;

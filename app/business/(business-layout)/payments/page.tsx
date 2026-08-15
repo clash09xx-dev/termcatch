@@ -8,6 +8,11 @@ import { planKeyFromEnum, PLAN_ENTITLEMENTS } from "@/lib/entitlements";
 import { SubscribeButtons } from "@/components/business/subscribe-buttons";
 import { BillingManageButton } from "@/components/business/billing-manage-button";
 import { PageHeader, GlassCard, Overline, HAIRLINE } from "@/components/ui/glass";
+import { getServerI18n } from "@/lib/i18n/server";
+import { formatDate as fmtDate } from "@/lib/i18n/format";
+import { interpolate } from "@/lib/i18n/dictionaries";
+import type { Dictionary } from "@/lib/i18n/dictionaries";
+import type { Locale } from "@/lib/i18n/config";
 
 // NOTE: Stripe Connect (online card payments / deposits at booking / payouts) is
 // NOT built yet, so this page intentionally shows ONLY the real SaaS
@@ -15,17 +20,11 @@ import { PageHeader, GlassCard, Overline, HAIRLINE } from "@/components/ui/glass
 // advertise unbuilt functionality. Invoicing lives in /business/invoices and is
 // being prepared for a Fakturownia integration.
 
-const SUB_STATUS_LABEL: Record<string, string> = {
-  TRIALING: "Okres próbny",
-  ACTIVE: "Aktywna",
-  PAST_DUE: "Zaległa płatność",
-  CANCELLED: "Anulowana",
-  PAUSED: "Wstrzymana",
-};
+type PayT = Dictionary["pages"]["payments"];
+const subStatusLabel = (T: PayT, status: string): string =>
+  ({ TRIALING: T.statusTRIALING, ACTIVE: T.statusACTIVE, PAST_DUE: T.statusPAST_DUE, CANCELLED: T.statusCANCELLED, PAUSED: T.statusPAUSED } as Record<string, string>)[status] ?? status;
 
-function fmtDate(d: Date | null): string {
-  return d ? new Date(d).toLocaleDateString("pl-PL", { day: "numeric", month: "long", year: "numeric" }) : "";
-}
+const dateOrEmpty = (d: Date | null, locale: Locale): string => (d ? fmtDate(d, locale) : "");
 
 const EMERALD_SOFT = {
   background: "rgba(16,185,129,0.12)",
@@ -70,70 +69,70 @@ function UsageRow({ label, used, limit }: { label: string; used: number; limit: 
 // When access has expired (cancelled/past-due) we show a billing-required state
 // but NEVER touch the salon's data. Only display-safe values reach the browser —
 // no Stripe secret ids (the subscription id is used server-side as a boolean only).
-function SubscriptionCard({ sub, usage }: { sub: SubRow; usage: Usage }) {
+function SubscriptionCard({ sub, usage, T, locale, plans }: { sub: SubRow; usage: Usage; T: PayT; locale: Locale; plans: Dictionary["plans"] }) {
   const active = Boolean(sub?.stripeSubscriptionId);
-  const planLabel = sub ? PLAN_ENTITLEMENTS[planKeyFromEnum(sub.plan as never)].label : null;
+  const planLabel = sub ? plans[planKeyFromEnum(sub.plan as never)] : null;
   const pastDue = sub?.status === "PAST_DUE";
   const cancelled = sub?.status === "CANCELLED";
   return (
     <GlassCard className="p-5 fade-rise fade-rise-d1">
-      <Overline>Subskrypcja TermCatch</Overline>
+      <Overline>{T.subscription}</Overline>
       {active && sub ? (
         <div className="mt-2">
           <div className="flex items-center justify-between gap-2 flex-wrap">
             <p className="text-sm font-semibold text-slate-900">
-              Plan {planLabel} · {SUB_STATUS_LABEL[sub.status] ?? sub.status}
+              {T.planPrefix} {planLabel} · {subStatusLabel(T, sub.status)}
             </p>
             {usage.welcome && (
               <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-semibold" style={EMERALD_SOFT}>
-                WELCOME · 3 miesiące gratis
+                {T.welcomeBadge}
               </span>
             )}
           </div>
           {sub.status === "TRIALING" && sub.trialEndsAt && (
-            <p className="text-sm text-slate-600 mt-1">Okres próbny trwa do {fmtDate(sub.trialEndsAt)}.</p>
+            <p className="text-sm text-slate-600 mt-1">{interpolate(T.trialUntil, { date: dateOrEmpty(sub.trialEndsAt, locale) })}</p>
           )}
           {sub.status !== "TRIALING" && !pastDue && !cancelled && sub.currentPeriodEnd && (
             <p className="text-sm text-slate-600 mt-1">
-              {sub.cancelAtPeriodEnd ? "Subskrypcja zakończy się" : "Kolejne odnowienie"}: {fmtDate(sub.currentPeriodEnd)}.
+              {interpolate(sub.cancelAtPeriodEnd ? T.endsOn : T.renewsOn, { date: dateOrEmpty(sub.currentPeriodEnd, locale) })}
             </p>
           )}
           {pastDue && (
             <p className="text-sm mt-1" style={{ color: "#B45309" }}>
-              Zaległa płatność — zaktualizuj metodę płatności w panelu, aby zachować dostęp. Twoje dane są bezpieczne, nic nie usunęliśmy.
+              {T.pastDueBody}
             </p>
           )}
           {cancelled && (
             <p className="text-sm mt-1" style={{ color: "#B45309" }}>
-              Subskrypcja została anulowana. Wznów ją w panelu, aby odzyskać pełny dostęp — Twoje dane są bezpieczne.
+              {T.cancelledBody}
             </p>
           )}
 
           {/* Usage against the current plan's limits */}
           <div className="mt-3 pt-3" style={{ borderTop: HAIRLINE }}>
-            <UsageRow label="Specjaliści" used={usage.employees} limit={usage.employeeLimit} />
-            <UsageRow label="Lokalizacje" used={usage.locations} limit={usage.locationLimit} />
+            <UsageRow label={T.usageEmployees} used={usage.employees} limit={usage.employeeLimit} />
+            <UsageRow label={T.usageLocations} used={usage.locations} limit={usage.locationLimit} />
           </div>
 
           <div className="mt-3">
             {/* Portal handles upgrade, downgrade, payment method + cancellation. */}
-            <BillingManageButton />
+            <BillingManageButton label={T.manage} opening={T.opening} unconfigured={T.unconfigured} />
           </div>
         </div>
       ) : billingConfigured() ? (
         <div className="mt-2">
           <p className="text-sm text-slate-600 mb-3">
-            Rozpocznij subskrypcję z 7-dniowym okresem próbnym — bez opłat na start.
+            {T.startBody}
           </p>
           <div className="mb-3 pb-3" style={{ borderBottom: HAIRLINE }}>
-            <UsageRow label="Specjaliści" used={usage.employees} limit={usage.employeeLimit} />
-            <UsageRow label="Lokalizacje" used={usage.locations} limit={usage.locationLimit} />
+            <UsageRow label={T.usageEmployees} used={usage.employees} limit={usage.employeeLimit} />
+            <UsageRow label={T.usageLocations} used={usage.locations} limit={usage.locationLimit} />
           </div>
-          <SubscribeButtons />
+          <SubscribeButtons plans={plans} note={T.trialNote} />
         </div>
       ) : (
         <p className="text-sm text-slate-500 mt-2">
-          Płatności są jeszcze konfigurowane. 7 dni za darmo na start, gdy tylko je uruchomimy.
+          {T.notReady}
         </p>
       )}
     </GlassCard>
@@ -174,6 +173,8 @@ export default async function PaymentsPage() {
   const user = await getServerUser();
   if (!user) redirect("/login");
 
+  const { locale, dict } = await getServerI18n();
+  const T = dict.pages.payments;
   const dbUser = await getPaymentsData(user.id);
   const business = dbUser?.ownedBusinesses[0];
   if (!business) redirect("/business/onboarding");
@@ -199,16 +200,14 @@ export default async function PaymentsPage() {
 
   return (
     <div className="max-w-2xl mx-auto space-y-5">
-      <PageHeader title="Płatności" subtitle="Twoja subskrypcja TermCatch" />
+      <PageHeader title={T.title} subtitle={T.subtitle} />
 
-      <SubscriptionCard sub={sub} usage={usage} />
+      <SubscriptionCard sub={sub} usage={usage} T={T} locale={locale} plans={dict.plans} />
 
       {/* Honest forward-looking note — NOT a promise that it already works. */}
       <GlassCard className="p-5 fade-rise fade-rise-d2">
-        <Overline>Wkrótce</Overline>
-        <p className="text-sm text-slate-500 mt-2 leading-relaxed">
-          Płatności online kartą i zaliczki przy rezerwacji przygotowujemy na kolejny etap. Damy znać, gdy będą gotowe — na razie rozliczenia z klientami prowadzisz na miejscu.
-        </p>
+        <Overline>{T.soon}</Overline>
+        <p className="text-sm text-slate-500 mt-2 leading-relaxed">{T.soonBody}</p>
       </GlassCard>
     </div>
   );

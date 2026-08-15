@@ -5,7 +5,7 @@ import { LEGAL } from "@/lib/legal";
 export const metadata: Metadata = {
   title: "Polityka Prywatności TermCatch",
   description:
-    "Polityka prywatności TermCatch zgodna z RODO — jakie dane przetwarzamy, w jakich celach, komu je powierzamy, przez jaki czas i jakie masz prawa.",
+    "Polityka prywatności TermCatch zgodna z RODO: jakie dane przetwarzamy, w jakich celach, komu je powierzamy, przez jaki czas i jakie masz prawa.",
 };
 
 const E = LEGAL.CONTACT_EMAIL;

@@ -18,12 +18,9 @@ const BG = [
 ].join(", ");
 
 const cardStyle: React.CSSProperties = {
-  background: "rgba(255,255,255,0.72)",
-  backdropFilter: "blur(40px) saturate(200%)",
-  WebkitBackdropFilter: "blur(40px) saturate(200%)",
-  border: "1px solid rgba(203,213,225,0.55)",
-  boxShadow:
-    "0 0 0 0.5px rgba(203,213,225,0.45), 0 1px 2px rgba(0,0,0,0.04), 0 6px 20px rgba(100,116,139,0.08), inset 0 1px 0 rgba(255,255,255,0.95)",
+  background: "var(--surface)",
+  border: "1px solid var(--hairline)",
+  boxShadow: "var(--e2)",
   borderRadius: "1rem",
   transition: "transform 300ms cubic-bezier(0.34,1.56,0.64,1), box-shadow 200ms ease",
 };
@@ -46,8 +43,8 @@ export default async function CategoriesPage() {
             <div
               className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full mb-6 text-xs font-semibold uppercase tracking-widest"
               style={{
-                background: "rgba(203,213,225,0.28)",
-                border: "1px solid rgba(203,213,225,0.50)",
+                background: "var(--selected)",
+                border: "1px solid var(--hairline)",
                 color: "#64748B",
               }}
             >
@@ -55,7 +52,7 @@ export default async function CategoriesPage() {
             </div>
             <h1
               className="text-4xl font-bold mb-3"
-              style={{ letterSpacing: "-0.04em", color: "#0F172A" }}
+              style={{ letterSpacing: "var(--track-display)", color: "#0F172A" }}
             >
               {s.catTitle}
             </h1>
@@ -69,15 +66,15 @@ export default async function CategoriesPage() {
               <Link
                 key={cat.slug}
                 href={`/search?category=${cat.slug}`}
-                className="group glass-shimmer-wrap"
+                className="group"
                 style={cardStyle}
               >
                 <div className="p-5">
                   <div
                     className="w-9 h-9 rounded-xl flex items-center justify-center mb-4"
                     style={{
-                      background: "rgba(203,213,225,0.30)",
-                      border: "1px solid rgba(203,213,225,0.45)",
+                      background: "var(--selected)",
+                      border: "1px solid var(--hairline)",
                       transition: "background 200ms ease",
                     }}
                   >
@@ -88,7 +85,7 @@ export default async function CategoriesPage() {
                   </div>
                   <p
                     className="text-sm font-semibold mb-0.5"
-                    style={{ color: "#0F172A", letterSpacing: "-0.01em" }}
+                    style={{ color: "#0F172A", letterSpacing: "var(--track-heading)" }}
                   >
                     {cat.label}
                   </p>

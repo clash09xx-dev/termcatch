@@ -6,7 +6,7 @@ import type { Metadata } from "next";
 export const metadata: Metadata = {
   title: "Cennik — System, który zarabia sam na siebie",
   description:
-    "Przejrzysty cennik TermCatch: cztery plany od 99 zł/mies. 7 dni za darmo na start. Pierwsze 100 salonów — dodatkowo 3 miesiące bez opłat.",
+    "Przejrzysty cennik TermCatch: cztery plany od 99 zł/mies. 7 dni za darmo na start. Pierwsze 100 salonów dostaje dodatkowo 3 miesiące bez opłat.",
   alternates: { canonical: "/pricing" },
 };
 
@@ -18,28 +18,22 @@ const BG = [
 ].join(", ");
 
 const card: React.CSSProperties = {
-  background: "rgba(255,255,255,0.72)",
-  backdropFilter: "blur(40px) saturate(200%)",
-  WebkitBackdropFilter: "blur(40px) saturate(200%)",
-  border: "1px solid rgba(203,213,225,0.55)",
-  boxShadow:
-    "0 0 0 0.5px rgba(203,213,225,0.45), 0 1px 2px rgba(0,0,0,0.04), 0 6px 20px rgba(100,116,139,0.09), 0 20px 48px rgba(100,116,139,0.05), inset 0 1px 0 rgba(255,255,255,0.95), inset 0 -1px 0 rgba(203,213,225,0.10)",
+  background: "var(--surface)",
+  border: "1px solid var(--hairline)",
+  boxShadow: "var(--e3)",
   borderRadius: "1.25rem",
 };
 
 const cardHighlight: React.CSSProperties = {
-  background: "rgba(241,246,251,0.92)",
-  backdropFilter: "blur(40px) saturate(200%)",
-  WebkitBackdropFilter: "blur(40px) saturate(200%)",
-  border: "1.5px solid rgba(148,163,184,0.60)",
-  boxShadow:
-    "0 0 0 0.5px rgba(148,163,184,0.50), 0 2px 4px rgba(0,0,0,0.05), 0 12px 36px rgba(100,116,139,0.14), 0 40px 80px rgba(100,116,139,0.08), inset 0 1px 0 rgba(255,255,255,1), inset 0 -1px 0 rgba(203,213,225,0.15)",
+  background: "var(--surface-2)",
+  border: "1.5px solid var(--hairline-firm)",
+  boxShadow: "var(--e3)",
   borderRadius: "1.5rem",
   transform: "scale(1.025)",
 };
 
 const inkBtn: React.CSSProperties = {
-  background: "linear-gradient(180deg, #1E293B 0%, #0F172A 100%)",
+  background: "var(--ink-raised)",
   color: "#F8FAFC",
   boxShadow:
     "0 1px 2px rgba(0,0,0,0.20), 0 10px 24px rgba(15,23,42,0.28), inset 0 1px 0 rgba(255,255,255,0.15)",
@@ -55,10 +49,8 @@ const inkBtn: React.CSSProperties = {
 };
 
 const ghostBtn: React.CSSProperties = {
-  background: "rgba(255,255,255,0.70)",
-  backdropFilter: "blur(20px)",
-  WebkitBackdropFilter: "blur(20px)",
-  border: "1px solid rgba(203,213,225,0.55)",
+  background: "var(--surface)",
+  border: "1px solid var(--hairline)",
   borderRadius: "0.75rem",
   padding: "0.75rem 0",
   width: "100%",
@@ -158,7 +150,7 @@ const PLANS = [
 const FAQ = [
   {
     q: "Czy jest okres próbny?",
-    a: "Tak — każdy nowy salon zaczyna od 7 dni za darmo, bez podawania karty na start. Po zakończeniu okresu próbnego przechodzisz na wybrany płatny plan.",
+    a: "Tak, każdy nowy salon zaczyna od 7 dni za darmo, bez podawania karty na start. Po zakończeniu okresu próbnego przechodzisz na wybrany płatny plan.",
   },
   {
     q: "Na czym polega oferta startowa i czy łączy się z okresem próbnym?",
@@ -170,11 +162,11 @@ const FAQ = [
   },
   {
     q: "Czy jest ukryta opłata za instalację?",
-    a: "Nie. Rejestracja i konfiguracja są bezpłatne. Płacisz tylko za wybrany plan — i tylko wtedy, kiedy chcesz.",
+    a: "Nie. Rejestracja i konfiguracja są bezpłatne. Płacisz tylko za wybrany plan i tylko wtedy, kiedy chcesz.",
   },
   {
     q: "Czy mogę zmienić plan w dowolnym momencie?",
-    a: "Tak. Upgrade działa natychmiast, downgrade — od następnego okresu rozliczeniowego. Możesz też zrezygnować w każdej chwili, bez okresu wypowiedzenia.",
+    a: "Tak. Upgrade działa natychmiast, a downgrade od następnego okresu rozliczeniowego. Możesz też zrezygnować w każdej chwili, bez okresu wypowiedzenia.",
   },
   {
     q: "Jak działają płatności online?",
@@ -209,8 +201,8 @@ export default function PricingPage() {
             <div
               className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full mb-6 text-xs font-semibold uppercase tracking-widest"
               style={{
-                background: "rgba(203,213,225,0.28)",
-                border: "1px solid rgba(203,213,225,0.50)",
+                background: "var(--selected)",
+                border: "1px solid var(--hairline)",
                 color: "#64748B",
               }}
             >
@@ -218,7 +210,7 @@ export default function PricingPage() {
             </div>
             <h1
               className="text-5xl font-bold mb-4"
-              style={{ letterSpacing: "-0.04em", color: "#0F172A" }}
+              style={{ letterSpacing: "var(--track-display)", color: "#0F172A" }}
             >
               System, który{" "}
               <span
@@ -233,27 +225,24 @@ export default function PricingPage() {
               </span>
             </h1>
             <p className="text-lg" style={{ color: "#64748B" }}>
-              Jedna przewidywalna stawka. Bez ukrytych opłat. 7 dni za darmo na start — bez karty.
+              Jedna przewidywalna stawka. Bez ukrytych opłat. 7 dni za darmo na start, bez karty.
             </p>
           </div>
 
           {/* Launch offer banner */}
           <div className="max-w-3xl mx-auto mb-16">
             <div
-              className="px-6 py-5 sm:px-8 flex flex-col sm:flex-row items-center gap-4 text-center sm:text-left glass-shimmer-wrap"
+              className="px-6 py-5 sm:px-8 flex flex-col sm:flex-row items-center gap-4 text-center sm:text-left"
               style={{
-                background: "rgba(241,246,251,0.90)",
-                backdropFilter: "blur(40px) saturate(180%)",
-                WebkitBackdropFilter: "blur(40px) saturate(180%)",
-                border: "1px solid rgba(148,163,184,0.45)",
+                background: "var(--surface-2)",
+                border: "1px solid var(--hairline-firm)",
                 borderRadius: "1.25rem",
-                boxShadow:
-                  "0 0 0 0.5px rgba(148,163,184,0.35), 0 4px 16px rgba(100,116,139,0.10), inset 0 1px 0 rgba(255,255,255,1)",
+                boxShadow: "var(--e2)",
               }}
             >
               <div
                 className="w-9 h-9 rounded-xl flex-shrink-0 flex items-center justify-center"
-                style={{ background: "rgba(203,213,225,0.45)", border: "1px solid rgba(203,213,225,0.55)" }}
+                style={{ background: "rgba(203,213,225,0.45)", border: "1px solid var(--hairline)" }}
               >
                 <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="#64748B" strokeWidth="2">
                   <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6l4 2" />
@@ -261,8 +250,8 @@ export default function PricingPage() {
                 </svg>
               </div>
               <div className="flex-1">
-                <p className="font-bold text-base" style={{ color: "#0F172A", letterSpacing: "-0.02em" }}>
-                  Pierwsze 3 miesiące bez opłat z kodem WELCOME — dla pierwszych 100 salonów.
+                <p className="font-bold text-base" style={{ color: "#0F172A", letterSpacing: "var(--track-title)" }}>
+                  Pierwsze 3 miesiące bez opłat z kodem WELCOME, dla pierwszych 100 salonów.
                 </p>
                 <p className="text-sm mt-0.5" style={{ color: "#64748B" }}>
                   Pełny plan, zero kosztów, bez karty. Wystarczy rejestracja salonu.
@@ -270,9 +259,9 @@ export default function PricingPage() {
               </div>
               <Link
                 href="/register?role=business"
-                className="btn-spring glass-shimmer-wrap whitespace-nowrap px-5 py-2.5 text-sm font-semibold"
+                className="btn-spring whitespace-nowrap px-5 py-2.5 text-sm font-semibold"
                 style={{
-                  background: "linear-gradient(180deg, #1E293B 0%, #0F172A 100%)",
+                  background: "var(--ink-raised)",
                   color: "#F8FAFC",
                   border: "1px solid #0F172A",
                   borderRadius: "0.75rem",
@@ -289,7 +278,7 @@ export default function PricingPage() {
             {PLANS.map((plan) => (
               <div
                 key={plan.name}
-                className="p-8 xl:p-6 flex flex-col glass-shimmer-wrap"
+                className="p-8 xl:p-6 flex flex-col"
                 style={plan.highlight ? cardHighlight : card}
               >
                 {plan.highlight && (
@@ -308,7 +297,7 @@ export default function PricingPage() {
                 <div className="mb-6">
                   <h2
                     className="text-lg font-bold mb-2"
-                    style={{ letterSpacing: "-0.02em", color: "#0F172A" }}
+                    style={{ letterSpacing: "var(--track-title)", color: "#0F172A" }}
                   >
                     {plan.name}
                   </h2>
@@ -323,7 +312,7 @@ export default function PricingPage() {
                     <span
                       className="text-4xl font-bold"
                       style={{
-                        letterSpacing: "-0.04em",
+                        letterSpacing: "var(--track-display)",
                         background: plan.highlight
                           ? "linear-gradient(135deg, #475569 0%, #94A3B8 100%)"
                           : "none",
@@ -357,7 +346,7 @@ export default function PricingPage() {
 
                 <Link
                   href={plan.href}
-                  className="btn-spring glass-shimmer-wrap"
+                  className="btn-spring"
                   style={plan.highlight ? inkBtn : ghostBtn}
                 >
                   {plan.cta}
@@ -380,7 +369,7 @@ export default function PricingPage() {
           <div className="max-w-2xl mx-auto">
             <h2
               className="text-2xl font-bold mb-8 text-center"
-              style={{ letterSpacing: "-0.03em", color: "#0F172A" }}
+              style={{ letterSpacing: "var(--track-display)", color: "#0F172A" }}
             >
               Najczęstsze pytania
             </h2>
@@ -388,12 +377,12 @@ export default function PricingPage() {
               {FAQ.map((item) => (
                 <div
                   key={item.q}
-                  className="p-6 glass-shimmer-wrap"
+                  className="p-6"
                   style={card}
                 >
                   <p
                     className="font-semibold mb-2 text-sm"
-                    style={{ color: "#0F172A", letterSpacing: "-0.01em" }}
+                    style={{ color: "#0F172A", letterSpacing: "var(--track-heading)" }}
                   >
                     {item.q}
                   </p>

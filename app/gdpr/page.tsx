@@ -5,7 +5,7 @@ import { LEGAL } from "@/lib/legal";
 export const metadata: Metadata = {
   title: "Twoje prawa dotyczące danych osobowych — RODO | TermCatch",
   description:
-    "Prosto o Twoich prawach z RODO w TermCatch: dostęp, kopia, sprostowanie, usunięcie, ograniczenie, sprzeciw, przenoszenie i cofnięcie zgody — oraz jak je zrealizować.",
+    "Prosto o Twoich prawach z RODO w TermCatch: dostęp, kopia, sprostowanie, usunięcie, ograniczenie, sprzeciw, przenoszenie i cofnięcie zgody, oraz jak je zrealizować.",
 };
 
 const E = LEGAL.CONTACT_EMAIL;
@@ -67,7 +67,7 @@ export default function GdprPage() {
   return (
     <LegalPage
       title="Twoje prawa dotyczące danych osobowych"
-      subtitle="RODO w praktyce — prosto i przejrzyście"
+      subtitle="RODO w praktyce, prosto i przejrzyście"
       showOperator={false}
       intro={
         <p>

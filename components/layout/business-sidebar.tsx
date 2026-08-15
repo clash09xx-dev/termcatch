@@ -2,20 +2,14 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useState } from "react";
-import { motion } from "framer-motion";
+import { useEffect, useState } from "react";
 import { cn } from "@/lib/utils";
 import { Wordmark } from "@/components/brand/wordmark";
 import { navGroupsFor } from "./business-nav";
 import { INK_GRADIENT } from "@/components/ui/glass/tokens";
 import { useT } from "@/components/i18n/i18n-provider";
 
-const PLAN_LABELS: Record<string, string> = {
-  FREE: "Plan darmowy",
-  SOLO: "Plan Solo",
-  TEAM: "Plan Team",
-  PRO: "Plan Professional",
-};
+const COLLAPSE_KEY = "tc.sidebar.collapsed";
 
 export function BusinessSidebar({
   businessName,
@@ -29,29 +23,46 @@ export function BusinessSidebar({
   const t = useT();
   const pathname = usePathname();
   const [collapsed, setCollapsed] = useState(false);
-  const name = businessName ?? "Twój salon";
+  // The choice used to reset on every navigation. It is a workspace preference,
+  // so it survives the session.
+  useEffect(() => {
+    try {
+      if (localStorage.getItem(COLLAPSE_KEY) === "1") setCollapsed(true);
+    } catch { /* private mode — the default is fine */ }
+  }, []);
+  function toggleCollapsed(next: boolean) {
+    setCollapsed(next);
+    try { localStorage.setItem(COLLAPSE_KEY, next ? "1" : "0"); } catch { /* ignore */ }
+  }
+
+  const name = businessName ?? t.businessNav.salonProfile;
   const initial = (businessName ?? "T").charAt(0).toUpperCase();
-  const planLabel = (plan && PLAN_LABELS[plan]) || "Wczesny dostęp";
+  const planLabel = plan && plan in t.plans
+    ? `${t.pages.payments.planPrefix} ${t.plans[plan as keyof typeof t.plans]}`
+    : t.plans.FREE;
   const navGroups = navGroupsFor({ multiLocation });
 
   return (
-    <motion.aside
-      animate={{ width: collapsed ? 66 : 244 }}
-      transition={{ type: "spring", stiffness: 320, damping: 34 }}
-      className="hidden lg:flex flex-col h-screen shrink-0 overflow-hidden relative z-20"
+    // Width used to be spring-animated, which re-laid-out the whole main column
+    // on every frame — the most expensive animation in the product, for a
+    // control used a few times a day. The rail now snaps and the labels fade,
+    // which reads faster and costs one composited property instead of a reflow.
+    <aside
+      className="hidden lg:flex flex-col h-[100dvh] shrink-0 overflow-hidden relative z-20"
       style={{
-        background: "rgba(255,255,255,0.55)",
-        backdropFilter: "blur(28px) saturate(200%)",
-        WebkitBackdropFilter: "blur(28px) saturate(200%)",
-        borderRight: "1px solid rgba(203,213,225,0.40)",
-        boxShadow: "1px 0 0 rgba(255,255,255,0.6) inset, 6px 0 30px rgba(100,116,139,0.06)",
+        width: collapsed ? 66 : 244,
+        background: "var(--chrome)",
+        backdropFilter: "var(--chrome-blur)",
+        WebkitBackdropFilter: "var(--chrome-blur)",
+        borderRight: "1px solid var(--hairline-soft)",
+        boxShadow: "var(--e1)",
       }}
     >
       {/* Brand + collapse */}
       <div className={cn("flex items-center h-16 flex-shrink-0", collapsed ? "justify-center px-2" : "px-4")}>
         {collapsed ? (
           <button
-            onClick={() => setCollapsed(false)}
+            onClick={() => toggleCollapsed(false)}
             className="icon-btn p-2 rounded-xl"
             style={{ color: "#94A3B8" }}
             aria-label={t.a11y.expandMenu}
@@ -62,7 +73,7 @@ export function BusinessSidebar({
           <>
             <Wordmark className="text-[1.02rem]" variant="light" />
             <button
-              onClick={() => setCollapsed(true)}
+              onClick={() => toggleCollapsed(true)}
               className="ml-auto icon-btn p-1.5 rounded-lg"
               style={{ color: "#CBD5E1" }}
               aria-label={t.a11y.collapseMenu}
@@ -76,7 +87,7 @@ export function BusinessSidebar({
       {/* Nav */}
       <nav className={cn("flex-1 overflow-y-auto no-scrollbar pb-3", collapsed ? "px-2" : "px-3")}>
         {navGroups.map((group, gi) => (
-          <div key={group.label} className={gi > 0 ? "mt-5" : "mt-1"}>
+          <div key={group.groupKey} className={gi > 0 ? "mt-5" : "mt-1"}>
             {collapsed ? (
               <div className="mx-2 mb-2 h-px" style={{ background: "linear-gradient(90deg,transparent,rgba(148,163,184,0.28),transparent)" }} />
             ) : (
@@ -118,7 +129,7 @@ export function BusinessSidebar({
       </nav>
 
       {/* Salon identity */}
-      <div className={cn("flex-shrink-0 p-2.5", collapsed && "flex justify-center")} style={{ borderTop: "1px solid rgba(203,213,225,0.30)" }}>
+      <div className={cn("flex-shrink-0 p-2.5", collapsed && "flex justify-center")} style={{ borderTop: "1px solid var(--hairline-soft)" }}>
         <Link
           href="/business/settings"
           title={collapsed ? name : undefined}
@@ -141,6 +152,6 @@ export function BusinessSidebar({
           )}
         </Link>
       </div>
-    </motion.aside>
+    </aside>
   );
 }

@@ -18,23 +18,23 @@ import { interpolate } from "@/lib/i18n/dictionaries";
 type Turn = { role: "user" | "assistant"; text: string; results?: DiscoveryResult[] };
 
 const GLASS: React.CSSProperties = {
-  background: "rgba(255,255,255,0.72)",
-  backdropFilter: "blur(28px) saturate(200%)",
-  WebkitBackdropFilter: "blur(28px) saturate(200%)",
-  border: "1px solid rgba(203,213,225,0.50)",
-  boxShadow:
-    "0 0 0 0.5px rgba(203,213,225,0.30), 0 6px 20px rgba(100,116,139,0.08), inset 0 1px 0 rgba(255,255,255,0.95)",
+  background: "var(--chrome-strong)",
+  backdropFilter: "var(--chrome-blur-lg)",
+  WebkitBackdropFilter: "var(--chrome-blur-lg)",
+  border: "1px solid var(--hairline)",
+  boxShadow: "var(--e2)",
 };
 
 const INK: React.CSSProperties = {
-  background: "linear-gradient(180deg,#1E293B,#0F172A)",
+  background: "var(--ink-raised)",
   border: "1px solid #0F172A",
   color: "#F8FAFC",
   boxShadow: "0 1px 2px rgba(0,0,0,0.18), 0 8px 20px rgba(15,23,42,0.22), inset 0 1px 0 rgba(255,255,255,0.15)",
 };
 
 export function CustomerAssistant({ className }: { className?: string }) {
-  const s = useT().search;
+  const dict = useT();
+  const s = dict.search;
   const SUGGESTIONS = s.suggestions.split(",");
   const [expanded, setExpanded] = useState(false);
   const [turns, setTurns] = useState<Turn[]>([]);
@@ -58,7 +58,7 @@ export function CustomerAssistant({ className }: { className?: string }) {
         reply = await discoverSalons(userTurns.filter((t) => t.role === "user").map((t) => t.text));
       } catch {
         setFailed(true);
-        reply = { kind: "empty", text: "Coś poszło nie tak po naszej stronie. Spróbuj ponownie za chwilę." };
+        reply = { kind: "empty", text: dict.errors.generic };
       }
       setTurns((prev) => [
         ...prev,
@@ -112,13 +112,13 @@ export function CustomerAssistant({ className }: { className?: string }) {
             <div key={i} className={cn("flex", t.role === "user" ? "justify-end" : "justify-start")}>
               <div
                 className={cn("max-w-[94%] rounded-2xl px-3 py-2 text-sm", t.role === "user" ? "text-white" : "text-slate-700")}
-                style={t.role === "user" ? { background: "linear-gradient(180deg,#1E293B,#0F172A)" } : { background: "rgba(203,213,225,0.18)", border: "1px solid rgba(203,213,225,0.35)" }}
+                style={t.role === "user" ? { background: "var(--ink-raised)" } : { background: "rgba(203,213,225,0.18)", border: "1px solid var(--hairline-soft)" }}
               >
                 <p>{t.text}</p>
                 {t.results && (
                   <ul className="mt-2 space-y-1.5">
                     {t.results.map((r) => (
-                      <li key={r.slug} className="rounded-xl px-3 py-2.5" style={{ background: "rgba(255,255,255,0.88)", border: "1px solid rgba(203,213,225,0.45)" }}>
+                      <li key={r.slug} className="rounded-xl px-3 py-2.5" style={{ background: "rgba(255,255,255,0.88)", border: "1px solid var(--hairline)" }}>
                         <div className="flex items-center justify-between gap-2">
                           <span className="text-sm font-semibold text-slate-900 truncate">{r.name}</span>
                           <span className="text-xs text-slate-500 tabular-nums flex-shrink-0">
@@ -130,7 +130,7 @@ export function CustomerAssistant({ className }: { className?: string }) {
                           <Link
                             href={`/b/${r.slug}`}
                             className="btn-spring px-2.5 py-1 rounded-lg text-[11px] font-semibold text-slate-600"
-                            style={{ background: "rgba(255,255,255,0.8)", border: "1px solid rgba(203,213,225,0.55)" }}
+                            style={{ background: "rgba(255,255,255,0.8)", border: "1px solid var(--hairline)" }}
                           >
                             {s.viewProfile}
                           </Link>
@@ -179,7 +179,7 @@ export function CustomerAssistant({ className }: { className?: string }) {
           placeholder={s.placeholder}
           aria-label={s.inputAria}
           className="flex-1 px-3.5 py-2.5 rounded-xl text-sm outline-none text-slate-800 placeholder:text-slate-400"
-          style={{ background: "rgba(255,255,255,0.75)", border: "1px solid rgba(203,213,225,0.55)", boxShadow: "inset 0 1px 0 rgba(255,255,255,0.9)" }}
+          style={{ background: "rgba(255,255,255,0.75)", border: "1px solid var(--hairline)", boxShadow: "inset 0 1px 0 rgba(255,255,255,0.9)" }}
         />
         <button
           type="submit"
@@ -200,7 +200,7 @@ export function CustomerAssistant({ className }: { className?: string }) {
               type="button"
               onClick={() => ask(s)}
               className="btn-spring px-2.5 py-1 rounded-lg text-[11px] font-medium text-slate-600"
-              style={{ background: "rgba(255,255,255,0.7)", border: "1px solid rgba(203,213,225,0.5)" }}
+              style={{ background: "rgba(255,255,255,0.7)", border: "1px solid var(--hairline)" }}
             >
               {s}
             </button>

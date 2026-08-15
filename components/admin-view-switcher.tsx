@@ -19,7 +19,7 @@ export function AdminViewSwitcher() {
   const pathname = usePathname();
 
   return (
-    <div className="fixed bottom-20 md:bottom-4 right-4 z-[70]">
+    <div className="fixed bottom-20 md:bottom-4 right-4" style={{ zIndex: "var(--z-switch)" as unknown as number }}>
       <div className="flex items-center gap-1 bg-gray-900 rounded-full p-1 shadow-xl">
         <span className="text-[9px] font-bold text-white/40 uppercase tracking-wider pl-2.5 pr-1 select-none">
           Widok

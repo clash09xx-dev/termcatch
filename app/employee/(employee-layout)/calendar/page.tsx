@@ -10,11 +10,13 @@ import { warsawDateString, warsawDayStartUtc } from "@/lib/timezone";
 import { PageHeader, GlassCard, EmptyState } from "@/components/ui/glass";
 import { CHIP } from "@/components/ui/glass/tokens";
 import { ApptRow, EMPLOYEE_APPT_SELECT } from "@/components/employee/appt-row";
+import { getServerI18n } from "@/lib/i18n/server";
 
 const CANCELLED: AppointmentStatus[] = ["CANCELLED_CUSTOMER", "CANCELLED_BUSINESS"];
 const YMD = /^\d{4}-\d{2}-\d{2}$/;
 
 export default async function EmployeeCalendar({ searchParams }: { searchParams: Promise<{ date?: string }> }) {
+  const { dict } = await getServerI18n();
   const ctx = await resolveEmployeeContext();
   if (!ctx) redirect("/");
 
@@ -47,7 +49,7 @@ export default async function EmployeeCalendar({ searchParams }: { searchParams:
         {appts.length === 0 ? (
           <div className="p-6"><EmptyState icon={<Ico />} title="Brak wizyt" body="W tym dniu nie masz zaplanowanych wizyt." /></div>
         ) : (
-          <div>{appts.map((a, i) => <ApptRow key={a.id} a={a} first={i === 0} />)}</div>
+          <div>{appts.map((a, i) => <ApptRow statusLabel={dict.statuses[a.status]} key={a.id} a={a} first={i === 0} />)}</div>
         )}
       </GlassCard>
     </div>

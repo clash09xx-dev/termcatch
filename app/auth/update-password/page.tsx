@@ -36,7 +36,7 @@ export default function UpdatePasswordPage() {
         setError(
           updateError.message.includes("different from the old")
             ? "Nowe hasło musi różnić się od poprzedniego."
-            : "Nie udało się zmienić hasła. Link mógł wygasnąć — poproś o nowy."
+            : "Nie udało się zmienić hasła. Link mógł wygasnąć, więc poproś o nowy."
         );
         return;
       }
@@ -115,7 +115,7 @@ export default function UpdatePasswordPage() {
                   disabled={isPending}
                   className="btn-spring w-full py-2.5 px-4 disabled:opacity-50 font-semibold text-sm rounded-xl"
                   style={{
-                    background: "linear-gradient(180deg, #1E293B 0%, #0F172A 100%)",
+                    background: "var(--ink-raised)",
                     border: "1px solid #0F172A",
                     color: "#F8FAFC",
                     boxShadow: "0 1px 2px rgba(0,0,0,0.20), 0 8px 20px rgba(15,23,42,0.24), inset 0 1px 0 rgba(255,255,255,0.15)",

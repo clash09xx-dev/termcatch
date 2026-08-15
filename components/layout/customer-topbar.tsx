@@ -1,22 +1,27 @@
 "use client";
 
 import Link from "next/link";
-import { motion } from "framer-motion";
 import { logoutAction } from "@/actions/auth";
 import { Wordmark } from "@/components/brand/wordmark";
 import { useUnreadCount } from "@/hooks/use-unread-count";
+import { useT } from "@/components/i18n/i18n-provider";
+import { useScrolledUnder } from "@/hooks/use-scrolled";
 
 export function CustomerTopbar() {
+  const t = useT();
   const unreadCount = useUnreadCount();
+  const [barRef, scrolled] = useScrolledUnder<HTMLElement>();
   return (
     <header
+      ref={barRef}
       className="h-16 flex items-center gap-4 px-6 shrink-0"
       style={{
-        background: "rgba(255,255,255,0.82)",
-        backdropFilter: "blur(40px) saturate(200%)",
-        WebkitBackdropFilter: "blur(40px) saturate(200%)",
-        borderBottom: "1px solid rgba(203,213,225,0.35)",
-        boxShadow: "0 0 0 0.5px rgba(203,213,225,0.20), 0 1px 3px rgba(0,0,0,0.04), 0 4px 16px rgba(100,116,139,0.06), inset 0 1px 0 rgba(255,255,255,0.90)",
+        background: scrolled ? "var(--chrome-strong)" : "var(--chrome)",
+        backdropFilter: "var(--chrome-blur)",
+        WebkitBackdropFilter: "var(--chrome-blur)",
+        borderBottom: "1px solid " + (scrolled ? "var(--hairline)" : "transparent"),
+        boxShadow: scrolled ? "0 1px 12px -6px rgba(15,23,42,0.24)" : "none",
+        transition: "background var(--dur-fast) var(--ease-hover), border-color var(--dur-fast) var(--ease-hover), box-shadow var(--dur-fast) var(--ease-hover)",
       }}
     >
       {/* Mobile logo */}
@@ -25,30 +30,24 @@ export function CustomerTopbar() {
       </Link>
 
       {/* Search shortcut */}
-      <motion.div
-        className="flex-1 max-w-sm glass-shimmer-wrap rounded-xl"
-        whileHover={{ scale: 1.01 }}
-        transition={{ type: "spring", stiffness: 400, damping: 28 }}
-      >
+      <div className="flex-1 max-w-sm rounded-xl">
         <Link
           href="/search"
           className="flex items-center gap-2 px-3 py-2 rounded-xl text-sm w-full"
           style={{
-            background: "rgba(255,255,255,0.78)",
-            backdropFilter: "blur(20px) saturate(190%)",
-            WebkitBackdropFilter: "blur(20px) saturate(190%)",
-            border: "1px solid rgba(203,213,225,0.45)",
+            background: "var(--surface)",
+            border: "1px solid var(--hairline)",
             color: "#94A3B8",
-            boxShadow: "0 0 0 0.5px rgba(203,213,225,0.25), inset 0 1px 0 rgba(255,255,255,0.90), inset 0 1px 3px rgba(0,0,0,0.02)",
+            boxShadow: "var(--e1)",
           }}
         >
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
             <circle cx="11" cy="11" r="8" />
             <path d="m21 21-4.35-4.35" />
           </svg>
-          Szukaj specjalisty...
+          {t.customer.searchPlaceholder}
         </Link>
-      </motion.div>
+      </div>
 
       <div className="flex items-center gap-2 ml-auto">
         {/* Notifications */}
@@ -56,7 +55,7 @@ export function CustomerTopbar() {
           href="/customer/notifications"
           className="relative p-2 rounded-lg icon-btn"
           style={{ color: "#94A3B8" }}
-          aria-label={unreadCount > 0 ? `Powiadomienia (${unreadCount})` : "Powiadomienia"}
+          aria-label={unreadCount > 0 ? `${t.a11y.notifications} (${unreadCount})` : t.a11y.notifications}
         >
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
             <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
@@ -78,8 +77,8 @@ export function CustomerTopbar() {
             type="submit"
             className="p-2 rounded-lg icon-btn"
             style={{ color: "#CBD5E1" }}
-            title="Wyloguj"
-            aria-label="Wyloguj"
+            title={t.a11y.logout}
+            aria-label={t.a11y.logout}
           >
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />

@@ -6,7 +6,7 @@ type Result = { ok: boolean; text: string } | null;
 
 const ERRORS: Record<string, string> = {
   forbidden: "Brak uprawnień.",
-  rate_limited: "Za dużo prób — odczekaj chwilę.",
+  rate_limited: "Za dużo prób. Odczekaj chwilę.",
   unconfigured: "Twilio nie jest skonfigurowane (brak zmiennych środowiskowych).",
   invalid_json: "Nieprawidłowe żądanie.",
   invalid_phone: "Nieprawidłowy numer telefonu.",
@@ -15,7 +15,7 @@ const ERRORS: Record<string, string> = {
 
 function describe(status: number, data: { error?: string; code?: number; missing?: string[] }): string {
   if (data.error === "unconfigured" && data.missing?.length) {
-    return `Twilio nie jest skonfigurowane — brak: ${data.missing.join(", ")}.`;
+    return `Twilio nie jest skonfigurowane. Brakuje: ${data.missing.join(", ")}.`;
   }
   const base = (data.error && ERRORS[data.error]) || `Nie udało się wysłać (HTTP ${status}).`;
   return data.code ? `${base} Kod Twilio: ${data.code}.` : base;
@@ -43,7 +43,7 @@ export function TestSmsForm() {
         setResult({ ok: false, text: describe(res.status, data) });
       }
     } catch {
-      setResult({ ok: false, text: "Błąd sieci — spróbuj ponownie." });
+      setResult({ ok: false, text: "Błąd sieci. Spróbuj ponownie." });
     } finally {
       setLoading(false);
     }

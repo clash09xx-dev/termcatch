@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
-import { stepSlide, stepFade } from "@/lib/motion";
+import { EASE_OUT, SPRING, stepFade, stepSlide } from "@/lib/motion";
 import { formatCurrency, formatDuration, formatDate, getInitials, cn } from "@/lib/utils";
 import { previewCoupon, type CouponPreview } from "@/lib/actions/coupon-redemption";
 import { useLocale } from "@/components/i18n/i18n-provider";
@@ -72,26 +72,23 @@ type Step = 1 | 2 | 3 | 4 | 5;
 // ─── Machined Silver / Liquid Glass tokens ───────────────────────────────────
 // Container gets the blur; repeated list rows use solid whites (perf).
 
-const INK = "linear-gradient(180deg, #1E293B 0%, #0F172A 100%)";
+const INK = "var(--ink-raised)";
 
 const INK_SHADOW =
   "0 1px 2px rgba(0,0,0,0.20), 0 10px 24px rgba(15,23,42,0.28), 0 2px 6px rgba(15,23,42,0.18), inset 0 1px 0 rgba(255,255,255,0.15)";
 
 const S = {
   card: {
-    background: "rgba(255,255,255,0.72)",
-    backdropFilter: "blur(40px) saturate(200%)",
-    WebkitBackdropFilter: "blur(40px) saturate(200%)",
-    border: "1px solid rgba(203,213,225,0.50)",
-    boxShadow:
-      "0 0 0 0.5px rgba(203,213,225,0.40), 0 2px 4px rgba(0,0,0,0.04), 0 12px 36px rgba(100,116,139,0.10), 0 40px 80px rgba(100,116,139,0.05), inset 0 1px 0 rgba(255,255,255,0.98), inset 0 -1px 0 rgba(203,213,225,0.10)",
+    background: "var(--surface)",
+    border: "1px solid var(--hairline)",
+    boxShadow: "var(--e3)",
   } as React.CSSProperties,
 
   // Selectable list row — rest state (no blur: these repeat)
   row: {
-    background: "rgba(255,255,255,0.80)",
-    border: "1px solid rgba(203,213,225,0.45)",
-    boxShadow: "0 0 0 0.5px rgba(203,213,225,0.20), 0 1px 2px rgba(0,0,0,0.02), inset 0 1px 0 rgba(255,255,255,0.90)",
+    background: "var(--surface)",
+    border: "1px solid var(--hairline)",
+    boxShadow: "var(--e1)",
   } as React.CSSProperties,
 
   // Selectable list row — ink-filled selected state
@@ -104,21 +101,18 @@ const S = {
   // Static summary panel
   panel: {
     background: "rgba(248,250,252,0.85)",
-    border: "1px solid rgba(203,213,225,0.45)",
-    boxShadow: "0 0 0 0.5px rgba(203,213,225,0.20), inset 0 1px 0 rgba(255,255,255,0.95)",
+    border: "1px solid var(--hairline)",
+    boxShadow: "var(--e1)",
   } as React.CSSProperties,
 
   // Sticky footer bar inside the card
   footer: {
     background: "rgba(248,250,252,0.92)",
-    backdropFilter: "blur(24px) saturate(180%)",
-    WebkitBackdropFilter: "blur(24px) saturate(180%)",
-    borderTop: "1px solid rgba(203,213,225,0.45)",
-    boxShadow: "0 -8px 24px rgba(100,116,139,0.06)",
+    borderTop: "1px solid var(--hairline)",
+    boxShadow: "var(--e2)",
   } as React.CSSProperties,
 };
 
-const SPRING = { type: "spring", stiffness: 420, damping: 26 } as const;
 
 // ─── Buttons ─────────────────────────────────────────────────────────────────
 
@@ -134,21 +128,18 @@ function PrimaryBtn({
   className?: string;
 }) {
   return (
-    <motion.button
+    <button
       type="button"
       onClick={onClick}
-      disabled={disabled}
-      whileHover={disabled ? undefined : { scale: 1.015, y: -1 }}
-      whileTap={disabled ? undefined : { scale: 0.978 }}
-      transition={SPRING}
+      disabled={disabled} 
       className={cn(
-        "py-3 px-4 rounded-xl text-sm font-semibold disabled:opacity-40 disabled:cursor-not-allowed",
+        "btn-spring py-3 px-4 rounded-xl text-sm font-semibold disabled:opacity-40 disabled:cursor-not-allowed",
         className
       )}
       style={{ background: INK, border: "1px solid #0F172A", color: "#F8FAFC", boxShadow: INK_SHADOW }}
     >
       {children}
-    </motion.button>
+    </button>
   );
 }
 
@@ -164,23 +155,20 @@ function GhostBtn({
   className?: string;
 }) {
   return (
-    <motion.button
+    <button
       type="button"
       onClick={onClick}
-      disabled={disabled}
-      whileHover={disabled ? undefined : { scale: 1.015, y: -1 }}
-      whileTap={disabled ? undefined : { scale: 0.978 }}
-      transition={SPRING}
-      className={cn("py-3 px-4 rounded-xl text-sm font-semibold disabled:opacity-40", className)}
+      disabled={disabled} 
+      className={cn("btn-spring py-3 px-4 rounded-xl text-sm font-semibold disabled:opacity-40", className)}
       style={{
-        background: "rgba(255,255,255,0.72)",
-        border: "1px solid rgba(203,213,225,0.55)",
+        background: "var(--surface)",
+        border: "1px solid var(--hairline)",
         color: "#334155",
-        boxShadow: "0 0 0 0.5px rgba(203,213,225,0.25), 0 1px 2px rgba(0,0,0,0.03), inset 0 1px 0 rgba(255,255,255,0.90)",
+        boxShadow: "var(--e1)",
       }}
     >
       {children}
-    </motion.button>
+    </button>
   );
 }
 
@@ -222,7 +210,7 @@ function StepIndicator({
           >
             <div className="flex flex-col items-center gap-1.5">
               <div
-                className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold transition-all duration-200"
+                className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold transition-colors duration-200"
                 style={
                   isDone || isCurrent
                     ? {
@@ -234,9 +222,9 @@ function StepIndicator({
                           : "0 1px 3px rgba(15,23,42,0.15), inset 0 1px 0 rgba(255,255,255,0.12)",
                       }
                     : {
-                        background: "rgba(255,255,255,0.70)",
+                        background: "var(--surface)",
                         color: "#94A3B8",
-                        border: "1px solid rgba(203,213,225,0.50)",
+                        border: "1px solid var(--hairline)",
                         boxShadow: "inset 0 1px 0 rgba(255,255,255,0.90)",
                       }
                 }
@@ -593,7 +581,7 @@ export default function BookingWizard({
               </svg>
               <span className="truncate max-w-[280px]">{business.name}</span>
             </Link>
-            <h1 className="text-[1.75rem] font-bold text-slate-900 leading-tight" style={{ letterSpacing: "-0.03em" }}>
+            <h1 className="text-[1.75rem] font-bold text-slate-900 leading-tight" style={{ letterSpacing: "var(--track-display)" }}>
               Rezerwacja
             </h1>
           </div>
@@ -609,7 +597,7 @@ export default function BookingWizard({
         />
 
         <div className="px-5 sm:px-6 pt-5 sm:pt-6 overflow-x-hidden">
-          <AnimatePresence mode="wait" initial={false} custom={direction}>
+          <AnimatePresence mode="popLayout" initial={false} custom={direction}>
             <motion.div
               key={step}
               custom={direction}
@@ -617,12 +605,12 @@ export default function BookingWizard({
               initial="enter"
               animate="center"
               exit="exit"
-              transition={{ duration: 0.26, ease: [0.22, 1, 0.36, 1] }}
+              transition={{ duration: 0.2, ease: EASE_OUT }}
             >
               {/* Step 1: Wybierz usługę */}
               {step === 1 && (
                 <div className="pb-5">
-                  <h2 className="text-base font-bold text-slate-900 mb-4" style={{ letterSpacing: "-0.015em" }}>
+                  <h2 className="text-base font-bold text-slate-900 mb-4" style={{ letterSpacing: "var(--track-heading)" }}>
                     Wybierz usługę
                   </h2>
                   {services.length === 0 ? (
@@ -645,7 +633,7 @@ export default function BookingWizard({
                             type="button"
                             onClick={() => setSelectedServiceId(service.id)}
                             aria-pressed={isSelected}
-                            className="w-full text-left p-4 rounded-xl transition-all duration-150"
+                            className="w-full text-left p-4 rounded-xl transition-colors duration-150"
                             style={isSelected ? S.rowSelected : S.row}
                           >
                             <div className="flex items-start justify-between gap-3">
@@ -666,7 +654,7 @@ export default function BookingWizard({
                                   style={
                                     isSelected
                                       ? { background: "rgba(255,255,255,0.12)", border: "1px solid rgba(255,255,255,0.15)" }
-                                      : { background: "rgba(203,213,225,0.25)", border: "1px solid rgba(203,213,225,0.35)" }
+                                      : { background: "var(--selected)", border: "1px solid var(--hairline-soft)" }
                                   }
                                 >
                                   <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} aria-hidden="true">
@@ -702,10 +690,10 @@ export default function BookingWizard({
                       (they change duration → availability). Never preselected. */}
                   {selectedService && serviceAddons.length > 0 && (
                     <div className="mt-6">
-                      <h3 className="text-sm font-bold text-slate-900" style={{ letterSpacing: "-0.015em" }}>
+                      <h3 className="text-sm font-bold text-slate-900" style={{ letterSpacing: "var(--track-heading)" }}>
                         Dodatki <span className="font-normal text-slate-400">(opcjonalnie)</span>
                       </h3>
-                      <p className="text-xs text-slate-500 mt-0.5 mb-3">Rozszerz wizytę — wpływają na czas i cenę.</p>
+                      <p className="text-xs text-slate-500 mt-0.5 mb-3">Rozszerz wizytę. Dodatki wpływają na czas i cenę.</p>
                       <div className="space-y-2" role="group" aria-label="Dodatki do usługi">
                         {serviceAddons.map((a) => {
                           const qty = selectedAddons[a.id] ?? 0;
@@ -713,7 +701,7 @@ export default function BookingWizard({
                           return (
                             <div
                               key={a.id}
-                              className="p-3.5 rounded-xl flex items-center gap-3 transition-all duration-150"
+                              className="p-3.5 rounded-xl flex items-center gap-3 transition-colors duration-150"
                               style={{
                                 ...S.row,
                                 ...(on ? { borderColor: "#0F172A", boxShadow: "0 0 0 1.5px rgba(15,23,42,0.85)" } : {}),
@@ -740,7 +728,7 @@ export default function BookingWizard({
                                   style={
                                     on
                                       ? { background: INK, border: "1px solid #0F172A" }
-                                      : { background: "rgba(255,255,255,0.8)", border: "1.5px solid rgba(148,163,184,0.6)" }
+                                      : { background: "var(--surface)", border: "1.5px solid rgba(148,163,184,0.6)" }
                                   }
                                 >
                                   {on && (
@@ -761,14 +749,14 @@ export default function BookingWizard({
                               </button>
 
                               {on && a.hasQuantity && (
-                                <div className="flex items-center gap-2 flex-shrink-0" role="group" aria-label={`Ilość — ${a.name}`}>
+                                <div className="flex items-center gap-2 flex-shrink-0" role="group" aria-label={`Ilość · ${a.name}`}>
                                   <button
                                     type="button"
                                     aria-label="Mniej"
                                     disabled={qty <= a.minQuantity}
                                     onClick={() => setSelectedAddons((p) => ({ ...p, [a.id]: Math.max(a.minQuantity, (p[a.id] ?? a.defaultQuantity) - 1) }))}
                                     className="w-7 h-7 rounded-lg flex items-center justify-center text-slate-700 disabled:opacity-30"
-                                    style={{ background: "rgba(255,255,255,0.8)", border: "1px solid rgba(203,213,225,0.6)" }}
+                                    style={{ background: "var(--surface)", border: "1px solid var(--hairline)" }}
                                   >
                                     <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5}><path d="M5 12h14" /></svg>
                                   </button>
@@ -779,7 +767,7 @@ export default function BookingWizard({
                                     disabled={qty >= a.maxQuantity}
                                     onClick={() => setSelectedAddons((p) => ({ ...p, [a.id]: Math.min(a.maxQuantity, (p[a.id] ?? a.defaultQuantity) + 1) }))}
                                     className="w-7 h-7 rounded-lg flex items-center justify-center text-slate-700 disabled:opacity-30"
-                                    style={{ background: "rgba(255,255,255,0.8)", border: "1px solid rgba(203,213,225,0.6)" }}
+                                    style={{ background: "var(--surface)", border: "1px solid var(--hairline)" }}
                                   >
                                     <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5}><path d="M12 5v14M5 12h14" /></svg>
                                   </button>
@@ -804,7 +792,7 @@ export default function BookingWizard({
               {/* Step 2: Wybierz specjalistę */}
               {step === 2 && hasEmployees && (
                 <div className="pb-5">
-                  <h2 className="text-base font-bold text-slate-900 mb-4" style={{ letterSpacing: "-0.015em" }}>
+                  <h2 className="text-base font-bold text-slate-900 mb-4" style={{ letterSpacing: "var(--track-heading)" }}>
                     Wybierz specjalistę
                   </h2>
                   <div className="space-y-2" role="group" aria-label="Specjalista">
@@ -813,7 +801,7 @@ export default function BookingWizard({
                       type="button"
                       onClick={() => setSelectedEmployeeId(null)}
                       aria-pressed={selectedEmployeeId === null}
-                      className="w-full text-left p-4 rounded-xl transition-all duration-150 flex items-center gap-3"
+                      className="w-full text-left p-4 rounded-xl transition-colors duration-150 flex items-center gap-3"
                       style={selectedEmployeeId === null ? S.rowSelected : S.row}
                     >
                       <div
@@ -821,7 +809,7 @@ export default function BookingWizard({
                         style={
                           selectedEmployeeId === null
                             ? { background: "rgba(255,255,255,0.14)", border: "1px solid rgba(255,255,255,0.18)" }
-                            : { background: "rgba(203,213,225,0.28)", border: "1px solid rgba(203,213,225,0.40)" }
+                            : { background: "var(--selected)", border: "1px solid var(--hairline-soft)" }
                         }
                       >
                         <svg
@@ -849,7 +837,7 @@ export default function BookingWizard({
                           type="button"
                           onClick={() => setSelectedEmployeeId(employee.id)}
                           aria-pressed={isSelected}
-                          className="w-full text-left p-4 rounded-xl transition-all duration-150 flex items-center gap-3"
+                          className="w-full text-left p-4 rounded-xl transition-colors duration-150 flex items-center gap-3"
                           style={isSelected ? S.rowSelected : S.row}
                         >
                           {employee.avatarUrl ? (
@@ -889,7 +877,7 @@ export default function BookingWizard({
               {/* Step 3: Wybierz termin */}
               {step === 3 && (
                 <div className="pb-5">
-                  <h2 className="text-base font-bold text-slate-900 mb-4" style={{ letterSpacing: "-0.015em" }}>
+                  <h2 className="text-base font-bold text-slate-900 mb-4" style={{ letterSpacing: "var(--track-heading)" }}>
                     Wybierz termin
                   </h2>
 
@@ -919,13 +907,13 @@ export default function BookingWizard({
                             type="button"
                             disabled={!isOpen}
                             aria-pressed={isSelected}
-                            aria-label={`${day.toLocaleDateString("pl-PL", { weekday: "long", day: "numeric", month: "long" })}${!isOpen ? " — zamknięte" : ""}`}
+                            aria-label={`${day.toLocaleDateString("pl-PL", { weekday: "long", day: "numeric", month: "long" })}${!isOpen ? " (zamknięte)" : ""}`}
                             onClick={() => {
                               setSelectedDate(dateStr);
                               setSelectedTime("");
                             }}
                             className={cn(
-                              "flex-shrink-0 flex flex-col items-center px-3.5 py-2.5 rounded-xl text-center transition-all duration-150 min-w-[58px] snap-start",
+                              "flex-shrink-0 flex flex-col items-center justify-center px-3.5 min-h-[56px] rounded-xl text-center transition-colors duration-150 min-w-[58px] snap-start",
                               !isOpen && "opacity-35 cursor-not-allowed"
                             )}
                             style={isSelected ? S.rowSelected : S.row}
@@ -963,8 +951,8 @@ export default function BookingWizard({
                             {Array.from({ length: 8 }).map((_, i) => (
                               <div
                                 key={i}
-                                className="h-10 rounded-xl animate-pulse"
-                                style={{ background: "rgba(203,213,225,0.30)" }}
+                                className="h-10 rounded-xl tc-skeleton"
+                                style={{ background: "var(--selected)" }}
                               />
                             ))}
                           </div>
@@ -1002,7 +990,7 @@ export default function BookingWizard({
                                 onClick={() => setSelectedTime(slot)}
                                 aria-pressed={isSelected}
                                 className={cn(
-                                  "py-2.5 rounded-xl text-sm font-medium tabular-nums transition-all duration-150",
+                                  "min-h-[44px] px-2 rounded-xl text-sm font-medium tabular-nums transition-colors duration-150",
                                   isSelected ? "text-white font-semibold" : "text-slate-700"
                                 )}
                                 style={isSelected ? S.rowSelected : S.row}
@@ -1021,7 +1009,7 @@ export default function BookingWizard({
               {/* Step 4: Potwierdzenie */}
               {step === 4 && selectedService && (
                 <div className="pb-5">
-                  <h2 className="text-base font-bold text-slate-900 mb-4" style={{ letterSpacing: "-0.015em" }}>
+                  <h2 className="text-base font-bold text-slate-900 mb-4" style={{ letterSpacing: "var(--track-heading)" }}>
                     Potwierdź rezerwację
                   </h2>
 
@@ -1078,7 +1066,7 @@ export default function BookingWizard({
                   {/* Coupon */}
                   <div className="mb-4">
                     <label htmlFor="booking-coupon" className="block text-xs font-semibold text-slate-600 mb-1.5">
-                      Kod rabatowy <span className="text-slate-400 font-normal">— opcjonalnie</span>
+                      Kod rabatowy <span className="text-slate-400 font-normal">(opcjonalnie)</span>
                     </label>
                     <div className="flex gap-2">
                       <input
@@ -1103,7 +1091,7 @@ export default function BookingWizard({
                             setCouponInput("");
                           }}
                           className="px-4 rounded-xl text-sm font-semibold text-slate-600 flex-shrink-0"
-                          style={{ background: "rgba(255,255,255,0.72)", border: "1px solid rgba(203,213,225,0.55)" }}
+                          style={{ background: "var(--surface)", border: "1px solid var(--hairline)" }}
                         >
                           Usuń
                         </button>
@@ -1132,7 +1120,7 @@ export default function BookingWizard({
                   <div className="mb-4">
                     <label htmlFor="booking-notes" className="block text-xs font-semibold text-slate-600 mb-1.5">
                       Uwagi dla specjalisty{" "}
-                      <span className="text-slate-400 font-normal">— opcjonalnie</span>
+                      <span className="text-slate-400 font-normal">(opcjonalnie)</span>
                     </label>
                     <textarea
                       id="booking-notes"
@@ -1171,7 +1159,7 @@ export default function BookingWizard({
                   <motion.div
                     initial={reduceMotion ? { opacity: 0 } : { scale: 0.4, opacity: 0 }}
                     animate={reduceMotion ? { opacity: 1 } : { scale: 1, opacity: 1 }}
-                    transition={reduceMotion ? { duration: 0.2 } : { type: "spring", stiffness: 320, damping: 18, delay: 0.05 }}
+                    transition={reduceMotion ? { duration: 0.2 } : { ...SPRING, delay: 0.05 }}
                     className="w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-5"
                     style={{
                       background: "rgba(16,185,129,0.10)",
@@ -1191,11 +1179,11 @@ export default function BookingWizard({
                     </svg>
                   </motion.div>
 
-                  <h2 className="text-xl font-bold text-slate-900 mb-1" style={{ letterSpacing: "-0.02em" }}>
+                  <h2 className="text-xl font-bold text-slate-900 mb-1" style={{ letterSpacing: "var(--track-title)" }}>
                     Rezerwacja potwierdzona!
                   </h2>
                   <p className="text-sm text-slate-500 mb-6 max-w-xs mx-auto">
-                    Twoja wizyta jest potwierdzona — szczegóły wysłaliśmy e-mailem i w powiadomieniach.
+                    Twoja wizyta jest potwierdzona. Szczegóły wysłaliśmy e-mailem i w powiadomieniach.
                   </p>
 
                   {/* Appointment card */}
@@ -1258,7 +1246,7 @@ export default function BookingWizard({
                   </div>
 
                   <div className="flex flex-col gap-2">
-                    <motion.div whileHover={{ scale: 1.01, y: -1 }} whileTap={{ scale: 0.982 }} transition={SPRING}>
+                    <div >
                       <Link
                         href="/customer/dashboard"
                         className="block w-full py-3 rounded-xl text-sm font-semibold text-center"
@@ -1266,21 +1254,21 @@ export default function BookingWizard({
                       >
                         Moje rezerwacje
                       </Link>
-                    </motion.div>
-                    <motion.div whileHover={{ scale: 1.01, y: -1 }} whileTap={{ scale: 0.982 }} transition={SPRING}>
+                    </div>
+                    <div >
                       <Link
                         href={`/b/${business.slug}`}
                         className="block w-full py-3 rounded-xl text-sm font-semibold text-center"
                         style={{
-                          background: "rgba(255,255,255,0.72)",
-                          border: "1px solid rgba(203,213,225,0.55)",
+                          background: "var(--surface)",
+                          border: "1px solid var(--hairline)",
                           color: "#334155",
-                          boxShadow: "0 0 0 0.5px rgba(203,213,225,0.25), 0 1px 2px rgba(0,0,0,0.03), inset 0 1px 0 rgba(255,255,255,0.90)",
+                          boxShadow: "var(--e1)",
                         }}
                       >
                         Wróć do salonu
                       </Link>
-                    </motion.div>
+                    </div>
                   </div>
                 </div>
               )}
@@ -1297,7 +1285,7 @@ export default function BookingWizard({
                   <p className="text-sm font-semibold text-slate-800 truncate">{selectedService.name}</p>
                   <p className="text-xs text-slate-500 truncate tabular-nums">{summaryMeta}</p>
                 </div>
-                <p className="text-base font-bold text-slate-900 tabular-nums flex-shrink-0" style={{ letterSpacing: "-0.01em" }}>
+                <p className="text-base font-bold text-slate-900 tabular-nums flex-shrink-0" style={{ letterSpacing: "var(--track-heading)" }}>
                   {price}
                 </p>
               </div>

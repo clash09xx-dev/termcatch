@@ -8,14 +8,27 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
 import * as Dialog from "@radix-ui/react-dialog";
-import { motion } from "framer-motion";
-import { modalIn, overlayFade, useReducedMotion, SPRING } from "@/lib/motion";
-import { cn, formatCurrency, formatDuration } from "@/lib/utils";
+import { AnimatePresence, motion, type PanInfo } from "framer-motion";
+import {
+  gentleFade,
+  modalIn,
+  overlayFade,
+  projectMomentum,
+  sheetUp,
+  SPRING_SHEET,
+  useReducedMotion,
+} from "@/lib/motion";
+import { CHROME_STRONG, SCRIM, INK_BTN } from "@/components/ui/glass/tokens";
+import { useIsCompact } from "@/hooks/use-media";
+import { notify } from "@/lib/notify";
+import { cn, formatDuration } from "@/lib/utils";
 import {
   searchClients,
   createManualAppointment,
 } from "@/lib/actions/appointments";
 import { bookingErrorText } from "@/lib/booking-messages";
+import { useT, useLocale } from "@/components/i18n/i18n-provider";
+import { formatCurrency as fmtMoney } from "@/lib/i18n/format";
 
 type ServiceOption = {
   id: string;
@@ -40,15 +53,12 @@ type ClientResult = {
   phone: string | null;
 };
 
-const INK = "linear-gradient(180deg, #1E293B 0%, #0F172A 100%)";
+const INK = "var(--ink-raised)";
 
 const PANEL_STYLE: React.CSSProperties = {
-  background: "rgba(255,255,255,0.94)",
-  backdropFilter: "blur(40px) saturate(200%)",
-  WebkitBackdropFilter: "blur(40px) saturate(200%)",
-  border: "1px solid rgba(203,213,225,0.50)",
-  boxShadow:
-    "0 0 0 0.5px rgba(203,213,225,0.40), 0 8px 32px rgba(15,23,42,0.14), 0 32px 80px rgba(15,23,42,0.10), inset 0 1px 0 rgba(255,255,255,0.98)",
+  ...CHROME_STRONG,
+  border: "1px solid var(--hairline)",
+  boxShadow: "var(--e4)",
 };
 
 const OVERLINE = "block text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-500 mb-2";
@@ -75,7 +85,19 @@ export function NewAppointmentSheet({
   prefillTime?: string;
 }) {
   const router = useRouter();
+  const t = useT();
+  const T = t.pages.newAppointment;
+  const locale = useLocale();
   const reduceMotion = useReducedMotion();
+  const compact = useIsCompact();
+
+  // On a phone this is a sheet: it arrives from the bottom edge and leaves
+  // through the same edge, and a downward flick throws it away. On a desktop it
+  // is a centred modal that materialises in place.
+  const panelVariants = reduceMotion ? gentleFade : compact ? sheetUp : modalIn;
+  function handleDragEnd(_: unknown, info: PanInfo) {
+    if (info.offset.y + projectMomentum(info.velocity.y) > 120) onOpenChange(false);
+  }
 
   // Client
   const [clientMode, setClientMode] = useState<"search" | "new">("search");
@@ -196,6 +218,7 @@ export function NewAppointmentSheet({
       setNewPhone("");
       setTime("");
       setNote("");
+      notify.saved(t.feedback.created);
       router.refresh();
     } catch (err) {
       const e = err as { message?: string };
@@ -207,6 +230,7 @@ export function NewAppointmentSheet({
 
   return (
     <Dialog.Root open={open} onOpenChange={onOpenChange}>
+      <AnimatePresence>
         {open && (
           <Dialog.Portal forceMount>
             <Dialog.Overlay asChild forceMount>
@@ -214,41 +238,53 @@ export function NewAppointmentSheet({
                 variants={overlayFade}
                 initial="hidden"
                 animate="show"
-                className="fixed inset-0 z-50"
-                style={{
-                  background: "rgba(15,23,42,0.30)",
-                  backdropFilter: "blur(6px)",
-                  WebkitBackdropFilter: "blur(6px)",
-                }}
+                exit="exit"
+                className="fixed inset-0"
+                style={{ ...SCRIM, zIndex: "var(--z-overlay)" as unknown as number }}
               />
             </Dialog.Overlay>
-            <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 pointer-events-none">
+            <div
+              className="fixed inset-0 flex items-end sm:items-center justify-center p-0 sm:p-4 pointer-events-none"
+              style={{ zIndex: "var(--z-modal)" as unknown as number }}
+            >
               <Dialog.Content asChild forceMount>
                 <motion.div
-                  variants={reduceMotion ? overlayFade : modalIn}
+                  variants={panelVariants}
                   initial="hidden"
                   animate="show"
-                  className="relative w-full sm:max-w-lg max-h-[92vh] sm:max-h-[85vh] flex flex-col rounded-t-3xl sm:rounded-3xl overflow-hidden pointer-events-auto"
+                  exit="exit"
+                  drag={compact && !reduceMotion ? "y" : false}
+                  dragDirectionLock
+                  dragConstraints={{ top: 0, bottom: 0 }}
+                  dragElastic={{ top: 0, bottom: 0.6 }}
+                  onDragEnd={handleDragEnd}
+                  transition={SPRING_SHEET}
+                  className="relative w-full sm:max-w-lg max-h-[92dvh] sm:max-h-[85dvh] flex flex-col rounded-t-[22px] sm:rounded-[20px] overflow-hidden pointer-events-auto"
                   style={PANEL_STYLE}
                 >
+                  {compact && !reduceMotion && (
+                    <div className="flex justify-center pt-2.5 flex-shrink-0" aria-hidden="true">
+                      <span className="h-1 w-9 rounded-full" style={{ background: "var(--hairline-firm)" }} />
+                    </div>
+                  )}
                   {/* Header */}
                   <div className="flex items-start justify-between gap-3 p-6 pb-4">
                     <div>
-                      <Dialog.Title className="text-lg font-bold text-slate-900" style={{ letterSpacing: "-0.02em" }}>
-                        Nowa wizyta
+                      <Dialog.Title className="text-[17px] leading-[1.25] font-semibold text-slate-900 track-title">
+                        {T.title}
                       </Dialog.Title>
-                      <Dialog.Description className="text-sm text-slate-500 mt-0.5">
-                        Zapisz klienta z telefonu lub z ulicy.
+                      <Dialog.Description className="text-[13.5px] leading-[1.5] text-secondary mt-1">
+                        {T.subtitle}
                       </Dialog.Description>
                     </div>
                     <Dialog.Close asChild>
                       <button
                         type="button"
-                        aria-label="Zamknij"
-                        className="w-8 h-8 -mr-2 -mt-1 flex items-center justify-center rounded-lg icon-btn flex-shrink-0"
-                        style={{ color: "#94A3B8" }}
+                        aria-label={t.a11y.close}
+                        className="w-9 h-9 -mr-2 -mt-1.5 flex items-center justify-center rounded-lg icon-btn flex-shrink-0"
+                        style={{ color: "var(--text-muted)" }}
                       >
-                        <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} aria-hidden="true">
+                        <svg className="w-[18px] h-[18px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} aria-hidden="true">
                           <path strokeLinecap="round" strokeLinejoin="round" d="M6 18 18 6M6 6l12 12" />
                         </svg>
                       </button>
@@ -259,16 +295,16 @@ export function NewAppointmentSheet({
                   <div className="flex-1 overflow-y-auto px-6 pb-4 space-y-5">
                     {/* Client */}
                     <div>
-                      <span className={OVERLINE}>Klient</span>
+                      <span className={OVERLINE}>{T.client}</span>
                       <div
                         className="inline-flex items-center gap-0.5 p-0.5 rounded-xl mb-3"
-                        style={{ background: "rgba(203,213,225,0.18)", border: "1px solid rgba(203,213,225,0.40)" }}
+                        style={{ background: "var(--selected)", border: "1px solid var(--hairline-soft)" }}
                         role="group"
-                        aria-label="Sposób wyboru klienta"
+                        aria-label={T.modeLabel}
                       >
                         {([
-                          { key: "search", label: "Stały klient" },
-                          { key: "new", label: "Nowy klient" },
+                          { key: "search", label: T.existing },
+                          { key: "new", label: T.newClient },
                         ] as const).map((opt) => (
                           <button
                             key={opt.key}
@@ -290,11 +326,11 @@ export function NewAppointmentSheet({
                         selectedClient ? (
                           <div
                             className="flex items-center gap-3 px-3.5 py-2.5 rounded-xl"
-                            style={{ background: "rgba(203,213,225,0.18)", border: "1px solid rgba(203,213,225,0.50)" }}
+                            style={{ background: "var(--selected)", border: "1px solid var(--hairline)" }}
                           >
                             <div
                               className="w-8 h-8 rounded-lg flex items-center justify-center text-xs font-bold flex-shrink-0"
-                              style={{ background: "rgba(255,255,255,0.80)", border: "1px solid rgba(203,213,225,0.55)", color: "#475569" }}
+                              style={{ background: "var(--surface)", border: "1px solid var(--hairline)", color: "#475569" }}
                             >
                               {selectedClient.firstName[0]}{selectedClient.lastName[0]}
                             </div>
@@ -309,10 +345,10 @@ export function NewAppointmentSheet({
                             <button
                               type="button"
                               onClick={() => setSelectedClient(null)}
-                              aria-label="Zmień klienta"
+                              aria-label={T.change}
                               className="text-xs font-semibold text-slate-500 hover:text-slate-800 transition-colors"
                             >
-                              Zmień
+                              {T.change}
                             </button>
                           </div>
                         ) : (
@@ -324,20 +360,20 @@ export function NewAppointmentSheet({
                               type="text"
                               value={query}
                               onChange={(e) => setQuery(e.target.value)}
-                              placeholder="Szukaj po imieniu, telefonie, e-mailu…"
+                              placeholder={T.searchPh}
                               className="input-glass w-full pl-9 pr-3 py-2.5 text-sm rounded-xl outline-none placeholder:text-slate-400 text-slate-800"
-                              aria-label="Szukaj klienta"
+                              aria-label={t.pages.crm.searchAria}
                             />
                             {query.trim().length >= 2 && (
                               <div
                                 className="mt-1.5 rounded-xl overflow-hidden"
-                                style={{ background: "rgba(255,255,255,0.92)", border: "1px solid rgba(203,213,225,0.45)", boxShadow: "0 4px 16px rgba(100,116,139,0.10)" }}
+                                style={{ background: "var(--surface)", border: "1px solid var(--hairline)", boxShadow: "var(--e2)" }}
                               >
                                 {searching ? (
-                                  <p className="px-3.5 py-3 text-xs text-slate-500">Szukam…</p>
+                                  <p className="px-3.5 py-3 text-xs text-slate-500">{T.searching}</p>
                                 ) : results.length === 0 ? (
                                   <p className="px-3.5 py-3 text-xs text-slate-500">
-                                    Brak klientów — dodaj jako nowego.
+                                    {T.noResults}
                                   </p>
                                 ) : (
                                   results.map((c) => (
@@ -367,16 +403,16 @@ export function NewAppointmentSheet({
                               type="text"
                               value={newFirst}
                               onChange={(e) => setNewFirst(e.target.value)}
-                              placeholder="Imię *"
-                              aria-label="Imię klienta"
+                              placeholder={`${T.firstName} *`}
+                              aria-label={T.firstName}
                               className="input-glass w-full px-3.5 py-2.5 text-sm rounded-xl outline-none placeholder:text-slate-400 text-slate-800"
                             />
                             <input
                               type="text"
                               value={newLast}
                               onChange={(e) => setNewLast(e.target.value)}
-                              placeholder="Nazwisko *"
-                              aria-label="Nazwisko klienta"
+                              placeholder={`${T.lastName} *`}
+                              aria-label={T.lastName}
                               className="input-glass w-full px-3.5 py-2.5 text-sm rounded-xl outline-none placeholder:text-slate-400 text-slate-800"
                             />
                           </div>
@@ -384,8 +420,8 @@ export function NewAppointmentSheet({
                             type="tel"
                             value={newPhone}
                             onChange={(e) => setNewPhone(e.target.value)}
-                            placeholder="Telefon (opcjonalnie)"
-                            aria-label="Telefon klienta"
+                            placeholder={T.phone}
+                            aria-label={T.phone}
                             className="input-glass w-full px-3.5 py-2.5 text-sm rounded-xl outline-none placeholder:text-slate-400 text-slate-800 tabular-nums"
                           />
                         </div>
@@ -394,7 +430,7 @@ export function NewAppointmentSheet({
 
                     {/* Service */}
                     <div>
-                      <label htmlFor="na-service" className={OVERLINE}>Usługa</label>
+                      <label htmlFor="na-service" className={OVERLINE}>{T.service}</label>
                       <div className="relative">
                         <select
                           id="na-service"
@@ -404,7 +440,7 @@ export function NewAppointmentSheet({
                         >
                           {services.map((s) => (
                             <option key={s.id} value={s.id}>
-                              {s.name} · {formatDuration(s.duration)} · {formatCurrency(s.discountedPrice ?? s.price)}
+                              {s.name} · {formatDuration(s.duration)} · {fmtMoney(s.discountedPrice ?? s.price, locale)}
                             </option>
                           ))}
                         </select>
@@ -417,7 +453,7 @@ export function NewAppointmentSheet({
                     {/* Employee */}
                     {employees.length > 0 && (
                       <div>
-                        <label htmlFor="na-employee" className={OVERLINE}>Specjalista</label>
+                        <label htmlFor="na-employee" className={OVERLINE}>{T.employee}</label>
                         <div className="relative">
                           <select
                             id="na-employee"
@@ -425,7 +461,7 @@ export function NewAppointmentSheet({
                             onChange={(e) => { setEmployeeId(e.target.value); setTime(""); }}
                             className="input-glass w-full appearance-none px-3.5 py-2.5 pr-9 text-sm rounded-xl outline-none text-slate-800"
                           >
-                            <option value="">Dowolny specjalista</option>
+                            <option value="">{T.anyEmployee}</option>
                             {employees.map((e) => (
                               <option key={e.id} value={e.id}>
                                 {e.firstName} {e.lastName}
@@ -441,7 +477,7 @@ export function NewAppointmentSheet({
 
                     {/* Date */}
                     <div>
-                      <label htmlFor="na-date" className={OVERLINE}>Data</label>
+                      <label htmlFor="na-date" className={OVERLINE}>{T.date}</label>
                       <input
                         id="na-date"
                         type="date"
@@ -454,20 +490,20 @@ export function NewAppointmentSheet({
 
                     {/* Time slots */}
                     <div>
-                      <span className={OVERLINE}>Godzina</span>
+                      <span className={OVERLINE}>{T.time}</span>
                       <div aria-live="polite" aria-busy={loadingSlots}>
                         {loadingSlots ? (
                           <div className="grid grid-cols-4 gap-1.5">
                             {Array.from({ length: 8 }).map((_, i) => (
-                              <div key={i} className="h-9 rounded-xl animate-pulse" style={{ background: "rgba(203,213,225,0.25)" }} />
+                              <div key={i} className="h-9 rounded-xl tc-skeleton" />
                             ))}
                           </div>
                         ) : slots.length === 0 ? (
                           <p
                             className="px-3.5 py-3 rounded-xl text-xs text-slate-500"
-                            style={{ background: "rgba(203,213,225,0.14)", border: "1px dashed rgba(203,213,225,0.55)" }}
+                            style={{ background: "var(--selected)", border: "1px dashed rgba(203,213,225,0.55)" }}
                           >
-                            Brak wolnych terminów tego dnia — wybierz inną datę lub specjalistę.
+                            {T.noSlots}
                           </p>
                         ) : (
                           <div className="grid grid-cols-4 gap-1.5">
@@ -480,12 +516,12 @@ export function NewAppointmentSheet({
                                   onClick={() => setTime(slot)}
                                   aria-pressed={active}
                                   className={cn(
-                                    "py-2 rounded-xl text-xs font-semibold tabular-nums transition-all",
+                                    "py-2 rounded-xl text-xs font-semibold tabular-nums transition-colors",
                                     active ? "text-white" : "text-slate-600"
                                   )}
                                   style={active
                                     ? { background: INK, border: "1px solid #0F172A", boxShadow: "0 1px 2px rgba(0,0,0,0.15), inset 0 1px 0 rgba(255,255,255,0.15)" }
-                                    : { background: "rgba(255,255,255,0.80)", border: "1px solid rgba(203,213,225,0.50)", boxShadow: "inset 0 1px 0 rgba(255,255,255,0.90)" }}
+                                    : { background: "var(--surface)", border: "1px solid var(--hairline)", boxShadow: "inset 0 1px 0 rgba(255,255,255,0.90)" }}
                                 >
                                   {slot}
                                 </button>
@@ -499,14 +535,14 @@ export function NewAppointmentSheet({
                     {/* Note */}
                     <div>
                       <label htmlFor="na-note" className={OVERLINE}>
-                        Notatka <span className="normal-case font-normal tracking-normal">— wewnętrzna, opcjonalna</span>
+                        {T.note} <span className="normal-case font-normal tracking-normal">{T.noteHint}</span>
                       </label>
                       <textarea
                         id="na-note"
                         value={note}
                         onChange={(e) => setNote(e.target.value)}
                         rows={2}
-                        placeholder="Np. płatność gotówką, preferencje…"
+                        placeholder={T.notePh}
                         className="input-glass w-full px-3.5 py-2.5 text-sm rounded-xl outline-none placeholder:text-slate-400 text-slate-800 resize-none"
                       />
                     </div>
@@ -525,7 +561,7 @@ export function NewAppointmentSheet({
                   {/* Footer */}
                   <div
                     className="p-4 px-6 flex items-center gap-3"
-                    style={{ borderTop: "1px solid rgba(203,213,225,0.30)", background: "rgba(255,255,255,0.70)" }}
+                    style={{ borderTop: "1px solid var(--hairline-soft)", background: "var(--surface-2)" }}
                   >
                     {selectedService && (
                       <div className="flex-1 min-w-0">
@@ -534,38 +570,32 @@ export function NewAppointmentSheet({
                           {time && date ? ` · ${date} · ${time}` : ""}
                         </p>
                         <p className="text-sm font-bold text-slate-900 tabular-nums">
-                          {formatCurrency(selectedService.discountedPrice ?? selectedService.price)}
+                          {fmtMoney(selectedService.discountedPrice ?? selectedService.price, locale)}
                         </p>
                       </div>
                     )}
-                    <motion.button
+                    <button
                       type="button"
                       onClick={handleSubmit}
                       disabled={!canSubmit}
-                      whileHover={canSubmit ? { scale: 1.01, y: -1 } : undefined}
-                      whileTap={canSubmit ? { scale: 0.982 } : undefined}
-                      transition={SPRING}
-                      className="px-6 py-2.5 rounded-xl text-sm font-semibold disabled:opacity-45 disabled:cursor-not-allowed flex items-center gap-2"
-                      style={{
-                        background: INK,
-                        border: "1px solid #0F172A",
-                        color: "#F8FAFC",
-                        boxShadow: "0 1px 2px rgba(0,0,0,0.20), 0 8px 20px rgba(15,23,42,0.24), inset 0 1px 0 rgba(255,255,255,0.15)",
-                      }}
+                      data-on-ink
+                      className="btn-spring px-5 py-[11px] min-h-[44px] rounded-[10px] text-sm font-semibold disabled:opacity-45 disabled:cursor-not-allowed flex items-center gap-2"
+                      style={INK_BTN}
                     >
                       {submitting && (
                         <svg className="w-4 h-4 animate-spin" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} aria-hidden="true">
                           <path strokeLinecap="round" d="M4 12a8 8 0 0 1 8-8" />
                         </svg>
                       )}
-                      {submitting ? "Zapisuję…" : "Umów wizytę"}
-                    </motion.button>
+                      {submitting ? T.saving : T.submit}
+                    </button>
                   </div>
                 </motion.div>
               </Dialog.Content>
             </div>
           </Dialog.Portal>
         )}
+      </AnimatePresence>
     </Dialog.Root>
   );
 }

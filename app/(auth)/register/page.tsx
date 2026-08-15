@@ -15,6 +15,7 @@ import { PasswordInput } from "@/components/ui/password-input";
 import { OtpInput } from "@/components/auth/otp-input";
 import { useT } from "@/components/i18n/i18n-provider";
 import { interpolate } from "@/lib/i18n/dictionaries";
+import { INK_BTN } from "@/components/ui/glass/tokens";
 
 const initialState: AuthState = {};
 
@@ -45,7 +46,7 @@ function readPendingOtp(): PendingOtp | null {
 const APPLE_SIGNIN_ENABLED = false;
 
 const inputCls =
-  "w-full px-3.5 py-2.5 rounded-xl text-sm text-[#0F172A] placeholder:text-[#94A3B8] outline-none transition-all input-glass";
+  "w-full px-3.5 py-2.5 rounded-xl text-sm text-[#0F172A] placeholder:text-[#94A3B8] outline-none transition-colors input-glass";
 
 export default function RegisterPage() {
   const t = useT();
@@ -97,7 +98,7 @@ export default function RegisterPage() {
         <h1 className="text-xl font-semibold text-gray-900 tracking-tight">{t.auth.createAccount}</h1>
         <p className="mt-1 text-sm text-gray-500">
           {t.auth.haveAccount}{" "}
-          <Link href="/login" className="text-gray-900 font-medium underline underline-offset-2 hover:no-underline transition-all">
+          <Link href="/login" className="text-gray-900 font-medium underline underline-offset-2 hover:no-underline transition-colors">
             {t.auth.signIn}
           </Link>
         </p>
@@ -106,18 +107,18 @@ export default function RegisterPage() {
       {/* Role toggle */}
       <div
         className="flex gap-1.5 mb-6 p-1 rounded-xl"
-        style={{ background: "rgba(226,232,240,0.50)", border: "1px solid rgba(203,213,225,0.40)" }}
+        style={{ background: "rgba(226,232,240,0.50)", border: "1px solid var(--hairline-soft)" }}
       >
         {(["CUSTOMER", "BUSINESS_OWNER"] as const).map((r) => (
           <button
             key={r}
             type="button"
             onClick={() => setRole(r)}
-            className="flex-1 py-2 px-3 rounded-lg text-sm font-medium transition-all"
+            className="flex-1 py-2 px-3 rounded-lg text-sm font-medium transition-colors"
             style={
               role === r
                 ? {
-                    background: "rgba(255,255,255,0.90)",
+                    background: "var(--surface)",
                     color: "#0F172A",
                     boxShadow: "0 1px 3px rgba(0,0,0,0.08), inset 0 1px 0 rgba(255,255,255,1)",
                   }
@@ -140,8 +141,8 @@ export default function RegisterPage() {
             type="submit"
             className="w-full flex items-center justify-center gap-3 px-4 py-2.5 rounded-xl text-sm font-medium transition-colors btn-spring"
             style={{
-              background: "rgba(255,255,255,0.80)",
-              border: "1px solid rgba(203,213,225,0.55)",
+              background: "var(--surface)",
+              border: "1px solid var(--hairline)",
               color: "#475569",
               boxShadow: "0 1px 2px rgba(0,0,0,0.04), inset 0 1px 0 rgba(255,255,255,0.90)",
             }}
@@ -278,7 +279,7 @@ export default function RegisterPage() {
                 ? { background: "#0F172A", border: "1px solid #0F172A" }
                 : termsError
                 ? { background: "rgba(244,63,94,0.12)", border: "1px solid rgba(244,63,94,0.65)" }
-                : { background: "rgba(255,255,255,0.9)", border: "1px solid rgba(148,163,184,0.6)" }
+                : { background: "var(--surface)", border: "1px solid rgba(148,163,184,0.6)" }
             }
           >
             {acceptTerms && (
@@ -311,23 +312,13 @@ export default function RegisterPage() {
           type={acceptTerms ? "submit" : "button"}
           onClick={acceptTerms ? undefined : () => setTermsError(true)}
           disabled={isPending}
-          className="w-full py-2.5 px-4 font-semibold text-sm rounded-xl flex items-center justify-center gap-2 btn-spring glass-shimmer-wrap disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+          className="w-full py-2.5 px-4 font-semibold text-sm rounded-xl flex items-center justify-center gap-2 btn-spring disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
           style={
             acceptTerms
-              ? {
-                  // Accepted → dark "ink" button.
-                  background: "linear-gradient(180deg, #1E293B 0%, #0F172A 100%)",
-                  color: "#F8FAFC",
-                  border: "1px solid #0F172A",
-                  boxShadow: "0 1px 2px rgba(0,0,0,0.20), 0 8px 20px rgba(15,23,42,0.24), inset 0 1px 0 rgba(255,255,255,0.15)",
-                }
-              : {
-                  // Not yet accepted → muted silver.
-                  background: "linear-gradient(135deg, #CBD5E1 0%, #94A3B8 50%, #CBD5E1 100%)",
-                  color: "#0F172A",
-                  border: "1px solid rgba(148,163,184,0.45)",
-                  boxShadow: "0 1px 2px rgba(0,0,0,0.10), inset 0 1px 0 rgba(255,255,255,0.40)",
-                }
+              ? INK_BTN
+              // Not yet accepted: the same button, visibly not yet available —
+              // rather than a different button in a different colour.
+              : { ...INK_BTN, opacity: 0.42, boxShadow: "none" }
           }
         >
           {isPending ? (
@@ -458,13 +449,9 @@ function VerifyEmailStep({
         <button
           type="submit"
           disabled={isPending || code.length !== OTP_LENGTH}
-          className="w-full py-2.5 px-4 font-semibold text-sm rounded-xl flex items-center justify-center gap-2 btn-spring glass-shimmer-wrap disabled:opacity-50 disabled:cursor-not-allowed"
-          style={{
-            background: "linear-gradient(135deg, #CBD5E1 0%, #94A3B8 50%, #CBD5E1 100%)",
-            color: "#0F172A",
-            border: "1px solid rgba(148,163,184,0.45)",
-            boxShadow: "0 1px 2px rgba(0,0,0,0.10), inset 0 1px 0 rgba(255,255,255,0.40)",
-          }}
+          className="w-full py-2.5 px-4 font-semibold text-sm rounded-xl flex items-center justify-center gap-2 btn-spring disabled:opacity-50 disabled:cursor-not-allowed"
+          data-on-ink
+          style={INK_BTN}
         >
           {isPending ? (
             <>
@@ -491,14 +478,14 @@ function VerifyEmailStep({
             type="button"
             onClick={resend}
             disabled={isPending}
-            className="text-gray-900 font-medium underline underline-offset-2 hover:no-underline transition-all disabled:opacity-50"
+            className="text-gray-900 font-medium underline underline-offset-2 hover:no-underline transition-colors disabled:opacity-50"
           >
             {t.auth.resendCode}
           </button>
         )}
       </div>
 
-      <div className="mt-6 pt-5 text-center" style={{ borderTop: "1px solid rgba(203,213,225,0.45)" }}>
+      <div className="mt-6 pt-5 text-center" style={{ borderTop: "1px solid var(--hairline)" }}>
         {/* Clear the pending record + full reload so a different address can be used */}
         <a
           href="/register"

@@ -4,7 +4,7 @@ import type { Metadata } from "next";
 
 export const metadata: Metadata = {
   title: "O nas — TermCatch",
-  description: "Poznaj historię i misję TermCatch — platformy rezerwacji online dla polskiego rynku beauty.",
+  description: "Poznaj historię i misję TermCatch, platformy rezerwacji online dla polskiego rynku beauty.",
 };
 
 const G = {
@@ -15,25 +15,19 @@ const G = {
     "linear-gradient(168deg, #E8EFF8 0%, #F1F6FB 40%, #E5EEF9 100%)",
   ].join(", "),
   card: {
-    background: "rgba(255,255,255,0.72)",
-    backdropFilter: "blur(40px) saturate(200%)",
-    WebkitBackdropFilter: "blur(40px) saturate(200%)" as string,
-    border: "1px solid rgba(203,213,225,0.55)",
-    boxShadow:
-      "0 0 0 0.5px rgba(203,213,225,0.45), 0 1px 2px rgba(0,0,0,0.04), 0 6px 20px rgba(100,116,139,0.09), 0 20px 48px rgba(100,116,139,0.05), inset 0 1px 0 rgba(255,255,255,0.95), inset 0 -1px 0 rgba(203,213,225,0.10)",
+    background: "var(--surface)",
+    border: "1px solid var(--hairline)",
+    boxShadow: "var(--e3)",
     borderRadius: "1.25rem",
   } as React.CSSProperties,
   panel: {
-    background: "rgba(241,246,251,0.85)",
-    backdropFilter: "blur(40px) saturate(200%)",
-    WebkitBackdropFilter: "blur(40px) saturate(200%)" as string,
-    border: "1px solid rgba(203,213,225,0.50)",
-    boxShadow:
-      "0 0 0 0.5px rgba(203,213,225,0.40), 0 2px 4px rgba(0,0,0,0.04), 0 12px 36px rgba(100,116,139,0.10), inset 0 1px 0 rgba(255,255,255,1)",
+    background: "var(--surface-2)",
+    border: "1px solid var(--hairline)",
+    boxShadow: "var(--e2)",
     borderRadius: "1.5rem",
   } as React.CSSProperties,
   btn: {
-    background: "linear-gradient(180deg, #1E293B 0%, #0F172A 100%)",
+    background: "var(--ink-raised)",
     color: "#F8FAFC",
     boxShadow:
       "0 1px 2px rgba(0,0,0,0.20), 0 10px 24px rgba(15,23,42,0.28), inset 0 1px 0 rgba(255,255,255,0.15)",
@@ -89,8 +83,8 @@ export default function AboutPage() {
           <div
             className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full mb-8 text-xs font-semibold uppercase tracking-widest"
             style={{
-              background: "rgba(203,213,225,0.28)",
-              border: "1px solid rgba(203,213,225,0.50)",
+              background: "var(--selected)",
+              border: "1px solid var(--hairline)",
               color: "#64748B",
             }}
           >
@@ -98,7 +92,7 @@ export default function AboutPage() {
           </div>
           <h1
             className="text-5xl sm:text-6xl font-bold leading-[1.05] mb-6"
-            style={{ letterSpacing: "-0.04em", color: "#0F172A" }}
+            style={{ letterSpacing: "var(--track-display)", color: "#0F172A" }}
           >
             Rezerwacje bez telefonu.
             <br />
@@ -127,8 +121,8 @@ export default function AboutPage() {
           <div
             className="grid grid-cols-2 md:grid-cols-4 gap-px"
             style={{
-              background: "rgba(203,213,225,0.35)",
-              border: "1px solid rgba(203,213,225,0.45)",
+              background: "var(--selected)",
+              border: "1px solid var(--hairline)",
               borderRadius: "1.25rem",
               overflow: "hidden",
             }}
@@ -137,12 +131,12 @@ export default function AboutPage() {
               <div
                 key={s.value}
                 className="px-6 py-6 text-center"
-                style={{ background: "rgba(255,255,255,0.72)", backdropFilter: "blur(40px)" }}
+                style={{ background: "var(--surface)" }}
               >
                 <div
                   className="text-3xl font-bold mb-1"
                   style={{
-                    letterSpacing: "-0.03em",
+                    letterSpacing: "var(--track-display)",
                     background: "linear-gradient(135deg, #475569 0%, #94A3B8 100%)",
                     WebkitBackgroundClip: "text",
                     WebkitTextFillColor: "transparent",
@@ -163,36 +157,36 @@ export default function AboutPage() {
       {/* Mission + For whom */}
       <div className="px-6 mb-20">
         <div className="max-w-4xl mx-auto grid md:grid-cols-2 gap-6">
-          <div style={G.card} className="p-8 glass-shimmer-wrap">
+          <div style={G.card} className="p-8">
             <div
               className="w-10 h-10 rounded-xl flex items-center justify-center mb-6"
-              style={{ background: "rgba(203,213,225,0.35)", border: "1px solid rgba(203,213,225,0.50)" }}
+              style={{ background: "var(--selected)", border: "1px solid var(--hairline)" }}
             >
               <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="#64748B" strokeWidth="1.8">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18Z" />
                 <path strokeLinecap="round" strokeLinejoin="round" d="M12 7v5l3.5 3.5" />
               </svg>
             </div>
-            <h2 className="text-xl font-bold mb-3" style={{ letterSpacing: "-0.03em", color: "#0F172A" }}>
+            <h2 className="text-xl font-bold mb-3" style={{ letterSpacing: "var(--track-display)", color: "#0F172A" }}>
               Nasza misja
             </h2>
             <p className="text-sm leading-relaxed" style={{ color: "#64748B" }}>
-              Chcemy sprawić, żeby każdy salon w Polsce — niezależnie od wielkości — miał dostęp
+              Chcemy sprawić, żeby każdy salon w Polsce, niezależnie od wielkości, miał dostęp
               do profesjonalnego systemu rezerwacji online. Bez skomplikowanej konfiguracji,
               bez drogich abonamentów, bez pośredników.
             </p>
           </div>
 
-          <div style={G.card} className="p-8 glass-shimmer-wrap">
+          <div style={G.card} className="p-8">
             <div
               className="w-10 h-10 rounded-xl flex items-center justify-center mb-6"
-              style={{ background: "rgba(203,213,225,0.35)", border: "1px solid rgba(203,213,225,0.50)" }}
+              style={{ background: "var(--selected)", border: "1px solid var(--hairline)" }}
             >
               <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="#64748B" strokeWidth="1.8">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 1 1-8 0 4 4 0 0 1 8 0ZM12 14a7 7 0 0 0-7 7h14a7 7 0 0 0-7-7Z" />
               </svg>
             </div>
-            <h2 className="text-xl font-bold mb-3" style={{ letterSpacing: "-0.03em", color: "#0F172A" }}>
+            <h2 className="text-xl font-bold mb-3" style={{ letterSpacing: "var(--track-display)", color: "#0F172A" }}>
               Dla kogo
             </h2>
             <p className="text-sm leading-relaxed" style={{ color: "#64748B" }}>
@@ -210,7 +204,7 @@ export default function AboutPage() {
           <div style={G.panel} className="p-10">
             <h2
               className="text-2xl font-bold mb-8 text-center"
-              style={{ letterSpacing: "-0.03em", color: "#0F172A" }}
+              style={{ letterSpacing: "var(--track-display)", color: "#0F172A" }}
             >
               Co nas wyróżnia
             </h2>
@@ -218,12 +212,10 @@ export default function AboutPage() {
               {VALUES.map((v, i) => (
                 <div
                   key={v.title}
-                  className="p-5 glass-shimmer-wrap"
+                  className="p-5"
                   style={{
-                    background: "rgba(255,255,255,0.70)",
-                    backdropFilter: "blur(20px)",
-                    WebkitBackdropFilter: "blur(20px)",
-                    border: "1px solid rgba(203,213,225,0.45)",
+                    background: "var(--surface)",
+                    border: "1px solid var(--hairline)",
                     borderRadius: "1rem",
                     boxShadow: "0 1px 2px rgba(0,0,0,0.03), inset 0 1px 0 rgba(255,255,255,0.90)",
                   }}
@@ -236,7 +228,7 @@ export default function AboutPage() {
                   </div>
                   <h3
                     className="font-bold mb-2"
-                    style={{ letterSpacing: "-0.02em", color: "#0F172A" }}
+                    style={{ letterSpacing: "var(--track-title)", color: "#0F172A" }}
                   >
                     {v.title}
                   </h3>
@@ -255,16 +247,16 @@ export default function AboutPage() {
         <div className="max-w-xl mx-auto">
           <h2
             className="text-3xl font-bold mb-4"
-            style={{ letterSpacing: "-0.03em", color: "#0F172A" }}
+            style={{ letterSpacing: "var(--track-display)", color: "#0F172A" }}
           >
             Masz pytania?
           </h2>
           <p className="mb-8 text-sm" style={{ color: "#64748B" }}>
-            Napisz do nas — odpowiemy tak szybko, jak to możliwe.
+            Napisz do nas, a odpowiemy tak szybko, jak to możliwe.
           </p>
           <a
             href="mailto:hello@termcatch.com"
-            className="btn-spring glass-shimmer-wrap"
+            className="btn-spring"
             style={G.btn}
           >
             hello@termcatch.com

@@ -203,7 +203,7 @@ function StatusPill({ connected, label }: { connected: boolean; label: string })
       style={
         connected
           ? { background: "rgba(16,185,129,0.12)", border: "1px solid rgba(16,185,129,0.30)", color: "#047857" }
-          : { background: "rgba(148,163,184,0.14)", border: "1px solid rgba(203,213,225,0.5)", color: "#64748B" }
+          : { background: "rgba(148,163,184,0.14)", border: "1px solid var(--hairline)", color: "#64748B" }
       }
     >
       {label}
@@ -213,7 +213,7 @@ function StatusPill({ connected, label }: { connected: boolean; label: string })
 
 function Detail({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-xl bg-white/60 px-3 py-2" style={{ border: "1px solid rgba(203,213,225,0.4)" }}>
+    <div className="rounded-xl bg-white/60 px-3 py-2" style={{ border: "1px solid var(--hairline-soft)" }}>
       <p className="text-[11px] text-slate-400">{label}</p>
       <p className="truncate text-sm font-medium text-slate-800">{value}</p>
     </div>

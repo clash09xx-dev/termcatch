@@ -5,7 +5,9 @@ import { updateBusinessProfile } from "@/lib/actions/business";
 import { uploadBusinessImage } from "@/lib/actions/upload";
 import { LocationPicker } from "@/components/business/location-picker";
 import { SPECIALTY_TAGS } from "@/lib/discovery";
-import { categoryLabel } from "@/lib/categories";
+import { categoryLabelFor } from "@/lib/categories";
+import { useT, useLocale } from "@/components/i18n/i18n-provider";
+import type { Dictionary } from "@/lib/i18n/dictionaries";
 import { cn } from "@/lib/utils";
 import type { Business } from "@prisma/client";
 import { PageHeader, GlassCard, InkButton, HAIRLINE, CHIP } from "@/components/ui/glass";
@@ -23,14 +25,13 @@ type Props = {
 
 type Tab = "podstawowe" | "kontakt" | "media" | "social";
 
-const TABS: { id: Tab; label: string }[] = [
-  { id: "podstawowe", label: "Podstawowe" },
-  { id: "kontakt", label: "Kontakt" },
-  { id: "media", label: "Media" },
-  { id: "social", label: "Social media" },
-];
+const TAB_IDS: Tab[] = ["podstawowe", "kontakt", "media", "social"];
 
 export function ProfileClient({ business, embedded = false }: Props) {
+  const t = useT();
+  const T = t.pages.profile;
+  const locale = useLocale();
+  const TAB_LABEL: Record<Tab, string> = { podstawowe: T.tabBasics, kontakt: T.tabContact, media: T.tabMedia, social: T.tabSocial };
   const [activeTab, setActiveTab] = useState<Tab>("podstawowe");
   const [isPending, startTransition] = useTransition();
   const [savedTab, setSavedTab] = useState<Tab | null>(null);
@@ -78,15 +79,15 @@ export function ProfileClient({ business, embedded = false }: Props) {
       {isPending ? (
         <>
           <SpinnerIcon className="w-4 h-4 animate-spin" />
-          Zapisywanie…
+          {t.pages.hours.saving}
         </>
       ) : savedTab === activeTab ? (
         <>
           <CheckIcon className="w-4 h-4" />
-          Zapisano
+          {T.saved}
         </>
       ) : (
-        "Zapisz"
+        t.common.save
       )}
     </InkButton>
   );
@@ -95,13 +96,13 @@ export function ProfileClient({ business, embedded = false }: Props) {
     <div className={cn(embedded ? "space-y-5" : "max-w-4xl mx-auto space-y-5")}>
       {embedded ? (
         <div className="flex items-center justify-between gap-3 flex-wrap">
-          <p className="text-sm text-slate-500">Te informacje widzą klienci w Twoim profilu publicznym.</p>
+          <p className="text-sm text-slate-500">{T.embeddedNote}</p>
           {saveButton}
         </div>
       ) : (
         <PageHeader
-          title="Profil salonu"
-          subtitle="Informacje widoczne dla klientów"
+          title={T.title}
+          subtitle={T.subtitle}
           actions={saveButton}
         />
       )}
@@ -109,19 +110,19 @@ export function ProfileClient({ business, embedded = false }: Props) {
       {/* Tabs */}
       <GlassCard className="fade-rise fade-rise-d1 overflow-hidden">
         <div className="flex" style={{ borderBottom: HAIRLINE }}>
-          {TABS.map((tab) => (
+          {TAB_IDS.map((id) => (
             <button
-              key={tab.id}
-              onClick={() => setActiveTab(tab.id)}
-              aria-current={activeTab === tab.id ? "true" : undefined}
+              key={id}
+              onClick={() => setActiveTab(id)}
+              aria-current={activeTab === id ? "true" : undefined}
               className={`flex-1 py-3.5 text-sm font-medium transition-colors relative ${
-                activeTab === tab.id
+                activeTab === id
                   ? "text-slate-900 font-semibold"
                   : "text-slate-500 hover:text-slate-800"
               }`}
             >
-              {tab.label}
-              {activeTab === tab.id && (
+              {TAB_LABEL[id]}
+              {activeTab === id && (
                 <span
                   className="absolute bottom-0 left-1/4 right-1/4 h-[2.5px] rounded-full"
                   style={{ background: "linear-gradient(90deg, #1E293B, #0F172A)" }}
@@ -138,7 +139,7 @@ export function ProfileClient({ business, embedded = false }: Props) {
             <>
               <div>
                 <label className={LABEL_CLS}>
-                  Nazwa salonu *
+                  {T.fieldName}
                 </label>
                 <input
                   type="text"
@@ -149,81 +150,79 @@ export function ProfileClient({ business, embedded = false }: Props) {
               </div>
               <div>
                 <label className={LABEL_CLS}>
-                  Krótki opis (do 160 znaków)
+                  {T.fieldShort}
                 </label>
                 <input
                   type="text"
                   maxLength={160}
                   value={shortDescription}
                   onChange={(e) => setShortDescription(e.target.value)}
-                  placeholder="Jedno zdanie opisujące Twój salon..."
+                  placeholder={T.shortPh}
                   className={INPUT_CLS}
                 />
                 <p className="text-xs text-slate-400 mt-1 text-right tabular-nums">{shortDescription.length}/160</p>
               </div>
               <div>
                 <label className={LABEL_CLS}>
-                  Pełny opis
+                  {T.fieldFull}
                 </label>
                 <textarea
                   rows={5}
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
-                  placeholder="Opisz swój salon, ofertę i wyróżniki..."
+                  placeholder={T.fullPh}
                   className={cn(INPUT_CLS, "resize-none")}
                 />
               </div>
               <div>
                 <label className={LABEL_CLS}>
-                  Kategoria
+                  {T.fieldCategory}
                 </label>
                 <input
                   type="text"
-                  value={categoryLabel(business.category)}
+                  value={categoryLabelFor(business.category, locale)}
                   disabled
                   className={cn(INPUT_CLS, "opacity-60 cursor-not-allowed")}
                 />
                 <p className="text-xs text-slate-500 mt-1">
-                  Kategoria nie może być zmieniona po rejestracji. Skontaktuj się z pomocą techniczną.
+                  {T.categoryNote}
                 </p>
               </div>
               <div>
                 <label className={LABEL_CLS}>
-                  Podkategoria (opcjonalnie)
+                  {T.fieldSubcategory}
                 </label>
                 <input
                   type="text"
                   value={subcategory}
                   onChange={(e) => setSubcategory(e.target.value)}
-                  placeholder="np. Kosmetologia, Makijaż permanentny..."
+                  placeholder={T.subcategoryPh}
                   className={INPUT_CLS}
                 />
               </div>
 
               <div>
-                <label className={LABEL_CLS}>Specjalizacje (maks. 6)</label>
-                <p className="text-xs text-slate-500 mb-2">
-                  Wybrane tagi pomagają klientom znaleźć Twój salon w wyszukiwarce i asystencie TermCatch.
-                </p>
+                <label className={LABEL_CLS}>{T.fieldSpecialties}</label>
+                <p className="text-xs text-slate-500 mb-2">{T.specialtiesHint}</p>
                 <div className="flex flex-wrap gap-1.5">
-                  {SPECIALTY_TAGS.map((t) => {
-                    const on = specialties.includes(t.slug);
+                  {SPECIALTY_TAGS.map((tag) => {
+                    const on = specialties.includes(tag.slug);
                     return (
                       <button
-                        key={t.slug}
+                        key={tag.slug}
                         type="button"
                         aria-pressed={on}
                         onClick={() =>
                           setSpecialties((prev) =>
-                            on ? prev.filter((s) => s !== t.slug) : prev.length >= 6 ? prev : [...prev, t.slug]
+                            on ? prev.filter((s) => s !== tag.slug) : prev.length >= 6 ? prev : [...prev, tag.slug]
                           )
                         }
                         className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${on ? "text-white" : "text-slate-600"}`}
                         style={on
-                          ? { background: "linear-gradient(180deg,#1E293B,#0F172A)", border: "1px solid #0F172A" }
-                          : { background: "rgba(255,255,255,0.7)", border: "1px solid rgba(203,213,225,0.55)" }}
+                          ? { background: "var(--ink-raised)", border: "1px solid #0F172A" }
+                          : { background: "var(--surface)", border: "1px solid var(--hairline)" }}
                       >
-                        {t.label}
+                        {t.specialties[tag.slug as keyof Dictionary["specialties"]] ?? tag.label}
                       </button>
                     );
                   })}
@@ -238,7 +237,7 @@ export function ProfileClient({ business, embedded = false }: Props) {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className={LABEL_CLS}>
-                    Telefon
+                    {T.fieldPhone}
                   </label>
                   <input
                     type="tel"
@@ -250,7 +249,7 @@ export function ProfileClient({ business, embedded = false }: Props) {
                 </div>
                 <div>
                   <label className={LABEL_CLS}>
-                    E-mail
+                    {T.fieldEmail}
                   </label>
                   <input
                     type="email"
@@ -263,7 +262,7 @@ export function ProfileClient({ business, embedded = false }: Props) {
               </div>
               <div>
                 <label className={LABEL_CLS}>
-                  Strona internetowa
+                  {T.fieldWebsite}
                 </label>
                 <input
                   type="url"
@@ -275,20 +274,20 @@ export function ProfileClient({ business, embedded = false }: Props) {
               </div>
               <div>
                 <label className={LABEL_CLS}>
-                  Adres
+                  {T.fieldAddress}
                 </label>
                 <input
                   type="text"
                   value={address}
                   onChange={(e) => setAddress(e.target.value)}
-                  placeholder="ul. Kwiatowa 5/3"
+                  placeholder={T.addressPh}
                   className={INPUT_CLS}
                 />
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className={LABEL_CLS}>
-                    Miasto
+                    {T.fieldCity}
                   </label>
                   <input
                     type="text"
@@ -299,7 +298,7 @@ export function ProfileClient({ business, embedded = false }: Props) {
                 </div>
                 <div>
                   <label className={LABEL_CLS}>
-                    Kod pocztowy
+                    {T.fieldPostal}
                   </label>
                   <input
                     type="text"
@@ -326,18 +325,20 @@ export function ProfileClient({ business, embedded = false }: Props) {
           {activeTab === "media" && (
             <>
               <ImageUploadField
-                label="Logo salonu"
-                hint="Kwadratowe zdjęcie. Zalecany rozmiar: 400×400 px."
+                label={T.logoLabel}
+                hint={T.logoHint}
                 value={logoUrl}
                 onChange={setLogoUrl}
                 shape="square"
+                t={T}
               />
               <ImageUploadField
-                label="Zdjęcie okładkowe"
-                hint="Poziome zdjęcie bannerowe. Zalecany rozmiar: 1200×400 px."
+                label={T.coverLabel}
+                hint={T.coverHint}
                 value={coverImageUrl}
                 onChange={setCoverImageUrl}
                 shape="wide"
+                t={T}
               />
             </>
           )}
@@ -381,7 +382,7 @@ export function ProfileClient({ business, embedded = false }: Props) {
               </div>
               <div className="p-4 rounded-xl" style={CHIP}>
                 <p className="text-xs text-slate-600">
-                  Linki do social media są wyświetlane na Twojej stronie profilu, którą widzą klienci.
+                  {T.socialNote}
                 </p>
               </div>
             </>
@@ -400,12 +401,14 @@ function ImageUploadField({
   value,
   onChange,
   shape,
+  t,
 }: {
   label: string;
   hint?: string;
   value: string;
   onChange: (url: string) => void;
   shape: "square" | "wide";
+  t: Dictionary["pages"]["profile"];
 }) {
   const [dragging, setDragging] = useState(false);
   const [uploading, setUploading] = useState(false);
@@ -423,15 +426,15 @@ function ImageUploadField({
       const okTypes = ["image/jpeg", "image/png", "image/webp", "image/avif"];
       const name = file.name.toLowerCase();
       if (/\.(heic|heif)$/.test(name) || /image\/hei[cf]/.test(file.type)) {
-        setError("Zdjęcia HEIC/HEIF z iPhone'a nie są obsługiwane. Wybierz JPG, PNG lub WebP (w iPhonie: Ustawienia → Aparat → Formaty → „Maksymalna zgodność”).");
+        setError(t.errHeic);
         return;
       }
       if (!okTypes.includes(file.type)) {
-        setError("Dozwolone formaty: JPG, PNG lub WebP.");
+        setError(t.errType);
         return;
       }
       if (file.size > 5 * 1024 * 1024) {
-        setError("Plik jest za duży. Maksymalny rozmiar to 5 MB.");
+        setError(t.errSize);
         return;
       }
 
@@ -448,12 +451,12 @@ function ImageUploadField({
       } catch {
         // Network/server failure must never crash the form or lose the
         // existing image — keep everything usable with an honest message.
-        setError("Nie udało się przesłać zdjęcia. Sprawdź połączenie i spróbuj ponownie.");
+        setError(t.errUpload);
       } finally {
         setUploading(false);
       }
     },
-    [onChange, uploading]
+    [onChange, uploading, t]
   );
 
   function onDrop(e: React.DragEvent) {
@@ -476,7 +479,7 @@ function ImageUploadField({
         onDrop={onDrop}
         onClick={() => !uploading && inputRef.current?.click()}
         className={cn(
-          "relative rounded-xl border-2 border-dashed cursor-pointer transition-all overflow-hidden bg-white/50",
+          "relative rounded-xl border-2 border-dashed cursor-pointer transition-colors overflow-hidden bg-white/50",
           heightClass,
           dragging
             ? "border-slate-400"
@@ -494,15 +497,15 @@ function ImageUploadField({
             />
             <div className="absolute inset-0 bg-black/0 hover:bg-black/40 transition-colors flex items-center justify-center opacity-0 hover:opacity-100">
               <span className="text-white text-xs font-semibold bg-black/60 px-3 py-1.5 rounded-lg backdrop-blur-sm">
-                Zmień zdjęcie
+                {t.changePhoto}
               </span>
             </div>
           </>
         ) : (
           <div className="flex flex-col items-center justify-center h-full gap-2 text-slate-400">
             <UploadIcon className="w-8 h-8" />
-            <p className="text-sm font-medium">Przeciągnij zdjęcie lub kliknij</p>
-            <p className="text-xs text-slate-400">JPG, PNG, WebP · maks. 5 MB</p>
+            <p className="text-sm font-medium">{t.dropHere}</p>
+            <p className="text-xs text-slate-400">{t.dropHint}</p>
           </div>
         )}
 
@@ -521,7 +524,7 @@ function ImageUploadField({
           onClick={() => onChange("")}
           className="mt-1.5 text-xs text-slate-400 hover:text-rose-600 transition-colors"
         >
-          Usuń zdjęcie
+          {t.removePhoto}
         </button>
       )}
 

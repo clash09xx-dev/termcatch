@@ -12,7 +12,9 @@ import { validateForPublication } from "@/lib/publication";
 import { bookingUrl } from "@/lib/app-url";
 import { CopyLink } from "@/components/business/copy-link";
 import { OnboardingChecklist, type ChecklistStep } from "@/components/business/onboarding-checklist";
-import { formatCurrency, formatTime, formatDate, formatRelativeTime } from "@/lib/utils";
+import { formatCurrency as fmtMoney, formatTime as fmtTime, formatDate as fmtDate, intlLocale } from "@/lib/i18n/format";
+import { interpolate } from "@/lib/i18n/dictionaries";
+import type { Dictionary } from "@/lib/i18n/dictionaries";
 import { warsawDateString, warsawDayStartUtc, warsawDayEndUtc, warsawTimeString } from "@/lib/timezone";
 import { redirect } from "next/navigation";
 import Link from "next/link";
@@ -27,12 +29,12 @@ import { Sparkline } from "@/components/ui/chart";
 
 const DOW: DayOfWeek[] = ["SUNDAY", "MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY", "SATURDAY"];
 
-function greeting(): string {
+function greeting(T: Dictionary["pages"]["today"]): string {
   const h = parseInt(new Intl.DateTimeFormat("en-GB", { timeZone: "Europe/Warsaw", hour: "2-digit", hour12: false }).format(new Date()), 10);
-  if (h < 5) return "Dobranoc";
-  if (h < 12) return "Dzień dobry";
-  if (h < 18) return "Miłego dnia";
-  return "Dobry wieczór";
+  if (h < 5) return T.goodNight;
+  if (h < 12) return T.goodMorning;
+  if (h < 18) return T.goodDay;
+  return T.goodEvening;
 }
 
 function hmToMin(hm: string): number {
@@ -48,6 +50,9 @@ export default async function BusinessDashboardPage() {
     include: { workingHours: true },
   }))[0];
   if (!business) redirect("/business/onboarding");
+
+  const { locale, dict } = await getServerI18n();
+  const T = dict.pages.today;
 
   const now = new Date();
   const todayStr = warsawDateString(now);
@@ -111,10 +116,10 @@ export default async function BusinessDashboardPage() {
   const hasOpenHours = business.workingHours.some((w) => w.isOpen);
   const profileComplete = Boolean(business.description?.trim() && business.logoUrl && business.address?.trim());
   const checklistSteps: ChecklistStep[] = [
-    { key: "service", label: "Dodaj pierwszą usługę", hint: "Klienci rezerwują konkretne usługi.", done: serviceCount > 0, href: "/business/services?action=new" },
-    { key: "employee", label: "Dodaj pierwszego specjalistę", hint: "Przypisz osobę, która obsłuży wizyty.", done: staffCount > 0, href: "/business/staff?action=new" },
-    { key: "hours", label: "Ustaw godziny pracy", hint: "Kiedy przyjmujesz klientów.", done: hasOpenHours, href: "/business/hours" },
-    { key: "profile", label: "Uzupełnij profil salonu", hint: "Logo, opis i adres budują zaufanie.", done: profileComplete, href: "/business/profile" },
+    { key: "service", label: T.stepService, hint: T.stepServiceHint, done: serviceCount > 0, href: "/business/services?action=new" },
+    { key: "employee", label: T.stepEmployee, hint: T.stepEmployeeHint, done: staffCount > 0, href: "/business/staff?action=new" },
+    { key: "hours", label: T.stepHours, hint: T.stepHoursHint, done: hasOpenHours, href: "/business/hours" },
+    { key: "profile", label: T.stepProfile, hint: T.stepProfileHint, done: profileComplete, href: "/business/profile" },
   ];
 
   // Today's working window → gap-aware timeline (weekday in Warsaw)
@@ -152,37 +157,50 @@ export default async function BusinessDashboardPage() {
     return `/business/calendar?action=new&date=${todayStr}&time=${hh}:${mm}`;
   };
 
-  const { dict } = await getServerI18n();
   const aiInsights = (await getInsights(business.id, dict).catch(() => [])).slice(0, 3);
 
   return (
     <div className="max-w-6xl mx-auto space-y-5">
-      <NotificationsPrompt configured={notifConfigured} />
+      <NotificationsPrompt
+        configured={notifConfigured}
+        labels={{
+          title: T.notifPromptTitle, body: T.notifPromptBody, cta: T.notifPromptCta,
+          later: T.notifPromptLater, aria: T.notifPromptAria, dismiss: T.notifPromptDismiss,
+        }}
+      />
 
       <PublicationStatus
         status={business.status}
         slug={business.slug}
         requirements={publication.requirements}
+        t={dict.publication}
       />
 
-      <OnboardingChecklist steps={checklistSteps} bookingUrl={bookingUrl(business.slug)} />
+      <OnboardingChecklist
+        steps={checklistSteps}
+        bookingUrl={bookingUrl(business.slug)}
+        labels={{
+          title: T.checklistTitle, body: T.checklistBody, hide: T.checklistHide,
+          collapsed: T.checklistSteps, copyLink: T.stepCopyLink, copyLinkHint: T.stepCopyLinkHint,
+        }}
+      />
 
       {/* Greeting — a spoken sentence, not a stat grid */}
       <div className="fade-rise">
-        <h1 className="text-2xl font-semibold text-slate-900" style={{ letterSpacing: "-0.025em" }}>
-          {greeting()}{dbUser.firstName ? `, ${dbUser.firstName}` : ""}
+        <h1 className="text-2xl font-semibold text-slate-900" style={{ letterSpacing: "var(--track-title)" }}>
+          {greeting(T)}{dbUser.firstName ? `, ${dbUser.firstName}` : ""}
         </h1>
         <p className="text-sm text-slate-500 mt-1">
-          {new Date().toLocaleDateString("pl-PL", { timeZone: "Europe/Warsaw", weekday: "long", day: "numeric", month: "long" })}
+          {new Intl.DateTimeFormat(intlLocale(locale), { timeZone: "Europe/Warsaw", weekday: "long", day: "numeric", month: "long" }).format(new Date())}
           {todayAppointments.length > 0 ? (
             <>
               {" · "}<span className="text-slate-700 font-medium tabular-nums">{todayAppointments.length}</span>{" "}
-              {todayAppointments.length === 1 ? "wizyta" : todayAppointments.length < 5 ? "wizyty" : "wizyt"}
-              {nextAppt && <> · najbliższa <span className="text-slate-700 font-medium tabular-nums">{formatTime(nextAppt.startTime)}</span></>}
-              {plannedToday > 0 && <> · planowany utarg <span className="text-slate-700 font-medium tabular-nums">{formatCurrency(plannedToday)}</span></>}
+              {todayAppointments.length === 1 ? T.visitOne : todayAppointments.length < 5 ? T.visitFew : T.visitMany}
+              {nextAppt && <> · {interpolate(T.nextAt, { time: fmtTime(nextAppt.startTime, locale) })}</>}
+              {plannedToday > 0 && <> · {interpolate(T.plannedRevenue, { amount: fmtMoney(plannedToday, locale) })}</>}
             </>
           ) : (
-            <> · brak wizyt na dziś</>
+            <> · {T.noVisitsToday}</>
           )}
         </p>
       </div>
@@ -190,10 +208,10 @@ export default async function BusinessDashboardPage() {
       {aiInsights.length > 0 && (
         <div className="fade-rise fade-rise-d1 space-y-2.5">
           <div className="flex items-center gap-2">
-            <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">Asystent AI — sugestie</span>
-            <Link href="/business/ai" className="text-[11px] font-semibold text-slate-500 hover:text-slate-900">Otwórz asystenta →</Link>
+            <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">{T.aiSuggestions}</span>
+            <Link href="/business/ai" className="text-[11px] font-semibold text-slate-500 hover:text-slate-900">{T.openAssistant} →</Link>
           </div>
-          <InsightCards insights={aiInsights} />
+          <InsightCards insights={aiInsights} severityLabels={dict.insightSeverity} />
         </div>
       )}
 
@@ -202,13 +220,13 @@ export default async function BusinessDashboardPage() {
         <div className="lg:col-span-2 fade-rise fade-rise-d1">
           {(
             <GlassCard className="overflow-hidden">
-              <CardHeader title="Dziś" action={<Link href="/business/calendar" className="text-xs font-semibold text-slate-500 hover:text-slate-900 transition-colors">Pełny kalendarz →</Link>} />
+              <CardHeader title={T.todayCard} action={<Link href="/business/calendar" className="text-xs font-semibold text-slate-500 hover:text-slate-900 transition-colors">{T.fullCalendar} →</Link>} />
               {todayAppointments.length === 0 ? (
                 <EmptyState
                   icon={<svg className="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5}><rect x="3" y="4" width="18" height="18" rx="2" /><path d="M3 10h18M8 2v4M16 2v4" /></svg>}
-                  title="Wolny dzień"
-                  body="Brak wizyt na dziś. Zapisz kogoś ręcznie albo udostępnij link do rezerwacji."
-                  action={<InkLink href="/business/calendar?action=new" size="sm">Dodaj wizytę</InkLink>}
+                  title={T.freeDayTitle}
+                  body={T.freeDayBody}
+                  action={<InkLink href="/business/calendar?action=new" size="sm">{T.addVisit}</InkLink>}
                 />
               ) : (
                 <div className="p-5">
@@ -222,7 +240,7 @@ export default async function BusinessDashboardPage() {
                           <TimelineRow key={`gap-${i}`} time={gh} dotColor="rgba(148,163,184,0.5)" connector={i < rows.length - 1}>
                             <Link href={gapHref(row.startMin)} className="row-hover flex items-center gap-2 rounded-xl px-3 py-2 -ml-1 group" style={{ border: "1px dashed rgba(148,163,184,0.45)" }}>
                               <svg className="w-3.5 h-3.5 text-slate-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}><path d="M12 5v14M5 12h14" /></svg>
-                              <span className="text-xs text-slate-500">Wolne {label} — dodaj wizytę</span>
+                              <span className="text-xs text-slate-500">{interpolate(T.gapFree, { duration: label })}</span>
                             </Link>
                           </TimelineRow>
                         );
@@ -231,15 +249,15 @@ export default async function BusinessDashboardPage() {
                       const past = apt.endTime < now;
                       const rail = STATUS_TINT[apt.status as StatusKey]?.rail ?? "#94A3B8";
                       return (
-                        <TimelineRow key={apt.id} time={formatTime(apt.startTime)} sub={`${apt.duration} min`} dotColor={apt.employee?.color ?? "#94A3B8"} connector={i < rows.length - 1} muted={past}>
-                          <div className="rounded-2xl px-4 py-3 flex items-center gap-3" style={{ background: "rgba(255,255,255,0.8)", border: "1px solid rgba(203,213,225,0.45)", borderLeft: `3px solid ${rail}`, boxShadow: "0 0 0 0.5px rgba(203,213,225,0.2), inset 0 1px 0 rgba(255,255,255,0.92)" }}>
+                        <TimelineRow key={apt.id} time={fmtTime(apt.startTime, locale)} sub={`${apt.duration} min`} dotColor={apt.employee?.color ?? "#94A3B8"} connector={i < rows.length - 1} muted={past}>
+                          <div className="rounded-2xl px-4 py-3 flex items-center gap-3" style={{ background: "var(--surface)", border: "1px solid var(--hairline)", borderLeft: `3px solid ${rail}`, boxShadow: "var(--e1)" }}>
                             <div className="flex-1 min-w-0">
                               <p className="text-sm font-semibold text-slate-900 truncate">{apt.customer.firstName} {apt.customer.lastName}</p>
                               <p className="text-xs text-slate-500 mt-0.5 truncate">{apt.service.name}{apt.employee && ` · ${apt.employee.firstName}`}</p>
                             </div>
                             <div className="text-right flex-shrink-0">
-                              <p className="text-sm font-bold text-slate-900 tabular-nums">{formatCurrency(apt.price)}</p>
-                              <StatusBadge status={apt.status} className="mt-1" />
+                              <p className="text-sm font-bold text-slate-900 tabular-nums">{fmtMoney(apt.price, locale)}</p>
+                              <StatusBadge status={apt.status} label={dict.statuses[apt.status]} className="mt-1" />
                             </div>
                           </div>
                         </TimelineRow>
@@ -257,10 +275,10 @@ export default async function BusinessDashboardPage() {
           {/* Decision queue */}
           <GlassCard className="overflow-hidden">
             <CardHeader
-              title={<span className="inline-flex items-center gap-2">Do decyzji {decisionCount > 0 && <span className="text-[11px] font-bold text-white px-1.5 py-0.5 rounded-full tabular-nums" style={{ background: STATUS_TINT.PENDING.rail }}>{decisionCount}</span>}</span>}
+              title={<span className="inline-flex items-center gap-2">{T.decisions} {decisionCount > 0 && <span className="text-[11px] font-bold text-white px-1.5 py-0.5 rounded-full tabular-nums" style={{ background: STATUS_TINT.PENDING.rail }}>{decisionCount}</span>}</span>}
             />
             {decisionCount === 0 ? (
-              <p className="px-5 py-6 text-center text-xs text-slate-500">Nic nie czeka — wszystko ogarnięte. ✓</p>
+              <p className="px-5 py-6 text-center text-xs text-slate-500">{T.allClear}</p>
             ) : (
               <div>
                 {pendingAppointments.map((apt, i) => {
@@ -274,12 +292,12 @@ export default async function BusinessDashboardPage() {
                         <ChromeAvatar size="sm" initials={`${apt.customer.firstName[0]}${apt.customer.lastName[0]}`} />
                         <div className="flex-1 min-w-0">
                           <p className="text-[13px] font-semibold text-slate-900 truncate">{apt.customer.firstName} {apt.customer.lastName}</p>
-                          <p className="text-[11px] text-slate-500 truncate tabular-nums">{apt.service.name} · {formatDate(apt.startTime, { day: "numeric", month: "short" })}, {formatTime(apt.startTime)}</p>
+                          <p className="text-[11px] text-slate-500 truncate tabular-nums">{apt.service.name} · {fmtDate(apt.startTime, locale, { day: "numeric", month: "short" })}, {fmtTime(apt.startTime, locale)}</p>
                         </div>
                       </div>
                       <div className="flex gap-1.5 mt-2">
-                        <form action={confirmWith} className="flex-1"><button className="btn-spring w-full py-1.5 rounded-lg text-[11px] font-semibold" style={INK_BTN}>Potwierdź</button></form>
-                        <Link href={`/business/calendar?date=${apt.startTime.toISOString().slice(0, 10)}`} className="btn-spring px-3 py-1.5 rounded-lg text-[11px] font-medium inline-flex items-center" style={GLASS_BTN}>Odwołaj</Link>
+                        <form action={confirmWith} className="flex-1"><button className="btn-spring w-full py-1.5 rounded-lg text-[11px] font-semibold" style={INK_BTN}>{T.confirm}</button></form>
+                        <Link href={`/business/calendar?date=${apt.startTime.toISOString().slice(0, 10)}`} className="btn-spring px-3 py-1.5 rounded-lg text-[11px] font-medium inline-flex items-center" style={GLASS_BTN}>{T.decline}</Link>
                       </div>
                     </div>
                   );
@@ -289,7 +307,7 @@ export default async function BusinessDashboardPage() {
                     <span className="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0" style={CHIP}>
                       <svg className="w-3.5 h-3.5 text-amber-400" viewBox="0 0 24 24" fill="currentColor"><path d="M11.48 3.5a.56.56 0 0 1 1.04 0l2.12 5.11a.56.56 0 0 0 .48.35l5.52.44c.5.04.7.66.32.99l-4.2 3.6a.56.56 0 0 0-.18.56l1.28 5.38a.56.56 0 0 1-.84.61l-4.72-2.88a.56.56 0 0 0-.6 0l-4.72 2.88a.56.56 0 0 1-.84-.61l1.28-5.38a.56.56 0 0 0-.18-.56l-4.2-3.6a.56.56 0 0 1 .32-.99l5.52-.44a.56.56 0 0 0 .48-.35Z" /></svg>
                     </span>
-                    <span className="flex-1 text-[13px] text-slate-700"><span className="font-semibold text-slate-900 tabular-nums">{unansweredReviews}</span> {unansweredReviews === 1 ? "opinia bez odpowiedzi" : "opinii bez odpowiedzi"}</span>
+                    <span className="flex-1 text-[13px] text-slate-700"><span className="font-semibold text-slate-900 tabular-nums">{unansweredReviews}</span> {unansweredReviews === 1 ? T.reviewOne : T.reviewMany}</span>
                     <svg className="w-3.5 h-3.5 text-slate-300" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}><path d="m9 18 6-6-6-6" /></svg>
                   </Link>
                 )}
@@ -300,13 +318,13 @@ export default async function BusinessDashboardPage() {
           {/* Weekly pulse */}
           <GlassCard className="p-4">
             <div className="flex items-center justify-between mb-2">
-              <Overline>Ostatnie 7 dni</Overline>
+              <Overline>{T.last7}</Overline>
               <Sparkline data={dayRevenue} />
             </div>
-            <p className="text-[22px] font-bold text-slate-900 tabular-nums leading-7" style={{ letterSpacing: "-0.02em" }}>{formatCurrency(weekRevenue)}</p>
+            <p className="text-[22px] font-bold text-slate-900 tabular-nums leading-7" style={{ letterSpacing: "var(--track-title)" }}>{fmtMoney(weekRevenue, locale)}</p>
             <div className="flex items-center gap-4 mt-1.5 text-xs text-slate-500">
-              <span className="tabular-nums"><span className="font-semibold text-slate-700">{monthCompleted}</span> wizyt / mies.</span>
-              <span className="tabular-nums"><span className="font-semibold text-slate-700">{monthNoShowCount}</span> no-show</span>
+              <span className="tabular-nums"><span className="font-semibold text-slate-700">{monthCompleted}</span> {T.visitsPerMonth}</span>
+              <span className="tabular-nums"><span className="font-semibold text-slate-700">{monthNoShowCount}</span> {T.noShow}</span>
             </div>
           </GlassCard>
 
@@ -314,7 +332,7 @@ export default async function BusinessDashboardPage() {
           {recentReviews.length > 0 && (
             <GlassCard className="p-4">
               <div className="flex items-center justify-between mb-2.5">
-                <Overline>Ostatnie opinie</Overline>
+                <Overline>{T.recentReviews}</Overline>
                 {business.totalReviews > 0 && (
                   <span className="inline-flex items-center gap-1 text-xs font-bold text-slate-900 tabular-nums">
                     <svg className="w-3 h-3 text-amber-400" viewBox="0 0 24 24" fill="currentColor"><path d="M11.48 3.5a.56.56 0 0 1 1.04 0l2.12 5.11a.56.56 0 0 0 .48.35l5.52.44c.5.04.7.66.32.99l-4.2 3.6a.56.56 0 0 0-.18.56l1.28 5.38a.56.56 0 0 1-.84.61l-4.72-2.88a.56.56 0 0 0-.6 0l-4.72 2.88a.56.56 0 0 1-.84-.61l1.28-5.38a.56.56 0 0 0-.18-.56l-4.2-3.6a.56.56 0 0 1 .32-.99l5.52-.44a.56.56 0 0 0 .48-.35Z" /></svg>
@@ -335,13 +353,13 @@ export default async function BusinessDashboardPage() {
 
           {/* Booking link */}
           <GlassCard className="p-4">
-            <Overline className="mb-2">Link do rezerwacji</Overline>
+            <Overline className="mb-2">{T.bookingLink}</Overline>
             <div className="px-3 py-2 rounded-xl text-xs text-slate-600 truncate mb-2.5" style={CHIP}>
               {bookingUrl(business.slug)}
             </div>
             <div className="space-y-1.5">
-              <CopyLink url={bookingUrl(business.slug)} />
-              <GlassLink href={`/b/${business.slug}`} size="sm" className="w-full">Podgląd profilu</GlassLink>
+              <CopyLink url={bookingUrl(business.slug)} labels={{ copy: dict.common.copyLink, copied: dict.common.copied, aria: T.bookingLink }} />
+              <GlassLink href={`/b/${business.slug}`} size="sm" className="w-full">{T.previewProfile}</GlassLink>
             </div>
           </GlassCard>
         </div>

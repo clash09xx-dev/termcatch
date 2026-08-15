@@ -3,14 +3,16 @@
 import { useRouter, usePathname } from "next/navigation";
 import { useState, useCallback, useTransition, useEffect } from "react";
 import { createPortal } from "react-dom";
-import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
+import { AnimatePresence, motion, type PanInfo } from "framer-motion";
+import { gentleFade, overlayFade, projectMomentum, sheetUp, SPRING_SHEET, useReducedMotion } from "@/lib/motion";
+import { CHROME_STRONG, SCRIM } from "@/components/ui/glass/tokens";
 import { cn } from "@/lib/utils";
 import { visibleCategoriesFor } from "@/lib/categories";
 import { useT, useLocale } from "@/components/i18n/i18n-provider";
 
 // ─── Shared styles ────────────────────────────────────────────────────────────
 
-const INK = "linear-gradient(180deg, #1E293B 0%, #0F172A 100%)";
+const INK = "var(--ink-raised)";
 
 const INK_BTN: React.CSSProperties = {
   background: INK,
@@ -21,12 +23,11 @@ const INK_BTN: React.CSSProperties = {
 };
 
 const GLASS_PANEL: React.CSSProperties = {
-  background: "rgba(255,255,255,0.72)",
+  background: "var(--surface)",
   backdropFilter: "blur(32px) saturate(200%)",
   WebkitBackdropFilter: "blur(32px) saturate(200%)",
-  border: "1px solid rgba(203,213,225,0.45)",
-  boxShadow:
-    "0 0 0 0.5px rgba(203,213,225,0.30), 0 1px 2px rgba(0,0,0,0.03), 0 6px 20px rgba(100,116,139,0.08), inset 0 1px 0 rgba(255,255,255,0.95)",
+  border: "1px solid var(--hairline)",
+  boxShadow: "var(--e2)",
 };
 
 interface SearchFiltersProps {
@@ -235,7 +236,7 @@ export default function SearchFilters({
                   "px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors border",
                   active ? "text-white border-transparent" : "text-slate-600 border-slate-200 hover:text-slate-900"
                 )}
-                style={active ? INK_BTN : { background: "rgba(255,255,255,0.70)" }}
+                style={active ? INK_BTN : { background: "var(--surface)" }}
               >
                 {opt.label}
               </button>
@@ -346,39 +347,45 @@ export function MobileFilters(props: SearchFiltersProps) {
       <AnimatePresence>
         {open && (
           <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.2 }}
-            className="fixed inset-0 z-50 flex items-end justify-center"
-            style={{ background: "rgba(15,23,42,0.30)", backdropFilter: "blur(6px)", WebkitBackdropFilter: "blur(6px)" }}
+            variants={overlayFade}
+            initial="hidden"
+            animate="show"
+            exit="exit"
+            className="fixed inset-0 flex items-end justify-center"
+            style={{ ...SCRIM, zIndex: "var(--z-overlay)" }}
             onClick={() => setOpen(false)}
             role="dialog"
             aria-modal="true"
             aria-label={s.filtersAria}
           >
             <motion.div
-              initial={reduceMotion ? { opacity: 0 } : { y: "100%" }}
-              animate={reduceMotion ? { opacity: 1 } : { y: 0 }}
-              exit={reduceMotion ? { opacity: 0 } : { y: "100%" }}
-              transition={reduceMotion ? { duration: 0.2 } : { type: "spring", stiffness: 380, damping: 36 }}
-              className="w-full rounded-t-3xl px-5 pt-3 pb-[calc(1.25rem+env(safe-area-inset-bottom))]"
+              variants={reduceMotion ? gentleFade : sheetUp}
+              initial="hidden"
+              animate="show"
+              exit="exit"
+              drag={reduceMotion ? false : "y"}
+              dragDirectionLock
+              dragConstraints={{ top: 0, bottom: 0 }}
+              dragElastic={{ top: 0, bottom: 0.6 }}
+              onDragEnd={(_: unknown, info: PanInfo) => {
+                if (info.offset.y + projectMomentum(info.velocity.y) > 100) setOpen(false);
+              }}
+              transition={SPRING_SHEET}
+              className="w-full rounded-t-[22px] px-5 pt-3 pb-[calc(1.25rem+env(safe-area-inset-bottom))]"
               style={{
-                background: "rgba(255,255,255,0.94)",
-                backdropFilter: "blur(40px) saturate(200%)",
-                WebkitBackdropFilter: "blur(40px) saturate(200%)",
-                borderTop: "1px solid rgba(203,213,225,0.50)",
-                boxShadow: "0 -8px 32px rgba(15,23,42,0.14), inset 0 1px 0 rgba(255,255,255,0.98)",
+                ...CHROME_STRONG,
+                borderTop: "1px solid var(--hairline)",
+                boxShadow: "var(--e4)",
               }}
               onClick={(e) => e.stopPropagation()}
             >
               {/* Drag handle */}
-              <div className="flex justify-center mb-3">
-                <div className="w-10 h-1 rounded-full" style={{ background: "rgba(148,163,184,0.45)" }} />
+              <div className="flex justify-center mb-3" aria-hidden="true">
+                <div className="w-9 h-1 rounded-full" style={{ background: "var(--hairline-firm)" }} />
               </div>
 
               <div className="flex items-center justify-between mb-4">
-                <h2 className="text-base font-bold text-slate-900" style={{ letterSpacing: "-0.02em" }}>
+                <h2 className="text-base font-bold text-slate-900" style={{ letterSpacing: "var(--track-title)" }}>
                   {s.filters}
                 </h2>
                 <button

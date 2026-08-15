@@ -53,6 +53,25 @@ export function formatTime(
   ).format(toDate(d));
 }
 
+/**
+ * Locale-aware "2 days ago". Anything under a minute returns `justNow`, which
+ * the caller passes from the dictionary (Intl has no phrase for it).
+ */
+export function formatRelative(
+  d: Date | string | number,
+  locale: Locale,
+  justNow: string,
+): string {
+  const date = toDate(d);
+  const diff = Date.now() - date.getTime();
+  const rtf = new Intl.RelativeTimeFormat(intlLocale(locale), { numeric: "auto" });
+  if (diff < 60_000) return justNow;
+  if (diff < 3_600_000) return rtf.format(-Math.floor(diff / 60_000), "minute");
+  if (diff < 86_400_000) return rtf.format(-Math.floor(diff / 3_600_000), "hour");
+  if (diff < 2_592_000_000) return rtf.format(-Math.floor(diff / 86_400_000), "day");
+  return formatDate(date, locale);
+}
+
 export function formatNumber(
   n: number,
   locale: Locale,

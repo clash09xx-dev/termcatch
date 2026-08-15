@@ -51,7 +51,7 @@ export default function OgImage() {
             marginTop: "28px",
           }}
         >
-          Fryzjer, barber, paznokcie, masaż — rezerwuj online 24/7
+          Fryzjer, barber, paznokcie, masaż. Rezerwuj online 24/7
         </div>
       </div>
     ),

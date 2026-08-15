@@ -2,27 +2,36 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { motion } from "framer-motion";
 import { logoutAction } from "@/actions/auth";
 import { useUnreadCount } from "@/hooks/use-unread-count";
 import { pageMetaFor } from "./business-nav";
 import { INK_GRADIENT } from "@/components/ui/glass/tokens";
 import { useT } from "@/components/i18n/i18n-provider";
+import { useScrolledUnder } from "@/hooks/use-scrolled";
 
 export function BusinessTopbar({ initials }: { initials?: string } = {}) {
   const t = useT();
   const pathname = usePathname();
   const meta = pageMetaFor(pathname);
   const unread = useUnreadCount();
+  const [barRef, scrolled] = useScrolledUnder<HTMLElement>();
 
   return (
+    // Scroll-edge effect: the bar is flat on the page until content passes
+    // beneath it, then it lifts — hairline and a slightly denser material.
+    // A divider that is always drawn reads as a border in the layout; one that
+    // appears on scroll reads as the bar floating, which is what it does.
     <header
-      className="h-16 flex items-center gap-4 px-5 sm:px-6 shrink-0 sticky top-0 z-30"
+      ref={barRef}
+      className="h-16 flex items-center gap-4 px-5 sm:px-6 shrink-0 sticky top-0"
       style={{
-        background: "rgba(247,250,253,0.72)",
-        backdropFilter: "blur(28px) saturate(200%)",
-        WebkitBackdropFilter: "blur(28px) saturate(200%)",
-        borderBottom: "1px solid rgba(203,213,225,0.32)",
+        zIndex: "var(--z-topbar)" as unknown as number,
+        background: scrolled ? "var(--chrome-strong)" : "var(--chrome)",
+        backdropFilter: "var(--chrome-blur)",
+        WebkitBackdropFilter: "var(--chrome-blur)",
+        borderBottom: "1px solid " + (scrolled ? "var(--hairline)" : "transparent"),
+        boxShadow: scrolled ? "0 1px 12px -6px rgba(15,23,42,0.24)" : "none",
+        transition: "background var(--dur-fast) var(--ease-hover), border-color var(--dur-fast) var(--ease-hover), box-shadow var(--dur-fast) var(--ease-hover)",
       }}
     >
       <h1 className="text-[17px] font-semibold tracking-[-0.02em] text-slate-900 flex-shrink-0">
@@ -39,12 +48,12 @@ export function BusinessTopbar({ initials }: { initials?: string } = {}) {
           aria-label={t.a11y.commandPalette}
         >
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true"><circle cx="11" cy="11" r="8" /><path d="m21 21-4.35-4.35" /></svg>
-          <kbd className="text-[10px] font-semibold px-1.5 py-0.5 rounded" style={{ background: "rgba(203,213,225,0.24)", border: "1px solid rgba(203,213,225,0.45)", color: "#64748B" }}>⌘K</kbd>
+          <kbd className="text-[10px] font-semibold px-1.5 py-0.5 rounded" style={{ background: "rgba(203,213,225,0.24)", border: "1px solid var(--hairline)", color: "#64748B" }}>⌘K</kbd>
         </button>
 
         {/* Contextual primary action */}
         {meta.action && (
-          <motion.div whileHover={{ scale: 1.03, y: -0.5 }} whileTap={{ scale: 0.975 }} transition={{ type: "spring", stiffness: 420, damping: 26 }} className="hidden sm:block">
+          <div  className="btn-spring hidden sm:block">
             <Link
               href={meta.action.href}
               className="flex items-center gap-1.5 pl-3 pr-3.5 py-2 text-[13px] font-semibold rounded-lg"
@@ -55,7 +64,7 @@ export function BusinessTopbar({ initials }: { initials?: string } = {}) {
               )}
               {t.businessNav[meta.action.labelKey]}
             </Link>
-          </motion.div>
+          </div>
         )}
 
         <div className="hidden sm:block h-5 w-px mx-1" style={{ background: "rgba(203,213,225,0.45)" }} />
@@ -82,7 +91,7 @@ export function BusinessTopbar({ initials }: { initials?: string } = {}) {
             className="flex items-center gap-2 pl-2 pr-2.5 py-1.5 rounded-lg icon-btn"
             style={{ color: "#94A3B8" }}
           >
-            <span className="w-6 h-6 rounded-md flex items-center justify-center text-[9px] font-bold" style={{ background: "rgba(203,213,225,0.25)", border: "1px solid rgba(203,213,225,0.55)", color: "#475569", boxShadow: "inset 0 1px 0 rgba(255,255,255,0.7)" }}>
+            <span className="w-6 h-6 rounded-md flex items-center justify-center text-[9px] font-bold" style={{ background: "rgba(203,213,225,0.25)", border: "1px solid var(--hairline)", color: "#475569", boxShadow: "inset 0 1px 0 rgba(255,255,255,0.7)" }}>
               {initials ?? "•"}
             </span>
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" /><polyline points="16 17 21 12 16 7" /><line x1="21" x2="9" y1="12" y2="12" /></svg>

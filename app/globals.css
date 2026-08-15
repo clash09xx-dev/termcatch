@@ -2,72 +2,111 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ═══════════════════════════════════════════════════════════════════════════
+   TermCatch — Machined Silver
+   ───────────────────────────────────────────────────────────────────────────
+   One material system, one motion system, one elevation ladder.
+
+   The governing rule for material: CHROME FLOATS, CONTENT IS SOLID.
+   Translucency is reserved for surfaces that float over content — navigation,
+   topbars, sheets, overlays, floating controls. Content surfaces (cards, rows,
+   panels, forms, tables) are opaque, because text on a blurred backdrop is
+   never as crisp, a translucent surface stacked on another destroys legibility,
+   and every backdrop-filter costs a composited layer that samples the page.
+
+   Every timing value below is mirrored from lib/motion.ts. Nothing here
+   invents its own duration or curve.
+   ═════════════════════════════════════════════════════════════════════════ */
+
 @layer base {
   :root {
-    /* ── Page backgrounds ─────────────────────────────────── */
-    --bg-base:     #F8FAFC;
-    --bg-surface:  #FFFFFF;
-    --bg-elevated: #FFFFFF;
+    /* ── Ground ────────────────────────────────────────────── */
+    --bg-base: #F4F7FA;
 
-    /* ── Glass backgrounds ────────────────────────────────── */
-    --glass-bg:    rgba(255,255,255,0.72);
-    --glass-bg-md: rgba(255,255,255,0.82);
-    --glass-bg-lg: rgba(255,255,255,0.90);
-    --glass-bg-xl: rgba(255,255,255,0.96);
+    /* ── Content surfaces — opaque, always ─────────────────── */
+    --surface:        #FFFFFF;
+    --surface-2:      #FBFCFE;
+    --surface-inset:  rgba(15, 23, 42, 0.028);
+    --surface-sunken: rgba(15, 23, 42, 0.045);
+    /* A chosen option: selected chip, segmented control, active day or slot.
+       One value, so "selected" looks the same in the calendar, the booking
+       wizard and the settings tabs. */
+    --selected:       rgba(15, 23, 42, 0.062);
 
-    /* ── Chrome / silver borders ──────────────────────────── */
-    --glass-border:        rgba(203,213,225,0.55);
-    --glass-border-bright: rgba(255,255,255,0.90);
-    --chrome-ring:         rgba(203,213,225,0.40);
+    /* ── Chrome — the only place translucency lives ────────── */
+    --chrome:         rgba(249, 251, 253, 0.72);
+    --chrome-strong:  rgba(252, 253, 254, 0.88);
+    --chrome-blur:    saturate(180%) blur(20px);
+    --chrome-blur-lg: saturate(180%) blur(28px);
+    --scrim:          rgba(15, 23, 42, 0.32);
 
-    /* ── Apple-tier multi-layer shadows ──────────────────── */
-    --glass-shadow:
-      0 0 0 0.5px rgba(203,213,225,0.45),
-      0 1px 2px rgba(0,0,0,0.04),
-      0 6px 20px rgba(100,116,139,0.09),
-      0 20px 48px rgba(100,116,139,0.05),
-      inset 0 1px 0 rgba(255,255,255,0.95),
-      inset 0 -1px 0 rgba(203,213,225,0.10);
+    /* ── Hairlines ─────────────────────────────────────────── */
+    --hairline:      rgba(203, 213, 225, 0.55);
+    --hairline-soft: rgba(203, 213, 225, 0.34);
+    --hairline-firm: rgba(148, 163, 184, 0.45);
 
-    --glass-shadow-lg:
-      0 0 0 0.5px rgba(203,213,225,0.50),
-      0 2px 4px rgba(0,0,0,0.05),
-      0 12px 36px rgba(100,116,139,0.12),
-      0 40px 80px rgba(100,116,139,0.07),
-      inset 0 1px 0 rgba(255,255,255,1),
-      inset 0 -1px 0 rgba(203,213,225,0.12);
+    /* ── Elevation ladder ──────────────────────────────────────
+       Four levels, one shadow each. The 0.5px chrome ring and the
+       inner top highlight are the TermCatch signature — they read
+       as light catching a machined edge. Bigger surfaces get a
+       wider, softer ambient shadow, so size reads as thickness. */
+    --e1:
+      0 0 0 0.5px rgba(203, 213, 225, 0.34),
+      0 1px 2px rgba(15, 23, 42, 0.04),
+      inset 0 1px 0 rgba(255, 255, 255, 0.90);
+    --e2:
+      0 0 0 0.5px rgba(203, 213, 225, 0.38),
+      0 1px 2px rgba(15, 23, 42, 0.04),
+      0 8px 24px -8px rgba(15, 23, 42, 0.10),
+      inset 0 1px 0 rgba(255, 255, 255, 0.92);
+    --e3:
+      0 0 0 0.5px rgba(203, 213, 225, 0.42),
+      0 2px 6px rgba(15, 23, 42, 0.06),
+      0 24px 48px -16px rgba(15, 23, 42, 0.18),
+      inset 0 1px 0 rgba(255, 255, 255, 0.96);
+    --e4:
+      0 0 0 0.5px rgba(203, 213, 225, 0.46),
+      0 2px 8px rgba(15, 23, 42, 0.08),
+      0 36px 72px -24px rgba(15, 23, 42, 0.24),
+      inset 0 1px 0 rgba(255, 255, 255, 1);
 
-    --glass-shadow-sm:
-      0 0 0 0.5px rgba(203,213,225,0.35),
-      0 1px 2px rgba(0,0,0,0.03),
-      0 3px 10px rgba(100,116,139,0.07),
-      inset 0 1px 0 rgba(255,255,255,0.90);
+    /* ── Ink — the one primary ─────────────────────────────── */
+    --ink:        #0F172A;
+    --ink-raised: linear-gradient(180deg, #1E293B 0%, #0F172A 100%);
 
-    /* ── Blur ─────────────────────────────────────────────── */
-    --glass-blur:    blur(40px) saturate(200%);
-    --glass-blur-md: blur(24px) saturate(190%);
-    --glass-blur-sm: blur(16px) saturate(180%);
-
-    /* ── Chrome / Silver palette ──────────────────────────── */
-    --color-silver:       #94A3B8;
-    --color-chrome:       #CBD5E1;
-    --color-silver-pale:  #E2E8F0;
-    --color-silver-dim:   rgba(148,163,184,0.12);
-    --color-chrome-dim:   rgba(203,213,225,0.18);
-    --color-silver-text:  #475569;
-
-    /* ── Typography ───────────────────────────────────────── */
+    /* ── Text ──────────────────────────────────────────────── */
     --text-primary:   #0F172A;
-    --text-secondary: #64748B;
-    --text-muted:     #94A3B8;
-    --text-chrome:    #CBD5E1;
+    --text-secondary: #55637A;
+    --text-muted:     #8593A8;
 
-    --separator: rgba(203,213,225,0.28);
+    /* ── Motion — mirrored from lib/motion.ts ──────────────── */
+    --dur-press: 120ms;
+    --dur-fast:  160ms;
+    --dur-base:  220ms;
+    --dur-slow:  300ms;
 
-    /* ── Spring timing ────────────────────────────────────── */
-    --spring: cubic-bezier(0.34, 1.56, 0.64, 1);
-    --smooth: cubic-bezier(0.16, 1, 0.3, 1);
-    --ease-out: cubic-bezier(0.0, 0, 0.2, 1);
+    --ease-out:    cubic-bezier(0.23, 1, 0.32, 1);
+    --ease-hover:  cubic-bezier(0.4, 0, 0.2, 1);
+
+    /* ── Layers — named, so nothing has to guess ───────────── */
+    --z-grain:   5;
+    --z-sticky:  20;
+    --z-nav:     30;
+    --z-topbar:  40;
+    --z-overlay: 50;
+    --z-modal:   60;
+    --z-palette: 70;
+    --z-toast:   80;
+    --z-switch:  90;
+
+    /* ── Tracking — size-specific, never one value ─────────────
+       Letters read further apart as type grows, so display sizes
+       tighten and small text opens up very slightly. */
+    --track-display:  -0.035em;
+    --track-title:    -0.022em;
+    --track-heading:  -0.014em;
+    --track-caption:   0.005em;
+    --track-overline:  0.075em;
   }
 
   html {
@@ -89,387 +128,359 @@
     position: relative;
   }
 
-  /* ── Noise grain — the "physical material" layer ──────────
-     This single effect makes flat CSS gradients feel like
-     polished aluminium instead of painted web gradients.
-     Same technique used by Raycast, Linear, Arc.            */
+  /* ── Grain — the physical-material layer ───────────────────
+     A single low-opacity noise field is what makes flat CSS read
+     as polished metal rather than painted gradient. It sits above
+     the page surface but BELOW every overlay layer, so a modal
+     arrives on top of the material instead of under a veil. */
   body::before {
     content: '';
     position: fixed;
     inset: 0;
-    z-index: 9998;
+    z-index: var(--z-grain);
     pointer-events: none;
-    opacity: 0.028;
+    opacity: 0.026;
     mix-blend-mode: soft-light;
     background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise' color-interpolation-filters='linearRGB'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.90' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='1'/%3E%3C/svg%3E");
     background-repeat: repeat;
     background-size: 192px 192px;
   }
 
-  /* ── Premium scrollbar ────────────────────────────────────── */
-  ::-webkit-scrollbar { width: 4px; height: 4px; }
+  /* ── Scrollbar ─────────────────────────────────────────────
+     Wide enough to actually grab; quiet enough to disappear. */
+  ::-webkit-scrollbar { width: 9px; height: 9px; }
   ::-webkit-scrollbar-track { background: transparent; }
   ::-webkit-scrollbar-thumb {
-    background: rgba(203,213,225,0.50);
+    background: rgba(148, 163, 184, 0.34);
+    border: 2px solid transparent;
+    background-clip: padding-box;
     border-radius: 9999px;
-    transition: background 200ms ease;
   }
-  ::-webkit-scrollbar-thumb:hover {
-    background: rgba(148,163,184,0.70);
-  }
+  ::-webkit-scrollbar-thumb:hover { background: rgba(100, 116, 139, 0.50); background-clip: padding-box; }
 
-  /* ── Focus ring — precise chrome double ring ──────────────── */
-  *:focus-visible {
-    outline: none;
-    box-shadow:
-      0 0 0 1.5px rgba(148,163,184,0.55),
-      0 0 0 3.5px rgba(203,213,225,0.22);
+  /* ── Focus ─────────────────────────────────────────────────
+     `outline`, deliberately — not box-shadow. Half the controls in
+     this product set boxShadow as an inline style, which beats any
+     stylesheet rule, and a box-shadow ring is clipped by the many
+     `overflow: hidden` cards. An outline survives both, and ink on
+     silver clears 3:1 where the old silver ring did not. */
+  :focus-visible {
+    outline: 2px solid var(--ink);
+    outline-offset: 2px;
+    border-radius: inherit;
   }
+  /* On an ink surface the ring inverts so it stays visible. */
+  [data-on-ink]:focus-visible {
+    outline-color: rgba(255, 255, 255, 0.92);
+  }
+  :focus:not(:focus-visible) { outline: none; }
 
-  /* ── Selection ────────────────────────────────────────────── */
   ::selection {
-    background: rgba(203,213,225,0.45);
+    background: rgba(148, 163, 184, 0.32);
     color: #0F172A;
   }
 
-  /* ── Input autofill ───────────────────────────────────────── */
   input:-webkit-autofill,
   input:-webkit-autofill:hover,
   input:-webkit-autofill:focus {
     -webkit-text-fill-color: #0F172A;
-    -webkit-box-shadow: 0 0 0px 1000px rgba(255,255,255,0.80) inset;
+    -webkit-box-shadow: 0 0 0px 1000px #FFFFFF inset;
     transition: background-color 5000s ease-in-out 0s;
   }
 }
 
 @layer components {
-  .container-page {
-    @apply max-w-7xl mx-auto px-4 sm:px-6 lg:px-8;
+  /* ═══ Content surfaces — opaque ═══════════════════════════ */
+
+  .surface {
+    background: var(--surface);
+    border: 1px solid var(--hairline-soft);
+    box-shadow: var(--e1);
   }
 
-  /* ── Glass card — primary surface ─────────────────────────── */
-  .card {
-    background: var(--glass-bg);
-    backdrop-filter: var(--glass-blur);
-    -webkit-backdrop-filter: var(--glass-blur);
-    border-radius: 1rem;
-    border: 1px solid var(--glass-border);
-    box-shadow: var(--glass-shadow);
+  /* A quiet inset region: wells, meta strips, grouped controls. */
+  .surface-inset {
+    background: var(--surface-inset);
+    border: 1px solid var(--hairline-soft);
   }
 
-  /* Spring lift on hover */
-  .card-hover {
-    @apply card;
-    transition:
-      transform 300ms var(--spring),
-      box-shadow 200ms var(--smooth),
-      background 200ms ease;
-  }
-  .card-hover:hover {
-    background: var(--glass-bg-md);
-    transform: translateY(-3px);
-    box-shadow: var(--glass-shadow-lg);
+  /* ═══ Chrome — translucent, floats over content ═══════════ */
+
+  .chrome {
+    background: var(--chrome);
+    backdrop-filter: var(--chrome-blur);
+    -webkit-backdrop-filter: var(--chrome-blur);
   }
 
-  /* ── Glass utilities ──────────────────────────────────────── */
-  .glass {
-    background: var(--glass-bg);
-    backdrop-filter: var(--glass-blur);
-    -webkit-backdrop-filter: var(--glass-blur);
-    border: 1px solid var(--glass-border);
-    box-shadow: var(--glass-shadow);
-  }
-  .glass-md {
-    background: var(--glass-bg-md);
-    backdrop-filter: var(--glass-blur);
-    -webkit-backdrop-filter: var(--glass-blur);
-    border: 1px solid var(--glass-border);
-    box-shadow: var(--glass-shadow);
-  }
-  .glass-sm {
-    background: var(--glass-bg);
-    backdrop-filter: var(--glass-blur-sm);
-    -webkit-backdrop-filter: var(--glass-blur-sm);
-    border: 1px solid rgba(203,213,225,0.40);
-    box-shadow: var(--glass-shadow-sm);
+  .chrome-strong {
+    background: var(--chrome-strong);
+    backdrop-filter: var(--chrome-blur-lg);
+    -webkit-backdrop-filter: var(--chrome-blur-lg);
   }
 
-  /* ── Gradient separator ───────────────────────────────────── */
-  /* Usage: <div class="grad-sep" /> */
+  /* Scroll edge, not a hard rule. Where floating chrome meets moving
+     content, fade the boundary instead of drawing a 1px line. */
+  /* ═══ Separator ═══════════════════════════════════════════ */
+
   .grad-sep {
     height: 1px;
-    background: linear-gradient(
-      90deg,
-      transparent 0%,
-      rgba(203,213,225,0.55) 20%,
-      rgba(203,213,225,0.55) 80%,
-      transparent 100%
-    );
+    background: linear-gradient(90deg, transparent 0%, var(--hairline) 20%, var(--hairline) 80%, transparent 100%);
     border: none;
   }
 
-  /* Vertical variant */
-  .grad-sep-v {
-    width: 1px;
-    background: linear-gradient(
-      180deg,
-      transparent 0%,
-      rgba(203,213,225,0.45) 20%,
-      rgba(203,213,225,0.45) 80%,
-      transparent 100%
-    );
-    border: none;
-  }
+  /* ═══ Skeleton — one implementation ═══════════════════════ */
 
-  /* ── Glass shimmer sweep — sweeping specular highlight ──────
-     Apply to a ::before/::after pseudo element on glass cards.
-     Usage: add class 'glass-shimmer-wrap' to the card,
-     then the pseudo element animates on hover.               */
-  .glass-shimmer-wrap {
-    position: relative;
-    overflow: hidden;
-  }
-  .glass-shimmer-wrap::after {
-    content: '';
-    position: absolute;
-    inset: 0;
-    background: linear-gradient(
-      105deg,
-      transparent 40%,
-      rgba(255,255,255,0.28) 50%,
-      transparent 60%
-    );
-    transform: translateX(-100%);
-    transition: transform 0ms;
-    pointer-events: none;
-  }
-  .glass-shimmer-wrap:hover::after {
-    transform: translateX(200%);
-    transition: transform 600ms var(--smooth);
-  }
-
-  /* ── Premium skeleton ─────────────────────────────────────── */
-  .skeleton {
-    background: linear-gradient(
-      90deg,
-      rgba(203,213,225,0.14) 25%,
-      rgba(226,232,240,0.28) 50%,
-      rgba(203,213,225,0.14) 75%
-    );
-    background-size: 400% 100%;
-    border-radius: 0.5rem;
-    animation: skeleton-shimmer 1.8s ease-in-out infinite;
-  }
-
-  /* ── Search result card ──────────────────────────────────── */
-  /* Pure CSS hover — avoids serialization crash in RSC       */
-  .search-card {
-    background: rgba(255,255,255,0.72);
-    backdrop-filter: blur(36px) saturate(200%);
-    -webkit-backdrop-filter: blur(36px) saturate(200%);
-    border: 1px solid rgba(203,213,225,0.45);
-    box-shadow:
-      0 0 0 0.5px rgba(203,213,225,0.30),
-      0 1px 2px rgba(0,0,0,0.03),
-      0 6px 20px rgba(100,116,139,0.08),
-      inset 0 1px 0 rgba(255,255,255,0.95);
-    transform: translateY(0) scale(1);
-    transition:
-      transform 300ms cubic-bezier(0.34,1.56,0.64,1),
-      box-shadow 200ms ease,
-      background 200ms ease;
-  }
-  .search-card:hover {
-    background: rgba(255,255,255,0.85);
-    transform: translateY(-3px) scale(1.005);
-    box-shadow:
-      0 0 0 0.5px rgba(203,213,225,0.40),
-      0 2px 4px rgba(0,0,0,0.04),
-      0 12px 36px rgba(100,116,139,0.12),
-      0 32px 64px rgba(100,116,139,0.06),
-      inset 0 1px 0 rgba(255,255,255,1);
-  }
-
-  /* ── Glass input ─────────────────────────────────────────── */
-  .input-glass {
-    background: rgba(255,255,255,0.82);
-    border: 1px solid rgba(203,213,225,0.55);
-    box-shadow: 0 1px 2px rgba(0,0,0,0.04), inset 0 1.5px 3px rgba(0,0,0,0.03);
-  }
-  .input-glass:focus {
-    border-color: rgba(148,163,184,0.70);
-    box-shadow: 0 1px 2px rgba(0,0,0,0.04), inset 0 1.5px 3px rgba(0,0,0,0.03),
-                0 0 0 2px rgba(203,213,225,0.25);
-  }
-
-  /* ── Nav/row hover — CSS only, replaces JS style mutation ────
-     Hover and keyboard focus get identical feedback.            */
-  .nav-item {
-    color: #94A3B8;
-    border: 1px solid transparent;
-    transition: background 150ms ease, color 150ms ease, border-color 150ms ease;
-  }
-  .nav-item:hover,
-  .nav-item:focus-visible {
-    background: rgba(203, 213, 225, 0.14);
-    color: #475569;
-    border-color: rgba(203, 213, 225, 0.30);
-  }
-
-  .nav-link {
-    color: #64748B;
-    transition: background 150ms ease, color 150ms ease;
-  }
-  .nav-link:hover,
-  .nav-link:focus-visible {
-    background: rgba(203, 213, 225, 0.18);
-    color: #0F172A;
-  }
-
-  .icon-btn {
-    transition: background 150ms ease, color 150ms ease;
-  }
-  .icon-btn:hover,
-  .icon-btn:focus-visible {
-    background: rgba(148, 163, 184, 0.10);
-    color: #475569;
-  }
-
-  .row-hover {
-    transition: background 150ms ease;
-  }
-  .row-hover:hover,
-  .row-hover:focus-visible {
-    background: rgba(148, 163, 184, 0.10);
-  }
-
-  /* ── Skeleton shimmer — silver sweep ──────────────────────── */
   .tc-skeleton {
     background: linear-gradient(
       100deg,
-      rgba(203, 213, 225, 0.22) 30%,
+      rgba(203, 213, 225, 0.20) 30%,
       rgba(226, 232, 240, 0.55) 50%,
-      rgba(203, 213, 225, 0.22) 70%
+      rgba(203, 213, 225, 0.20) 70%
     );
     background-size: 220% 100%;
     animation: tc-skeleton-sweep 1.4s ease-in-out infinite;
-  }
-  @media (prefers-reduced-motion: reduce) {
-    .tc-skeleton { animation: none; background: rgba(203, 213, 225, 0.28); }
+    border-radius: 0.5rem;
   }
 
-  /* ── Premium button spring base ───────────────────────────── */
-  .btn-spring {
-    transition:
-      transform 240ms var(--spring),
-      box-shadow 200ms var(--smooth),
-      background 150ms ease;
+  /* ═══ Inputs ══════════════════════════════════════════════
+     Opaque, because a form field is content. The inner top shadow
+     is what makes it read as recessed rather than drawn. */
+
+  .input-glass {
+    background: var(--surface);
+    border: 1px solid var(--hairline);
+    box-shadow: inset 0 1px 2px rgba(15, 23, 42, 0.035);
+    transition: border-color var(--dur-fast) var(--ease-hover),
+                box-shadow var(--dur-fast) var(--ease-hover);
   }
-  .btn-spring:hover {
-    transform: translateY(-1px);
+  .input-glass:focus {
+    border-color: var(--hairline-firm);
+    box-shadow: inset 0 1px 2px rgba(15, 23, 42, 0.03);
+  }
+  .input-glass::placeholder { color: var(--text-muted); }
+
+  /* iOS zooms the page when a focused field is under 16px. The viewport is no
+     longer pinned (that blocked pinch-zoom outright), so the fix belongs here:
+     on a touch device every field is at least 16px, and the design keeps its
+     smaller type everywhere a real pointer is present. */
+  @media (hover: none) and (pointer: coarse) {
+    input:not([type="checkbox"]):not([type="radio"]),
+    select,
+    textarea {
+      font-size: 16px;
+    }
+  }
+
+  /* ═══ Interactive rows and icon buttons ═══════════════════
+     Every hover rule is gated: a touch tap fires :hover and then
+     keeps it until the next tap, which reads as a stuck state. */
+
+  .nav-item {
+    color: #94A3B8;
+    border: 1px solid transparent;
+    transition: background var(--dur-fast) var(--ease-hover),
+                color var(--dur-fast) var(--ease-hover);
+  }
+  .nav-item:focus-visible { color: #475569; }
+  @media (hover: hover) and (pointer: fine) {
+    .nav-item:hover {
+      background: rgba(148, 163, 184, 0.10);
+      color: #475569;
+    }
+  }
+
+  .nav-link {
+    color: var(--text-secondary);
+    transition: background var(--dur-fast) var(--ease-hover),
+                color var(--dur-fast) var(--ease-hover);
+  }
+  .nav-link:focus-visible { color: var(--text-primary); }
+  @media (hover: hover) and (pointer: fine) {
+    .nav-link:hover {
+      background: rgba(148, 163, 184, 0.12);
+      color: var(--text-primary);
+    }
+  }
+
+  .icon-btn {
+    transition: background var(--dur-fast) var(--ease-hover),
+                color var(--dur-fast) var(--ease-hover);
+  }
+  .icon-btn:focus-visible { color: #475569; }
+  @media (hover: hover) and (pointer: fine) {
+    .icon-btn:hover {
+      background: rgba(148, 163, 184, 0.10);
+      color: #475569;
+    }
+  }
+
+  .row-hover {
+    transition: background var(--dur-fast) var(--ease-hover);
+  }
+  .row-hover:focus-visible { background: rgba(148, 163, 184, 0.08); }
+  @media (hover: hover) and (pointer: fine) {
+    .row-hover:hover { background: rgba(148, 163, 184, 0.08); }
+  }
+
+  /* ═══ Press feedback ══════════════════════════════════════
+     Feedback lives on pointer-down, not on release, and it is fast
+     enough to read as the surface reacting rather than animating. */
+
+  .btn-spring {
+    transition: transform var(--dur-press) var(--ease-out),
+                box-shadow var(--dur-fast) var(--ease-hover),
+                background var(--dur-fast) var(--ease-hover),
+                filter var(--dur-fast) var(--ease-hover);
   }
   .btn-spring:active {
-    transform: translateY(0) scale(0.982);
-    transition-duration: 80ms;
+    transform: scale(0.972);
   }
+  @media (hover: hover) and (pointer: fine) {
+    .btn-spring:hover { filter: brightness(1.04); }
+  }
+
+  /* A content card that responds to the pointer. Shadow only — an
+     absolutely positioned card that lifts would overlap its neighbour. */
+  .card-hover-lift {
+    transition: box-shadow var(--dur-fast) var(--ease-hover),
+                border-color var(--dur-fast) var(--ease-hover);
+  }
+  @media (hover: hover) and (pointer: fine) {
+    .card-hover-lift:hover {
+      box-shadow: var(--e2);
+      border-color: var(--hairline);
+    }
+  }
+
+  /* Marketing surfaces may lift, because there the card is the subject. */
+  .card-hover-raise {
+    transition: transform var(--dur-base) var(--ease-out),
+                box-shadow var(--dur-base) var(--ease-hover);
+  }
+  @media (hover: hover) and (pointer: fine) {
+    .card-hover-raise:hover {
+      transform: translateY(-2px);
+      box-shadow: var(--e3);
+    }
+  }
+
+  /* ═══ Entrance ════════════════════════════════════════════
+     One CSS entrance for server-rendered sections, so a page does
+     not need a client component just to fade in. */
+
+  .fade-rise {
+    animation: fade-rise var(--dur-slow) var(--ease-out) both;
+  }
+  .fade-rise-d1 { animation-delay: 40ms; }
+  .fade-rise-d2 { animation-delay: 80ms; }
+  .fade-rise-d3 { animation-delay: 120ms; }
+  .fade-rise-d4 { animation-delay: 160ms; }
+  .fade-rise-d5 { animation-delay: 200ms; }
 }
 
 @layer utilities {
   .no-scrollbar::-webkit-scrollbar { display: none; }
   .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
-  .text-balance { text-wrap: balance; }
-  .text-primary     { color: var(--text-primary); }
+
+  /* Horizontal rails fade at the edge so it reads as scrollable. */
   .text-secondary   { color: var(--text-secondary); }
   .text-muted-glass { color: var(--text-muted); }
-  /* Premium heading tracking */
-  .tracking-display  { letter-spacing: -0.04em; }
-  .tracking-heading  { letter-spacing: -0.03em; }
-  .tracking-subhead  { letter-spacing: -0.015em; }
 
-  /* RSC-safe entrance — CSS-only staggered fade-rise */
-  .fade-rise { animation: fade-rise 0.55s cubic-bezier(0.22, 1, 0.36, 1) both; }
-  .fade-rise-d1 { animation-delay: 60ms; }
-  .fade-rise-d2 { animation-delay: 120ms; }
-  .fade-rise-d3 { animation-delay: 180ms; }
-  .fade-rise-d4 { animation-delay: 240ms; }
-  .fade-rise-d5 { animation-delay: 300ms; }
-
-  /* RSC-safe card hover — subtle spring lift, no JS handlers */
-  .card-hover-lift {
-    transition: transform 320ms var(--spring), box-shadow 220ms var(--smooth);
-  }
-  .card-hover-lift:hover { transform: translateY(-2px); }
-
-  @media (prefers-reduced-motion: reduce) {
-    .fade-rise { animation: none; }
-    .card-hover-lift, .card-hover-lift:hover { transform: none; transition: none; }
-  }
+  /* Size-specific tracking. Never one letter-spacing for every size. */
+  .track-display  { letter-spacing: var(--track-display); }
+  .track-title    { letter-spacing: var(--track-title); }
+  .track-heading  { letter-spacing: var(--track-heading); }
+  .track-caption  { letter-spacing: var(--track-caption); }
+  .track-overline { letter-spacing: var(--track-overline); }
 }
 
-/* ── Keyframes ────────────────────────────────────────────────── */
+/* ═══ Keyframes ═════════════════════════════════════════════ */
 
-@keyframes skeleton-shimmer {
-  0%   { background-position: 100% 0; }
-  100% { background-position: -100% 0; }
-}
+/* Tailwind ships 1s; 0.7 reads noticeably more responsive for the same wait. */
+.animate-spin { animation-duration: 0.7s; }
 
-@keyframes cursor-blink {
-  0%, 100% { opacity: 1; }
-  50%       { opacity: 0; }
-}
-
-/* Slow ambient float — for hero floating chips */
-@keyframes float-gentle {
-  0%, 100% { transform: translateY(0px); }
-  50%       { transform: translateY(-8px); }
-}
-
-/* Glass shimmer sweep — single one-shot sweep on load */
-@keyframes shimmer-once {
-  0%   { transform: translateX(-100%) rotate(-15deg); opacity: 0; }
-  10%  { opacity: 1; }
-  90%  { opacity: 1; }
-  100% { transform: translateX(300%) rotate(-15deg); opacity: 0; }
-}
-
-/* Subtle scale-in for glass panels */
-@keyframes glass-in {
-  from { opacity: 0; transform: scale(0.97) translateY(6px); }
-  to   { opacity: 1; transform: scale(1) translateY(0); }
-}
-
-/* Staggered section entrance — RSC-safe (see .fade-rise).
-   Ends at transform:none so the retained fill-mode style never becomes
-   a containing block for position:fixed descendants (sheets, modals). */
 @keyframes fade-rise {
-  from { opacity: 0; transform: translateY(12px); }
+  from { opacity: 0; transform: translateY(8px); }
+  /* Ends at `none` so the retained fill-mode transform never becomes a
+     containing block for position:fixed descendants (sheets, modals). */
   to   { opacity: 1; transform: none; }
 }
 
-/* Skeleton shimmer sweep */
 @keyframes tc-skeleton-sweep {
   0%   { background-position: 180% 0; }
   100% { background-position: -80% 0; }
 }
 
-/* Dot pulse — for status indicators */
-@keyframes dot-pulse {
-  0%, 100% { opacity: 1; transform: scale(1); }
-  50%       { opacity: 0.5; transform: scale(0.85); }
+@keyframes marquee-x {
+  from { transform: translate3d(0, 0, 0); }
+  to   { transform: translate3d(-50%, 0, 0); }
 }
 
-/* Marquee scroll — infinite horizontal ticker */
-@keyframes marquee-x {
-  from { transform: translateX(0); }
-  to   { transform: translateX(-50%); }
-}
 .marquee-track {
   display: flex;
   width: max-content;
-  animation: marquee-x 32s linear infinite;
+  animation: marquee-x 40s linear infinite;
 }
 .marquee-wrap {
   overflow: hidden;
   mask-image: linear-gradient(90deg, transparent 0%, black 8%, black 92%, transparent 100%);
   -webkit-mask-image: linear-gradient(90deg, transparent 0%, black 8%, black 92%, transparent 100%);
+}
+
+/* ═══ Accessibility preferences ═════════════════════════════
+   Reduced motion means gentler, not none: opacity and colour keep
+   working because they carry meaning; travel and looping stop. */
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+  /* Keep the two that aid comprehension rather than decorate. */
+  .tc-skeleton { animation: none !important; background: rgba(203, 213, 225, 0.26); }
+  .fade-rise { animation: none !important; opacity: 1; transform: none; }
+  .btn-spring,
+  .card-hover-lift,
+  .card-hover-raise {
+    transition: background 150ms ease, color 150ms ease, box-shadow 150ms ease !important;
+    transform: none !important;
+  }
+  .btn-spring:active { transform: none !important; }
+  .card-hover-raise:hover { transform: none !important; }
+  .marquee-track { animation: none !important; }
+
+  /* A spinner is a status indicator, not decoration: stopping it removes the
+     only signal that anything is happening. It rotates in place, so it is not
+     the kind of travel reduced motion is protecting against. */
+  .animate-spin { animation: spin 0.7s linear infinite !important; }
+}
+
+/* Frosted surfaces become solid rather than merely less blurred — a
+   half-transparent panel is the worst of both for legibility. */
+@media (prefers-reduced-transparency: reduce) {
+  .chrome, .chrome-strong {
+    background: var(--surface) !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+  }
+  body::before { display: none; }
+}
+
+@media (prefers-contrast: more) {
+  :root {
+    --hairline:      rgba(71, 85, 105, 0.55);
+    --hairline-soft: rgba(71, 85, 105, 0.40);
+    --text-secondary: #33415A;
+    --text-muted:     #4A5A72;
+  }
+  .chrome, .chrome-strong {
+    background: var(--surface) !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+  }
+  :focus-visible { outline-width: 3px; }
 }

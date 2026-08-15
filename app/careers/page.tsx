@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { LandingNav } from "@/components/layout/landing-nav";
 import { LandingFooter } from "@/components/layout/landing-footer";
+import { INK_BTN } from "@/components/ui/glass/tokens";
 
 const BG = [
   "radial-gradient(ellipse 120% 80% at 85% -20%, rgba(203,213,225,0.70) 0%, transparent 50%)",
@@ -18,8 +19,8 @@ export default function CareersPage() {
           <div
             className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full mb-8 text-xs font-semibold uppercase tracking-widest"
             style={{
-              background: "rgba(203,213,225,0.28)",
-              border: "1px solid rgba(203,213,225,0.50)",
+              background: "var(--selected)",
+              border: "1px solid var(--hairline)",
               color: "#64748B",
             }}
           >
@@ -27,7 +28,7 @@ export default function CareersPage() {
           </div>
           <h1
             className="text-4xl font-bold mb-4"
-            style={{ letterSpacing: "-0.04em", color: "#0F172A" }}
+            style={{ letterSpacing: "var(--track-display)", color: "#0F172A" }}
           >
             Dołącz do zespołu
           </h1>
@@ -37,20 +38,17 @@ export default function CareersPage() {
           <div
             className="inline-flex items-center gap-2 px-5 py-3 rounded-xl mb-10 text-sm"
             style={{
-              background: "rgba(255,255,255,0.72)",
-              backdropFilter: "blur(40px) saturate(200%)",
-              WebkitBackdropFilter: "blur(40px) saturate(200%)",
-              border: "1px solid rgba(203,213,225,0.55)",
-              boxShadow:
-                "0 1px 2px rgba(0,0,0,0.04), 0 6px 20px rgba(100,116,139,0.09), inset 0 1px 0 rgba(255,255,255,0.95)",
+              background: "var(--surface)",
+              border: "1px solid var(--hairline)",
+              boxShadow: "var(--e2)",
               color: "#475569",
             }}
           >
             <span
-              className="w-2 h-2 rounded-full animate-pulse"
+              className="w-2 h-2 rounded-full"
               style={{
                 background: "linear-gradient(135deg, #94A3B8, #CBD5E1)",
-                boxShadow: "0 0 6px rgba(148,163,184,0.6)",
+                boxShadow: "var(--e1)",
               }}
             />
             Oferty pracy wkrótce
@@ -61,15 +59,9 @@ export default function CareersPage() {
             </p>
             <Link
               href="/contact"
-              className="btn-spring glass-shimmer-wrap px-6 py-2.5 text-sm font-semibold"
-              style={{
-                display: "inline-flex",
-                background: "linear-gradient(135deg, #CBD5E1 0%, #94A3B8 50%, #CBD5E1 100%)",
-                color: "#0F172A",
-                border: "1px solid rgba(148,163,184,0.45)",
-                borderRadius: "0.75rem",
-                boxShadow: "0 1px 2px rgba(0,0,0,0.10), inset 0 1px 0 rgba(255,255,255,0.40)",
-              }}
+              className="btn-spring px-6 py-2.5 text-sm font-semibold"
+              data-on-ink
+              style={{ ...INK_BTN, display: "inline-flex", borderRadius: "10px" }}
             >
               Skontaktuj się
             </Link>
@@ -82,32 +74,29 @@ export default function CareersPage() {
         <div
           className="max-w-2xl mx-auto rounded-3xl p-8 sm:p-10 text-center"
           style={{
-            background: "rgba(255,255,255,0.72)",
-            backdropFilter: "blur(40px) saturate(200%)",
-            WebkitBackdropFilter: "blur(40px) saturate(200%)",
-            border: "1px solid rgba(203,213,225,0.55)",
-            boxShadow:
-              "0 1px 2px rgba(0,0,0,0.04), 0 6px 20px rgba(100,116,139,0.09), inset 0 1px 0 rgba(255,255,255,0.95)",
+            background: "var(--surface)",
+            border: "1px solid var(--hairline)",
+            boxShadow: "var(--e2)",
           }}
         >
           <div
             className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full mb-5 text-xs font-semibold uppercase tracking-widest"
-            style={{ background: "rgba(203,213,225,0.28)", border: "1px solid rgba(203,213,225,0.50)", color: "#64748B" }}
+            style={{ background: "var(--selected)", border: "1px solid var(--hairline)", color: "#64748B" }}
           >
             Program poleceń
           </div>
-          <h2 className="text-3xl font-bold mb-3" style={{ letterSpacing: "-0.03em", color: "#0F172A" }}>
+          <h2 className="text-3xl font-bold mb-3" style={{ letterSpacing: "var(--track-display)", color: "#0F172A" }}>
             Zaproś i zarób
           </h2>
           <p className="mb-7 leading-relaxed text-sm max-w-lg mx-auto" style={{ color: "#64748B" }}>
             Znasz właścicieli salonów, którym przyda się TermCatch? Poleć nas dalej. Przygotowujemy
-            program nagród za polecenia — napisz do nas, a przekażemy Ci szczegóły i Twój link polecający.
+            program nagród za polecenia. Napisz do nas, a przekażemy Ci szczegóły i Twój link polecający.
           </p>
           <Link
             href="/contact"
             className="btn-spring inline-flex items-center px-6 py-2.5 text-sm font-semibold rounded-xl text-white"
             style={{
-              background: "linear-gradient(180deg, #1E293B 0%, #0F172A 100%)",
+              background: "var(--ink-raised)",
               border: "1px solid #0F172A",
               boxShadow: "0 1px 2px rgba(0,0,0,0.20), inset 0 1px 0 rgba(255,255,255,0.15)",
             }}

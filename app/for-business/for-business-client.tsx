@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { motion } from "framer-motion";
+import { reveal, revealFade, REVEAL_VIEWPORT, SPRING, useReducedMotion } from "@/lib/motion";
 import { LandingNav } from "@/components/layout/landing-nav";
 import { LandingFooter } from "@/components/layout/landing-footer";
 
@@ -9,47 +10,37 @@ import { LandingFooter } from "@/components/layout/landing-footer";
 
 const G = {
   card: {
-    background: "rgba(255,255,255,0.72)",
-    backdropFilter: "blur(40px) saturate(200%)",
-    WebkitBackdropFilter: "blur(40px) saturate(200%)",
-    border: "1px solid rgba(203,213,225,0.50)",
-    boxShadow: "0 0 0 0.5px rgba(203,213,225,0.40), 0 2px 4px rgba(0,0,0,0.04), 0 12px 36px rgba(100,116,139,0.10), 0 40px 80px rgba(100,116,139,0.05), inset 0 1px 0 rgba(255,255,255,0.98), inset 0 -1px 0 rgba(203,213,225,0.10)",
+    background: "var(--surface)",
+    border: "1px solid var(--hairline)",
+    boxShadow: "var(--e3)",
   } as React.CSSProperties,
   panel: {
-    background: "rgba(255,255,255,0.65)",
-    backdropFilter: "blur(32px) saturate(200%)",
-    WebkitBackdropFilter: "blur(32px) saturate(200%)",
-    border: "1px solid rgba(203,213,225,0.40)",
-    boxShadow: "0 0 0 0.5px rgba(203,213,225,0.30), 0 1px 2px rgba(0,0,0,0.03), 0 6px 20px rgba(100,116,139,0.08), inset 0 1px 0 rgba(255,255,255,0.92)",
+    background: "var(--surface)",
+    border: "1px solid var(--hairline-soft)",
+    boxShadow: "var(--e2)",
   } as React.CSSProperties,
   chip: {
-    background: "rgba(255,255,255,0.85)",
-    backdropFilter: "blur(20px) saturate(200%)",
-    WebkitBackdropFilter: "blur(20px) saturate(200%)",
-    border: "1px solid rgba(203,213,225,0.50)",
-    boxShadow: "0 0 0 0.5px rgba(203,213,225,0.35), 0 2px 8px rgba(100,116,139,0.08), 0 8px 24px rgba(100,116,139,0.05), inset 0 1px 0 rgba(255,255,255,0.95)",
+    background: "var(--surface)",
+    border: "1px solid var(--hairline)",
+    boxShadow: "var(--e2)",
   } as React.CSSProperties,
   pill: {
-    background: "rgba(255,255,255,0.68)",
-    backdropFilter: "blur(16px) saturate(190%)",
-    WebkitBackdropFilter: "blur(16px) saturate(190%)",
-    border: "1px solid rgba(203,213,225,0.40)",
-    boxShadow: "0 0 0 0.5px rgba(203,213,225,0.25), 0 1px 4px rgba(100,116,139,0.06), inset 0 1px 0 rgba(255,255,255,0.90)",
+    background: "var(--surface)",
+    border: "1px solid var(--hairline-soft)",
+    boxShadow: "var(--e1)",
   } as React.CSSProperties,
   inkBtn: {
-    background: "linear-gradient(180deg, #1E293B 0%, #0F172A 100%)",
+    background: "var(--ink-raised)",
     border: "1px solid #0F172A",
     color: "#F8FAFC",
     boxShadow: "0 1px 2px rgba(0,0,0,0.20), 0 10px 24px rgba(15,23,42,0.28), 0 2px 6px rgba(15,23,42,0.18), inset 0 1px 0 rgba(255,255,255,0.15)",
   } as React.CSSProperties,
   innerBtn: {
-    background: "rgba(255,255,255,0.60)",
-    backdropFilter: "blur(12px) saturate(180%)",
-    WebkitBackdropFilter: "blur(12px) saturate(180%)",
-    border: "1px solid rgba(203,213,225,0.40)",
-    boxShadow: "0 0 0 0.5px rgba(203,213,225,0.20), inset 0 1px 0 rgba(255,255,255,0.85)",
+    background: "var(--surface)",
+    border: "1px solid var(--hairline-soft)",
+    boxShadow: "var(--e1)",
   } as React.CSSProperties,
-  divider: { borderBottom: "1px solid rgba(203,213,225,0.22)" } as React.CSSProperties,
+  divider: { borderBottom: "1px solid var(--hairline-soft)" } as React.CSSProperties,
 };
 
 const BG = {
@@ -72,13 +63,7 @@ const BG = {
   ].join(", "),
 };
 
-const fade = {
-  hidden: { opacity: 0, y: 24 },
-  show: (i = 0) => ({
-    opacity: 1, y: 0,
-    transition: { duration: 0.6, delay: i * 0.1, ease: [0.22, 1, 0.36, 1] },
-  }),
-};
+
 
 // ── Dashboard Preview Widget ──────────────────────────────────────────────────
 
@@ -94,7 +79,7 @@ function DashboardPreview() {
     <motion.div
       initial={{ opacity: 0, x: 40, y: 10 }}
       animate={{ opacity: 1, x: 0, y: 0 }}
-      transition={{ duration: 0.9, delay: 0.2, ease: [0.22, 1, 0.36, 1] }}
+      transition={{ duration: 0.55, delay: 0.2, ease: [0.22, 1, 0.36, 1] }}
       className="relative"
     >
       {/* Main glass card */}
@@ -127,14 +112,14 @@ function DashboardPreview() {
               key={i}
               className="flex items-center gap-3 px-3 py-2.5 rounded-xl"
               style={b.active
-                ? { background: "rgba(203,213,225,0.28)", border: "1px solid rgba(203,213,225,0.60)", boxShadow: "0 0 0 0.5px rgba(203,213,225,0.25), inset 0 1px 0 rgba(255,255,255,0.90)" }
+                ? { background: "var(--selected)", border: "1px solid var(--hairline)", boxShadow: "var(--e1)" }
                 : { ...G.innerBtn }
               }
             >
               <span className="text-[10px] font-mono text-slate-400 w-9 flex-shrink-0">{b.time}</span>
               <div
                 className="w-6 h-6 rounded-full flex items-center justify-center text-[9px] font-bold flex-shrink-0 text-slate-600"
-                style={{ background: "rgba(203,213,225,0.30)", border: "1px solid rgba(203,213,225,0.45)" }}
+                style={{ background: "var(--selected)", border: "1px solid var(--hairline)" }}
               >
                 {b.name.charAt(0)}
               </div>
@@ -164,8 +149,9 @@ function DashboardPreview() {
 
       {/* Floating chip — new booking notification */}
       <motion.div
-        animate={{ y: [0, -7, 0] }}
-        transition={{ duration: 3.4, repeat: Infinity, ease: [0.45, 0, 0.55, 1] }}
+        initial={{ opacity: 0, y: 8 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ ...SPRING, delay: 0.55 }}
         className="absolute -top-6 -right-5 rounded-2xl px-4 py-3"
         style={G.chip}
       >
@@ -175,8 +161,9 @@ function DashboardPreview() {
 
       {/* Floating SMS chip */}
       <motion.div
-        animate={{ y: [0, 6, 0] }}
-        transition={{ duration: 4.0, repeat: Infinity, ease: [0.45, 0, 0.55, 1], delay: 1.5 }}
+        initial={{ opacity: 0, y: 8 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ ...SPRING, delay: 0.7 }}
         className="absolute -bottom-5 -left-5 rounded-2xl px-4 py-3"
         style={G.chip}
       >
@@ -193,7 +180,7 @@ const FEATURES = [
   {
     n: "01",
     title: "Kalendarz online 24/7",
-    desc: "Klienci rezerwują sami — o dowolnej porze, bez dzwonienia. Ty dostajesz powiadomienie i Twój kalendarz jest zawsze aktualny.",
+    desc: "Klienci rezerwują sami o dowolnej porze, bez dzwonienia. Ty dostajesz powiadomienie i Twój kalendarz jest zawsze aktualny.",
     icon: (
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
         <rect width="18" height="18" x="3" y="4" rx="2" />
@@ -229,7 +216,7 @@ const FEATURES = [
   {
     n: "04",
     title: "Płatności i depozyty",
-    desc: "Przyjmuj płatności online lub depozyty przy rezerwacji. Integracja ze Stripe — pieniądze trafiają bezpośrednio do Ciebie.",
+    desc: "Przyjmuj płatności online lub depozyty przy rezerwacji. Integracja ze Stripe sprawia, że pieniądze trafiają bezpośrednio do Ciebie.",
     icon: (
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
         <rect width="20" height="14" x="2" y="5" rx="2" />
@@ -252,7 +239,7 @@ const FEATURES = [
   {
     n: "06",
     title: "Analityka i raporty",
-    desc: "Przychody, popularne usługi, najlepsi klienci — dane dzienne, tygodniowe i miesięczne w jednym miejscu.",
+    desc: "Przychody, popularne usługi i najlepsi klienci w ujęciu dziennym, tygodniowym i miesięcznym, w jednym miejscu.",
     icon: (
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
         <line x1="18" x2="18" y1="20" y2="10" />
@@ -264,7 +251,7 @@ const FEATURES = [
 ];
 
 const STEPS = [
-  { n: "01", title: "Zarejestruj salon", desc: "Wypełnij formularz w 5 minut — kategoria, lokalizacja, godziny pracy." },
+  { n: "01", title: "Zarejestruj salon", desc: "Wypełnij formularz w 5 minut: kategoria, lokalizacja, godziny pracy." },
   { n: "02", title: "Dodaj usługi i personel", desc: "Dodaj usługi z cenami i pracowników z własnymi harmonogramami." },
   { n: "03", title: "Wyślij link klientom", desc: "Twoja strona rezerwacji gotowa. Link do bio, do SMS, do Google." },
 ];
@@ -272,6 +259,7 @@ const STEPS = [
 // ── Page ─────────────────────────────────────────────────────────────────────
 
 export function ForBusinessClient() {
+  const fade = useReducedMotion() ? revealFade : reveal;
   return (
     <div className="min-h-screen overflow-x-hidden" style={{ background: BG.hero }}>
       <LandingNav />
@@ -310,9 +298,9 @@ export function ForBusinessClient() {
             <motion.h1
               initial={{ opacity: 0, y: 30 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.7, delay: 0.05, ease: [0.22, 1, 0.36, 1] }}
+              transition={{ duration: 0.45, delay: 0.05, ease: [0.22, 1, 0.36, 1] }}
               className="text-6xl sm:text-7xl xl:text-8xl font-bold leading-[0.95] text-slate-900"
-              style={{ letterSpacing: "-0.04em" }}
+              style={{ letterSpacing: "var(--track-display)" }}
             >
               Mniej administracji.<br />
               <span className="italic font-bold" style={{
@@ -328,34 +316,31 @@ export function ForBusinessClient() {
             <motion.p
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6, delay: 0.2 }}
+              transition={{ duration: 0.42, delay: 0.2 }}
               className="mt-7 text-lg max-w-md leading-relaxed text-slate-500"
             >
-              Jeden link — Twoja strona rezerwacji. Klienci wybierają termin sami, Ty skupiasz się na pracy.
+              Jeden link i gotowa strona rezerwacji. Klienci wybierają termin sami, a Ty skupiasz się na pracy.
             </motion.p>
 
             <motion.div
               initial={{ opacity: 0, y: 14 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6, delay: 0.3 }}
+              transition={{ duration: 0.42, delay: 0.3 }}
               className="flex flex-col sm:flex-row gap-3 mt-9"
             >
-              <motion.div
-                whileHover={{ scale: 1.015, y: -1 }}
-                whileTap={{ scale: 0.978 }}
-                transition={{ type: "spring", stiffness: 420, damping: 26 }}
+              <div 
               >
                 <Link
                   href="/register?role=business"
                   className="inline-flex items-center justify-center px-7 py-3.5 font-semibold text-sm rounded-xl"
                   style={G.inkBtn}
                 >
-                  Zarejestruj salon — za darmo
+                  Zarejestruj salon za darmo
                   <svg className="ml-2 w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
                     <path d="m9 18 6-6-6-6" />
                   </svg>
                 </Link>
-              </motion.div>
+              </div>
             </motion.div>
 
             <motion.p
@@ -391,18 +376,17 @@ export function ForBusinessClient() {
             { num: "Mniej", label: "telefonów dzięki rezerwacjom online" },
             { num: "24/7", label: "dostępność kalendarza" },
             { num: "5 min", label: "konfiguracja salonu" },
-            { num: "3 mies.", label: "bez opłat — pierwsze 100 salonów" },
+            { num: "3 mies.", label: "bez opłat dla pierwszych 100 salonów" },
           ].map((s, i) => (
             <motion.div
               key={s.label}
-              initial="hidden" whileInView="show" viewport={{ once: true }} custom={i} variants={fade}
-              whileHover={{ y: -4, scale: 1.012 }}
-              transition={{ type: "spring", stiffness: 380, damping: 26 }}
-              className="relative text-center p-6 rounded-2xl overflow-hidden glass-shimmer-wrap"
+              initial="hidden" whileInView="show" viewport={REVEAL_VIEWPORT} custom={i} variants={fade}
+              transition={SPRING}
+              className="card-hover-raise relative text-center p-6 rounded-2xl overflow-hidden"
               style={G.panel}
             >
               <div className="absolute inset-0 bg-gradient-to-b from-white/60 to-transparent pointer-events-none" />
-              <p className="relative text-3xl font-bold text-slate-800 tabular-nums" style={{ letterSpacing: "-0.03em" }}>{s.num}</p>
+              <p className="relative text-3xl font-bold text-slate-800 tabular-nums" style={{ letterSpacing: "var(--track-display)" }}>{s.num}</p>
               <p className="relative mt-1.5 text-xs text-slate-400 leading-tight">{s.label}</p>
             </motion.div>
           ))}
@@ -421,11 +405,11 @@ export function ForBusinessClient() {
         }}
       >
         <div className="max-w-5xl mx-auto">
-          <motion.div initial="hidden" whileInView="show" viewport={{ once: true }} variants={fade} className="mb-16">
+          <motion.div initial="hidden" whileInView="show" viewport={REVEAL_VIEWPORT} variants={fade} className="mb-16">
             <span className="inline-block text-xs font-semibold uppercase tracking-widest mb-4 px-3 py-1 rounded-full text-slate-500" style={G.pill}>
               Jak zacząć
             </span>
-            <h2 className="text-4xl font-bold text-slate-900" style={{ letterSpacing: "-0.03em" }}>
+            <h2 className="text-4xl font-bold text-slate-900" style={{ letterSpacing: "var(--track-display)" }}>
               Zacznij w trzy kroki.
             </h2>
           </motion.div>
@@ -434,10 +418,9 @@ export function ForBusinessClient() {
             {STEPS.map((step, i) => (
               <motion.div
                 key={step.n}
-                initial="hidden" whileInView="show" viewport={{ once: true }} custom={i} variants={fade}
-                whileHover={{ y: -4, scale: 1.008 }}
-                transition={{ type: "spring", stiffness: 360, damping: 28 }}
-                className="relative p-7 rounded-3xl overflow-hidden glass-shimmer-wrap"
+                initial="hidden" whileInView="show" viewport={REVEAL_VIEWPORT} custom={i} variants={fade}
+                transition={SPRING}
+                className="card-hover-raise relative p-7 rounded-3xl overflow-hidden"
                 style={G.panel}
               >
                 <div className="absolute inset-0 bg-gradient-to-br from-white/60 via-transparent to-transparent pointer-events-none" />
@@ -458,11 +441,11 @@ export function ForBusinessClient() {
       <div className="grad-sep" />
       <section className="py-28 px-6" style={{ background: BG.features }}>
         <div className="max-w-5xl mx-auto">
-          <motion.div initial="hidden" whileInView="show" viewport={{ once: true }} variants={fade} className="mb-16">
+          <motion.div initial="hidden" whileInView="show" viewport={REVEAL_VIEWPORT} variants={fade} className="mb-16">
             <span className="inline-block text-xs font-semibold uppercase tracking-widest mb-4 px-3 py-1 rounded-full text-slate-500" style={G.pill}>
               Funkcje
             </span>
-            <h2 className="text-4xl font-bold text-slate-900" style={{ letterSpacing: "-0.03em" }}>
+            <h2 className="text-4xl font-bold text-slate-900" style={{ letterSpacing: "var(--track-display)" }}>
               Wszystko w jednym miejscu.
             </h2>
             <p className="mt-3 max-w-sm text-sm text-slate-500">
@@ -474,10 +457,9 @@ export function ForBusinessClient() {
             {FEATURES.map((f, i) => (
               <motion.div
                 key={f.n}
-                initial="hidden" whileInView="show" viewport={{ once: true }} custom={i} variants={fade}
-                whileHover={{ y: -4, scale: 1.008 }}
-                transition={{ type: "spring", stiffness: 360, damping: 28 }}
-                className="relative p-6 rounded-3xl overflow-hidden glass-shimmer-wrap"
+                initial="hidden" whileInView="show" viewport={REVEAL_VIEWPORT} custom={i} variants={fade}
+                transition={SPRING}
+                className="card-hover-raise relative p-6 rounded-3xl overflow-hidden"
                 style={G.panel}
               >
                 <div className="absolute inset-0 bg-gradient-to-br from-white/50 via-transparent to-transparent pointer-events-none" />
@@ -504,8 +486,8 @@ export function ForBusinessClient() {
           <motion.div
             initial={{ opacity: 0, y: 24 }}
             whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.6 }}
+            viewport={REVEAL_VIEWPORT}
+            transition={{ duration: 0.42 }}
             className="relative rounded-3xl p-14 text-center overflow-hidden"
             style={G.card}
           >
@@ -520,35 +502,29 @@ export function ForBusinessClient() {
             <div className="relative z-10">
               <div className="flex items-center justify-center gap-3 mb-6">
                 <span className="h-px w-12" style={{ background: "linear-gradient(90deg, transparent, rgba(203,213,225,0.70))" }} />
-                <span className="w-1.5 h-1.5 rounded-full" style={{ background: "#CBD5E1", boxShadow: "0 0 0 2px rgba(203,213,225,0.30)" }} />
+                <span className="w-1.5 h-1.5 rounded-full" style={{ background: "#CBD5E1", boxShadow: "var(--e1)" }} />
                 <span className="h-px w-12" style={{ background: "linear-gradient(90deg, rgba(203,213,225,0.70), transparent)" }} />
               </div>
 
-              <h2 className="text-4xl font-bold mb-4 text-slate-900" style={{ letterSpacing: "-0.03em" }}>
+              <h2 className="text-4xl font-bold mb-4 text-slate-900" style={{ letterSpacing: "var(--track-display)" }}>
                 Gotowy na więcej klientów?
               </h2>
               <p className="mb-10 max-w-sm mx-auto text-base text-slate-500">
-                Zarejestruj salon w 5 minut i zacznij przyjmować rezerwacje online — bez karty kredytowej.
+                Zarejestruj salon w 5 minut i zacznij przyjmować rezerwacje online, bez karty kredytowej.
               </p>
 
               <div className="flex flex-col sm:flex-row gap-3 justify-center">
-                <motion.div
-                  whileHover={{ scale: 1.015, y: -1 }}
-                  whileTap={{ scale: 0.978 }}
-                  transition={{ type: "spring", stiffness: 420, damping: 26 }}
+                <div 
                 >
                   <Link
                     href="/register?role=business"
                     className="inline-flex items-center justify-center px-7 py-3.5 font-semibold text-sm rounded-xl"
                     style={G.inkBtn}
                   >
-                    Zarejestruj salon — za darmo
+                    Zarejestruj salon za darmo
                   </Link>
-                </motion.div>
-                <motion.div
-                  whileHover={{ scale: 1.015, y: -1 }}
-                  whileTap={{ scale: 0.978 }}
-                  transition={{ type: "spring", stiffness: 420, damping: 26 }}
+                </div>
+                <div 
                 >
                   <Link
                     href="/search"
@@ -557,7 +533,7 @@ export function ForBusinessClient() {
                   >
                     Przeglądaj salony →
                   </Link>
-                </motion.div>
+                </div>
               </div>
             </div>
           </motion.div>

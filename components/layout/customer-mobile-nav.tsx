@@ -4,11 +4,12 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { useUnreadCount } from "@/hooks/use-unread-count";
+import { useT } from "@/components/i18n/i18n-provider";
 
 const ITEMS = [
   {
     href: "/customer/dashboard",
-    label: "Wizyty",
+    key: "tabVisits" as const,
     icon: (
       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
         <rect width="18" height="18" x="3" y="4" rx="2" ry="2" />
@@ -20,7 +21,7 @@ const ITEMS = [
   },
   {
     href: "/search",
-    label: "Szukaj",
+    key: "navSearch" as const,
     icon: (
       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
         <circle cx="11" cy="11" r="8" />
@@ -30,7 +31,7 @@ const ITEMS = [
   },
   {
     href: "/customer/favourites",
-    label: "Ulubione",
+    key: "navFavourites" as const,
     icon: (
       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
         <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
@@ -39,7 +40,7 @@ const ITEMS = [
   },
   {
     href: "/customer/notifications",
-    label: "Alerty",
+    key: "navAlerts" as const,
     icon: (
       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
         <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
@@ -49,7 +50,7 @@ const ITEMS = [
   },
   {
     href: "/customer/profile",
-    label: "Profil",
+    key: "navProfile" as const,
     icon: (
       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
         <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
@@ -60,18 +61,19 @@ const ITEMS = [
 ];
 
 export function CustomerMobileNav() {
+  const c = useT().customer;
   const pathname = usePathname();
   const unreadCount = useUnreadCount();
 
   return (
     <nav
-      className="md:hidden fixed bottom-0 inset-x-0 z-40 pb-[env(safe-area-inset-bottom)]"
+      className="md:hidden fixed bottom-0 inset-x-0 z-[30] pb-[env(safe-area-inset-bottom)]"
       style={{
-        background: "rgba(255,255,255,0.90)",
-        backdropFilter: "blur(32px) saturate(200%)",
-        WebkitBackdropFilter: "blur(32px) saturate(200%)",
-        borderTop: "1px solid rgba(203,213,225,0.40)",
-        boxShadow: "0 -4px 20px rgba(100,116,139,0.08), inset 0 1px 0 rgba(255,255,255,0.90)",
+        background: "var(--chrome)",
+        backdropFilter: "var(--chrome-blur)",
+        WebkitBackdropFilter: "var(--chrome-blur)",
+        borderTop: "1px solid var(--hairline-soft)",
+        boxShadow: "var(--e2)",
       }}
     >
       <div className="flex items-stretch">
@@ -98,7 +100,7 @@ export function CustomerMobileNav() {
                   </span>
                 )}
               </span>
-              {item.label}
+              {c[item.key]}
             </Link>
           );
         })}

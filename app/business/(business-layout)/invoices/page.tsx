@@ -14,6 +14,8 @@ import {
   CHIP,
 } from "@/components/ui/glass";
 import { hasConnection } from "@/lib/fakturownia/connection";
+import { getServerI18n } from "@/lib/i18n/server";
+import { interpolate } from "@/lib/i18n/dictionaries";
 import { InvoicesClient, type InvoiceRow } from "./invoices-client";
 
 // Invoicing will be delivered via the Fakturownia API (not Stripe): connect a
@@ -77,6 +79,9 @@ export default async function InvoicesPage() {
   const avgValue = completedCount > 0 ? (totals._avg.price ?? 0) : 0;
   const configured = await hasConnection(businessId);
 
+  const { dict } = await getServerI18n();
+  const T = dict.pages.invoices;
+
   const invByAppt = new Map(invoices.map((iv) => [iv.appointmentId as string, iv]));
   const clientRows: InvoiceRow[] = rows.map((r) => {
     const iv = invByAppt.get(r.id);
@@ -94,13 +99,13 @@ export default async function InvoicesPage() {
 
   return (
     <div className="max-w-5xl mx-auto space-y-5">
-      <PageHeader title="Faktury" subtitle="Historia sprzedaży z ukończonych wizyt" />
+      <PageHeader title={T.title} subtitle={T.subtitle} />
 
       {/* Real numbers, straight from completed appointments */}
       <div className="fade-rise fade-rise-d1 grid grid-cols-1 sm:grid-cols-3 gap-3">
-        <StatCard label="Przychód" value={formatCurrency(revenue)} sub="z ukończonych wizyt" />
-        <StatCard label="Ukończone wizyty" value={completedCount} sub="rozliczalne pozycje" />
-        <StatCard label="Średnia wartość" value={formatCurrency(avgValue)} sub="za wizytę" />
+        <StatCard label={T.revenue} value={formatCurrency(revenue)} sub={T.revenueSub} />
+        <StatCard label={T.completed} value={completedCount} sub={T.completedSub} />
+        <StatCard label={T.avgValue} value={formatCurrency(avgValue)} sub={T.avgValueSub} />
       </div>
 
       {completedCount === 0 ? (
@@ -114,11 +119,11 @@ export default async function InvoicesPage() {
                 <line x1="16" x2="8" y1="17" y2="17" />
               </svg>
             }
-            title="Brak ukończonych wizyt"
-            body="Historia sprzedaży zbuduje się sama, gdy oznaczysz pierwszą wizytę jako ukończoną."
+            title={T.emptyTitle}
+            body={T.emptyBody}
             action={
               <InkLink href="/business/calendar?action=new" size="sm">
-                Zapisz pierwszą wizytę
+                {T.emptyAction}
               </InkLink>
             }
           />
@@ -126,12 +131,12 @@ export default async function InvoicesPage() {
       ) : (
         <GlassCard className="fade-rise fade-rise-d2 overflow-hidden">
           <CardHeader
-            title="Historia sprzedaży"
+            title={T.salesHistory}
             action={
               <span className="text-xs text-slate-500 tabular-nums">
                 {completedCount > ROW_LIMIT
-                  ? `ostatnie ${rows.length} z ${completedCount}`
-                  : `${rows.length} ${rows.length === 1 ? "pozycja" : "pozycji"}`}
+                  ? interpolate(T.lastNofM, { n: rows.length, m: completedCount })
+                  : `${rows.length} ${rows.length === 1 ? T.itemOne : T.itemMany}`}
               </span>
             }
           />
@@ -150,17 +155,12 @@ export default async function InvoicesPage() {
         </svg>
         <p className={cn("text-xs leading-relaxed text-slate-500")}>
           {configured ? (
-            <>
-              Faktury wystawiasz przez integrację z <span className="font-medium text-slate-600">Fakturownią</span> —
-              kliknij „Wystaw fakturę”, sprawdź podgląd i zatwierdź. Numer i PDF przypisujemy do wizyty. Asystent AI
-              potrafi też przygotować fakturę na Twoje polecenie (zawsze do zatwierdzenia).
-            </>
+            T.noteConnected
           ) : (
             <>
-              Wystawianie formalnych faktur (numeracja, PDF, wysyłka do klienta) działa przez integrację z{" "}
-              <span className="font-medium text-slate-600">Fakturownią</span>. Połącz swoje konto Fakturownia w{" "}
-              <InkLink href="/business/settings?section=integrations" size="sm">Ustawienia → Integracje</InkLink>, aby
-              włączyć przycisk „Wystaw fakturę”. Powyższa lista to historia sprzedaży z ukończonych wizyt.
+              {T.noteUnconnectedPre}{" "}
+              <InkLink href="/business/settings?section=integrations" size="sm">{T.noteUnconnectedLink}</InkLink>
+              {T.noteUnconnectedPost}
             </>
           )}
         </p>

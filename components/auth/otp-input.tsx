@@ -134,7 +134,7 @@ export function OtpInput({
           className={cn(
             // Flex to fill the card evenly so any length (6/8) fits without
             // overflowing on a narrow phone; capped so boxes don't get huge.
-            "flex-1 min-w-0 max-w-[3rem] h-12 sm:h-14 text-lg sm:text-xl text-center font-bold rounded-xl outline-none transition-all input-glass tabular-nums text-[#0F172A] disabled:opacity-50",
+            "flex-1 min-w-0 max-w-[3rem] h-12 sm:h-14 text-lg sm:text-xl text-center font-bold rounded-xl outline-none transition-colors input-glass tabular-nums text-[#0F172A] disabled:opacity-50",
             hasError && "!border-red-400"
           )}
           style={hasError ? { border: "1px solid rgba(248,113,113,0.9)" } : undefined}

@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { BusinessStatus } from "@prisma/client";
-import { STATUS_LABELS, type PublicationRequirement } from "@/lib/publication";
+import type { PublicationRequirement } from "@/lib/publication";
+import type { Dictionary } from "@/lib/i18n/dictionaries";
 
 // Owner-facing publication state: what status the salon is in, and — when it is
 // not yet public — exactly what is still missing before it can be published.
@@ -8,10 +9,13 @@ export function PublicationStatus({
   status,
   slug,
   requirements,
+  t,
 }: {
   status: BusinessStatus;
   slug: string;
   requirements: PublicationRequirement[];
+  /** Localized publication copy, resolved by the server page. */
+  t: Dictionary["publication"];
 }) {
   const missing = requirements.filter((r) => !r.ok);
   const isPublished = status === BusinessStatus.ACTIVE;
@@ -30,16 +34,16 @@ export function PublicationStatus({
           <span className="w-2 h-2 rounded-full" style={{ background: tone.dot }} aria-hidden="true" />
           <div>
             <p className="text-sm font-semibold" style={{ color: tone.text }}>
-              Status profilu: {STATUS_LABELS[status] ?? status}
+              {t.statusLabel}: {t[status] ?? status}
             </p>
             <p className="text-xs text-slate-600 mt-0.5">
               {isPublished
-                ? "Gotowe! Twój salon jest widoczny w wyszukiwarce i można u Ciebie rezerwować online."
+                ? t.publishedBody
                 : isPending
-                ? "Twój profil opublikuje się automatycznie, gdy uzupełnisz poniższe informacje — bez zatwierdzania przez administratora."
+                ? t.pendingBody
                 : status === BusinessStatus.SUSPENDED
-                ? "Profil jest zawieszony i chwilowo niewidoczny publicznie. Skontaktuj się z nami, aby go przywrócić."
-                : "Profil nie jest publiczny."}
+                ? t.suspendedBody
+                : t.hiddenBody}
             </p>
           </div>
         </div>
@@ -48,7 +52,7 @@ export function PublicationStatus({
             href={`/b/${slug}`}
             className="text-xs font-semibold px-3 py-1.5 rounded-lg bg-white/70 border border-slate-200 text-slate-700 hover:bg-white transition-colors flex-shrink-0"
           >
-            Zobacz profil
+            {t.viewProfile}
           </Link>
         )}
       </div>
@@ -56,17 +60,17 @@ export function PublicationStatus({
       {!isPublished && missing.length > 0 && (
         <div className="mt-4">
           <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-500 mb-2">
-            Do uzupełnienia ({missing.length})
+            {t.toComplete.replace("{n}", String(missing.length))}
           </p>
           <ul className="space-y-1.5">
             {missing.map((r) => (
               <li key={r.key} className="flex items-center gap-2 text-sm text-slate-700">
                 <span
                   className="w-4 h-4 rounded-md flex items-center justify-center flex-shrink-0"
-                  style={{ background: "rgba(255,255,255,0.8)", border: "1px solid rgba(148,163,184,0.5)" }}
+                  style={{ background: "var(--surface)", border: "1px solid rgba(148,163,184,0.5)" }}
                   aria-hidden="true"
                 />
-                {r.label}
+                {t.req[r.key as keyof typeof t.req] ?? r.label}
               </li>
             ))}
           </ul>
@@ -75,7 +79,7 @@ export function PublicationStatus({
 
       {!isPublished && isPending && missing.length === 0 && (
         <p className="mt-3 text-sm text-slate-700">
-          Wszystko gotowe — profil pojawi się publicznie automatycznie w ciągu chwili.
+          {t.allReady}
         </p>
       )}
     </div>

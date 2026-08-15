@@ -48,13 +48,13 @@ export function FinalizeClient() {
   return (
     <div className="min-h-screen flex items-center justify-center px-6" style={{ background: BG }}>
       <div className="max-w-md w-full text-center">
-        <div className="mx-auto mb-6 w-12 h-12 rounded-full flex items-center justify-center" style={{ background: "rgba(255,255,255,0.8)", border: "1px solid rgba(203,213,225,0.6)" }}>
+        <div className="mx-auto mb-6 w-12 h-12 rounded-full flex items-center justify-center" style={{ background: "var(--surface)", border: "1px solid var(--hairline)" }}>
           <svg className="w-6 h-6 animate-spin" viewBox="0 0 24 24" fill="none" style={{ color: "#334155" }}>
             <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
             <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
           </svg>
         </div>
-        <h1 className="text-xl font-bold mb-2" style={{ letterSpacing: "-0.02em", color: "#0F172A" }}>
+        <h1 className="text-xl font-bold mb-2" style={{ letterSpacing: "var(--track-title)", color: "#0F172A" }}>
           Finalizujemy konfigurację…
         </h1>
         <p className="text-sm" style={{ color: "#64748B" }}>

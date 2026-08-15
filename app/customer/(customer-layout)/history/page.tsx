@@ -12,8 +12,10 @@ import {
   InkLink,
   ChromeAvatar,
 } from "@/components/ui/glass";
+import { getServerI18n } from "@/lib/i18n/server";
 
 export default async function HistoryPage() {
+  const { dict } = await getServerI18n();
   const user = await getServerUser();
   if (!user) redirect("/login");
 
@@ -58,9 +60,9 @@ export default async function HistoryPage() {
               key={apt.id}
               className="rounded-[20px] px-5 py-4 flex items-center gap-4"
               style={{
-                background: "rgba(255,255,255,0.80)",
-                border: "1px solid rgba(203,213,225,0.45)",
-                boxShadow: "0 0 0 0.5px rgba(203,213,225,0.22), 0 1px 2px rgba(0,0,0,0.02), 0 4px 14px rgba(100,116,139,0.06), inset 0 1px 0 rgba(255,255,255,0.92)",
+                background: "var(--surface)",
+                border: "1px solid var(--hairline)",
+                boxShadow: "var(--e1)",
               }}
             >
               <ChromeAvatar initials={apt.business.name[0] ?? "S"} />
@@ -78,7 +80,7 @@ export default async function HistoryPage() {
               </div>
               <div className="text-right flex-shrink-0">
                 <p className="text-sm font-bold text-slate-900 tabular-nums">{formatCurrency(apt.price)}</p>
-                <StatusBadge status={apt.status} className="mt-1" />
+                <StatusBadge status={apt.status} label={dict.statuses[apt.status]} className="mt-1" />
               </div>
             </div>
           ))}

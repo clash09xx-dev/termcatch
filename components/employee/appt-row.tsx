@@ -12,7 +12,7 @@ export const EMPLOYEE_APPT_SELECT = {
 export type EmployeeAppt = Prisma.AppointmentGetPayload<{ select: typeof EMPLOYEE_APPT_SELECT }>;
 
 /** One appointment with just the client context an employee needs to do the job. */
-export function ApptRow({ a, first }: { a: EmployeeAppt; first?: boolean }) {
+export function ApptRow({ a, first, statusLabel }: { a: EmployeeAppt; first?: boolean; statusLabel: string }) {
   const client = `${a.customer.firstName} ${a.customer.lastName}`.trim();
   return (
     <div className="flex flex-wrap items-start gap-x-3 gap-y-1.5 px-4 py-3.5 sm:px-5" style={first ? undefined : { borderTop: HAIRLINE }}>
@@ -23,7 +23,7 @@ export function ApptRow({ a, first }: { a: EmployeeAppt; first?: boolean }) {
       <div className="min-w-0 flex-1">
         <div className="flex flex-wrap items-center gap-2">
           <p className="text-sm font-semibold text-slate-900">{client}</p>
-          <StatusBadge status={a.status} />
+          <StatusBadge status={a.status} label={statusLabel} />
         </div>
         <p className="text-xs text-slate-500">{a.service.name}</p>
         {a.customerNotes && (

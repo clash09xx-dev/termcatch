@@ -102,7 +102,7 @@ export default async function NotificationsPage() {
                 className="flex items-stretch"
                 style={{
                   ...(i > 0 ? { borderTop: HAIRLINE } : {}),
-                  ...(!n.isRead ? { background: "rgba(203,213,225,0.10)" } : {}),
+                  ...(!n.isRead ? { background: "var(--selected)" } : {}),
                 }}
               >
                 <Link href={href} className="row-hover flex gap-3.5 px-5 py-4 flex-1 min-w-0">
@@ -118,7 +118,7 @@ export default async function NotificationsPage() {
                         {!n.isRead && (
                           <span
                             className="w-2 h-2 rounded-full"
-                            style={{ background: "linear-gradient(180deg, #1E293B, #0F172A)" }}
+                            style={{ background: "var(--ink-raised)" }}
                             aria-label="Nieprzeczytane"
                           />
                         )}

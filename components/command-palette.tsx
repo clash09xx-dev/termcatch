@@ -2,16 +2,26 @@
 
 // ─── Command palette (⌘K) ────────────────────────────────────────────────────
 // Navigate the panel, start a visit, copy the booking link, find a client.
-// Radix Dialog (focus trap, aria) + glass skin + shared motion.
+//
+// This surface deliberately does NOT animate open. It is keyboard-initiated and
+// a power user hits it a hundred times a day; any entrance makes the fastest
+// path through the product feel like the slowest, and the panel is what the
+// user is already looking at when they press the key. Only the scrim fades, and
+// only far enough to read as a dimming rather than a transition. The scrim also
+// does not blur: blurring the entire viewport on every ⌘K is the single most
+// expensive thing this interaction could do.
 
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import * as Dialog from "@radix-ui/react-dialog";
 import { motion } from "framer-motion";
-import { overlayFade, useReducedMotion } from "@/lib/motion";
+import { DUR } from "@/lib/motion";
+import { CHROME_STRONG, SCRIM } from "@/components/ui/glass/tokens";
 import { useT } from "@/components/i18n/i18n-provider";
 import { cn } from "@/lib/utils";
+import { interpolate } from "@/lib/i18n/dictionaries";
 import { searchClients } from "@/lib/actions/appointments";
+import type { NavKey } from "@/components/layout/business-nav";
 
 type ClientResult = {
   id: string;
@@ -25,48 +35,42 @@ type Command = {
   id: string;
   label: string;
   hint?: string;
-  section: "Akcje" | "Nawigacja";
+  section: "actions" | "navigation";
   keywords: string;
   run: () => void;
 };
 
 const PANEL_STYLE: React.CSSProperties = {
-  background: "rgba(255,255,255,0.94)",
-  backdropFilter: "blur(40px) saturate(200%)",
-  WebkitBackdropFilter: "blur(40px) saturate(200%)",
-  border: "1px solid rgba(203,213,225,0.50)",
-  boxShadow:
-    "0 0 0 0.5px rgba(203,213,225,0.40), 0 8px 32px rgba(15,23,42,0.16), 0 32px 80px rgba(15,23,42,0.12), inset 0 1px 0 rgba(255,255,255,0.98)",
+  ...CHROME_STRONG,
+  border: "1px solid var(--hairline)",
+  boxShadow: "var(--e4)",
 };
 
-const paletteIn = {
-  hidden: { opacity: 0, y: -12, scale: 0.98 },
-  show: { opacity: 1, y: 0, scale: 1, transition: { type: "spring" as const, stiffness: 420, damping: 32 } },
-  exit: { opacity: 0, y: -8, scale: 0.98, transition: { duration: 0.12 } },
-};
-
-const NAV_TARGETS: { label: string; href: string; keywords: string }[] = [
-  { label: "Dziś", href: "/business/dashboard", keywords: "dzis dashboard pulpit start dzisiaj" },
-  { label: "Kalendarz", href: "/business/calendar", keywords: "kalendarz wizyty terminy calendar" },
-  { label: "Klienci", href: "/business/crm", keywords: "klienci crm customers baza" },
-  { label: "Usługi", href: "/business/services", keywords: "uslugi cennik services oferta" },
-  { label: "Zespół", href: "/business/staff", keywords: "zespol pracownicy staff team" },
-  { label: "Godziny", href: "/business/hours", keywords: "godziny otwarcia hours praca" },
-  { label: "AI Asystent", href: "/business/ai", keywords: "ai asystent obserwacje insights" },
-  { label: "Marketing", href: "/business/marketing", keywords: "marketing kampanie sms email" },
-  { label: "Kupony", href: "/business/coupons", keywords: "kupony promocje coupons rabaty" },
-  { label: "Faktury", href: "/business/invoices", keywords: "faktury rozliczenia sprzedaz invoices" },
-  { label: "Analityka", href: "/business/analytics", keywords: "analityka raporty analytics statystyki" },
-  { label: "Opinie", href: "/business/reviews", keywords: "opinie recenzje reviews oceny" },
-  { label: "Płatności", href: "/business/payments", keywords: "platnosci payments stripe wyplaty" },
-  { label: "Ustawienia", href: "/business/settings", keywords: "ustawienia settings konto profil salonu" },
+// The nav key indexes dict.businessNav for the visible label; the keyword list
+// stays multilingual so search keeps working in every language.
+const NAV_TARGETS: { key: NavKey; href: string; keywords: string }[] = [
+  { key: "today", href: "/business/dashboard", keywords: "dzis dashboard pulpit start dzisiaj today heute bugun" },
+  { key: "calendar", href: "/business/calendar", keywords: "kalendarz wizyty terminy calendar kalender takvim" },
+  { key: "clients", href: "/business/crm", keywords: "klienci crm customers baza clients kunden musteri" },
+  { key: "services", href: "/business/services", keywords: "uslugi cennik services oferta leistungen hizmet" },
+  { key: "team", href: "/business/staff", keywords: "zespol pracownicy staff team ekip" },
+  { key: "hours", href: "/business/hours", keywords: "godziny otwarcia hours praca zeiten saat" },
+  { key: "ai", href: "/business/ai", keywords: "ai asystent obserwacje insights assistant asistan" },
+  { key: "marketing", href: "/business/marketing", keywords: "marketing kampanie sms email kampagne pazarlama" },
+  { key: "coupons", href: "/business/coupons", keywords: "kupony promocje coupons rabaty gutschein kupon" },
+  { key: "invoices", href: "/business/invoices", keywords: "faktury rozliczenia sprzedaz invoices rechnungen fatura" },
+  { key: "analytics", href: "/business/analytics", keywords: "analityka raporty analytics statystyki analysen analitik" },
+  { key: "reviews", href: "/business/reviews", keywords: "opinie recenzje reviews oceny bewertungen degerlendirme" },
+  { key: "payments", href: "/business/payments", keywords: "platnosci payments stripe wyplaty zahlungen odeme" },
+  { key: "settings", href: "/business/settings", keywords: "ustawienia settings konto profil salonu einstellungen ayarlar" },
 ];
 
 export function CommandPalette({ businessSlug }: { businessSlug?: string }) {
   const router = useRouter();
   const pathname = usePathname();
-  const reduceMotion = useReducedMotion();
-  const a = useT().a11y;
+  const t = useT();
+  const a = t.a11y;
+  const P = t.pages.palette;
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
   const [activeIdx, setActiveIdx] = useState(0);
@@ -137,9 +141,9 @@ export function CommandPalette({ businessSlug }: { businessSlug?: string }) {
     const actions: Command[] = [
       {
         id: "new-appointment",
-        label: "Nowa wizyta",
-        hint: "Zapisz klienta",
-        section: "Akcje",
+        label: t.businessNav.newAppointment,
+        hint: P.newAppointmentHint,
+        section: "actions",
         keywords: "nowa wizyta rezerwacja dodaj klient new appointment",
         run: go("/business/calendar?action=new"),
       },
@@ -147,9 +151,9 @@ export function CommandPalette({ businessSlug }: { businessSlug?: string }) {
         ? [
             {
               id: "copy-link",
-              label: copied ? "Skopiowano ✓" : "Skopiuj link do rezerwacji",
+              label: copied ? t.common.copied : P.copyBookingLink,
               hint: `/b/${businessSlug}`,
-              section: "Akcje" as const,
+              section: "actions" as const,
               keywords: "kopiuj link rezerwacja booking url copy",
               run: () => {
                 navigator.clipboard
@@ -163,9 +167,9 @@ export function CommandPalette({ businessSlug }: { businessSlug?: string }) {
             },
             {
               id: "open-profile",
-              label: "Otwórz profil publiczny",
-              hint: "Nowa karta",
-              section: "Akcje" as const,
+              label: P.openPublicProfile,
+              hint: P.newTab,
+              section: "actions" as const,
               keywords: "profil publiczny podglad public profile open",
               run: () => {
                 window.open(`/b/${businessSlug}`, "_blank", "noopener");
@@ -174,16 +178,16 @@ export function CommandPalette({ businessSlug }: { businessSlug?: string }) {
             },
           ]
         : []),
-      ...NAV_TARGETS.map((t) => ({
-        id: `nav-${t.href}`,
-        label: t.label,
-        section: "Nawigacja" as const,
-        keywords: t.keywords,
-        run: go(t.href),
+      ...NAV_TARGETS.map((target) => ({
+        id: `nav-${target.href}`,
+        label: t.businessNav[target.key],
+        section: "navigation" as const,
+        keywords: target.keywords,
+        run: go(target.href),
       })),
     ];
     return actions;
-  }, [businessSlug, router, close, copied]);
+  }, [businessSlug, router, close, copied, t, P]);
 
   const q = query.trim().toLowerCase();
   const filteredCommands = q
@@ -234,18 +238,17 @@ export function CommandPalette({ businessSlug }: { businessSlug?: string }) {
           <Dialog.Portal forceMount>
             <Dialog.Overlay asChild forceMount>
               <motion.div
-                variants={overlayFade}
-                initial="hidden"
-                animate="show"
-                className="fixed inset-0 z-[60]"
-                style={{
-                  background: "rgba(15,23,42,0.30)",
-                  backdropFilter: "blur(6px)",
-                  WebkitBackdropFilter: "blur(6px)",
-                }}
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ duration: DUR.press / 1000 }}
+                className="fixed inset-0"
+                style={{ ...SCRIM, zIndex: "var(--z-palette)" }}
               />
             </Dialog.Overlay>
-            <div className="fixed inset-0 z-[60] flex items-start justify-center pt-[15vh] px-4 pointer-events-none">
+            <div
+              className="fixed inset-0 flex items-start justify-center pt-[12dvh] px-4 pointer-events-none"
+              style={{ zIndex: "var(--z-palette)" }}
+            >
               <Dialog.Content
                 asChild
                 forceMount
@@ -254,20 +257,16 @@ export function CommandPalette({ businessSlug }: { businessSlug?: string }) {
                   inputRef.current?.focus();
                 }}
               >
-                <motion.div
-                  variants={reduceMotion ? overlayFade : paletteIn}
-                  initial="hidden"
-                  animate="show"
-                  className="relative w-full max-w-lg rounded-2xl overflow-hidden pointer-events-auto"
+                {/* No entrance: the panel is simply there on the next frame. */}
+                <div
+                  className="relative w-full max-w-lg rounded-[18px] overflow-hidden pointer-events-auto"
                   style={PANEL_STYLE}
                 >
-                  <Dialog.Title className="sr-only">Paleta poleceń</Dialog.Title>
-                  <Dialog.Description className="sr-only">
-                    Szukaj poleceń, sekcji panelu i klientów
-                  </Dialog.Description>
+                  <Dialog.Title className="sr-only">{P.title}</Dialog.Title>
+                  <Dialog.Description className="sr-only">{a.palettePlaceholder}</Dialog.Description>
 
                   {/* Input */}
-                  <div className="flex items-center gap-3 px-4" style={{ borderBottom: "1px solid rgba(203,213,225,0.30)" }}>
+                  <div className="flex items-center gap-3 px-4" style={{ borderBottom: "1px solid var(--hairline-soft)" }}>
                     <svg className="w-4 h-4 text-slate-400 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} aria-hidden="true">
                       <circle cx="11" cy="11" r="8" /><path d="m21 21-4.35-4.35" />
                     </svg>
@@ -286,27 +285,27 @@ export function CommandPalette({ businessSlug }: { businessSlug?: string }) {
                     />
                     <kbd
                       className="text-[10px] font-semibold px-1.5 py-0.5 rounded flex-shrink-0"
-                      style={{ background: "rgba(203,213,225,0.22)", border: "1px solid rgba(203,213,225,0.45)", color: "#94A3B8" }}
+                      style={{ background: "var(--surface-inset)", border: "1px solid var(--hairline-soft)", color: "var(--text-muted)" }}
                     >
                       Esc
                     </kbd>
                   </div>
 
                   {/* Results */}
-                  <div id="palette-list" role="listbox" aria-label={a.results} className="max-h-[40vh] overflow-y-auto p-2">
+                  <div id="palette-list" role="listbox" aria-label={a.results} className="max-h-[46dvh] overflow-y-auto p-2">
                     {flatItems.length === 0 && (
                       <p className="px-3 py-6 text-center text-sm text-slate-500">
-                        Brak wyników dla „{query}"
+                        {interpolate(P.noResults, { q: query })}
                       </p>
                     )}
 
-                    {(["Akcje", "Nawigacja"] as const).map((section) => {
+                    {(["actions", "navigation"] as const).map((section) => {
                       const sectionCommands = filteredCommands.filter((c) => c.section === section);
                       if (sectionCommands.length === 0) return null;
                       return (
                         <div key={section} className="mb-1">
                           <p className="px-3 pt-2 pb-1 text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-400 select-none">
-                            {section}
+                            {section === "actions" ? P.sectionActions : P.sectionNavigation}
                           </p>
                           {sectionCommands.map((c) => {
                             renderIdx += 1;
@@ -320,12 +319,12 @@ export function CommandPalette({ businessSlug }: { businessSlug?: string }) {
                                 aria-selected={active}
                                 type="button"
                                 onClick={() => runItem(idx)}
-                                onMouseMove={() => setActiveIdx(idx)}
+                                onPointerEnter={() => setActiveIdx(idx)}
                                 className={cn(
-                                  "w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-left transition-colors",
+                                  "w-full flex items-center gap-3 px-3 py-2.5 rounded-[10px] text-left transition-colors",
                                   active ? "text-white" : "text-slate-700"
                                 )}
-                                style={active ? { background: "linear-gradient(180deg, #1E293B 0%, #0F172A 100%)" } : undefined}
+                                style={active ? { background: "var(--ink-raised)" } : undefined}
                               >
                                 <span className="text-sm font-medium flex-1 truncate">{c.label}</span>
                                 {c.hint && (
@@ -343,7 +342,7 @@ export function CommandPalette({ businessSlug }: { businessSlug?: string }) {
                     {clients.length > 0 && (
                       <div className="mb-1">
                         <p className="px-3 pt-2 pb-1 text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-400 select-none">
-                          Klienci
+                          {t.businessNav.clients}
                         </p>
                         {clients.map((c) => {
                           renderIdx += 1;
@@ -357,12 +356,12 @@ export function CommandPalette({ businessSlug }: { businessSlug?: string }) {
                               aria-selected={active}
                               type="button"
                               onClick={() => runItem(idx)}
-                              onMouseMove={() => setActiveIdx(idx)}
+                              onPointerEnter={() => setActiveIdx(idx)}
                               className={cn(
-                                "w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-left transition-colors",
+                                "w-full flex items-center gap-3 px-3 py-2.5 rounded-[10px] text-left transition-colors",
                                 active ? "text-white" : "text-slate-700"
                               )}
-                              style={active ? { background: "linear-gradient(180deg, #1E293B 0%, #0F172A 100%)" } : undefined}
+                              style={active ? { background: "var(--ink-raised)" } : undefined}
                             >
                               <span
                                 className={cn(
@@ -371,7 +370,7 @@ export function CommandPalette({ businessSlug }: { businessSlug?: string }) {
                                 )}
                                 style={{
                                   background: active ? "rgba(255,255,255,0.15)" : "rgba(203,213,225,0.25)",
-                                  border: active ? "1px solid rgba(255,255,255,0.20)" : "1px solid rgba(203,213,225,0.50)",
+                                  border: active ? "1px solid rgba(255,255,255,0.20)" : "1px solid var(--hairline)",
                                 }}
                               >
                                 {c.firstName[0]}{c.lastName[0]}
@@ -388,7 +387,7 @@ export function CommandPalette({ businessSlug }: { businessSlug?: string }) {
                       </div>
                     )}
                   </div>
-                </motion.div>
+                </div>
               </Dialog.Content>
             </div>
           </Dialog.Portal>

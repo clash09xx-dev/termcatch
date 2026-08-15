@@ -3,89 +3,68 @@
 import { useState, useRef, useCallback } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { motion, useInView } from "framer-motion";
+import { motion } from "framer-motion";
+import { reveal, revealFade, REVEAL_VIEWPORT, SPRING, useReducedMotion } from "@/lib/motion";
 import { LandingNav } from "@/components/layout/landing-nav";
 import { LandingFooter } from "@/components/layout/landing-footer";
 import { CustomerAssistant } from "@/components/assistant/customer-assistant";
 import { useT, useLocale } from "@/components/i18n/i18n-provider";
 import { interpolate } from "@/lib/i18n/dictionaries";
 import { visibleCategoriesFor } from "@/lib/categories";
+import { ELEV_RAISED, INK_BTN } from "@/components/ui/glass/tokens";
 
-// ── Premium Chrome Glass style helpers ───────────────────────────────────────
-// Every surface is multi-layer: chrome ring → contact → depth → ambient
-// + inner top highlight + inner bottom chrome reflection.
+// ── Landing surfaces ─────────────────────────────────────────────────────────
+//
+// These used to be six stacked backdrop-filters. Nothing moves behind them —
+// the section ground is a static mesh gradient — so the blur bought nothing and
+// cost a composited layer each, while milky 65%-white washed the type out.
+//
+// Marketing is allowed more presence than the dashboard, so the elevation runs
+// one step warmer here (a hero at --e3 where an app card sits at --e2), but the
+// material is the same one the product uses: opaque silver, hairline, ink.
 
 const G = {
-  // Primary large glass card — widget, feature card, CTA
+  /** Hero card — the booking widget and the closing CTA. */
   card: {
-    background: "rgba(255,255,255,0.72)",
-    backdropFilter: "blur(40px) saturate(200%)",
-    WebkitBackdropFilter: "blur(40px) saturate(200%)",
-    border: "1px solid rgba(203,213,225,0.50)",
-    boxShadow:
-      "0 0 0 0.5px rgba(203,213,225,0.40), 0 2px 4px rgba(0,0,0,0.04), 0 12px 36px rgba(100,116,139,0.10), 0 40px 80px rgba(100,116,139,0.05), inset 0 1px 0 rgba(255,255,255,0.98), inset 0 -1px 0 rgba(203,213,225,0.10)",
+    ...ELEV_RAISED,
+    boxShadow: "var(--e3)",
   } as React.CSSProperties,
 
-  // Secondary panel — steps, feature cards, stat cards
-  panel: {
-    background: "rgba(255,255,255,0.65)",
-    backdropFilter: "blur(32px) saturate(200%)",
-    WebkitBackdropFilter: "blur(32px) saturate(200%)",
-    border: "1px solid rgba(203,213,225,0.40)",
-    boxShadow:
-      "0 0 0 0.5px rgba(203,213,225,0.30), 0 1px 2px rgba(0,0,0,0.03), 0 6px 20px rgba(100,116,139,0.08), inset 0 1px 0 rgba(255,255,255,0.92), inset 0 -1px 0 rgba(203,213,225,0.08)",
-  } as React.CSSProperties,
+  /** Secondary panel — steps, feature cards, stat cards. */
+  panel: ELEV_RAISED as React.CSSProperties,
 
-  // Small glass chip — floating label, number badge
+  /** Small chip — floating label, number badge. */
   chip: {
-    background: "rgba(255,255,255,0.80)",
-    backdropFilter: "blur(20px) saturate(200%)",
-    WebkitBackdropFilter: "blur(20px) saturate(200%)",
-    border: "1px solid rgba(203,213,225,0.50)",
-    boxShadow:
-      "0 0 0 0.5px rgba(203,213,225,0.35), 0 2px 8px rgba(100,116,139,0.08), 0 8px 24px rgba(100,116,139,0.05), inset 0 1px 0 rgba(255,255,255,0.95)",
+    background: "var(--surface)",
+    border: "1px solid var(--hairline-soft)",
+    boxShadow: "var(--e2)",
   } as React.CSSProperties,
 
-  // Pill — category, badge, subtle tag
+  /** Pill — category, badge, subtle tag. */
   pill: {
-    background: "rgba(255,255,255,0.68)",
-    backdropFilter: "blur(16px) saturate(190%)",
-    WebkitBackdropFilter: "blur(16px) saturate(190%)",
-    border: "1px solid rgba(203,213,225,0.40)",
-    boxShadow:
-      "0 0 0 0.5px rgba(203,213,225,0.25), 0 1px 4px rgba(100,116,139,0.06), inset 0 1px 0 rgba(255,255,255,0.90)",
+    background: "var(--surface)",
+    border: "1px solid var(--hairline-soft)",
+    boxShadow: "var(--e1)",
   } as React.CSSProperties,
 
-  // Input — Apple search style
+  /** Search input. */
   input: {
-    background: "rgba(255,255,255,0.80)",
-    backdropFilter: "blur(20px) saturate(200%)",
-    WebkitBackdropFilter: "blur(20px) saturate(200%)",
-    border: "1px solid rgba(203,213,225,0.50)",
-    boxShadow:
-      "0 0 0 0.5px rgba(203,213,225,0.30), 0 1px 3px rgba(0,0,0,0.04), inset 0 1px 0 rgba(255,255,255,0.90), inset 0 1px 3px rgba(0,0,0,0.03)",
-    color: "#0F172A",
+    background: "var(--surface)",
+    border: "1px solid var(--hairline)",
+    boxShadow: "inset 0 1px 2px rgba(15,23,42,0.04)",
+    color: "var(--text-primary)",
   } as React.CSSProperties,
 
-  // Inner interactive button — booking widget rows
+  /** Inner interactive row inside the booking widget. */
   innerBtn: {
-    background: "rgba(255,255,255,0.60)",
-    backdropFilter: "blur(12px) saturate(180%)",
-    WebkitBackdropFilter: "blur(12px) saturate(180%)",
-    border: "1px solid rgba(203,213,225,0.40)",
-    boxShadow: "0 0 0 0.5px rgba(203,213,225,0.20), inset 0 1px 0 rgba(255,255,255,0.85)",
+    background: "var(--surface-inset)",
+    border: "1px solid var(--hairline-soft)",
   } as React.CSSProperties,
 
-  // Primary CTA button — machined graphite ink (the one primary-action color)
-  inkBtn: {
-    background: "linear-gradient(180deg, #1E293B 0%, #0F172A 100%)",
-    border: "1px solid #0F172A",
-    color: "#F8FAFC",
-    boxShadow:
-      "0 1px 2px rgba(0,0,0,0.20), 0 10px 24px rgba(15,23,42,0.28), 0 2px 6px rgba(15,23,42,0.18), inset 0 1px 0 rgba(255,255,255,0.15)",
-  } as React.CSSProperties,
+  /** Primary CTA — machined graphite ink, the one primary-action colour. */
+  inkBtn: INK_BTN as React.CSSProperties,
 
-  divider: { borderBottom: "1px solid rgba(203,213,225,0.22)" } as React.CSSProperties,
+  divider: { borderBottom: "1px solid var(--hairline-soft)" } as React.CSSProperties,
 };
 
 // ── Section backgrounds — premium ambient mesh ────────────────────────────────
@@ -144,7 +123,7 @@ function BookingWidget() {
     <motion.div
       initial={{ opacity: 0, x: 40, y: 10 }}
       animate={{ opacity: 1, x: 0, y: 0 }}
-      transition={{ duration: 0.9, delay: 0.2, ease: [0.22, 1, 0.36, 1] }}
+      transition={{ duration: 0.55, delay: 0.2, ease: [0.22, 1, 0.36, 1] }}
       className="relative"
     >
       {/* Main glass card */}
@@ -180,9 +159,9 @@ function BookingWidget() {
                 <button
                   key={i}
                   onClick={() => setSvc(i)}
-                  className="w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-sm transition-all duration-150"
+                  className="w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-sm transition-colors duration-150"
                   style={svc === i
-                    ? { background: "rgba(203,213,225,0.28)", border: "1px solid rgba(203,213,225,0.60)", color: "#1E293B", boxShadow: "0 0 0 0.5px rgba(203,213,225,0.25), inset 0 1px 0 rgba(255,255,255,0.90)" }
+                    ? { background: "var(--selected)", border: "1px solid var(--hairline)", color: "#1E293B", boxShadow: "var(--e1)" }
                     : { ...G.innerBtn, color: "#64748B" }
                   }
                 >
@@ -203,9 +182,9 @@ function BookingWidget() {
                 <button
                   key={i}
                   onClick={() => { setDay(i); setSlot(null); }}
-                  className="flex-1 py-2 rounded-lg text-xs font-semibold transition-all duration-150"
+                  className="flex-1 py-2 rounded-lg text-xs font-semibold transition-colors duration-150"
                   style={day === i
-                    ? { background: "rgba(203,213,225,0.30)", border: "1px solid rgba(203,213,225,0.60)", color: "#334155", boxShadow: "0 0 0 0.5px rgba(203,213,225,0.20), inset 0 1px 0 rgba(255,255,255,0.85)" }
+                    ? { background: "var(--selected)", border: "1px solid var(--hairline)", color: "#334155", boxShadow: "var(--e1)" }
                     : { ...G.innerBtn, color: "#94A3B8" }
                   }
                 >
@@ -221,7 +200,7 @@ function BookingWidget() {
               <button
                 key={i}
                 onClick={() => setSlot(i)}
-                className="py-2 rounded-lg text-xs font-medium transition-all duration-150"
+                className="py-2 rounded-lg text-xs font-medium transition-colors duration-150"
                 style={slot === i
                   ? { background: "rgba(100,116,139,0.22)", border: "1px solid rgba(100,116,139,0.38)", color: "#334155" }
                   : { ...G.innerBtn, color: "#94A3B8" }
@@ -233,26 +212,22 @@ function BookingWidget() {
           </div>
 
           {/* CTA */}
-          <motion.div
-            whileHover={{ scale: 1.015, y: -1 }}
-            whileTap={{ scale: 0.978 }}
-            transition={{ type: "spring", stiffness: 420, damping: 26 }}
+          <Link
+            href="/register"
+            data-on-ink
+            className="btn-spring flex items-center justify-center w-full py-3 min-h-[44px] text-sm font-semibold rounded-[12px]"
+            style={G.inkBtn}
           >
-            <Link
-              href="/register"
-              className="flex items-center justify-center w-full py-3 text-sm font-semibold rounded-xl"
-              style={G.inkBtn}
-            >
-              {slot !== null ? interpolate(h.bookAt, { time: SLOTS[slot] }) : h.pickTime}
-            </Link>
-          </motion.div>
+            {slot !== null ? interpolate(h.bookAt, { time: SLOTS[slot] }) : h.pickTime}
+          </Link>
         </div>
       </div>
 
       {/* Floating chips */}
       <motion.div
-        animate={{ y: [0, -7, 0] }}
-        transition={{ duration: 3.4, repeat: Infinity, ease: [0.45, 0, 0.55, 1] }}
+        initial={{ opacity: 0, y: 8 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ ...SPRING, delay: 0.55 }}
         className="absolute -top-6 -right-6 rounded-2xl px-4 py-3 hidden sm:block"
         style={G.chip}
       >
@@ -261,8 +236,9 @@ function BookingWidget() {
       </motion.div>
 
       <motion.div
-        animate={{ y: [0, 7, 0] }}
-        transition={{ duration: 4.0, repeat: Infinity, ease: [0.45, 0, 0.55, 1], delay: 1.2 }}
+        initial={{ opacity: 0, y: 8 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ ...SPRING, delay: 0.7 }}
         className="absolute -bottom-6 -left-6 rounded-2xl px-4 py-3 hidden sm:block"
         style={G.chip}
       >
@@ -298,7 +274,7 @@ function HeroSearch() {
         <input
           type="text" value={q} onChange={(e) => setQ(e.target.value)}
           placeholder={t.search.servicePlaceholder}
-          className="w-full pl-10 pr-4 py-3.5 rounded-xl text-sm focus:outline-none transition-all placeholder:text-slate-400"
+          className="w-full pl-10 pr-4 py-3.5 rounded-xl text-sm focus:outline-none transition-colors placeholder:text-slate-400"
           style={G.input}
         />
       </div>
@@ -309,33 +285,27 @@ function HeroSearch() {
         <input
           type="text" value={city} onChange={(e) => setCity(e.target.value)}
           placeholder={t.home.cityPlaceholder}
-          className="w-full pl-10 pr-4 py-3.5 rounded-xl text-sm focus:outline-none transition-all placeholder:text-slate-400"
+          className="w-full pl-10 pr-4 py-3.5 rounded-xl text-sm focus:outline-none transition-colors placeholder:text-slate-400"
           style={G.input}
         />
       </div>
-      <motion.button
-        type="submit"
-        whileHover={{ scale: 1.015, y: -0.5 }}
-        whileTap={{ scale: 0.985 }}
-        transition={{ type: "spring", stiffness: 400, damping: 25 }}
-        className="px-6 py-3.5 text-sm font-semibold rounded-xl flex items-center justify-center gap-2 flex-shrink-0"
+      <button
+        type="submit" 
+        className="btn-spring px-6 py-3.5 text-sm font-semibold rounded-xl flex items-center justify-center gap-2 flex-shrink-0"
         style={G.inkBtn}
       >
         <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
           <circle cx="11" cy="11" r="8" /><path d="m21 21-4.35-4.35" />
         </svg>
         {t.nav.search}
-      </motion.button>
+      </button>
     </form>
   );
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
 
-const fade = {
-  hidden: { opacity: 0, y: 24 },
-  show: (i = 0) => ({ opacity: 1, y: 0, transition: { duration: 0.6, delay: i * 0.1, ease: [0.22, 1, 0.36, 1] } }),
-};
+
 
 const HOME_JSON_LD = {
   "@context": "https://schema.org",
@@ -346,6 +316,7 @@ const HOME_JSON_LD = {
 };
 
 export default function HomePage() {
+  const fade = useReducedMotion() ? revealFade : reveal;
   const t = useT();
   const h = t.home;
   const locale = useLocale();
@@ -371,31 +342,13 @@ export default function HomePage() {
         <div className="relative z-10 max-w-7xl mx-auto w-full grid lg:grid-cols-[1fr_480px] gap-14 xl:gap-20 items-center pb-20">
           {/* Left */}
           <div>
-            {/* Badge */}
-            <motion.div
-              initial={{ opacity: 0, y: -10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
-              className="inline-flex items-center gap-2.5 px-3.5 py-1.5 rounded-full text-xs font-medium mb-9"
-              style={{ ...G.pill, color: "#64748B", letterSpacing: "0.01em" }}
-            >
-              {/* Double-ring status dot */}
-              <span className="relative flex h-2 w-2 flex-shrink-0">
-                <span
-                  className="absolute inline-flex h-full w-full rounded-full opacity-75"
-                  style={{ background: "#94A3B8", animation: "dot-pulse 2s cubic-bezier(0.4,0,0.6,1) infinite" }}
-                />
-                <span className="relative inline-flex rounded-full h-2 w-2" style={{ background: "#CBD5E1" }} />
-              </span>
-              {h.badge}
-            </motion.div>
-
+            {/* The hero opens straight on the headline — no early-access badge. */}
             <motion.h1
               initial={{ opacity: 0, y: 30 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.7, delay: 0.05, ease: [0.22, 1, 0.36, 1] }}
+              transition={{ duration: 0.45, delay: 0.05, ease: [0.22, 1, 0.36, 1] }}
               className="text-6xl sm:text-7xl xl:text-8xl font-bold leading-[0.95] text-slate-900"
-              style={{ letterSpacing: "-0.04em" }}
+              style={{ letterSpacing: "var(--track-display)" }}
             >
               {h.heroLine1}<br />
               {h.heroLine2}<br />
@@ -415,7 +368,7 @@ export default function HomePage() {
             <motion.p
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6, delay: 0.2 }}
+              transition={{ duration: 0.42, delay: 0.2 }}
               className="mt-7 text-lg max-w-md leading-relaxed text-slate-500"
             >
               {h.heroSubtitle}
@@ -425,7 +378,7 @@ export default function HomePage() {
             <motion.div
               initial={{ opacity: 0, y: 16 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6, delay: 0.3 }}
+              transition={{ duration: 0.42, delay: 0.3 }}
               className="mt-9"
             >
               <HeroSearch />
@@ -461,11 +414,11 @@ export default function HomePage() {
           initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 1.5 }}
           className="absolute bottom-8 left-1/2 -translate-x-1/2"
         >
-          <motion.div animate={{ y: [0, 5, 0] }} transition={{ duration: 1.6, repeat: Infinity, ease: "easeInOut" }}>
+          <div>
             <svg className="w-5 h-5 text-slate-300" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
               <path strokeLinecap="round" strokeLinejoin="round" d="m19 9-7 7-7-7" />
             </svg>
-          </motion.div>
+          </div>
         </motion.div>
       </section>
 
@@ -476,7 +429,7 @@ export default function HomePage() {
           style={G.panel}
         >
           <div className="flex-1 text-center sm:text-left">
-            <p className="text-lg font-bold text-slate-900" style={{ letterSpacing: "-0.02em" }}>
+            <p className="text-lg font-bold text-slate-900" style={{ letterSpacing: "var(--track-title)" }}>
               {h.runSalon}
             </p>
             <p className="text-sm text-slate-500 mt-1 leading-relaxed">
@@ -496,7 +449,7 @@ export default function HomePage() {
       {/* ── MARQUEE TICKER ───────────────────────────────────────── */}
       <div
         className="py-4 marquee-wrap"
-        style={{ background: "rgba(203,213,225,0.14)", borderTop: "1px solid rgba(203,213,225,0.30)", borderBottom: "1px solid rgba(203,213,225,0.30)" }}
+        style={{ background: "var(--selected)", borderTop: "1px solid var(--hairline-soft)", borderBottom: "1px solid var(--hairline-soft)" }}
       >
         <div className="marquee-track gap-3 px-3">
           {[...marquee, ...marquee].map((label, i) => (
@@ -504,9 +457,9 @@ export default function HomePage() {
               key={i}
               className="flex-shrink-0 px-3.5 py-1.5 rounded-full text-xs font-medium text-slate-500"
               style={{
-                background: "rgba(255,255,255,0.72)",
-                border: "1px solid rgba(203,213,225,0.45)",
-                boxShadow: "0 0 0 0.5px rgba(203,213,225,0.25), inset 0 1px 0 rgba(255,255,255,0.90)",
+                background: "var(--surface)",
+                border: "1px solid var(--hairline)",
+                boxShadow: "var(--e1)",
               }}
             >
               {label}
@@ -520,11 +473,11 @@ export default function HomePage() {
       {/* ── HOW IT WORKS ─────────────────────────────────────────── */}
       <section className="py-28 px-6" style={{ background: BG.steps }}>
         <div className="max-w-5xl mx-auto">
-          <motion.div initial="hidden" whileInView="show" viewport={{ once: true }} variants={fade} className="mb-16">
+          <motion.div initial="hidden" whileInView="show" viewport={REVEAL_VIEWPORT} variants={fade} className="mb-16">
             <span className="inline-block text-xs font-semibold uppercase tracking-widest mb-4 px-3 py-1 rounded-full text-slate-500" style={G.pill}>
               {h.howBadge}
             </span>
-            <h2 className="text-4xl font-bold text-slate-900" style={{ letterSpacing: "-0.03em" }}>{h.howTitle}</h2>
+            <h2 className="text-4xl font-bold text-slate-900" style={{ letterSpacing: "var(--track-display)" }}>{h.howTitle}</h2>
           </motion.div>
 
           <div className="grid md:grid-cols-3 gap-5">
@@ -535,10 +488,9 @@ export default function HomePage() {
             ].map((step, i) => (
               <motion.div
                 key={step.n}
-                initial="hidden" whileInView="show" viewport={{ once: true }} custom={i} variants={fade}
-                whileHover={{ y: -4, scale: 1.008 }}
-                transition={{ type: "spring", stiffness: 360, damping: 28 }}
-                className="relative p-7 rounded-3xl overflow-hidden glass-shimmer-wrap"
+                initial="hidden" whileInView="show" viewport={REVEAL_VIEWPORT} custom={i} variants={fade}
+                transition={SPRING}
+                className="card-hover-raise relative p-7 rounded-3xl overflow-hidden"
                 style={G.panel}
               >
                 <div className="absolute inset-0 bg-gradient-to-br from-white/60 via-transparent to-transparent pointer-events-none" />
@@ -563,10 +515,7 @@ export default function HomePage() {
           <div className="grid lg:grid-cols-2 gap-8 items-start">
             {/* Main feature card */}
             <motion.div
-              initial={{ opacity: 0, x: -30 }}
-              whileInView={{ opacity: 1, x: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
+              variants={fade} initial="hidden" whileInView="show" viewport={REVEAL_VIEWPORT}
               className="relative rounded-3xl p-10 overflow-hidden"
               style={G.card}
             >
@@ -576,7 +525,7 @@ export default function HomePage() {
 
               <div className="relative">
                 <span className="text-xs font-semibold uppercase tracking-widest block mb-6 text-slate-400">{h.bizBadge}</span>
-                <h2 className="text-3xl font-bold leading-snug mb-5 text-slate-900" style={{ letterSpacing: "-0.03em" }}>
+                <h2 className="text-3xl font-bold leading-snug mb-5 text-slate-900" style={{ letterSpacing: "var(--track-display)" }}>
                   {h.bizTitle1}<br />{h.bizTitle2}
                 </h2>
                 <p className="text-sm leading-relaxed mb-9 text-slate-500">
@@ -592,11 +541,8 @@ export default function HomePage() {
                     </div>
                   ))}
                 </div>
-                <motion.div
-                  whileHover={{ scale: 1.015, y: -1 }}
-                  whileTap={{ scale: 0.978 }}
-                  transition={{ type: "spring", stiffness: 420, damping: 26 }}
-                  className="inline-flex"
+                <div 
+                  className="btn-spring inline-flex"
                 >
                   <Link
                     href="/register?role=business"
@@ -606,12 +552,12 @@ export default function HomePage() {
                     {h.registerFree}
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="m9 18 6-6-6-6" /></svg>
                   </Link>
-                </motion.div>
+                </div>
               </div>
             </motion.div>
 
             {/* Feature cards */}
-            <motion.div initial="hidden" whileInView="show" viewport={{ once: true }} variants={fade} className="space-y-4 lg:pt-2">
+            <motion.div initial="hidden" whileInView="show" viewport={REVEAL_VIEWPORT} variants={fade} className="space-y-4 lg:pt-2">
               <h3 className="text-2xl font-bold mb-6 text-slate-900">{h.whyTitle}</h3>
               {[
                 { n: "01", title: h.why1Title, desc: h.why1Desc },
@@ -620,10 +566,9 @@ export default function HomePage() {
               ].map((f, i) => (
                 <motion.div
                   key={f.title}
-                  initial="hidden" whileInView="show" viewport={{ once: true }} custom={i} variants={fade}
-                  whileHover={{ y: -3, scale: 1.008 }}
-                  transition={{ type: "spring", stiffness: 360, damping: 28 }}
-                  className="relative flex gap-4 p-5 rounded-2xl overflow-hidden glass-shimmer-wrap"
+                  initial="hidden" whileInView="show" viewport={REVEAL_VIEWPORT} custom={i} variants={fade}
+                  transition={SPRING}
+                  className="card-hover-raise relative flex gap-4 p-5 rounded-2xl overflow-hidden"
                   style={G.panel}
                 >
                   <div className="absolute inset-0 bg-gradient-to-br from-white/50 via-transparent to-transparent pointer-events-none" />
@@ -650,8 +595,8 @@ export default function HomePage() {
       {/* ── TRUST BAR ────────────────────────────────────────────── */}
       <section className="py-16 px-6" style={{ background: BG.numbers }}>
         <motion.div
-          initial="hidden" whileInView="show" viewport={{ once: true }} variants={fade}
-          className="max-w-3xl mx-auto relative rounded-2xl overflow-hidden glass-shimmer-wrap px-6 py-6 sm:px-10"
+          initial="hidden" whileInView="show" viewport={REVEAL_VIEWPORT} variants={fade}
+          className="max-w-3xl mx-auto relative rounded-2xl overflow-hidden px-6 py-6 sm:px-10"
           style={G.panel}
         >
           <div className="absolute inset-0 bg-gradient-to-b from-white/60 to-transparent pointer-events-none" />
@@ -674,10 +619,7 @@ export default function HomePage() {
       <section className="py-28 px-6" style={{ background: BG.cta }}>
         <div className="max-w-4xl mx-auto">
           <motion.div
-            initial={{ opacity: 0, y: 24 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.6 }}
+            variants={fade} initial="hidden" whileInView="show" viewport={REVEAL_VIEWPORT}
             className="relative rounded-3xl p-14 text-center overflow-hidden"
             style={G.card}
           >
@@ -692,18 +634,15 @@ export default function HomePage() {
             <div className="relative z-10">
               <div className="flex items-center justify-center gap-3 mb-6">
                 <span className="h-px w-12" style={{ background: "linear-gradient(90deg, transparent, rgba(203,213,225,0.70))" }} />
-                <span className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ background: "#CBD5E1", boxShadow: "0 0 0 2px rgba(203,213,225,0.30)" }} />
+                <span className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ background: "#CBD5E1", boxShadow: "var(--e1)" }} />
                 <span className="h-px w-12" style={{ background: "linear-gradient(90deg, rgba(203,213,225,0.70), transparent)" }} />
               </div>
-              <h2 className="text-4xl font-bold mb-4 text-slate-900" style={{ letterSpacing: "-0.03em" }}>{h.ctaTitle}</h2>
+              <h2 className="text-4xl font-bold mb-4 text-slate-900" style={{ letterSpacing: "var(--track-display)" }}>{h.ctaTitle}</h2>
               <p className="mb-10 max-w-sm mx-auto text-base text-slate-500">
                 {h.ctaSubtitle}
               </p>
               <div className="flex flex-col sm:flex-row gap-3 justify-center">
-                <motion.div
-                  whileHover={{ scale: 1.015, y: -1 }}
-                  whileTap={{ scale: 0.978 }}
-                  transition={{ type: "spring", stiffness: 420, damping: 26 }}
+                <div 
                 >
                   <Link
                     href="/search"
@@ -712,11 +651,8 @@ export default function HomePage() {
                   >
                     {t.customer.findSpecialist}
                   </Link>
-                </motion.div>
-                <motion.div
-                  whileHover={{ scale: 1.015, y: -1 }}
-                  whileTap={{ scale: 0.978 }}
-                  transition={{ type: "spring", stiffness: 420, damping: 26 }}
+                </div>
+                <div 
                 >
                   <Link
                     href="/register?role=business"
@@ -725,7 +661,7 @@ export default function HomePage() {
                   >
                     {h.registerSalonArrow}
                   </Link>
-                </motion.div>
+                </div>
               </div>
             </div>
           </motion.div>

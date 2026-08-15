@@ -25,15 +25,12 @@ const BG = [
 ].join(", ");
 
 const CARD: React.CSSProperties = {
-  background: "rgba(255,255,255,0.78)",
-  backdropFilter: "blur(40px) saturate(200%)",
-  WebkitBackdropFilter: "blur(40px) saturate(200%)",
-  border: "1px solid rgba(203,213,225,0.50)",
-  boxShadow:
-    "0 0 0 0.5px rgba(203,213,225,0.40), 0 2px 4px rgba(0,0,0,0.04), 0 12px 36px rgba(100,116,139,0.10), 0 40px 80px rgba(100,116,139,0.05), inset 0 1px 0 rgba(255,255,255,0.98)",
+  background: "var(--surface)",
+  border: "1px solid var(--hairline)",
+  boxShadow: "var(--e3)",
 };
 
-const INK = "linear-gradient(180deg, #1E293B 0%, #0F172A 100%)";
+const INK = "var(--ink-raised)";
 
 const inputCls =
   "input-glass w-full px-3.5 py-2.5 text-sm rounded-xl outline-none text-slate-800 placeholder:text-slate-400 transition-shadow";
@@ -211,12 +208,12 @@ export function OnboardingClient({ ownerName }: { ownerName: string }) {
                               onClick={() => setCategory(cat.value)}
                               aria-pressed={active}
                               className={cn(
-                                "px-3 py-2.5 rounded-xl text-sm font-medium text-left transition-all",
+                                "px-3 py-2.5 rounded-xl text-sm font-medium text-left transition-colors",
                                 active ? "text-white" : "text-slate-600"
                               )}
                               style={active
                                 ? { background: INK, border: "1px solid #0F172A", boxShadow: "0 1px 2px rgba(0,0,0,0.15), inset 0 1px 0 rgba(255,255,255,0.15)" }
-                                : { background: "rgba(255,255,255,0.70)", border: "1px solid rgba(203,213,225,0.50)", boxShadow: "inset 0 1px 0 rgba(255,255,255,0.90)" }}
+                                : { background: "var(--surface)", border: "1px solid var(--hairline)", boxShadow: "inset 0 1px 0 rgba(255,255,255,0.90)" }}
                             >
                               {cat.label}
                             </button>
@@ -286,8 +283,8 @@ export function OnboardingClient({ ownerName }: { ownerName: string }) {
                             key={idx}
                             className="flex items-center gap-3 px-3.5 py-2.5 rounded-xl"
                             style={h.isOpen
-                              ? { background: "rgba(255,255,255,0.75)", border: "1px solid rgba(203,213,225,0.50)", boxShadow: "inset 0 1px 0 rgba(255,255,255,0.90)" }
-                              : { background: "rgba(203,213,225,0.10)", border: "1px solid rgba(203,213,225,0.30)" }}
+                              ? { background: "var(--surface)", border: "1px solid var(--hairline)", boxShadow: "inset 0 1px 0 rgba(255,255,255,0.90)" }
+                              : { background: "var(--selected)", border: "1px solid var(--hairline-soft)" }}
                           >
                             <span className={cn("w-24 sm:w-28 text-sm font-medium flex-shrink-0", h.isOpen ? "text-slate-800" : "text-slate-400")}>
                               {DAY_LABELS[idx]}
@@ -299,7 +296,7 @@ export function OnboardingClient({ ownerName }: { ownerName: string }) {
                               style={{ background: h.isOpen ? "#0F172A" : "rgba(203,213,225,0.60)" }}
                               role="switch"
                               aria-checked={h.isOpen}
-                              aria-label={`${DAY_LABELS[idx]} — ${h.isOpen ? "otwarte" : "zamknięte"}`}
+                              aria-label={`${DAY_LABELS[idx]}: ${h.isOpen ? "otwarte" : "zamknięte"}`}
                             >
                               <span
                                 className={cn(
@@ -311,11 +308,11 @@ export function OnboardingClient({ ownerName }: { ownerName: string }) {
                             {h.isOpen ? (
                               <div className="flex items-center gap-2 flex-1">
                                 <input type="time" value={h.openTime} onChange={(e) => updateHour(idx, { openTime: e.target.value })}
-                                  aria-label={`${DAY_LABELS[idx]} — otwarcie`}
+                                  aria-label={`${DAY_LABELS[idx]}: otwarcie`}
                                   className="input-glass text-sm rounded-lg px-2 py-1.5 text-slate-800 outline-none tabular-nums" />
                                 <span className="text-slate-400 text-xs">—</span>
                                 <input type="time" value={h.closeTime} onChange={(e) => updateHour(idx, { closeTime: e.target.value })}
-                                  aria-label={`${DAY_LABELS[idx]} — zamknięcie`}
+                                  aria-label={`${DAY_LABELS[idx]}: zamknięcie`}
                                   className="input-glass text-sm rounded-lg px-2 py-1.5 text-slate-800 outline-none tabular-nums" />
                               </div>
                             ) : (
@@ -331,22 +328,22 @@ export function OnboardingClient({ ownerName }: { ownerName: string }) {
                   {step === 5 && (
                     <StepWrapper
                       title="Ty jako specjalista"
-                      subtitle="Klienci rezerwują wizyty u konkretnych osób — dodaj siebie do grafiku"
+                      subtitle="Klienci rezerwują wizyty u konkretnych osób, więc dodaj siebie do grafiku"
                     >
                       <button
                         type="button"
                         onClick={() => setAddSelf((v) => !v)}
                         aria-pressed={addSelf}
-                        className="w-full flex items-center gap-3 px-4 py-3.5 rounded-xl text-left transition-all"
+                        className="w-full flex items-center gap-3 px-4 py-3.5 rounded-xl text-left transition-colors"
                         style={addSelf
-                          ? { background: "rgba(203,213,225,0.20)", border: "1px solid rgba(148,163,184,0.45)", boxShadow: "inset 0 1px 0 rgba(255,255,255,0.85)" }
-                          : { background: "rgba(255,255,255,0.70)", border: "1px solid rgba(203,213,225,0.45)" }}
+                          ? { background: "var(--selected)", border: "1px solid var(--hairline-firm)", boxShadow: "inset 0 1px 0 rgba(255,255,255,0.85)" }
+                          : { background: "var(--surface)", border: "1px solid var(--hairline)" }}
                       >
                         <span
                           className="w-5 h-5 rounded-md flex items-center justify-center flex-shrink-0 transition-colors"
                           style={addSelf
                             ? { background: INK, border: "1px solid #0F172A" }
-                            : { background: "rgba(255,255,255,0.80)", border: "1px solid rgba(148,163,184,0.50)" }}
+                            : { background: "var(--surface)", border: "1px solid var(--hairline-firm)" }}
                         >
                           {addSelf && (
                             <svg className="w-3.5 h-3.5 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={3} aria-hidden="true">
@@ -409,8 +406,8 @@ export function OnboardingClient({ ownerName }: { ownerName: string }) {
                       </div>
 
                       <p className="mt-5 text-xs text-slate-500 leading-relaxed px-4 py-3 rounded-xl"
-                        style={{ background: "rgba(203,213,225,0.14)", border: "1px dashed rgba(203,213,225,0.55)" }}>
-                        Możesz pominąć ten krok (zostaw nazwę pustą) — usługi dodasz później w panelu{" "}
+                        style={{ background: "var(--selected)", border: "1px dashed rgba(203,213,225,0.55)" }}>
+                        Możesz pominąć ten krok, zostawiając nazwę pustą. Usługi dodasz później w panelu{" "}
                         <strong className="text-slate-700">Usługi</strong>.
                       </p>
                     </StepWrapper>
@@ -440,8 +437,8 @@ export function OnboardingClient({ ownerName }: { ownerName: string }) {
                     step === 1 && "invisible"
                   )}
                   style={{
-                    background: "rgba(255,255,255,0.70)",
-                    border: "1px solid rgba(203,213,225,0.55)",
+                    background: "var(--surface)",
+                    border: "1px solid var(--hairline)",
                     color: "#475569",
                     boxShadow: "inset 0 1px 0 rgba(255,255,255,0.85)",
                   }}
@@ -449,14 +446,11 @@ export function OnboardingClient({ ownerName }: { ownerName: string }) {
                   Wstecz
                 </button>
 
-                <motion.button
+                <button
                   type="button"
                   onClick={next}
-                  disabled={isPending}
-                  whileHover={isPending ? undefined : { scale: 1.015, y: -1 }}
-                  whileTap={isPending ? undefined : { scale: 0.978 }}
-                  transition={SPRING}
-                  className="px-6 py-2.5 text-sm font-semibold rounded-xl disabled:opacity-60 disabled:cursor-not-allowed flex items-center gap-2"
+                  disabled={isPending} 
+                  className="btn-spring px-6 py-2.5 text-sm font-semibold rounded-xl disabled:opacity-60 disabled:cursor-not-allowed flex items-center gap-2"
                   style={{
                     background: INK,
                     border: "1px solid #0F172A",
@@ -476,7 +470,7 @@ export function OnboardingClient({ ownerName }: { ownerName: string }) {
                   ) : (
                     "Dalej"
                   )}
-                </motion.button>
+                </button>
               </div>
             </div>
           </div>
@@ -486,7 +480,7 @@ export function OnboardingClient({ ownerName }: { ownerName: string }) {
             {STEPS.map((s) => (
               <div
                 key={s.id}
-                className="rounded-full transition-all duration-300"
+                className="rounded-full transition-colors duration-300"
                 style={
                   s.id === step
                     ? { width: 24, height: 6, background: INK }
@@ -517,7 +511,7 @@ function StepWrapper({
   return (
     <div>
       <div className="mb-6">
-        <h1 className="text-2xl font-bold text-slate-900" style={{ letterSpacing: "-0.03em" }}>{title}</h1>
+        <h1 className="text-2xl font-bold text-slate-900" style={{ letterSpacing: "var(--track-display)" }}>{title}</h1>
         <p className="text-sm text-slate-500 mt-1">{subtitle}</p>
       </div>
       {children}

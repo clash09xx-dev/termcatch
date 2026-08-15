@@ -6,10 +6,12 @@ import { resolveEmployeeContext } from "@/lib/employee/context";
 import { prisma } from "@/lib/prisma";
 import { PageHeader, GlassCard, CardHeader, EmptyState } from "@/components/ui/glass";
 import { ApptRow, EMPLOYEE_APPT_SELECT } from "@/components/employee/appt-row";
+import { getServerI18n } from "@/lib/i18n/server";
 
 const CANCELLED: AppointmentStatus[] = ["CANCELLED_CUSTOMER", "CANCELLED_BUSINESS"];
 
 export default async function EmployeeAppointments() {
+  const { dict } = await getServerI18n();
   const ctx = await resolveEmployeeContext();
   if (!ctx) redirect("/");
 
@@ -29,14 +31,14 @@ export default async function EmployeeAppointments() {
         {upcoming.length === 0 ? (
           <div className="p-6"><EmptyState icon={<Ico />} title="Brak nadchodzących wizyt" body="Nowe rezerwacje pojawią się tutaj." /></div>
         ) : (
-          <div>{upcoming.map((a, i) => <ApptRow key={a.id} a={a} first={i === 0} />)}</div>
+          <div>{upcoming.map((a, i) => <ApptRow statusLabel={dict.statuses[a.status]} key={a.id} a={a} first={i === 0} />)}</div>
         )}
       </GlassCard>
 
       {past.length > 0 && (
         <GlassCard className="overflow-hidden">
           <CardHeader title="Ostatnie" />
-          <div>{past.map((a, i) => <ApptRow key={a.id} a={a} first={i === 0} />)}</div>
+          <div>{past.map((a, i) => <ApptRow statusLabel={dict.statuses[a.status]} key={a.id} a={a} first={i === 0} />)}</div>
         </GlassCard>
       )}
     </div>

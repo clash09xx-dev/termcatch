@@ -66,9 +66,12 @@ export function AreaChart({
   // no fabricated scale).
   const gridLines = [0.25, 0.5, 0.75, 1].map((f) => ({ gy: padTop + innerH - f * innerH, f }));
 
-  function onMove(e: React.MouseEvent<SVGSVGElement>) {
+  // Pointer, not mouse: a phone had no way to read a single data point, because
+  // there is no hover on a touchscreen. onPointerMove covers mouse, pen and
+  // finger with one handler, and the arrow keys cover the keyboard.
+  function onMove(e: React.PointerEvent<SVGSVGElement>) {
     if (W === 0 || n === 0) return;
-    const rect = (e.currentTarget as SVGSVGElement).getBoundingClientRect();
+    const rect = e.currentTarget.getBoundingClientRect();
     const px = e.clientX - rect.left;
     let nearest = 0;
     let best = Infinity;
@@ -77,6 +80,20 @@ export function AreaChart({
       if (d < best) { best = d; nearest = i; }
     }
     setHover(nearest);
+  }
+
+  function onKey(e: React.KeyboardEvent<SVGSVGElement>) {
+    if (n === 0) return;
+    if (e.key === "ArrowRight" || e.key === "ArrowLeft") {
+      e.preventDefault();
+      const step = e.key === "ArrowRight" ? 1 : -1;
+      setHover((prev) => {
+        const next = (prev === null ? (step > 0 ? 0 : n - 1) : prev + step);
+        return Math.max(0, Math.min(n - 1, next));
+      });
+    } else if (e.key === "Escape") {
+      setHover(null);
+    }
   }
 
   const hv = hover !== null ? data[hover] : null;
@@ -91,11 +108,14 @@ export function AreaChart({
           viewBox={`0 0 ${W} ${H}`}
           width={W}
           height={H}
-          onMouseMove={onMove}
-          onMouseLeave={() => setHover(null)}
+          onPointerMove={onMove}
+          onPointerDown={onMove}
+          onPointerLeave={() => setHover(null)}
+          onKeyDown={onKey}
+          tabIndex={0}
           role="img"
           aria-label={a11y.revenueChart}
-          style={{ display: "block" }}
+          style={{ display: "block", touchAction: "pan-y" }}
         >
           <defs>
             <linearGradient id="tc-area-fill" x1="0" y1="0" x2="0" y2="1">
@@ -150,10 +170,11 @@ export function AreaChart({
           style={{
             left: tipAnchor,
             transform: tipTransform,
-            background: "rgba(255,255,255,0.94)",
-            border: "1px solid rgba(203,213,225,0.5)",
-            boxShadow: "0 4px 16px rgba(15,23,42,0.12), inset 0 1px 0 rgba(255,255,255,0.9)",
-            backdropFilter: "blur(12px)",
+            background: "var(--chrome-strong)",
+            border: "1px solid var(--hairline)",
+            boxShadow: "var(--e2)",
+            backdropFilter: "var(--chrome-blur)",
+            WebkitBackdropFilter: "var(--chrome-blur)",
             whiteSpace: "nowrap",
           }}
         >
@@ -186,11 +207,11 @@ export function BarColumns({
           <div key={i} className="flex-1 flex flex-col items-center gap-1.5 h-full justify-end">
             <span className={cn("text-xs tabular-nums", isPeak ? "font-bold text-slate-900" : "text-slate-500")}>{d.value}</span>
             <div
-              className="w-full rounded-t-lg transition-all"
+              className="w-full rounded-t-lg transition-colors"
               style={{
                 height: Math.max(h, d.value > 0 ? 4 : 0),
                 background: isPeak
-                  ? "linear-gradient(180deg,#1E293B,#0F172A)"
+                  ? "var(--ink-raised)"
                   : "linear-gradient(180deg,rgba(148,163,184,0.5),rgba(203,213,225,0.35))",
                 border: d.value > 0 ? "1px solid rgba(148,163,184,0.35)" : "none",
                 borderBottom: "none",

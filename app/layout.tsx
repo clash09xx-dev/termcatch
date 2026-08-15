@@ -74,7 +74,10 @@ export const viewport: Viewport = {
   ],
   width: "device-width",
   initialScale: 1,
-  maximumScale: 1,
+  // No maximumScale: pinning it to 1 blocks pinch-zoom on iOS, which is a
+  // WCAG 1.4.4 failure and the exact thing a low-vision user needs most on a
+  // dense calendar. Preventing the focus-zoom jump is a font-size job (all our
+  // inputs are >= 16px), not a viewport-lock job.
 };
 
 export default async function RootLayout({
@@ -97,23 +100,29 @@ export default async function RootLayout({
               {children}
               <CookieConsentBanner />
               <AnalyticsTracker />
+            {/* One Toaster, mounted once at the root. Everything in the app
+                goes through lib/notify — nothing imports sonner directly.
+                It is chrome floating over content, so it is the one place a
+                translucent surface is correct. On a phone it is lifted clear of
+                the bottom tab bar and the home indicator. */}
             <Toaster
               position="bottom-right"
+              style={{ zIndex: "var(--z-toast)" as unknown as number }}
+              offset={20}
+              mobileOffset={{ bottom: "calc(5.25rem + env(safe-area-inset-bottom))", left: 12, right: 12 }}
+              gap={10}
               toastOptions={{
                 duration: 4000,
                 style: {
-                  background: "rgba(255,255,255,0.92)",
-                  backdropFilter: "blur(24px) saturate(200%)",
-                  WebkitBackdropFilter: "blur(24px) saturate(200%)",
-                  border: "1px solid rgba(203,213,225,0.50)",
+                  background: "var(--chrome-strong)",
+                  backdropFilter: "var(--chrome-blur-lg)",
+                  WebkitBackdropFilter: "var(--chrome-blur-lg)",
+                  border: "1px solid var(--hairline)",
                   borderRadius: "14px",
-                  boxShadow:
-                    "0 0 0 0.5px rgba(203,213,225,0.35), 0 4px 16px rgba(100,116,139,0.12), 0 12px 32px rgba(15,23,42,0.08), inset 0 1px 0 rgba(255,255,255,0.95)",
-                  color: "#0F172A",
+                  boxShadow: "var(--e3)",
+                  color: "var(--text-primary)",
                 },
-                classNames: {
-                  toast: "font-sans text-sm",
-                },
+                classNames: { toast: "font-sans text-[13.5px]" },
               }}
             />
             </I18nProvider>

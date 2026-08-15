@@ -10,6 +10,7 @@ import { useRouter } from "next/navigation";
 import { mapsBrowserKey, embedUrl, navigationUrl } from "@/lib/maps";
 import { saveBusinessLocation, clearBusinessLocation } from "@/lib/actions/location";
 import { CHIP, HAIRLINE } from "@/components/ui/glass/tokens";
+import { useT } from "@/components/i18n/i18n-provider";
 
 type Picked = { placeId: string; formattedAddress: string; latitude: number; longitude: number };
 
@@ -38,6 +39,8 @@ function loadMapsJs(key: string): Promise<void> {
 }
 
 export function LocationPicker({ current }: Props) {
+  const t = useT();
+  const T = t.pages.locationPicker;
   const router = useRouter();
   const key = mapsBrowserKey();
   const inputRef = useRef<HTMLInputElement | null>(null);
@@ -86,7 +89,7 @@ export function LocationPicker({ current }: Props) {
     start(async () => {
       const res = await saveBusinessLocation(picked);
       if (res.ok) {
-        setMsg({ ok: true, text: "Lokalizacja zapisana — pinezka na mapie jest teraz dokładna." });
+        setMsg({ ok: true, text: T.saved });
         setPicked(null);
         if (inputRef.current) inputRef.current.value = "";
         router.refresh();
@@ -99,7 +102,7 @@ export function LocationPicker({ current }: Props) {
   function clear() {
     start(async () => {
       const res = await clearBusinessLocation();
-      setMsg(res.ok ? { ok: true, text: "Lokalizacja została wyczyszczona." } : { ok: false, text: res.error });
+      setMsg(res.ok ? { ok: true, text: T.cleared } : { ok: false, text: res.error });
       router.refresh();
     });
   }
@@ -111,42 +114,39 @@ export function LocationPicker({ current }: Props) {
   return (
     <div className="rounded-2xl p-4 space-y-3" style={CHIP}>
       <div className="flex items-center justify-between gap-2">
-        <p className="text-sm font-semibold text-slate-800">Lokalizacja na mapie</p>
+        <p className="text-sm font-semibold text-slate-800">{T.title}</p>
         <span
           className="text-[11px] font-semibold px-2 py-0.5 rounded-full"
           style={verified
             ? { background: "rgba(16,185,129,0.10)", border: "1px solid rgba(16,185,129,0.25)", color: "#047857" }
             : { background: "rgba(251,191,36,0.10)", border: "1px solid rgba(217,119,6,0.25)", color: "#B45309" }}
         >
-          {verified ? "Potwierdzona" : "Niepotwierdzona"}
+          {verified ? T.verified : T.unverified}
         </span>
       </div>
 
       {!key ? (
         <p className="text-xs text-slate-500 leading-relaxed">
-          Wyszukiwanie adresu Google nie jest jeszcze skonfigurowane
-          (<span className="font-mono text-[11px]">NEXT_PUBLIC_GOOGLE_MAPS_API_KEY</span>).
-          Do tego czasu profil publiczny pokazuje adres tekstowo, bez pinezki na mapie —
-          nie zgadujemy lokalizacji.
+          {T.noKey} <span className="font-mono text-[11px]">NEXT_PUBLIC_GOOGLE_MAPS_API_KEY</span>
         </p>
       ) : loadError ? (
-        <p className="text-xs text-slate-500">Nie udało się załadować map Google. Odśwież stronę i spróbuj ponownie.</p>
+        <p className="text-xs text-slate-500">{T.loadFail}</p>
       ) : (
         <>
           <input
             ref={inputRef}
-            placeholder="Zacznij wpisywać adres i wybierz podpowiedź…"
+            placeholder={T.searchPh}
             className={INPUT}
-            aria-label="Wyszukaj adres salonu"
+            aria-label={T.searchAria}
           />
           <p className="text-[11px] text-slate-400">
-            Wybierz adres z listy podpowiedzi — dopiero wtedy pinezka będzie dokładna.
+            {T.pickHint}
           </p>
         </>
       )}
 
       {preview && (
-        <div className="rounded-xl overflow-hidden" style={{ border: HAIRLINE, background: "rgba(255,255,255,0.7)" }}>
+        <div className="rounded-xl overflow-hidden" style={{ border: HAIRLINE, background: "var(--surface)" }}>
           <div className="px-3 py-2 text-xs text-slate-700 flex items-center justify-between gap-2">
             <span className="truncate">{preview.formattedAddress}</span>
             <span className="tabular-nums text-slate-400 flex-shrink-0">
@@ -155,7 +155,7 @@ export function LocationPicker({ current }: Props) {
           </div>
           {key && (
             <iframe
-              title="Podgląd lokalizacji salonu"
+              title={T.previewTitle}
               src={embedUrl(key, preview)}
               className="w-full h-44 border-0"
               loading="lazy"
@@ -169,7 +169,7 @@ export function LocationPicker({ current }: Props) {
               rel="noopener noreferrer"
               className="text-[11px] font-semibold text-slate-500 hover:text-slate-800"
             >
-              Sprawdź w Google Maps ↗
+              {T.openInMaps} ↗
             </a>
           </div>
         </div>
@@ -188,9 +188,9 @@ export function LocationPicker({ current }: Props) {
             onClick={save}
             disabled={isPending}
             className="btn-spring px-4 py-2 rounded-xl text-sm font-semibold text-white disabled:opacity-50"
-            style={{ background: "linear-gradient(180deg,#1E293B,#0F172A)", border: "1px solid #0F172A" }}
+            style={{ background: "var(--ink-raised)", border: "1px solid #0F172A" }}
           >
-            {isPending ? "Zapisywanie…" : "Zapisz lokalizację"}
+            {isPending ? t.pages.hours.saving : T.save}
           </button>
         )}
         {verified && (
@@ -199,9 +199,9 @@ export function LocationPicker({ current }: Props) {
             onClick={clear}
             disabled={isPending}
             className="btn-spring px-4 py-2 rounded-xl text-sm font-medium text-slate-600 disabled:opacity-50"
-            style={{ background: "rgba(255,255,255,0.72)", border: "1px solid rgba(203,213,225,0.55)" }}
+            style={{ background: "var(--surface)", border: "1px solid var(--hairline)" }}
           >
-            Wyczyść lokalizację
+            {T.clear}
           </button>
         )}
       </div>

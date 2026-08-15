@@ -14,7 +14,15 @@ const COPIED_KEY = "tc_booking_link_copied";
  * action tracked in localStorage. The whole card is dismissible and reopenable
  * (preference stored in localStorage), and hides itself once everything is done.
  */
-export function OnboardingChecklist({ steps, bookingUrl }: { steps: ChecklistStep[]; bookingUrl: string }) {
+export type ChecklistLabels = {
+  title: string; body: string; hide: string; collapsed: string; copyLink: string; copyLinkHint: string;
+};
+
+export function OnboardingChecklist({ steps, bookingUrl, labels }: {
+  steps: ChecklistStep[];
+  bookingUrl: string;
+  labels: ChecklistLabels;
+}) {
   const [mounted, setMounted] = useState(false);
   const [dismissed, setDismissed] = useState(false);
   const [copied, setCopied] = useState(false);
@@ -46,7 +54,7 @@ export function OnboardingChecklist({ steps, bookingUrl }: { steps: ChecklistSte
 
   const allSteps = [
     ...steps,
-    { key: "copyLink", label: "Skopiuj link do rezerwacji", hint: "Udostępnij go klientom w social media i Google.", done: copied, href: "" },
+    { key: "copyLink", label: labels.copyLink, hint: labels.copyLinkHint, done: copied, href: "" },
   ];
   const doneCount = allSteps.filter((s) => s.done).length;
   const total = allSteps.length;
@@ -62,10 +70,10 @@ export function OnboardingChecklist({ steps, bookingUrl }: { steps: ChecklistSte
         type="button"
         onClick={reopen}
         className="btn-spring inline-flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-semibold text-slate-600"
-        style={{ background: "rgba(255,255,255,0.72)", border: "1px solid rgba(203,213,225,0.55)" }}
+        style={{ background: "var(--surface)", border: "1px solid var(--hairline)" }}
       >
         <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M9 11l3 3L22 4M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11" /></svg>
-        Kroki konfiguracji ({doneCount}/{total})
+        {labels.collapsed.replace("{done}", String(doneCount)).replace("{total}", String(total))}
       </button>
     );
   }
@@ -73,9 +81,9 @@ export function OnboardingChecklist({ steps, bookingUrl }: { steps: ChecklistSte
   return (
     <div
       className="fade-rise rounded-2xl overflow-hidden"
-      style={{ background: "rgba(255,255,255,0.72)", border: "1px solid rgba(203,213,225,0.55)", boxShadow: "0 1px 2px rgba(0,0,0,0.04), 0 6px 20px rgba(100,116,139,0.07), inset 0 1px 0 rgba(255,255,255,0.92)" }}
+      style={{ background: "var(--surface)", border: "1px solid var(--hairline)", boxShadow: "var(--e2)" }}
     >
-      <div className="flex items-center gap-3 px-5 py-3.5" style={{ borderBottom: "1px solid rgba(203,213,225,0.35)" }}>
+      <div className="flex items-center gap-3 px-5 py-3.5" style={{ borderBottom: "1px solid var(--hairline-soft)" }}>
         <div className="relative w-9 h-9 flex-shrink-0">
           <svg viewBox="0 0 36 36" className="w-9 h-9 -rotate-90">
             <circle cx="18" cy="18" r="15" fill="none" stroke="rgba(203,213,225,0.4)" strokeWidth="3.5" />
@@ -84,17 +92,17 @@ export function OnboardingChecklist({ steps, bookingUrl }: { steps: ChecklistSte
           <span className="absolute inset-0 flex items-center justify-center text-[10px] font-bold text-slate-900 tabular-nums">{doneCount}/{total}</span>
         </div>
         <div className="flex-1 min-w-0">
-          <p className="text-[14px] font-semibold text-slate-900">Skonfiguruj swój salon</p>
-          <p className="text-xs text-slate-500">Dokończ te kroki, żeby klienci mogli rezerwować online.</p>
+          <p className="text-[14px] font-semibold text-slate-900">{labels.title}</p>
+          <p className="text-xs text-slate-500">{labels.body}</p>
         </div>
-        <button type="button" onClick={dismiss} className="text-xs font-medium text-slate-400 hover:text-slate-700 flex-shrink-0">Ukryj</button>
+        <button type="button" onClick={dismiss} className="text-xs font-medium text-slate-400 hover:text-slate-700 flex-shrink-0">{labels.hide}</button>
       </div>
 
       <div className="p-2.5 sm:p-3 grid sm:grid-cols-2 gap-1.5">
         {allSteps.map((s) => {
           const inner = (
             <>
-              <span className="w-5 h-5 rounded-md flex items-center justify-center flex-shrink-0" style={s.done ? { background: "rgba(16,185,129,0.12)", border: "1px solid rgba(16,185,129,0.3)" } : { background: "rgba(255,255,255,0.7)", border: "1px solid rgba(148,163,184,0.5)" }}>
+              <span className="w-5 h-5 rounded-md flex items-center justify-center flex-shrink-0" style={s.done ? { background: "rgba(16,185,129,0.12)", border: "1px solid rgba(16,185,129,0.3)" } : { background: "var(--surface)", border: "1px solid rgba(148,163,184,0.5)" }}>
                 {s.done && <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="#047857" strokeWidth={3}><path strokeLinecap="round" strokeLinejoin="round" d="m5 13 4 4L19 7" /></svg>}
               </span>
               <span className="min-w-0">

@@ -13,7 +13,7 @@ export function Wordmark({
         "inline-flex items-baseline leading-none select-none",
         className
       )}
-      style={{ letterSpacing: "-0.03em" }}
+      style={{ letterSpacing: "var(--track-display)" }}
     >
       {/* "term" — muted, normal weight */}
       <span

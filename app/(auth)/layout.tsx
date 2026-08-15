@@ -16,17 +16,15 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
       <header
         className="h-14 flex items-center justify-between px-6"
         style={{
-          background: "rgba(255,255,255,0.72)",
-          backdropFilter: "blur(40px) saturate(200%)",
-          WebkitBackdropFilter: "blur(40px) saturate(200%)",
-          borderBottom: "1px solid rgba(203,213,225,0.40)",
-          boxShadow: "0 1px 0 rgba(255,255,255,0.80)",
+          background: "var(--surface)",
+          borderBottom: "1px solid var(--hairline-soft)",
+          boxShadow: "var(--e1)",
         }}
       >
         <Link href="/" className="flex items-center">
           <Wordmark className="text-lg" />
         </Link>
-        <LanguageSelector className="cursor-pointer rounded-lg border border-slate-200 bg-white/70 px-2 py-1.5 text-sm text-slate-700 outline-none" />
+        <LanguageSelector className="cursor-pointer rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-sm text-slate-700 outline-none" />
       </header>
 
       {/* Centered form */}
@@ -35,13 +33,10 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
           <div
             className="p-8"
             style={{
-              background: "rgba(255,255,255,0.78)",
-              backdropFilter: "blur(40px) saturate(200%)",
-              WebkitBackdropFilter: "blur(40px) saturate(200%)",
-              border: "1px solid rgba(203,213,225,0.55)",
+              background: "var(--surface)",
+              border: "1px solid var(--hairline)",
               borderRadius: "1.25rem",
-              boxShadow:
-                "0 0 0 0.5px rgba(203,213,225,0.45), 0 2px 4px rgba(0,0,0,0.05), 0 12px 36px rgba(100,116,139,0.12), 0 40px 80px rgba(100,116,139,0.07), inset 0 1px 0 rgba(255,255,255,1), inset 0 -1px 0 rgba(203,213,225,0.12)",
+              boxShadow: "var(--e3)",
             }}
           >
             {children}
@@ -53,10 +48,8 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
       <footer
         className="py-4 text-center text-xs"
         style={{
-          background: "rgba(255,255,255,0.60)",
-          backdropFilter: "blur(20px)",
-          WebkitBackdropFilter: "blur(20px)",
-          borderTop: "1px solid rgba(203,213,225,0.30)",
+          background: "var(--surface)",
+          borderTop: "1px solid var(--hairline-soft)",
           color: "#94A3B8",
         }}
       >

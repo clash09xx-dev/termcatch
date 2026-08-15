@@ -8,6 +8,7 @@ import { createClient } from "@/lib/supabase/client";
 import { motion, AnimatePresence } from "framer-motion";
 import { useT } from "@/components/i18n/i18n-provider";
 import { LanguageSelector } from "@/components/i18n/language-selector";
+import { SPRING } from "@/lib/motion";
 
 type AuthState =
   | { status: "loading" }
@@ -17,19 +18,19 @@ type AuthState =
 // ── Chrome glass pill styles ──────────────────────────────────────────────────
 
 const NAV_GLASS_BASE = {
-  backdropFilter: "blur(40px) saturate(200%)",
-  WebkitBackdropFilter: "blur(40px) saturate(200%)",
-  border: "1px solid rgba(203,213,225,0.45)",
+  backdropFilter: "var(--chrome-blur-lg)",
+  WebkitBackdropFilter: "var(--chrome-blur-lg)",
+  border: "1px solid var(--hairline)",
 } as React.CSSProperties;
 
 const NAV_SHADOW_REST =
-  "0 0 0 0.5px rgba(203,213,225,0.30), 0 1px 2px rgba(0,0,0,0.03), 0 4px 16px rgba(100,116,139,0.07), inset 0 1px 0 rgba(255,255,255,0.90)";
+  "var(--e1)";
 const NAV_SHADOW_SCROLLED =
-  "0 0 0 0.5px rgba(203,213,225,0.45), 0 2px 4px rgba(0,0,0,0.05), 0 8px 32px rgba(100,116,139,0.10), 0 20px 48px rgba(100,116,139,0.05), inset 0 1px 0 rgba(255,255,255,0.95)";
+  "var(--e3)";
 
 // Stronger (graphite) CTA — used for "Zaproś i zarób".
 const AFFILIATE_CTA: React.CSSProperties = {
-  background: "linear-gradient(180deg, #1E293B 0%, #0F172A 100%)",
+  background: "var(--ink-raised)",
   border: "1px solid #0F172A",
   boxShadow: "0 1px 2px rgba(0,0,0,0.20), 0 8px 20px rgba(15,23,42,0.22), inset 0 1px 0 rgba(255,255,255,0.15)",
 };
@@ -96,11 +97,11 @@ export function LandingNav({
           className="flex items-center justify-between px-5 py-2.5 rounded-2xl"
           style={{
             ...NAV_GLASS_BASE,
-            background: isScrolled ? "rgba(255,255,255,0.88)" : "rgba(255,255,255,0.70)",
+            background: isScrolled ? "var(--chrome-strong)" : "var(--chrome)",
             boxShadow: isScrolled ? NAV_SHADOW_SCROLLED : NAV_SHADOW_REST,
           }}
           animate={{
-            background: isScrolled ? "rgba(255,255,255,0.88)" : "rgba(255,255,255,0.70)",
+            background: isScrolled ? "var(--chrome-strong)" : "var(--chrome)",
           }}
           transition={{ duration: 0.25, ease: "easeOut" }}
         >
@@ -121,7 +122,7 @@ export function LandingNav({
           <div className={desktopActionsCls}>
             <LanguageSelector />
             {isMarketing && (
-              <Link href={affiliateHref} className="px-3.5 py-2 text-sm font-semibold rounded-xl text-white transition-transform hover:-translate-y-px" style={AFFILIATE_CTA}>
+              <Link href={affiliateHref} className="btn-spring px-3.5 py-2 min-h-[38px] inline-flex items-center text-sm font-semibold rounded-[10px] text-white" style={AFFILIATE_CTA}>
                 {t.nav.inviteEarn}
               </Link>
             )}
@@ -169,14 +170,14 @@ export function LandingNav({
               initial={{ opacity: 0, y: -8, scale: 0.96 }}
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: -6, scale: 0.97 }}
-              transition={{ type: "spring", stiffness: 380, damping: 32 }}
+              transition={SPRING}
               className="mt-2 rounded-2xl overflow-hidden"
               style={{
-                background: "rgba(255,255,255,0.92)",
-                backdropFilter: "blur(40px) saturate(200%)",
-                WebkitBackdropFilter: "blur(40px) saturate(200%)",
-                border: "1px solid rgba(203,213,225,0.45)",
-                boxShadow: "0 0 0 0.5px rgba(203,213,225,0.35), 0 8px 32px rgba(100,116,139,0.12), 0 20px 48px rgba(100,116,139,0.06), inset 0 1px 0 rgba(255,255,255,0.98)",
+                background: "var(--chrome-strong)",
+                backdropFilter: "var(--chrome-blur-lg)",
+                WebkitBackdropFilter: "var(--chrome-blur-lg)",
+                border: "1px solid var(--hairline)",
+                boxShadow: "var(--e3)",
               }}
             >
               <div className="px-3 py-2.5 space-y-px">
@@ -191,7 +192,7 @@ export function LandingNav({
                   </Link>
                 ))}
               </div>
-              <div className="px-3 pb-3 pt-2 space-y-1.5" style={{ borderTop: "1px solid rgba(203,213,225,0.25)" }}>
+              <div className="px-3 pb-3 pt-2 space-y-1.5" style={{ borderTop: "1px solid var(--hairline-soft)" }}>
                 {isMarketing && (
                   <Link
                     href={affiliateHref}
@@ -206,10 +207,10 @@ export function LandingNav({
                   <Link
                     href={auth.dashboardHref}
                     onClick={() => setIsMobileOpen(false)}
-                    className="block w-full text-center px-4 py-2.5 text-sm font-semibold rounded-xl transition-all"
+                    className="block w-full text-center px-4 py-2.5 text-sm font-semibold rounded-xl transition-colors"
                     style={{
                       background: "rgba(148,163,184,0.16)",
-                      border: "1px solid rgba(203,213,225,0.45)",
+                      border: "1px solid var(--hairline)",
                       color: "#334155",
                       boxShadow: "inset 0 1px 0 rgba(255,255,255,0.80)",
                     }}
@@ -221,11 +222,11 @@ export function LandingNav({
                     <Link
                       href="/login"
                       onClick={() => setIsMobileOpen(false)}
-                      className="block w-full text-center px-4 py-2.5 text-sm rounded-xl transition-all"
+                      className="block w-full text-center px-4 py-2.5 text-sm rounded-xl transition-colors"
                       style={{
                         color: "#475569",
                         background: "rgba(241,245,249,0.80)",
-                        border: "1px solid rgba(203,213,225,0.35)",
+                        border: "1px solid var(--hairline-soft)",
                         boxShadow: "inset 0 1px 0 rgba(255,255,255,0.80)",
                       }}
                     >
@@ -234,10 +235,10 @@ export function LandingNav({
                     <Link
                       href="/register"
                       onClick={() => setIsMobileOpen(false)}
-                      className="block w-full text-center px-4 py-2.5 text-sm font-semibold rounded-xl transition-all"
+                      className="block w-full text-center px-4 py-2.5 text-sm font-semibold rounded-xl transition-colors"
                       style={{
                         background: "rgba(148,163,184,0.16)",
-                        border: "1px solid rgba(203,213,225,0.45)",
+                        border: "1px solid var(--hairline)",
                         color: "#334155",
                         boxShadow: "inset 0 1px 0 rgba(255,255,255,0.80)",
                       }}
@@ -267,24 +268,21 @@ function NavLink({ href, children }: { href: string; children: React.ReactNode }
 
 function ChromeBtn({ href, children }: { href: string; children: React.ReactNode }) {
   return (
-    <motion.div
-      whileHover={{ scale: 1.03, y: -0.5 }}
-      whileTap={{ scale: 0.975 }}
-      transition={{ type: "spring", stiffness: 420, damping: 26 }}
-      className="glass-shimmer-wrap rounded-xl"
+    <div 
+      className="btn-spring rounded-xl"
     >
       <Link
         href={href}
         className="text-sm font-semibold px-4 py-2 rounded-xl block transition-colors duration-150"
         style={{
           background: "rgba(148,163,184,0.14)",
-          border: "1px solid rgba(203,213,225,0.55)",
+          border: "1px solid var(--hairline)",
           color: "#334155",
-          boxShadow: "0 0 0 0.5px rgba(203,213,225,0.25), inset 0 1px 0 rgba(255,255,255,0.80)",
+          boxShadow: "var(--e1)",
         }}
       >
         {children}
       </Link>
-    </motion.div>
+    </div>
   );
 }

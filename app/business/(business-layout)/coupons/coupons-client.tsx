@@ -2,7 +2,14 @@
 
 import { useState, useEffect, useRef, useTransition } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { formatCurrency, cn } from "@/lib/utils";
+import { cn } from "@/lib/utils";
+import { useT, useLocale } from "@/components/i18n/i18n-provider";
+import { formatCurrency as fmtMoney, formatDate as fmtDate, intlLocale } from "@/lib/i18n/format";
+import { interpolate } from "@/lib/i18n/dictionaries";
+import type { Dictionary } from "@/lib/i18n/dictionaries";
+import type { Locale } from "@/lib/i18n/config";
+import { notify, errorText } from "@/lib/notify";
+import { ConfirmDialog } from "@/components/ui/glass-modal";
 import { createCoupon, updateCoupon, toggleCoupon, deleteCoupon, type CouponInput } from "@/lib/actions/coupons";
 import { PageHeader, GlassCard, EmptyState, InkButton, GlassButton, FormField, HAIRLINE, CHIP } from "@/components/ui/glass";
 import { GlassModal } from "@/components/ui/glass-modal";
@@ -23,17 +30,20 @@ const EMPTY: Form = { code: "", name: "", type: "PERCENTAGE", value: "", minOrde
 function toForm(c: CouponRow): Form {
   return { code: c.code, name: c.name, type: c.type === "FIXED_AMOUNT" ? "FIXED_AMOUNT" : "PERCENTAGE", value: String(c.value), minOrderValue: c.minOrderValue ? String(c.minOrderValue) : "", maxUses: c.maxUses ? String(c.maxUses) : "", validFrom: c.validFrom.slice(0, 10), validUntil: c.validUntil.slice(0, 10), isActive: c.isActive };
 }
-function valueLabel(c: { type: CouponType; value: number }) { return c.type === "PERCENTAGE" ? `${c.value}%` : formatCurrency(c.value); }
-function statusOf(c: CouponRow): { label: string; style: React.CSSProperties } {
+function valueLabel(c: { type: CouponType; value: number }, locale: Locale) { return c.type === "PERCENTAGE" ? `${c.value}%` : fmtMoney(c.value, locale); }
+function statusOf(c: CouponRow, T: Dictionary["pages"]["coupons"]): { label: string; style: React.CSSProperties } {
   const now = Date.now();
-  if (!c.isActive) return { label: "Wyłączony", style: { background: "rgba(203,213,225,0.2)", border: "1px solid rgba(203,213,225,0.5)", color: "#64748B" } };
-  if (new Date(c.validUntil).getTime() < now) return { label: "Wygasł", style: { background: "rgba(203,213,225,0.2)", border: "1px solid rgba(203,213,225,0.5)", color: "#64748B" } };
-  if (new Date(c.validFrom).getTime() > now) return { label: "Zaplanowany", style: { background: "rgba(251,191,36,0.1)", border: "1px solid rgba(217,119,6,0.25)", color: "#B45309" } };
-  return { label: "Aktywny", style: { background: "rgba(16,185,129,0.1)", border: "1px solid rgba(16,185,129,0.25)", color: "#047857" } };
+  if (!c.isActive) return { label: T.stDisabled, style: { background: "rgba(203,213,225,0.2)", border: "1px solid var(--hairline)", color: "#64748B" } };
+  if (new Date(c.validUntil).getTime() < now) return { label: T.stExpired, style: { background: "rgba(203,213,225,0.2)", border: "1px solid var(--hairline)", color: "#64748B" } };
+  if (new Date(c.validFrom).getTime() > now) return { label: T.stScheduled, style: { background: "rgba(251,191,36,0.1)", border: "1px solid rgba(217,119,6,0.25)", color: "#B45309" } };
+  return { label: T.stActive, style: { background: "rgba(16,185,129,0.1)", border: "1px solid rgba(16,185,129,0.25)", color: "#047857" } };
 }
-const fmtDate = (iso: string) => new Date(iso).toLocaleDateString("pl-PL", { day: "numeric", month: "short" });
+const shortDate = (iso: string, locale: Locale) => fmtDate(iso, locale, { day: "numeric", month: "short" });
 
 export function CouponsClient({ coupons }: { coupons: CouponRow[] }) {
+  const t = useT();
+  const T = t.pages.coupons;
+  const locale = useLocale();
   const router = useRouter();
   const searchParams = useSearchParams();
   const [open, setOpen] = useState(false);
@@ -45,6 +55,8 @@ export function CouponsClient({ coupons }: { coupons: CouponRow[] }) {
   // detection. Accidental interactions (backdrop click, Escape) must never
   // silently discard typed values, so we compare against this before closing.
   const baselineRef = useRef<Form>(EMPTY);
+  const [confirmId, setConfirmId] = useState<string | null>(null);
+  const [discardOpen, setDiscardOpen] = useState(false);
 
   useEffect(() => { if (searchParams.get("action") === "new") openCreate(); /* eslint-disable-next-line */ }, [searchParams]);
 
@@ -60,7 +72,7 @@ export function CouponsClient({ coupons }: { coupons: CouponRow[] }) {
   // its own dismiss gestures — a controlled setOpen(false) does not.
   function requestClose() {
     if (isPending) return; // never abandon a form mid-save
-    if (isDirty() && !confirm("Masz niezapisane zmiany. Zamknąć edytor bez zapisywania?")) return;
+    if (isDirty()) { setDiscardOpen(true); return; }
     setOpen(false);
   }
 
@@ -72,11 +84,11 @@ export function CouponsClient({ coupons }: { coupons: CouponRow[] }) {
     // percentage over 100 is nonsensical) before hitting the server action.
     const value = parseFloat(form.value);
     if (!Number.isFinite(value) || value <= 0) {
-      setErr("Podaj poprawną wartość rabatu (liczbę większą od zera).");
+      setErr(T.errValue);
       return;
     }
     if (form.type === "PERCENTAGE" && value > 100) {
-      setErr("Rabat procentowy nie może przekraczać 100%.");
+      setErr(T.errPercent);
       return;
     }
     const input: CouponInput = {
@@ -88,50 +100,70 @@ export function CouponsClient({ coupons }: { coupons: CouponRow[] }) {
     start(async () => {
       try {
         if (editingId) await updateCoupon(editingId, input); else await createCoupon(input);
-        setOpen(false); router.refresh();
-      } catch (e2) { setErr((e2 as { message?: string }).message ?? "Wystąpił błąd."); }
+        setOpen(false);
+        notify.saved(editingId ? t.feedback.saved : t.feedback.created);
+        router.refresh();
+      } catch (e2) { setErr(errorText(e2, t.errors.generic)); }
     });
   }
-  function toggle(id: string) { start(async () => { await toggleCoupon(id); router.refresh(); }); }
-  function remove(id: string) { if (!confirm("Usunąć ten kupon?")) return; start(async () => { await deleteCoupon(id); router.refresh(); }); }
+  function toggle(id: string) {
+    start(async () => {
+      try {
+        await toggleCoupon(id);
+        notify.saved(t.feedback.updated);
+        router.refresh();
+      } catch (e) { notify.error(errorText(e, t.feedback.failed)); }
+    });
+  }
+  function remove(id: string) {
+    start(async () => {
+      try {
+        await deleteCoupon(id);
+        notify.saved(t.feedback.deleted);
+        router.refresh();
+      } catch (e) {
+        notify.error(errorText(e, t.feedback.deleteFailed));
+      } finally { setConfirmId(null); }
+    });
+  }
 
   return (
     <div className="max-w-4xl mx-auto space-y-5">
       <PageHeader
-        title="Kupony"
-        subtitle={<span className="tabular-nums">{coupons.length} {coupons.length === 1 ? "kupon" : "kuponów"}</span>}
-        actions={<InkButton onClick={openCreate}><svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5}><path d="M12 5v14M5 12h14" /></svg>Nowy kupon</InkButton>}
+        title={T.title}
+        subtitle={<span className="tabular-nums">{coupons.length} {coupons.length === 1 ? T.one : T.many}</span>}
+        actions={<InkButton onClick={openCreate}><svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5}><path d="M12 5v14M5 12h14" /></svg>{T.new}</InkButton>}
       />
 
       {coupons.length === 0 ? (
         <GlassCard className="fade-rise fade-rise-d1">
           <EmptyState
             icon={<svg className="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5}><path d="M4 7a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v2a2 2 0 0 0 0 6v2a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2v-2a2 2 0 0 0 0-6Z" /></svg>}
-            title="Brak kuponów"
-            body="Twórz kody rabatowe — procentowe lub kwotowe, z limitem użyć i datą ważności."
-            action={<InkButton size="sm" onClick={openCreate}>Utwórz pierwszy kupon</InkButton>}
+            title={T.emptyTitle}
+            body={T.emptyBody}
+            action={<InkButton size="sm" onClick={openCreate}>{T.createFirst}</InkButton>}
           />
         </GlassCard>
       ) : (
         <GlassCard className="fade-rise fade-rise-d1 overflow-hidden">
           {coupons.map((c, i) => {
-            const st = statusOf(c);
+            const st = statusOf(c, T);
             return (
               <div key={c.id} className="row-hover flex items-center gap-4 px-5 py-3.5" style={i > 0 ? { borderTop: HAIRLINE } : undefined}>
                 <span className="font-mono text-[13px] font-bold text-slate-900 px-2.5 py-1 rounded-lg tracking-wide flex-shrink-0" style={CHIP}>{c.code}</span>
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-semibold text-slate-900 truncate">{c.name}</p>
                   <p className="text-xs text-slate-500 tabular-nums">
-                    {valueLabel(c)} rabatu{c.minOrderValue ? ` · od ${formatCurrency(c.minOrderValue)}` : ""} · {fmtDate(c.validFrom)}–{fmtDate(c.validUntil)}
+                    {valueLabel(c, locale)} {T.discountSuffix}{c.minOrderValue ? ` · ${interpolate(T.minFrom, { amount: fmtMoney(c.minOrderValue, locale) })}` : ""} · {shortDate(c.validFrom, locale)}–{shortDate(c.validUntil, locale)}
                   </p>
                 </div>
                 <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full flex-shrink-0" style={st.style}>{st.label}</span>
                 <div className="flex items-center gap-0.5 flex-shrink-0">
-                  <button onClick={() => toggle(c.id)} disabled={isPending} className="icon-btn p-2 rounded-lg" style={{ color: "#94A3B8" }} aria-label={c.isActive ? "Wyłącz" : "Włącz"} title={c.isActive ? "Wyłącz kupon" : "Włącz kupon"}>
+                  <button onClick={() => toggle(c.id)} disabled={isPending} className="icon-btn p-2 rounded-lg" style={{ color: "#94A3B8" }} aria-label={c.isActive ? T.ariaDisable : T.ariaEnable} title={c.isActive ? T.tipDisable : T.tipEnable}>
                     {c.isActive ? <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8}><path d="M9.9 9.9a3 3 0 0 0 4.2 4.2M10.7 5.1A10.4 10.4 0 0 1 12 5c7 0 10 7 10 7a13 13 0 0 1-1.7 2.7M6.6 6.6A13.5 13.5 0 0 0 2 12s3 7 10 7a9.7 9.7 0 0 0 5.4-1.6M2 2l20 20" /></svg> : <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8}><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z" /><circle cx="12" cy="12" r="3" /></svg>}
                   </button>
-                  <button onClick={() => openEdit(c)} className="icon-btn p-2 rounded-lg" style={{ color: "#94A3B8" }} aria-label="Edytuj"><svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8}><path d="M12 20h9" /><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z" /></svg></button>
-                  <button onClick={() => remove(c.id)} disabled={isPending} className="p-2 rounded-lg transition-colors" style={{ color: "#94A3B8" }} onMouseOver={(e) => (e.currentTarget.style.color = "#BE123C")} onMouseOut={(e) => (e.currentTarget.style.color = "#94A3B8")} aria-label="Usuń"><svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8}><path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" /></svg></button>
+                  <button onClick={() => openEdit(c)} className="icon-btn p-2 rounded-lg" style={{ color: "#94A3B8" }} aria-label={t.common.edit}><svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8}><path d="M12 20h9" /><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z" /></svg></button>
+                  <button onClick={() => setConfirmId(c.id)} disabled={isPending} className="p-2 rounded-lg transition-colors" style={{ color: "#94A3B8" }} onMouseOver={(e) => (e.currentTarget.style.color = "#BE123C")} onMouseOut={(e) => (e.currentTarget.style.color = "#94A3B8")} aria-label={t.common.delete}><svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8}><path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" /></svg></button>
                 </div>
               </div>
             );
@@ -139,45 +171,67 @@ export function CouponsClient({ coupons }: { coupons: CouponRow[] }) {
         </GlassCard>
       )}
 
-      <GlassModal open={open} onOpenChange={(o) => { if (o) setOpen(true); else requestClose(); }} title={editingId ? "Edytuj kupon" : "Nowy kupon"} className="max-w-md">
+      <GlassModal open={open} onOpenChange={(o) => { if (o) setOpen(true); else requestClose(); }} title={editingId ? T.editTitle : T.newTitle} className="max-w-md">
         <form onSubmit={save} className="space-y-4 mt-2">
           <div className="grid grid-cols-2 gap-3">
-            <FormField label="Kod" htmlFor="c-code"><input id="c-code" value={form.code} onChange={(e) => set("code", e.target.value.toUpperCase())} placeholder="np. LATO10" className={cn(INPUT, "font-mono uppercase")} autoFocus /></FormField>
-            <FormField label="Nazwa" htmlFor="c-name"><input id="c-name" value={form.name} onChange={(e) => set("name", e.target.value)} placeholder="Powitalny" className={INPUT} /></FormField>
+            <FormField label={T.fieldCode} htmlFor="c-code"><input id="c-code" value={form.code} onChange={(e) => set("code", e.target.value.toUpperCase())} placeholder={T.codePh} className={cn(INPUT, "font-mono uppercase")} autoFocus /></FormField>
+            <FormField label={T.fieldName} htmlFor="c-name"><input id="c-name" value={form.name} onChange={(e) => set("name", e.target.value)} placeholder={T.namePh} className={INPUT} /></FormField>
           </div>
           <div className="grid grid-cols-2 gap-3">
-            <FormField label="Typ" htmlFor="c-type">
+            <FormField label={T.fieldType} htmlFor="c-type">
               <div className="relative">
                 <select id="c-type" value={form.type} onChange={(e) => set("type", e.target.value as Form["type"])} className={cn(INPUT, "appearance-none pr-9")}>
-                  <option value="PERCENTAGE">Procentowy (%)</option>
-                  <option value="FIXED_AMOUNT">Kwotowy (zł)</option>
+                  <option value="PERCENTAGE">{T.typePercentage}</option>
+                  <option value="FIXED_AMOUNT">{T.typeFixed}</option>
                 </select>
                 <svg className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}><path d="m19 9-7 7-7-7" /></svg>
               </div>
             </FormField>
-            <FormField label={form.type === "PERCENTAGE" ? "Wartość (%)" : "Wartość (zł)"} htmlFor="c-val"><input id="c-val" type="number" min={1} value={form.value} onChange={(e) => set("value", e.target.value)} placeholder={form.type === "PERCENTAGE" ? "20" : "50"} className={cn(INPUT, "tabular-nums")} /></FormField>
+            <FormField label={form.type === "PERCENTAGE" ? T.valuePercent : T.valueFixed} htmlFor="c-val"><input id="c-val" type="number" min={1} value={form.value} onChange={(e) => set("value", e.target.value)} placeholder={form.type === "PERCENTAGE" ? "20" : "50"} className={cn(INPUT, "tabular-nums")} /></FormField>
           </div>
           <div className="grid grid-cols-2 gap-3">
-            <FormField label="Min. wartość (zł)" htmlFor="c-min" hint="opcjonalnie"><input id="c-min" type="number" min={0} value={form.minOrderValue} onChange={(e) => set("minOrderValue", e.target.value)} placeholder="—" className={cn(INPUT, "tabular-nums")} /></FormField>
-            <FormField label="Limit użyć" htmlFor="c-max" hint="opcjonalnie"><input id="c-max" type="number" min={1} value={form.maxUses} onChange={(e) => set("maxUses", e.target.value)} placeholder="bez limitu" className={cn(INPUT, "tabular-nums")} /></FormField>
+            <FormField label={T.fieldMin} htmlFor="c-min"><input id="c-min" type="number" min={0} value={form.minOrderValue} onChange={(e) => set("minOrderValue", e.target.value)} placeholder="—" className={cn(INPUT, "tabular-nums")} /></FormField>
+            <FormField label={T.fieldMaxUses} htmlFor="c-max"><input id="c-max" type="number" min={1} value={form.maxUses} onChange={(e) => set("maxUses", e.target.value)} placeholder={T.noLimit} className={cn(INPUT, "tabular-nums")} /></FormField>
           </div>
           <div className="grid grid-cols-2 gap-3">
-            <FormField label="Ważny od" htmlFor="c-from"><input id="c-from" type="date" value={form.validFrom} onChange={(e) => set("validFrom", e.target.value)} className={cn(INPUT, "tabular-nums")} /></FormField>
-            <FormField label="Ważny do" htmlFor="c-until"><input id="c-until" type="date" value={form.validUntil} onChange={(e) => set("validUntil", e.target.value)} className={cn(INPUT, "tabular-nums")} /></FormField>
+            <FormField label={T.fieldFrom} htmlFor="c-from"><input id="c-from" type="date" value={form.validFrom} onChange={(e) => set("validFrom", e.target.value)} className={cn(INPUT, "tabular-nums")} /></FormField>
+            <FormField label={T.fieldUntil} htmlFor="c-until"><input id="c-until" type="date" value={form.validUntil} onChange={(e) => set("validUntil", e.target.value)} className={cn(INPUT, "tabular-nums")} /></FormField>
           </div>
           <label className="flex items-center justify-between p-3.5 rounded-xl" style={CHIP}>
-            <span className="text-sm font-medium text-slate-800">Aktywny</span>
+            <span className="text-sm font-medium text-slate-800">{T.activeLabel}</span>
             <button type="button" role="switch" aria-checked={form.isActive} onClick={() => set("isActive", !form.isActive)} className="relative inline-flex h-6 w-11 items-center rounded-full transition-colors" style={{ background: form.isActive ? "#0F172A" : "rgba(148,163,184,0.45)" }}>
               <span className={cn("inline-block h-4 w-4 rounded-full bg-white shadow transition-transform", form.isActive ? "translate-x-6" : "translate-x-1")} />
             </button>
           </label>
           {err && <p className="text-xs font-medium" style={{ color: "#BE123C" }}>{err}</p>}
           <div className="flex gap-3 pt-1">
-            <GlassButton onClick={requestClose} className="flex-1">Anuluj</GlassButton>
-            <InkButton type="submit" disabled={isPending} className="flex-1">{isPending ? "Zapisywanie…" : editingId ? "Zapisz" : "Utwórz kupon"}</InkButton>
+            <GlassButton onClick={requestClose} className="flex-1">{t.common.cancel}</GlassButton>
+            <InkButton type="submit" disabled={isPending} className="flex-1">{isPending ? t.pages.hours.saving : editingId ? t.common.save : T.createCta}</InkButton>
           </div>
         </form>
       </GlassModal>
+
+      <ConfirmDialog
+        open={confirmId !== null}
+        onOpenChange={(o) => { if (!o) setConfirmId(null); }}
+        title={t.feedback.confirmDeleteTitle}
+        body={T.deleteConfirm}
+        confirmLabel={t.common.delete}
+        cancelLabel={t.common.cancel}
+        busy={isPending}
+        onConfirm={() => confirmId && remove(confirmId)}
+      />
+
+      <ConfirmDialog
+        open={discardOpen}
+        onOpenChange={setDiscardOpen}
+        danger={false}
+        title={t.pages.hours.unsaved}
+        body={T.dirtyConfirm}
+        confirmLabel={t.common.close}
+        cancelLabel={t.common.cancel}
+        onConfirm={() => { setDiscardOpen(false); setOpen(false); }}
+      />
     </div>
   );
 }

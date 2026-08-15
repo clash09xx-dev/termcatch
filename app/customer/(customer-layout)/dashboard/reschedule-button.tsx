@@ -125,8 +125,8 @@ export default function RescheduleButton({
         onClick={() => setOpen(true)}
         className="btn-spring text-xs font-semibold px-3 py-1.5 rounded-lg"
         style={{
-          background: "rgba(255,255,255,0.72)",
-          border: "1px solid rgba(203,213,225,0.55)",
+          background: "var(--surface)",
+          border: "1px solid var(--hairline)",
           color: "#334155",
           boxShadow: "inset 0 1px 0 rgba(255,255,255,0.88)",
         }}
@@ -138,7 +138,7 @@ export default function RescheduleButton({
         open={open}
         onOpenChange={(o) => { if (!o) close(); }}
         title="Przełóż wizytę"
-        description={`${serviceName} — ${businessName}`}
+        description={`${serviceName} · ${businessName}`}
       >
         {/* Date rail */}
         <p className={cn(OVERLINE_CLS, "mb-2")}>Nowa data</p>
@@ -154,12 +154,12 @@ export default function RescheduleButton({
                 aria-pressed={isSelected}
                 aria-label={`${DAY_SHORT[day.getDay()]} ${day.getDate()} ${MONTH_SHORT[day.getMonth()]}`}
                 className={cn(
-                  "flex-shrink-0 flex flex-col items-center px-3.5 py-2.5 rounded-xl text-center transition-all min-w-[56px] snap-start",
+                  "flex-shrink-0 flex flex-col items-center px-3.5 py-2.5 rounded-xl text-center transition-colors min-w-[56px] snap-start",
                   isSelected ? "text-white" : "text-slate-600"
                 )}
                 style={isSelected
                   ? { background: INK_GRADIENT, border: "1px solid #0F172A", boxShadow: "0 1px 2px rgba(0,0,0,0.15), inset 0 1px 0 rgba(255,255,255,0.15)" }
-                  : { background: "rgba(255,255,255,0.75)", border: "1px solid rgba(203,213,225,0.50)", boxShadow: "inset 0 1px 0 rgba(255,255,255,0.90)" }}
+                  : { background: "var(--surface)", border: "1px solid var(--hairline)", boxShadow: "inset 0 1px 0 rgba(255,255,255,0.90)" }}
               >
                 <span className="text-[10px] font-medium">{DAY_SHORT[day.getDay()]}</span>
                 <span className="text-sm font-bold mt-0.5 tabular-nums">{day.getDate()}</span>
@@ -176,13 +176,13 @@ export default function RescheduleButton({
             {loadingSlots ? (
               <div className="grid grid-cols-4 gap-2">
                 {Array.from({ length: 8 }).map((_, i) => (
-                  <div key={i} className="h-10 rounded-xl animate-pulse" style={{ background: "rgba(203,213,225,0.25)" }} />
+                  <div key={i} className="h-10 rounded-xl tc-skeleton" />
                 ))}
               </div>
             ) : slots.length === 0 ? (
               <div
                 className="text-center py-6 rounded-xl"
-                style={{ background: "rgba(203,213,225,0.14)", border: "1px dashed rgba(203,213,225,0.55)" }}
+                style={{ background: "var(--selected)", border: "1px dashed rgba(203,213,225,0.55)" }}
               >
                 <p className="text-sm text-slate-500">Brak dostępnych terminów na ten dzień</p>
               </div>
@@ -197,12 +197,12 @@ export default function RescheduleButton({
                       onClick={() => setSelectedTime(slot)}
                       aria-pressed={active}
                       className={cn(
-                        "py-2.5 rounded-xl text-sm font-semibold tabular-nums transition-all",
+                        "py-2.5 rounded-xl text-sm font-semibold tabular-nums transition-colors",
                         active ? "text-white" : "text-slate-600"
                       )}
                       style={active
                         ? { background: INK_GRADIENT, border: "1px solid #0F172A", boxShadow: "0 1px 2px rgba(0,0,0,0.15), inset 0 1px 0 rgba(255,255,255,0.15)" }
-                        : { background: "rgba(255,255,255,0.75)", border: "1px solid rgba(203,213,225,0.50)", boxShadow: "inset 0 1px 0 rgba(255,255,255,0.90)" }}
+                        : { background: "var(--surface)", border: "1px solid var(--hairline)", boxShadow: "inset 0 1px 0 rgba(255,255,255,0.90)" }}
                     >
                       {slot}
                     </button>

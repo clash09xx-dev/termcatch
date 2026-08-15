@@ -17,12 +17,9 @@ const BG = [
 ].join(", ");
 
 const card: React.CSSProperties = {
-  background: "rgba(255,255,255,0.72)",
-  backdropFilter: "blur(40px) saturate(200%)",
-  WebkitBackdropFilter: "blur(40px) saturate(200%)",
-  border: "1px solid rgba(203,213,225,0.55)",
-  boxShadow:
-    "0 0 0 0.5px rgba(203,213,225,0.45), 0 1px 2px rgba(0,0,0,0.04), 0 6px 20px rgba(100,116,139,0.09), inset 0 1px 0 rgba(255,255,255,0.95)",
+  background: "var(--surface)",
+  border: "1px solid var(--hairline)",
+  boxShadow: "var(--e2)",
   borderRadius: "1.25rem",
 };
 
@@ -43,15 +40,15 @@ const FAQ: { q: string; a: React.ReactNode }[] = [
   },
   {
     q: "Czy mogę mieć kilka lokalizacji?",
-    a: "Obsługę wielu lokalizacji przygotowujemy. Obecnie salon działa jako jedna lokalizacja — gdy funkcja będzie gotowa, włączymy ją bez utraty danych.",
+    a: "Obsługę wielu lokalizacji przygotowujemy. Obecnie salon działa jako jedna lokalizacja. Gdy funkcja będzie gotowa, włączymy ją bez utraty danych.",
   },
   {
     q: "Jak działają płatności?",
-    a: "Subskrypcję TermCatch oraz płatności online obsługujemy przez Stripe. Uruchamiamy je — do tego czasu salon działa w pełni, a rozliczenia włączymy, gdy płatności będą gotowe. Nigdy nie pobieramy opłaty bez Twojej zgody.",
+    a: "Subskrypcję TermCatch oraz płatności online obsługujemy przez Stripe. Uruchamiamy je, a do tego czasu salon działa w pełni i rozliczenia włączymy, gdy płatności będą gotowe. Nigdy nie pobieramy opłaty bez Twojej zgody.",
   },
   {
     q: "Czy mogę anulować subskrypcję?",
-    a: "Tak, w każdej chwili — z poziomu panelu Płatności (portal rozliczeń). Anulowanie nie usuwa danych salonu.",
+    a: "Tak, w każdej chwili z poziomu panelu Płatności (portal rozliczeń). Anulowanie nie usuwa danych salonu.",
   },
   {
     q: "Jak działa okres próbny?",
@@ -63,7 +60,7 @@ const FAQ: { q: string; a: React.ReactNode }[] = [
   },
   {
     q: "Co się stanie z danymi po anulowaniu planu?",
-    a: "Twoje dane — klienci, historia wizyt, usługi i pracownicy — pozostają. Niczego nie usuwamy. Ponowny pełny dostęp do panelu wymaga aktywnej subskrypcji.",
+    a: "Twoje dane pozostają: klienci, historia wizyt, usługi i pracownicy. Niczego nie usuwamy. Ponowny pełny dostęp do panelu wymaga aktywnej subskrypcji.",
   },
   {
     q: "Jak skontaktować się ze wsparciem?",
@@ -72,8 +69,8 @@ const FAQ: { q: string; a: React.ReactNode }[] = [
         Napisz na{" "}
         <a href="mailto:hello@termcatch.com" className="underline underline-offset-2 hover:no-underline" style={{ color: "#334155" }}>
           hello@termcatch.com
-        </a>{" "}
-        — odpowiadamy po polsku, tak szybko, jak to możliwe.
+        </a>
+        . Odpowiadamy po polsku, tak szybko, jak to możliwe.
       </>
     ),
   },
@@ -100,22 +97,22 @@ export default function FaqPage() {
           <div className="text-center mb-10">
             <div
               className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full mb-6 text-xs font-semibold uppercase tracking-widest"
-              style={{ background: "rgba(203,213,225,0.28)", border: "1px solid rgba(203,213,225,0.50)", color: "#64748B" }}
+              style={{ background: "var(--selected)", border: "1px solid var(--hairline)", color: "#64748B" }}
             >
               Pomoc
             </div>
-            <h1 className="text-4xl font-bold mb-3" style={{ letterSpacing: "-0.04em", color: "#0F172A" }}>
+            <h1 className="text-4xl font-bold mb-3" style={{ letterSpacing: "var(--track-display)", color: "#0F172A" }}>
               Najczęstsze pytania
             </h1>
             <p className="text-lg" style={{ color: "#64748B" }}>
-              Krótkie, szczere odpowiedzi. Jeśli czegoś brakuje — napisz do nas.
+              Krótkie, szczere odpowiedzi. Jeśli czegoś brakuje, napisz do nas.
             </p>
           </div>
 
           <div className="space-y-3">
             {FAQ.map((item) => (
               <div key={item.q} className="p-6" style={card}>
-                <h2 className="font-semibold mb-2 text-sm" style={{ color: "#0F172A", letterSpacing: "-0.01em" }}>
+                <h2 className="font-semibold mb-2 text-sm" style={{ color: "#0F172A", letterSpacing: "var(--track-heading)" }}>
                   {item.q}
                 </h2>
                 <p className="text-sm leading-relaxed" style={{ color: "#64748B" }}>

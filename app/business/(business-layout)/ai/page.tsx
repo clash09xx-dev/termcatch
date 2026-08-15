@@ -23,24 +23,25 @@ export default async function AiPage({ searchParams }: { searchParams: Promise<{
   else if (actor.tier === "none") { available = false; reason = "plan_excluded"; }
 
   const { dict } = await getServerI18n();
+  const T = dict.pages.aiPage;
   const insights = await getInsights(actor.businessId, dict);
   const { prompt } = await searchParams;
 
   return (
     <div className="mx-auto max-w-5xl space-y-6">
       <PageHeader
-        title="Asystent AI"
-        subtitle="Twój menedżer operacyjny — analizuje dane salonu i proponuje działania do zatwierdzenia."
+        title={T.title}
+        subtitle={T.subtitle}
       />
 
       {/* Proactive, data-backed insights (deterministic — no model call). */}
       {insights.length > 0 && (
         <section className="space-y-3">
           <div className="flex items-center gap-3">
-            <Overline>Sugestie na dziś</Overline>
+            <Overline>{T.suggestionsToday}</Overline>
             <span className="flex-1" style={{ borderTop: HAIRLINE }} />
           </div>
-          <InsightCards insights={insights} />
+          <InsightCards insights={insights} severityLabels={dict.insightSeverity} />
         </section>
       )}
 
@@ -50,15 +51,12 @@ export default async function AiPage({ searchParams }: { searchParams: Promise<{
           <Overline>Rozmowa</Overline>
           <span className="flex-1" style={{ borderTop: HAIRLINE }} />
         </div>
-        <AssistantClient available={available} reason={reason} tier={actor.tier} initialPrompt={prompt} />
+        <AssistantClient available={available} reason={reason} tier={actor.tier} initialPrompt={prompt} suggestions={[...T.suggestions]} />
       </section>
 
       {insights.length === 0 && available && (
         <GlassCard className="p-4">
-          <p className="text-xs leading-relaxed text-slate-500">
-            Sugestie pojawią się, gdy w danych znajdzie się coś wartego uwagi (wolne terminy, uśpieni klienci,
-            spadek przychodu, opinie bez odpowiedzi). Zawsze możesz o to zapytać powyżej.
-          </p>
+          <p className="text-xs leading-relaxed text-slate-500">{T.noInsights}</p>
         </GlassCard>
       )}
     </div>

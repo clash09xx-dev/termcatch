@@ -16,7 +16,7 @@ export default async function InvitePage({ params }: { params: Promise<{ token: 
           {preview.ok ? (
             <>
               <p className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">Zaproszenie do zespołu</p>
-              <h1 className="mt-1 text-xl font-bold text-slate-900" style={{ letterSpacing: "-0.02em" }}>{preview.businessName}</h1>
+              <h1 className="mt-1 text-xl font-bold text-slate-900" style={{ letterSpacing: "var(--track-title)" }}>{preview.businessName}</h1>
               <p className="mt-1 text-sm text-slate-600">
                 Cześć{preview.employeeName ? ` ${preview.employeeName.split(" ")[0]}` : ""}! Utwórz swoje konto pracownika, aby zobaczyć swój grafik, wizyty i asystenta AI.
               </p>

@@ -8,8 +8,8 @@
 import { normalizePhone } from "@/lib/phone";
 
 const DAY = 86_400_000;
-const DORMANT_DAYS = 60;
-const REGULAR_MIN_VISITS = 3;
+export const DORMANT_DAYS = 60;
+export const REGULAR_MIN_VISITS = 3;
 
 export type Channel = "sms" | "whatsapp" | "email";
 export type SegmentKey = "all" | "upcoming" | "regulars" | "dormant";

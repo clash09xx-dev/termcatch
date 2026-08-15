@@ -16,6 +16,10 @@ import {
 } from "@/components/ui/glass";
 import { GlassModal } from "@/components/ui/glass-modal";
 import { createAddon, updateAddon, deleteAddon, toggleAddon, reorderAddons, type AddonInput } from "@/lib/actions/addons";
+import { useT } from "@/components/i18n/i18n-provider";
+import { interpolate } from "@/lib/i18n/dictionaries";
+import { notify, errorText } from "@/lib/notify";
+import { ConfirmDialog } from "@/components/ui/glass-modal";
 
 export type AddonRow = {
   id: string;
@@ -100,12 +104,15 @@ function Check({ checked, onChange, label }: { checked: boolean; onChange: (v: b
 }
 
 export function AddonsSection({ addons, services }: { addons: AddonRow[]; services: ServiceOption[] }) {
+  const t = useT();
+  const T = t.pages.addons;
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState<FormState>(EMPTY);
   const [err, setErr] = useState("");
   const [isPending, start] = useTransition();
+  const [confirmId, setConfirmId] = useState<string | null>(null);
 
   const serviceName = (id: string) => services.find((s) => s.id === id)?.name ?? "—";
 
@@ -136,7 +143,7 @@ export function AddonsSection({ addons, services }: { addons: AddonRow[]; servic
   function save() {
     setErr("");
     if (!form.name.trim()) {
-      setErr("Podaj nazwę dodatku.");
+      setErr(T.errName);
       return;
     }
     const input: AddonInput = {
@@ -156,25 +163,37 @@ export function AddonsSection({ addons, services }: { addons: AddonRow[]; servic
         if (editingId) await updateAddon(editingId, input);
         else await createAddon(input);
         setOpen(false);
+        notify.saved(editingId ? t.feedback.saved : t.feedback.created);
         router.refresh();
       } catch (e) {
-        setErr(e instanceof Error ? e.message : "Nie udało się zapisać dodatku.");
+        setErr(errorText(e, T.errSave));
       }
     });
   }
 
   function remove(id: string) {
-    if (!confirm("Usunąć ten dodatek? Nie wpłynie to na już zarezerwowane wizyty.")) return;
     start(async () => {
-      await deleteAddon(id);
-      router.refresh();
+      try {
+        await deleteAddon(id);
+        notify.saved(t.feedback.deleted);
+        router.refresh();
+      } catch (e) {
+        notify.error(errorText(e, t.feedback.deleteFailed));
+      } finally {
+        setConfirmId(null);
+      }
     });
   }
 
   function toggle(id: string) {
     start(async () => {
-      await toggleAddon(id);
-      router.refresh();
+      try {
+        await toggleAddon(id);
+        notify.saved(t.feedback.updated);
+        router.refresh();
+      } catch (e) {
+        notify.error(errorText(e, t.feedback.failed));
+      }
     });
   }
 
@@ -193,10 +212,10 @@ export function AddonsSection({ addons, services }: { addons: AddonRow[]; servic
     <section className="max-w-6xl">
       <GlassCard className="overflow-hidden">
         <CardHeader
-          title="Dodatki do usług"
+          title={T.title}
           action={
             <InkButton size="sm" onClick={openNew}>
-              Nowy dodatek
+              {T.new}
             </InkButton>
           }
         />
@@ -207,11 +226,11 @@ export function AddonsSection({ addons, services }: { addons: AddonRow[]; servic
                 <path d="M12 5v14M5 12h14" />
               </svg>
             }
-            title="Brak dodatków"
-            body="Dodatki to płatne rozszerzenia usługi (np. przedłużenie +40 zł / +30 min). Klient wybiera je przy rezerwacji, zanim wskaże termin."
+            title={T.emptyTitle}
+            body={T.emptyBody}
             action={
               <InkButton size="sm" onClick={openNew}>
-                Utwórz pierwszy dodatek
+                {T.createFirst}
               </InkButton>
             }
           />
@@ -222,7 +241,7 @@ export function AddonsSection({ addons, services }: { addons: AddonRow[]; servic
                 <div className="flex flex-col gap-0.5">
                   <button
                     type="button"
-                    aria-label="W górę"
+                    aria-label={T.ariaUp}
                     disabled={i === 0 || isPending}
                     onClick={() => move(i, -1)}
                     className="text-slate-400 hover:text-slate-700 disabled:opacity-30 leading-none"
@@ -231,7 +250,7 @@ export function AddonsSection({ addons, services }: { addons: AddonRow[]; servic
                   </button>
                   <button
                     type="button"
-                    aria-label="W dół"
+                    aria-label={T.ariaDown}
                     disabled={i === addons.length - 1 || isPending}
                     onClick={() => move(i, 1)}
                     className="text-slate-400 hover:text-slate-700 disabled:opacity-30 leading-none"
@@ -245,19 +264,19 @@ export function AddonsSection({ addons, services }: { addons: AddonRow[]; servic
                     <p className={cn("text-sm font-semibold truncate", a.isActive ? "text-slate-900" : "text-slate-400")}>{a.name}</p>
                     {!a.isActive && (
                       <span className="text-[10px] font-semibold uppercase tracking-wide text-slate-400 px-1.5 py-0.5 rounded" style={CHIP}>
-                        Nieaktywny
+                        {T.inactive}
                       </span>
                     )}
                   </div>
                   <p className="text-xs text-slate-500 mt-0.5 tabular-nums">
                     +{a.priceIncrease} zł
                     {a.durationIncrease > 0 && ` · +${a.durationIncrease} min`}
-                    {a.hasQuantity && ` · ilość ${a.minQuantity}–${a.maxQuantity}`}
+                    {a.hasQuantity && ` · ${interpolate(T.quantityRange, { min: a.minQuantity, max: a.maxQuantity })}`}
                   </p>
                   <p className="text-[11px] text-slate-400 mt-0.5 truncate">
                     {a.serviceIds.length === 0
-                      ? "Nieprzypisany do żadnej usługi"
-                      : `Usługi: ${a.serviceIds.map(serviceName).join(", ")}`}
+                      ? T.unassigned
+                      : interpolate(T.assignedTo, { list: a.serviceIds.map(serviceName).join(", ") })}
                   </p>
                 </div>
 
@@ -269,12 +288,12 @@ export function AddonsSection({ addons, services }: { addons: AddonRow[]; servic
                     className="text-xs font-medium px-2.5 py-1.5 rounded-lg text-slate-600 disabled:opacity-50"
                     style={CHIP}
                   >
-                    {a.isActive ? "Wyłącz" : "Włącz"}
+                    {a.isActive ? t.pages.coupons.ariaDisable : t.pages.coupons.ariaEnable}
                   </button>
                   <button
                     type="button"
                     onClick={() => openEdit(a)}
-                    aria-label="Edytuj"
+                    aria-label={t.common.edit}
                     className="p-1.5 rounded-lg text-slate-500 hover:text-slate-900"
                     style={CHIP}
                   >
@@ -282,8 +301,8 @@ export function AddonsSection({ addons, services }: { addons: AddonRow[]; servic
                   </button>
                   <button
                     type="button"
-                    onClick={() => remove(a.id)}
-                    aria-label="Usuń"
+                    onClick={() => setConfirmId(a.id)}
+                    aria-label={t.common.delete}
                     className="p-1.5 rounded-lg text-rose-500/80 hover:text-rose-600"
                     style={{ background: "rgba(244,63,94,0.06)", border: "1px solid rgba(244,63,94,0.20)" }}
                   >
@@ -296,34 +315,34 @@ export function AddonsSection({ addons, services }: { addons: AddonRow[]; servic
         )}
       </GlassCard>
 
-      <GlassModal open={open} onOpenChange={setOpen} title={editingId ? "Edytuj dodatek" : "Nowy dodatek"} className="max-w-lg">
+      <GlassModal open={open} onOpenChange={setOpen} title={editingId ? T.editTitle : T.newTitle} className="max-w-lg">
         <div className="space-y-4 mt-1">
-          <FormField label="Nazwa" htmlFor="ao-name">
-            <input id="ao-name" value={form.name} onChange={(e) => set("name", e.target.value)} placeholder="Przedłużenie paznokci" className={INPUT} />
+          <FormField label={T.fieldName} htmlFor="ao-name">
+            <input id="ao-name" value={form.name} onChange={(e) => set("name", e.target.value)} placeholder={T.phName} className={INPUT} />
           </FormField>
-          <FormField label="Opis (opcjonalnie)" htmlFor="ao-desc">
-            <input id="ao-desc" value={form.description} onChange={(e) => set("description", e.target.value)} placeholder="Krótki opis dla klienta" className={INPUT} />
+          <FormField label={T.fieldDesc} htmlFor="ao-desc">
+            <input id="ao-desc" value={form.description} onChange={(e) => set("description", e.target.value)} placeholder={T.phDesc} className={INPUT} />
           </FormField>
           <div className="grid grid-cols-2 gap-3">
-            <FormField label="Dopłata (zł)" htmlFor="ao-price">
+            <FormField label={T.fieldPrice} htmlFor="ao-price">
               <input id="ao-price" type="number" min={0} step="1" value={form.priceIncrease} onChange={(e) => set("priceIncrease", e.target.value)} className={INPUT} />
             </FormField>
-            <FormField label="Dodatkowy czas (min)" htmlFor="ao-dur">
+            <FormField label={T.fieldDuration} htmlFor="ao-dur">
               <input id="ao-dur" type="number" min={0} step="5" value={form.durationIncrease} onChange={(e) => set("durationIncrease", e.target.value)} className={INPUT} />
             </FormField>
           </div>
 
           <div className="rounded-xl p-3.5" style={CHIP}>
-            <Check checked={form.hasQuantity} onChange={(v) => set("hasQuantity", v)} label="Klient może wybrać ilość (np. liczba paznokci)" />
+            <Check checked={form.hasQuantity} onChange={(v) => set("hasQuantity", v)} label={T.quantityToggle} />
             {form.hasQuantity && (
               <div className="grid grid-cols-3 gap-3 mt-3">
-                <FormField label="Min" htmlFor="ao-min">
+                <FormField label={T.min} htmlFor="ao-min">
                   <input id="ao-min" type="number" min={1} value={form.minQuantity} onChange={(e) => set("minQuantity", e.target.value)} className={INPUT} />
                 </FormField>
-                <FormField label="Maks" htmlFor="ao-max">
+                <FormField label={T.max} htmlFor="ao-max">
                   <input id="ao-max" type="number" min={1} value={form.maxQuantity} onChange={(e) => set("maxQuantity", e.target.value)} className={INPUT} />
                 </FormField>
-                <FormField label="Domyślnie" htmlFor="ao-def">
+                <FormField label={T.default} htmlFor="ao-def">
                   <input id="ao-def" type="number" min={1} value={form.defaultQuantity} onChange={(e) => set("defaultQuantity", e.target.value)} className={INPUT} />
                 </FormField>
               </div>
@@ -331,9 +350,9 @@ export function AddonsSection({ addons, services }: { addons: AddonRow[]; servic
           </div>
 
           <div>
-            <Overline className="mb-2">Przypisz do usług</Overline>
+            <Overline className="mb-2">{T.assign}</Overline>
             {services.length === 0 ? (
-              <p className="text-xs text-slate-400">Najpierw dodaj usługę powyżej.</p>
+              <p className="text-xs text-slate-400">{T.noServices}</p>
             ) : (
               <div className="flex flex-wrap gap-1.5">
                 {services.map((s) => {
@@ -345,7 +364,7 @@ export function AddonsSection({ addons, services }: { addons: AddonRow[]; servic
                       aria-pressed={on}
                       onClick={() => toggleService(s.id)}
                       className={cn("px-3 py-1.5 rounded-lg text-xs font-medium transition-colors", on ? "text-white" : "text-slate-600")}
-                      style={on ? { background: "#0F172A", border: "1px solid #0F172A" } : { background: "rgba(255,255,255,0.7)", border: HAIRLINE }}
+                      style={on ? { background: "#0F172A", border: "1px solid #0F172A" } : { background: "var(--surface)", border: HAIRLINE }}
                     >
                       {s.name}
                     </button>
@@ -355,7 +374,7 @@ export function AddonsSection({ addons, services }: { addons: AddonRow[]; servic
             )}
           </div>
 
-          <Check checked={form.isActive} onChange={(v) => set("isActive", v)} label="Aktywny (widoczny przy rezerwacji)" />
+          <Check checked={form.isActive} onChange={(v) => set("isActive", v)} label={T.activeToggle} />
 
           {err && (
             <p role="alert" className="text-sm font-medium rounded-xl px-3 py-2.5" style={{ background: "rgba(244,63,94,0.08)", border: "1px solid rgba(244,63,94,0.25)", color: "#BE123C" }}>
@@ -364,13 +383,24 @@ export function AddonsSection({ addons, services }: { addons: AddonRow[]; servic
           )}
 
           <div className="flex gap-3 pt-1">
-            <GlassButton onClick={() => setOpen(false)} className="flex-1">Anuluj</GlassButton>
+            <GlassButton onClick={() => setOpen(false)} className="flex-1">{t.common.cancel}</GlassButton>
             <InkButton onClick={save} disabled={isPending} className="flex-1">
-              {isPending ? "Zapisywanie…" : "Zapisz dodatek"}
+              {isPending ? t.pages.hours.saving : T.saveAddon}
             </InkButton>
           </div>
         </div>
       </GlassModal>
+
+      <ConfirmDialog
+        open={confirmId !== null}
+        onOpenChange={(o) => { if (!o) setConfirmId(null); }}
+        title={t.feedback.confirmDeleteTitle}
+        body={T.deleteConfirm}
+        confirmLabel={t.common.delete}
+        cancelLabel={t.common.cancel}
+        busy={isPending}
+        onConfirm={() => confirmId && remove(confirmId)}
+      />
     </section>
   );
 }

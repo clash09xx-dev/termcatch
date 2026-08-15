@@ -22,6 +22,7 @@ import {
   CHIP,
   HAIRLINE,
 } from "@/components/ui/glass";
+import { getServerI18n } from "@/lib/i18n/server";
 
 // ── Local cancel button — reuses cancelAppointment unchanged ──
 function CancelButton({ appointmentId, className }: { appointmentId: string; className?: string }) {
@@ -91,6 +92,7 @@ const TERMINAL: AppointmentStatus[] = [
 ];
 
 export default async function CustomerDashboardPage() {
+  const { dict } = await getServerI18n();
   const now = new Date();
   const dbUser = await getOrCreateDbUser();
 
@@ -164,7 +166,7 @@ export default async function CustomerDashboardPage() {
           <div className="px-5 sm:px-6 pt-5 pb-4">
             <div className="flex items-center justify-between gap-3">
               <Overline>Najbliższa wizyta</Overline>
-              <StatusBadge status={ticket.status} />
+              <StatusBadge status={ticket.status} label={dict.statuses[ticket.status]} />
             </div>
 
             <div className="mt-4 flex gap-4 sm:gap-5">
@@ -183,7 +185,7 @@ export default async function CustomerDashboardPage() {
 
               {/* Details */}
               <div className="flex-1 min-w-0">
-                <p className="text-lg font-semibold text-slate-900 leading-tight" style={{ letterSpacing: "-0.01em" }}>
+                <p className="text-lg font-semibold text-slate-900 leading-tight" style={{ letterSpacing: "var(--track-heading)" }}>
                   {ticket.service.name}
                 </p>
                 <p className="text-sm text-slate-500 mt-0.5 truncate">
@@ -261,7 +263,7 @@ export default async function CustomerDashboardPage() {
               </svg>
             }
             title="Brak zaplanowanych wizyt"
-            body="Znajdź salon i zarezerwuj wizytę — potwierdzenie przyjdzie e-mailem."
+            body="Znajdź salon i zarezerwuj wizytę, a potwierdzenie przyjdzie e-mailem."
             action={
               <InkLink href="/search" size="md">
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
@@ -279,7 +281,7 @@ export default async function CustomerDashboardPage() {
         <section className="fade-rise fade-rise-d2 space-y-2.5">
           <Overline>Kolejne wizyty</Overline>
           {remaining.map((apt) => (
-            <div key={apt.id} className="rounded-[18px] p-4 flex gap-3.5 items-center" style={{ background: "rgba(255,255,255,0.80)", border: HAIRLINE, boxShadow: "inset 0 1px 0 rgba(255,255,255,0.9)" }}>
+            <div key={apt.id} className="rounded-[18px] p-4 flex gap-3.5 items-center" style={{ background: "var(--surface)", border: HAIRLINE, boxShadow: "inset 0 1px 0 rgba(255,255,255,0.9)" }}>
               {apt.business.logoUrl ? (
                 <span className="w-10 h-10 rounded-xl overflow-hidden flex-shrink-0" style={{ border: HAIRLINE }}>
                   {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -321,7 +323,7 @@ export default async function CustomerDashboardPage() {
                 key={apt.serviceId}
                 href={`/b/${apt.business.slug}/book?serviceId=${apt.serviceId}`}
                 className="row-hover rounded-[18px] p-3.5 flex items-center gap-3 group"
-                style={{ background: "rgba(255,255,255,0.80)", border: HAIRLINE, boxShadow: "inset 0 1px 0 rgba(255,255,255,0.9)" }}
+                style={{ background: "var(--surface)", border: HAIRLINE, boxShadow: "inset 0 1px 0 rgba(255,255,255,0.9)" }}
               >
                 {apt.business.logoUrl ? (
                   <span className="w-9 h-9 rounded-lg overflow-hidden flex-shrink-0" style={{ border: HAIRLINE }}>
@@ -373,12 +375,12 @@ export default async function CustomerDashboardPage() {
                     <Link
                       href={`/b/${apt.business.slug}?review=${apt.id}`}
                       className="btn-spring text-xs font-semibold px-3 py-1.5 rounded-lg flex-shrink-0"
-                      style={{ background: "rgba(255,255,255,0.72)", border: "1px solid rgba(203,213,225,0.55)", color: "#334155", boxShadow: "inset 0 1px 0 rgba(255,255,255,0.88)" }}
+                      style={{ background: "var(--surface)", border: "1px solid var(--hairline)", color: "#334155", boxShadow: "inset 0 1px 0 rgba(255,255,255,0.88)" }}
                     >
                       Napisz opinię
                     </Link>
                   ) : (
-                    <StatusBadge status={apt.status} />
+                    <StatusBadge status={apt.status} label={dict.statuses[apt.status]} />
                   )}
                 </div>
               );

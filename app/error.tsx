@@ -14,28 +14,28 @@ type Copy = { title: string; body: string; retry: string; home: string; ref: str
 const DICT: Record<string, Copy> = {
   pl: {
     title: "Coś poszło nie tak",
-    body: "Nie udało się wykonać tej operacji. Spróbuj ponownie — jeśli problem się powtarza, napisz na hello@termcatch.com i podaj numer referencyjny.",
+    body: "Nie udało się wykonać tej operacji. Spróbuj ponownie. Jeśli problem się powtarza, napisz na hello@termcatch.com i podaj numer referencyjny.",
     retry: "Spróbuj ponownie",
     home: "Wróć do panelu",
     ref: "Numer referencyjny",
   },
   en: {
     title: "Something went wrong",
-    body: "We couldn't complete this operation. Please try again — if it keeps happening, email hello@termcatch.com with the reference number.",
+    body: "We couldn't complete this operation. Please try again. If it keeps happening, email hello@termcatch.com with the reference number.",
     retry: "Try again",
     home: "Back to dashboard",
     ref: "Reference",
   },
   de: {
     title: "Etwas ist schiefgelaufen",
-    body: "Dieser Vorgang konnte nicht abgeschlossen werden. Bitte erneut versuchen — falls es weiter auftritt, schreiben Sie an hello@termcatch.com mit der Referenznummer.",
+    body: "Dieser Vorgang konnte nicht abgeschlossen werden. Bitte erneut versuchen. Falls es weiter auftritt, schreiben Sie an hello@termcatch.com mit der Referenznummer.",
     retry: "Erneut versuchen",
     home: "Zurück zum Dashboard",
     ref: "Referenz",
   },
   tr: {
     title: "Bir şeyler ters gitti",
-    body: "Bu işlem tamamlanamadı. Lütfen tekrar deneyin — sorun devam ederse referans numarasıyla hello@termcatch.com adresine yazın.",
+    body: "Bu işlem tamamlanamadı. Lütfen tekrar deneyin. Sorun devam ederse referans numarasıyla hello@termcatch.com adresine yazın.",
     retry: "Tekrar dene",
     home: "Panele dön",
     ref: "Referans",
@@ -84,7 +84,7 @@ export default function Error({ error, reset }: { error: Error & { digest?: stri
             onClick={() => reset()}
             style={{
               padding: "10px 20px", fontSize: 14, fontWeight: 600, color: "#F8FAFC",
-              background: "linear-gradient(180deg,#1E293B,#0F172A)", border: "1px solid #0F172A",
+              background: "var(--ink-raised)", border: "1px solid #0F172A",
               borderRadius: 12, cursor: "pointer",
             }}
           >
@@ -94,7 +94,7 @@ export default function Error({ error, reset }: { error: Error & { digest?: stri
             href="/"
             style={{
               padding: "10px 20px", fontSize: 14, fontWeight: 600, color: "#334155",
-              background: "rgba(148,163,184,0.14)", border: "1px solid rgba(203,213,225,0.55)",
+              background: "rgba(148,163,184,0.14)", border: "1px solid var(--hairline)",
               borderRadius: 12, textDecoration: "none", display: "inline-flex", alignItems: "center",
             }}
           >

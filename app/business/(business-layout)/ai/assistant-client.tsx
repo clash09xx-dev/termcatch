@@ -8,6 +8,8 @@ import { CHIP, INK_GRADIENT } from "@/components/ui/glass/tokens";
 import { GlassModal, ModalInkButton, ModalGlassButton } from "@/components/ui/glass-modal";
 import { useT } from "@/components/i18n/i18n-provider";
 import { AssistantMarkdown } from "@/components/business/ai/assistant-markdown";
+import type { Dictionary } from "@/lib/i18n/dictionaries";
+import { useRouter } from "next/navigation";
 
 type ChatMessage = {
   id: string;
@@ -17,15 +19,6 @@ type ChatMessage = {
 };
 
 type ProposalState = { status: "idle" | "pending" | "done" | "error"; message?: string; draft?: string };
-
-const SUGGESTIONS = [
-  "Jak wygląda ten tydzień?",
-  "Kto ma najmniej rezerwacji?",
-  "Znajdź mi wolne godziny jutro.",
-  "Którzy klienci nie byli u nas od 60 dni?",
-  "Jak zwiększyć przychód w przyszłym tygodniu?",
-  "Podsumuj dzisiejszy dzień.",
-];
 
 let counter = 0;
 const uid = () => `m${Date.now()}_${counter++}`;
@@ -43,8 +36,10 @@ export function AssistantClient({
   initialPrompt?: string;
   suggestions?: string[];
 }) {
+  const router = useRouter();
   const t = useT();
-  const chips = suggestions ?? SUGGESTIONS;
+  const T = t.pages.aiPage;
+  const chips = suggestions ?? [...T.suggestions];
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState(initialPrompt ?? "");
   const [pending, setPending] = useState(false);
@@ -98,7 +93,7 @@ export function AssistantClient({
         setProposalStates((s) => ({ ...s, [key]: { status: "error", message: res.message, draft: edited } }));
       }
     } catch {
-      setProposalStates((s) => ({ ...s, [key]: { status: "error", message: "Nie udało się wykonać działania.", draft: edited } }));
+      setProposalStates((s) => ({ ...s, [key]: { status: "error", message: T.actionFailed, draft: edited } }));
     }
   }
 
@@ -141,7 +136,7 @@ export function AssistantClient({
                     ? "rounded-2xl rounded-br-sm px-4 py-2.5 text-sm text-white"
                     : "rounded-2xl rounded-bl-sm bg-white/80 px-4 py-2.5 text-sm text-slate-800"
                 }
-                style={m.role === "user" ? { background: INK_GRADIENT } : { border: "1px solid rgba(203,213,225,0.4)" }}
+                style={m.role === "user" ? { background: INK_GRADIENT } : { border: "1px solid var(--hairline-soft)" }}
               >
                 {m.role === "user"
                   ? <p className="whitespace-pre-wrap leading-relaxed">{m.content}</p>
@@ -150,14 +145,14 @@ export function AssistantClient({
               {m.proposals?.map((p, pi) => {
                 const key = `${m.id}_${pi}`;
                 const st = proposalStates[key] ?? { status: "idle" as const };
-                return <ProposalCard key={key} p={p} state={st} onEdit={(v) => setProposalStates((s) => ({ ...s, [key]: { ...st, draft: v } }))} onConfirm={() => confirm(key, p)} />;
+                return <ProposalCard key={key} p={p} state={st} t={T} onEdit={(v) => setProposalStates((s) => ({ ...s, [key]: { ...st, draft: v } }))} onConfirm={() => confirm(key, p)} />;
               })}
             </div>
           </div>
         ))}
         {pending && (
           <div className="flex justify-start">
-            <div className="rounded-2xl rounded-bl-sm bg-white/80 px-4 py-2.5 text-sm text-slate-500" style={{ border: "1px solid rgba(203,213,225,0.4)" }}>
+            <div className="rounded-2xl rounded-bl-sm bg-white/80 px-4 py-2.5 text-sm text-slate-500" style={{ border: "1px solid var(--hairline-soft)" }}>
               {t.ai.thinking}
             </div>
           </div>
@@ -222,7 +217,7 @@ export function AssistantClient({
           </p>
           <div className="flex items-center gap-2 pt-1">
             {(limitOpen === "plan_excluded" || limitOpen === "deep_limit" || (limitOpen === "rate_limited" && tier !== "unlimited")) && (
-              <ModalInkButton onClick={() => { window.location.href = "/business/payments"; }}>
+              <ModalInkButton onClick={() => { setLimitOpen(null); router.push("/business/payments"); }}>
                 {limitOpen === "plan_excluded" ? t.common.seePlans : t.ai.upgradeUltimate}
               </ModalInkButton>
             )}
@@ -237,11 +232,13 @@ export function AssistantClient({
 function ProposalCard({
   p,
   state,
+  t,
   onEdit,
   onConfirm,
 }: {
   p: ActionProposal;
   state: ProposalState;
+  t: Dictionary["pages"]["aiPage"];
   onEdit: (v: string) => void;
   onConfirm: () => void;
 }) {
@@ -250,14 +247,14 @@ function ProposalCard({
   return (
     <div
       className="mt-2 rounded-xl p-3.5"
-      style={{ background: "rgba(255,255,255,0.92)", border: `1px solid ${p.danger ? "rgba(225,29,72,0.35)" : "rgba(203,213,225,0.6)"}` }}
+      style={{ background: "var(--surface)", border: `1px solid ${p.danger ? "rgba(225,29,72,0.35)" : "rgba(203,213,225,0.6)"}` }}
     >
       <div className="flex items-center gap-2">
         <span
           className="rounded-md px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-white"
           style={{ background: p.external ? "#B45309" : p.danger ? "#E11D48" : "#0F172A" }}
         >
-          {p.external ? "Wyśle na zewnątrz" : "Do zatwierdzenia"}
+          {p.external ? t.external : t.needsApproval}
         </span>
         <span className="text-sm font-semibold text-slate-900">{p.title}</span>
       </div>
@@ -282,7 +279,7 @@ function ProposalCard({
         />
       )}
 
-      {p.costHint && <p className="mt-2 text-[11px] text-slate-500">Szacowany zasięg: {p.costHint}</p>}
+      {p.costHint && <p className="mt-2 text-[11px] text-slate-500">{t.estReach.replace("{value}", p.costHint)}</p>}
 
       {done ? (
         <p className="mt-3 text-xs font-semibold" style={{ color: "#0F766E" }}>✓ {state.message}</p>
@@ -295,7 +292,7 @@ function ProposalCard({
             className="rounded-lg px-3.5 py-2 text-xs font-semibold text-white disabled:opacity-60"
             style={{ background: p.danger ? "linear-gradient(180deg,#E11D48,#BE123C)" : INK_GRADIENT }}
           >
-            {state.status === "pending" ? "Wykonuję…" : p.confirmLabel}
+            {state.status === "pending" ? t.running : p.confirmLabel}
           </button>
           {state.status === "error" && <span className="text-xs" style={{ color: "#BE123C" }}>{state.message}</span>}
         </div>

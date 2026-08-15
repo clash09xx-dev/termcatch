@@ -4,6 +4,7 @@ import { useState, useTransition } from "react";
 import { setPublicProfileActive } from "@/lib/actions/business";
 import { cn } from "@/lib/utils";
 import { CHIP } from "@/components/ui/glass";
+import { useT } from "@/components/i18n/i18n-provider";
 
 /**
  * Owner control: "Profil publiczny aktywny". Toggles Business.isActive via the
@@ -18,6 +19,7 @@ export function PublicVisibilityToggle({
   initialActive: boolean;
   published: boolean;
 }) {
+  const T = useT().pages.settings;
   const [active, setActive] = useState(initialActive);
   const [pending, start] = useTransition();
   const [err, setErr] = useState("");
@@ -31,7 +33,7 @@ export function PublicVisibilityToggle({
         await setPublicProfileActive(next);
       } catch {
         setActive(!next); // revert
-        setErr("Nie udało się zapisać zmiany. Spróbuj ponownie.");
+        setErr(T.visibilityError);
       }
     });
   }
@@ -40,15 +42,13 @@ export function PublicVisibilityToggle({
     <div className="rounded-2xl p-4 mb-5" style={CHIP}>
       <div className="flex items-center justify-between gap-4">
         <div className="min-w-0">
-          <p className="text-sm font-semibold text-slate-900">Profil publiczny aktywny</p>
+          <p className="text-sm font-semibold text-slate-900">{T.visibilityTitle}</p>
           <p className="text-xs text-slate-500 mt-1 leading-relaxed">
-            {active
-              ? "Twój salon jest widoczny w wyszukiwarce i klienci mogą rezerwować online."
-              : "Twój salon jest ukryty — nie pojawia się w wyszukiwarce, kategoriach ani pod bezpośrednim linkiem. Dane, usługi i wizyty pozostają nienaruszone."}
+            {active ? T.visibilityOn : T.visibilityOff}
           </p>
           {active && !published && (
             <p className="text-xs mt-1.5" style={{ color: "#B45309" }}>
-              Profil stanie się publiczny po uzupełnieniu wymaganych informacji.
+              {T.visibilityPending}
             </p>
           )}
         </div>
@@ -56,7 +56,7 @@ export function PublicVisibilityToggle({
           type="button"
           role="switch"
           aria-checked={active}
-          aria-label="Profil publiczny aktywny"
+          aria-label={T.visibilityTitle}
           onClick={toggle}
           disabled={pending}
           className="relative inline-flex h-6 w-11 items-center rounded-full transition-colors flex-shrink-0 disabled:opacity-60"

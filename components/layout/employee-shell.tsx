@@ -37,14 +37,14 @@ export function EmployeeShell({
       {/* Desktop sidebar */}
       <aside className="hidden w-60 flex-shrink-0 flex-col border-r border-slate-200/60 p-4 lg:flex">
         <div className="mb-6 px-2">
-          <p className="text-sm font-bold text-slate-900" style={{ letterSpacing: "-0.02em" }}>{businessName}</p>
+          <p className="text-sm font-bold text-slate-900" style={{ letterSpacing: "var(--track-title)" }}>{businessName}</p>
           <p className="text-xs text-slate-500">{t.employee.panel}</p>
         </div>
         <nav className="space-y-1">
           {NAV.map((n) => (
             <Link key={n.href} href={n.href}
               className={cn("flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-colors",
-                active(n.href) ? "text-white" : "text-slate-600 hover:bg-white/70 hover:text-slate-900")}
+                active(n.href) ? "text-white" : "text-slate-600 row-hover hover:text-slate-900")}
               style={active(n.href) ? { background: INK_GRADIENT } : undefined}>
               <Icon d={n.icon} className="h-4.5 w-4.5" />
               {t.employee[n.key]}
@@ -68,7 +68,7 @@ export function EmployeeShell({
           <div className="flex items-center justify-between gap-3 px-4 py-2.5 text-sm text-white" style={{ background: "linear-gradient(180deg,#B45309,#92400E)" }}>
             <span className="font-semibold">{t.employee.viewingAs} {employeeName}</span>
             <button type="button" disabled={pending} onClick={() => start(() => { void stopViewAs(); })}
-              className="rounded-lg bg-white/20 px-3 py-1 text-xs font-semibold hover:bg-white/30">
+              className="rounded-lg bg-white/20 px-3 py-1 text-xs font-semibold row-hover">
               {t.employee.endPreview}
             </button>
           </div>
@@ -86,7 +86,7 @@ export function EmployeeShell({
         <main className="flex-1 overflow-y-auto px-4 pb-24 pt-1 lg:px-8 lg:pb-8 lg:pt-6">{children}</main>
 
         {/* Mobile bottom nav */}
-        <nav className="fixed inset-x-0 bottom-0 z-40 flex items-stretch border-t border-slate-200/70 bg-white/85 backdrop-blur lg:hidden" style={{ paddingBottom: "env(safe-area-inset-bottom)" }}>
+        <nav className="fixed inset-x-0 bottom-0 z-[30] flex items-stretch border-t border-slate-200/70 bg-white/85 backdrop-blur lg:hidden" style={{ paddingBottom: "env(safe-area-inset-bottom)" }}>
           {NAV.map((n) => (
             <Link key={n.href} href={n.href} className={cn("flex flex-1 flex-col items-center gap-0.5 py-2 text-[10px] font-medium", active(n.href) ? "text-slate-900" : "text-slate-400")}>
               <Icon d={n.icon} className="h-5 w-5" />

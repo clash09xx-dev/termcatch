@@ -96,7 +96,7 @@ export default function ProfileForm({ firstName, lastName, phone, email, smsNoti
             <label
               htmlFor="pf-sms"
               className="flex items-start gap-3 rounded-xl px-3.5 py-3 cursor-pointer"
-              style={{ background: "rgba(203,213,225,0.16)", border: "1px solid rgba(203,213,225,0.40)" }}
+              style={{ background: "var(--selected)", border: "1px solid var(--hairline-soft)" }}
             >
               <input
                 id="pf-sms"
@@ -109,7 +109,7 @@ export default function ProfileForm({ firstName, lastName, phone, email, smsNoti
                 Powiadomienia SMS o wizytach
                 <span className="block text-xs text-slate-500 mt-0.5">
                   Potwierdzenia, zmiany terminu i przypomnienia o Twoich rezerwacjach.
-                  Wyłącznie wiadomości transakcyjne — bez marketingu.
+                  Wyłącznie wiadomości transakcyjne, bez marketingu.
                 </span>
               </span>
             </label>

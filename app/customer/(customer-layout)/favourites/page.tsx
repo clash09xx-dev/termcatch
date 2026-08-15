@@ -42,9 +42,9 @@ export default async function FavouritesPage() {
               key={business.id}
               className="card-hover-lift rounded-[20px] overflow-hidden flex flex-col"
               style={{
-                background: "rgba(255,255,255,0.80)",
-                border: "1px solid rgba(203,213,225,0.45)",
-                boxShadow: "0 0 0 0.5px rgba(203,213,225,0.22), 0 1px 2px rgba(0,0,0,0.02), 0 4px 14px rgba(100,116,139,0.06), inset 0 1px 0 rgba(255,255,255,0.92)",
+                background: "var(--surface)",
+                border: "1px solid var(--hairline)",
+                boxShadow: "var(--e1)",
               }}
             >
               <Link href={`/b/${business.slug}`} className="block">

@@ -15,11 +15,11 @@ import { interpolate } from "@/lib/i18n/dictionaries";
 type Turn = { role: "user" | "assistant"; text: string; results?: DiscoveryResult[] };
 
 const CARD: React.CSSProperties = {
-  background: "rgba(255,255,255,0.78)",
-  backdropFilter: "blur(28px) saturate(200%)",
-  WebkitBackdropFilter: "blur(28px) saturate(200%)",
-  border: "1px solid rgba(203,213,225,0.45)",
-  boxShadow: "0 0 0 0.5px rgba(203,213,225,0.30), 0 6px 20px rgba(100,116,139,0.08), inset 0 1px 0 rgba(255,255,255,0.95)",
+  background: "var(--chrome-strong)",
+  backdropFilter: "var(--chrome-blur-lg)",
+  WebkitBackdropFilter: "var(--chrome-blur-lg)",
+  border: "1px solid var(--hairline)",
+  boxShadow: "var(--e2)",
 };
 
 export function DiscoveryAssistant() {
@@ -63,7 +63,7 @@ export function DiscoveryAssistant() {
           setTimeout(() => inputRef.current?.focus(), 80);
         }}
         className="btn-spring inline-flex items-center gap-2 px-3.5 py-2 rounded-xl text-sm font-medium text-slate-600"
-        style={{ background: "rgba(255,255,255,0.70)", border: "1px solid rgba(203,213,225,0.55)", boxShadow: "inset 0 1px 0 rgba(255,255,255,0.9)" }}
+        style={{ background: "rgba(255,255,255,0.70)", border: "1px solid var(--hairline)", boxShadow: "inset 0 1px 0 rgba(255,255,255,0.9)" }}
         aria-expanded={false}
       >
         <svg className="w-4 h-4 text-slate-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} aria-hidden="true">
@@ -79,7 +79,7 @@ export function DiscoveryAssistant() {
 
   return (
     <section aria-label={s.title} className="rounded-[20px] overflow-hidden" style={CARD}>
-      <div className="flex items-center justify-between px-4 py-3" style={{ borderBottom: "1px solid rgba(203,213,225,0.30)" }}>
+      <div className="flex items-center justify-between px-4 py-3" style={{ borderBottom: "1px solid var(--hairline-soft)" }}>
         <p className="text-sm font-semibold text-slate-800">
           {s.title}
           <span className="ml-2 text-[10px] font-semibold uppercase tracking-wide px-1.5 py-0.5 rounded align-middle" style={{ background: "rgba(203,213,225,0.30)", color: "#64748B" }}>
@@ -107,8 +107,8 @@ export function DiscoveryAssistant() {
             <div
               className={cn("max-w-[92%] rounded-2xl px-3 py-2 text-sm", t.role === "user" ? "text-white" : "text-slate-700")}
               style={t.role === "user"
-                ? { background: "linear-gradient(180deg,#1E293B,#0F172A)" }
-                : { background: "rgba(203,213,225,0.18)", border: "1px solid rgba(203,213,225,0.35)" }}
+                ? { background: "var(--ink-raised)" }
+                : { background: "rgba(203,213,225,0.18)", border: "1px solid var(--hairline-soft)" }}
             >
               <p>{t.text}</p>
               {t.results && (
@@ -118,7 +118,7 @@ export function DiscoveryAssistant() {
                       <Link
                         href={`/b/${r.slug}`}
                         className="block rounded-xl px-3 py-2 row-hover"
-                        style={{ background: "rgba(255,255,255,0.85)", border: "1px solid rgba(203,213,225,0.45)" }}
+                        style={{ background: "rgba(255,255,255,0.85)", border: "1px solid var(--hairline)" }}
                       >
                         <span className="flex items-center justify-between gap-2">
                           <span className="text-sm font-semibold text-slate-900 truncate">{r.name}</span>
@@ -138,7 +138,7 @@ export function DiscoveryAssistant() {
 
       <form
         className="flex gap-2 px-4 py-3"
-        style={{ borderTop: "1px solid rgba(203,213,225,0.30)" }}
+        style={{ borderTop: "1px solid var(--hairline-soft)" }}
         onSubmit={(e) => {
           e.preventDefault();
           send();
@@ -156,7 +156,7 @@ export function DiscoveryAssistant() {
           type="submit"
           disabled={isPending || !input.trim()}
           className="btn-spring px-4 py-2 rounded-xl text-sm font-semibold text-white disabled:opacity-40"
-          style={{ background: "linear-gradient(180deg,#1E293B,#0F172A)", border: "1px solid #0F172A" }}
+          style={{ background: "var(--ink-raised)", border: "1px solid #0F172A" }}
         >
           {s.send}
         </button>

@@ -20,6 +20,8 @@ import {
   CHANNEL_LABEL,
   CHANNEL_ENV_HINT,
   renderMessage,
+  DORMANT_DAYS,
+  REGULAR_MIN_VISITS,
   type Channel,
   type SegmentKey,
   type ChannelAvailability,
@@ -32,6 +34,8 @@ import {
   AutomationsPanel, TemplatesPanel, SegmentsPanel, ResultsPanel, PromotionsLink,
   type AutomationRow, type TemplateRow, type CampaignRow, type DeliveryStats,
 } from "./marketing-panels";
+import { useT, useLocale } from "@/components/i18n/i18n-provider";
+import { interpolate } from "@/lib/i18n/dictionaries";
 
 export type SegmentView = {
   key: SegmentKey;
@@ -48,11 +52,6 @@ const CHANNELS: Channel[] = ["sms", "whatsapp", "email"];
 
 type Draft = { channel: Channel; segment: SegmentKey; subject: string; message: string };
 
-const SAMPLE_TEMPLATES: Record<Channel, string> = {
-  sms: "Cześć {imię}! W {salon} zwolnił się termin w tym tygodniu — zarezerwuj online: {link}",
-  whatsapp: "Cześć {imię}! 👋 Tu {salon}. Mamy dla Ciebie wolne terminy — wybierz dogodny: {link}",
-  email: "Cześć {imię},\n\nDawno Cię u nas nie było! W {salon} czekają na Ciebie nowe terminy.\n\nDo zobaczenia!",
-};
 
 export function MarketingClient({
   segments,
@@ -80,6 +79,13 @@ export function MarketingClient({
   campaigns?: CampaignRow[];
   deliveryStats?: DeliveryStats;
 }) {
+  const t = useT();
+  const T = t.pages.marketing;
+  const locale = useLocale();
+  const CH = (c: Channel) => t.channels[c];
+  const segHint = (key: SegmentKey) =>
+    interpolate(t.segments[key].hint, { n: key === "regulars" ? REGULAR_MIN_VISITS : DORMANT_DAYS });
+  const SAMPLE_TEMPLATES: Record<Channel, string> = { sms: T.sampleSms, whatsapp: T.sampleWhatsapp, email: T.sampleEmail };
   const visibleChannels = CHANNELS.filter((c) => c !== "whatsapp" || showWhatsapp);
   const searchParams = useSearchParams();
   const composerRef = useRef<HTMLTextAreaElement>(null);
@@ -114,10 +120,10 @@ export function MarketingClient({
         setMessage(res.message);
         if (channel === "email" && res.subject) setSubject(res.subject);
       } else {
-        setAiError(res.reason === "plan_excluded" ? "Generowanie treści AI jest dostępne w planie Professional i Ultimate." : res.message);
+        setAiError(res.reason === "plan_excluded" ? T.aiPlanExcluded : res.message);
       }
     } catch {
-      setAiError("Nie udało się wygenerować treści.");
+      setAiError(T.aiFailed);
     } finally {
       setAiBusy(false);
     }
@@ -147,7 +153,7 @@ export function MarketingClient({
   const reach = seg ? seg.reach[channel] : 0;
   const available = channels[channel];
 
-  const previewName = seg?.sample ?? "Aniu";
+  const previewName = seg?.sample ?? "Anna";
   const previewBody = useMemo(
     () => renderMessage(message || "", { firstName: previewName, salon: salonName, link: bookingUrl }),
     [message, previewName, salonName, bookingUrl]
@@ -213,7 +219,7 @@ export function MarketingClient({
   if (totalCustomers === 0) {
     return (
       <div className="max-w-2xl mx-auto space-y-5">
-        <PageHeader title="Marketing" subtitle="Kampanie do Twojej bazy klientów" />
+        <PageHeader title={T.title} subtitle={T.subtitleEmpty} />
         <GlassCard className="fade-rise">
           <EmptyState
             icon={
@@ -221,11 +227,11 @@ export function MarketingClient({
                 <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
               </svg>
             }
-            title="Twoja baza klientów jest jeszcze pusta"
-            body={`Kampanie ${showWhatsapp ? "SMS, WhatsApp i e-mail" : "SMS i e-mail"} pojawią się, gdy zdobędziesz pierwszych klientów. Zacznij od udostępnienia linku do rezerwacji.`}
+            title={T.emptyTitle}
+            body={interpolate(T.emptyBody, { channels: showWhatsapp ? T.channelsWithWa : T.channelsNoWa })}
             action={
               <InkButton size="sm" onClick={copyLink}>
-                {copied ? "Skopiowano ✓" : "Kopiuj link do rezerwacji"}
+                {copied ? t.common.copied : T.copyBookingLink}
               </InkButton>
             }
           />
@@ -237,34 +243,34 @@ export function MarketingClient({
   return (
     <div className="max-w-6xl mx-auto space-y-5">
       <PageHeader
-        title="Marketing"
+        title={T.title}
         subtitle={
           <span className="tabular-nums">
-            {totalCustomers} {totalCustomers === 1 ? "klient" : "klientów"} w bazie · przygotuj kampanię
+            {totalCustomers} {totalCustomers === 1 ? T.clientOne : T.clientMany} · {interpolate(T.subtitleCount, { n: totalCustomers })}
           </span>
         }
       />
 
       {insights.length > 0 && (
         <div className="space-y-2.5">
-          <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">Rekomendacje AI</span>
-          <InsightCards insights={insights} />
+          <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">{T.recommendations}</span>
+          <InsightCards insights={insights} severityLabels={t.insightSeverity} />
         </div>
       )}
 
       <div className="flex flex-wrap items-center justify-between gap-3">
         <Segmented
-          ariaLabel="Sekcje marketingu"
+          ariaLabel={T.tabsAria}
           idBase="mkt-tab"
           size="sm"
           value={tab}
           onChange={(v) => setTab(v as typeof tab)}
           options={[
-            { value: "kampania", label: "Kampania" },
-            { value: "automatyzacje", label: "Automatyzacje", count: automations.length },
-            { value: "szablony", label: "Szablony", count: templates.length },
-            { value: "segmenty", label: "Segmenty" },
-            { value: "wyniki", label: "Wyniki", count: campaigns.length },
+            { value: "kampania", label: T.tabCampaign },
+            { value: "automatyzacje", label: T.tabAutomations, count: automations.length },
+            { value: "szablony", label: T.tabTemplates, count: templates.length },
+            { value: "segmenty", label: T.tabSegments },
+            { value: "wyniki", label: T.tabResults, count: campaigns.length },
           ]}
         />
         <PromotionsLink />
@@ -273,7 +279,7 @@ export function MarketingClient({
       {tab === "automatyzacje" && <AutomationsPanel automations={automations} channels={channels} />}
       {tab === "szablony" && <TemplatesPanel templates={templates} onUse={applyTemplate} />}
       {tab === "segmenty" && <SegmentsPanel segments={segments} />}
-      {tab === "wyniki" && <ResultsPanel campaigns={campaigns} delivery={deliveryStats} />}
+      {tab === "wyniki" && <ResultsPanel campaigns={campaigns} delivery={deliveryStats} locale={locale} />}
 
       {tab === "kampania" && (
       <div className="grid gap-4 lg:grid-cols-[360px_1fr] items-start">
@@ -281,14 +287,14 @@ export function MarketingClient({
         <div className="space-y-4">
           {/* Channel */}
           <GlassCard className="fade-rise fade-rise-d1 p-4">
-            <Overline className="mb-2.5">Kanał</Overline>
+            <Overline className="mb-2.5">{T.channelTitle}</Overline>
             <Segmented
-              ariaLabel="Kanał wysyłki"
+              ariaLabel={T.channelAria}
               value={channel}
               onChange={(v) => setChannel(v as Channel)}
               idBase="mkt-channel"
               className="w-full"
-              options={visibleChannels.map((c) => ({ value: c, label: CHANNEL_LABEL[c] }))}
+              options={visibleChannels.map((c) => ({ value: c, label: CH(c) }))}
             />
             <div className="mt-3 flex items-start gap-2 text-xs leading-relaxed">
               <span
@@ -298,13 +304,11 @@ export function MarketingClient({
               />
               {available ? (
                 <p className="text-slate-500">
-                  Wysyłka <span className="font-medium text-slate-700">{CHANNEL_LABEL[channel]}</span> jest
-                  skonfigurowana — kampania zostanie realnie wysłana.
+                  {T.channelReadyPre} <span className="font-medium text-slate-700">{CH(channel)}</span> {T.channelReadyPost}
                 </p>
               ) : (
                 <p className="text-slate-500">
-                  Wysyłka <span className="font-medium text-slate-700">{CHANNEL_LABEL[channel]}</span> nie jest jeszcze
-                  skonfigurowana. Możesz przygotować treść i zapisać roboczą — wyślesz, gdy dodasz{" "}
+                  {T.channelMissingPre} <span className="font-medium text-slate-700">{CH(channel)}</span> {T.channelMissingPost}{" "}
                   <span className="font-mono text-[11px] text-slate-600">{CHANNEL_ENV_HINT[channel]}</span>.
                 </p>
               )}
@@ -313,7 +317,7 @@ export function MarketingClient({
 
           {/* Audience */}
           <GlassCard className="fade-rise fade-rise-d2 overflow-hidden">
-            <CardHeader title="Odbiorcy" />
+            <CardHeader title={T.audience} />
             <div className="p-2">
               {segments.map((s) => {
                 const active = s.key === segment;
@@ -331,41 +335,40 @@ export function MarketingClient({
                   >
                     <div className="flex items-center justify-between gap-3">
                       <span className={cn("text-sm font-semibold", active ? "text-slate-900" : "text-slate-700")}>
-                        {s.label}
+                        {t.segments[s.key].label}
                       </span>
                       <span className="text-sm font-bold text-slate-900 tabular-nums">{s.total}</span>
                     </div>
-                    <p className="text-xs text-slate-500 mt-0.5 leading-relaxed">{s.hint}</p>
+                    <p className="text-xs text-slate-500 mt-0.5 leading-relaxed">{segHint(s.key)}</p>
                   </button>
                 );
               })}
             </div>
             <div className="px-5 py-3.5" style={{ borderTop: HAIRLINE }}>
               <div className="flex items-baseline justify-between gap-3">
-                <span className="text-xs text-slate-500">Osiągalnych przez {CHANNEL_LABEL[channel]}</span>
+                <span className="text-xs text-slate-500">{T.reachablePre} {CH(channel)}</span>
                 <span className="text-sm font-semibold text-slate-900 tabular-nums">
-                  {reach} <span className="text-slate-400 font-normal">z {seg?.total ?? 0}</span>
+                  {reach} <span className="text-slate-400 font-normal">{interpolate(T.reachableOf, { n: seg?.total ?? 0 })}</span>
                 </span>
               </div>
               <p className="text-[11px] text-slate-400 mt-1 leading-relaxed">
-                Liczymy tylko klientów, którzy mają {channel === "email" ? "adres e-mail" : "numer telefonu"} i zgodę na
-                wiadomości marketingowe.
+                {interpolate(T.reachableNote, { contact: channel === "email" ? T.contactEmail : T.contactPhone })}
               </p>
             </div>
           </GlassCard>
 
           {/* Booking link */}
           <GlassCard className="fade-rise fade-rise-d3 p-4">
-            <Overline className="mb-2">Link do rezerwacji</Overline>
+            <Overline className="mb-2">{t.pages.today.bookingLink}</Overline>
             <div className="px-3 py-2 rounded-xl text-xs text-slate-600 truncate tabular-nums mb-2.5" style={CHIP}>
               {bookingUrl}
             </div>
             <div className="flex gap-2">
               <GlassButton size="sm" onClick={copyLink} className="flex-1">
-                {copied ? "Skopiowano ✓" : "Kopiuj link"}
+                {copied ? t.common.copied : t.common.copyLink}
               </GlassButton>
               <GlassButton size="sm" onClick={() => insertToken("{link}")} className="flex-1">
-                Wstaw do treści
+                {T.insertToBody}
               </GlassButton>
             </div>
           </GlassCard>
@@ -375,19 +378,19 @@ export function MarketingClient({
         <div className="space-y-4">
           <GlassCard className="fade-rise fade-rise-d1">
             <CardHeader
-              title="Wiadomość"
+              title={T.messageTitle}
               action={
                 <div className="flex items-center gap-1.5">
-                  {(["{imię}", "{salon}", "{link}"] as const).map((t) => (
+                  {(["{imię}", "{salon}", "{link}"] as const).map((tok) => (
                     <button
-                      key={t}
+                      key={tok}
                       type="button"
-                      onClick={() => insertToken(t)}
+                      onClick={() => insertToken(tok)}
                       className="text-[11px] font-mono font-semibold px-2 py-1 rounded-lg text-slate-600 transition-colors hover:text-slate-900"
                       style={CHIP}
-                      title={`Wstaw ${t}`}
+                      title={interpolate(T.insertToken, { token: tok })}
                     >
-                      {t}
+                      {tok}
                     </button>
                   ))}
                 </div>
@@ -397,13 +400,13 @@ export function MarketingClient({
               {channel === "email" && (
                 <div>
                   <label htmlFor="mkt-subject" className="block text-sm font-medium text-slate-700 mb-1.5">
-                    Temat
+                    {T.subject}
                   </label>
                   <input
                     id="mkt-subject"
                     value={subject}
                     onChange={(e) => setSubject(e.target.value)}
-                    placeholder="Wolne terminy w tym tygodniu"
+                    placeholder={T.subjectPh}
                     className={INPUT}
                   />
                 </div>
@@ -411,7 +414,7 @@ export function MarketingClient({
               <div>
                 <div className="flex items-center justify-between mb-1.5">
                   <label htmlFor="mkt-body" className="text-sm font-medium text-slate-700">
-                    Treść
+                    {T.bodyLabel}
                   </label>
                   <div className="flex items-center gap-3">
                     <button
@@ -421,14 +424,14 @@ export function MarketingClient({
                       className="inline-flex items-center gap-1 text-[11px] font-semibold text-slate-700 hover:text-slate-900 disabled:opacity-60"
                     >
                       <svg className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.6} aria-hidden="true"><path d="M12 3v3m0 12v3M5.6 5.6l2.1 2.1m8.6 8.6 2.1 2.1M3 12h3m12 0h3M5.6 18.4l2.1-2.1m8.6-8.6 2.1-2.1" /></svg>
-                      {aiBusy ? "Generuję…" : "Zaproponuj z AI"}
+                      {aiBusy ? T.aiGenerating : T.aiSuggest}
                     </button>
                     <button
                       type="button"
                       onClick={() => setMessage(SAMPLE_TEMPLATES[channel])}
                       className="text-[11px] font-semibold text-slate-500 hover:text-slate-800 transition-colors"
                     >
-                      Wstaw przykład
+                      {T.insertSample}
                     </button>
                   </div>
                 </div>
@@ -439,20 +442,20 @@ export function MarketingClient({
                   value={message}
                   onChange={(e) => setMessage(e.target.value)}
                   rows={channel === "email" ? 7 : 4}
-                  placeholder={`Napisz wiadomość do klientów. Użyj {imię}, {salon} lub {link}, aby wstawić dane każdego odbiorcy.`}
+                  placeholder={T.bodyPh}
                   className={cn(INPUT, "resize-y leading-relaxed")}
                 />
                 <div className="mt-1.5 flex items-center justify-between text-[11px] text-slate-400 tabular-nums">
                   <span>
-                    {charCount} znaków
+                    {charCount} {T.chars}
                     {channel === "sms" && (
                       <span className="text-slate-400">
                         {" "}
-                        · ~{smsSegments} {smsSegments === 1 ? "SMS" : "SMS-y"}
+                        · ~{smsSegments} {smsSegments === 1 ? T.smsOne : T.smsMany}
                       </span>
                     )}
                   </span>
-                  <span>podgląd z realnymi danymi odbiorcy poniżej</span>
+                  <span>{T.previewHint}</span>
                 </div>
               </div>
             </div>
@@ -460,18 +463,18 @@ export function MarketingClient({
 
           {/* Preview */}
           <GlassCard className="fade-rise fade-rise-d2">
-            <CardHeader title={`Podgląd — ${CHANNEL_LABEL[channel]}`} action={<span className="text-xs text-slate-400">dla: {previewName}</span>} />
+            <CardHeader title={interpolate(T.previewTitle, { channel: CH(channel) })} action={<span className="text-xs text-slate-400">{interpolate(T.previewFor, { name: previewName })}</span>} />
             <div className="p-5">
               {channel === "email" ? (
                 <div className="rounded-2xl overflow-hidden" style={{ border: HAIRLINE, background: "#fff" }}>
                   <div className="px-4 py-3" style={{ borderBottom: HAIRLINE }}>
-                    <p className="text-[11px] text-slate-400">Temat</p>
+                    <p className="text-[11px] text-slate-400">{T.previewSubject}</p>
                     <p className="text-sm font-semibold text-slate-900 mt-0.5">
-                      {previewSubject || <span className="text-slate-300">— temat —</span>}
+                      {previewSubject || <span className="text-slate-300">{T.previewNoSubject}</span>}
                     </p>
                   </div>
                   <div className="px-4 py-4 text-sm text-slate-700 whitespace-pre-wrap leading-relaxed min-h-[64px]">
-                    {previewBody || <span className="text-slate-300">— treść wiadomości —</span>}
+                    {previewBody || <span className="text-slate-300">{T.previewNoBody}</span>}
                   </div>
                 </div>
               ) : (
@@ -483,7 +486,7 @@ export function MarketingClient({
                       border: channel === "whatsapp" ? "1px solid rgba(16,185,129,0.25)" : HAIRLINE,
                     }}
                   >
-                    {previewBody || <span className="text-slate-300">— treść wiadomości —</span>}
+                    {previewBody || <span className="text-slate-300">{T.previewNoBody}</span>}
                   </div>
                 </div>
               )}
@@ -497,15 +500,15 @@ export function MarketingClient({
               style={
                 result.ok && result.sent > 0
                   ? { background: "rgba(16,185,129,0.10)", border: "1px solid rgba(16,185,129,0.25)", color: "#047857" }
-                  : { background: "rgba(203,213,225,0.20)", border: "1px solid rgba(148,163,184,0.40)", color: "#334155" }
+                  : { background: "var(--selected)", border: "1px solid rgba(148,163,184,0.40)", color: "#334155" }
               }
             >
               {result.ok ? (
                 <p className="font-medium tabular-nums">
                   {result.sent > 0
-                    ? `Wysłano ${result.sent} z ${result.reachable} wiadomości (${CHANNEL_LABEL[result.channel]}, grupa „${result.segmentLabel}”).`
-                    : `Nie udało się wysłać żadnej wiadomości (${result.reachable} prób).`}
-                  {result.failed > 0 && ` Nieudanych: ${result.failed}.`}
+                    ? interpolate(T.resultSent, { sent: result.sent, reachable: result.reachable, channel: CH(result.channel), segment: result.segmentLabel })
+                    : interpolate(T.resultNone, { n: result.reachable })}
+                  {result.failed > 0 && ` ${interpolate(T.resultFailed, { n: result.failed })}`}
                 </p>
               ) : (
                 <p className="font-medium">{result.reason}</p>
@@ -516,12 +519,12 @@ export function MarketingClient({
           {/* Actions */}
           <div className="flex items-center justify-between gap-3">
             <span className="text-xs text-slate-400" aria-live="polite">
-              {draftSaved ? "Zapisano roboczą wersję ✓" : ""}
+              {draftSaved ? T.draftSaved : ""}
             </span>
             <div className="flex gap-2.5">
-              <GlassButton onClick={saveDraft}>Zapisz roboczą</GlassButton>
-              <InkButton onClick={() => setConfirmOpen(true)} disabled={!canSend} title={!available ? "Kanał niedostępny" : reach === 0 ? "Brak osiągalnych odbiorców" : undefined}>
-                {available ? `Wyślij do ${reach}` : "Wysyłka niedostępna"}
+              <GlassButton onClick={saveDraft}>{T.saveDraft}</GlassButton>
+              <InkButton onClick={() => setConfirmOpen(true)} disabled={!canSend} title={!available ? T.channelUnavailable : reach === 0 ? T.noReach : undefined}>
+                {available ? interpolate(T.sendTo, { n: reach }) : T.sendUnavailable}
               </InkButton>
             </div>
           </div>
@@ -530,23 +533,21 @@ export function MarketingClient({
       )}
 
       {/* Confirm send */}
-      <GlassModal open={confirmOpen} onOpenChange={setConfirmOpen} title="Wysłać kampanię?" className="max-w-md">
+      <GlassModal open={confirmOpen} onOpenChange={setConfirmOpen} title={T.confirmTitle} className="max-w-md">
         <div className="space-y-4 mt-1">
           <p className="text-sm text-slate-600 leading-relaxed">
-            Wyślesz wiadomość <span className="font-semibold text-slate-900">{CHANNEL_LABEL[channel]}</span> do{" "}
+            {T.confirmBodyPre} <span className="font-semibold text-slate-900">{CH(channel)}</span> {T.confirmBodyTo}{" "}
             <span className="font-semibold text-slate-900 tabular-nums">{reach}</span>{" "}
-            {reach === 1 ? "klienta" : "klientów"} z grupy{" "}
-            <span className="font-semibold text-slate-900">„{seg?.label}”</span>.
+            {reach === 1 ? T.confirmClientOne : T.confirmClientMany} {T.confirmGroup}{" "}
+            <span className="font-semibold text-slate-900">„{seg ? t.segments[seg.key].label : ""}”</span>.
           </p>
-          <p className="text-xs text-slate-500 leading-relaxed">
-            Otrzymają ją tylko klienci z ważnym kontaktem i zgodą marketingową. Wiadomości nie można cofnąć po wysłaniu.
-          </p>
+          <p className="text-xs text-slate-500 leading-relaxed">{T.confirmNote}</p>
           <div className="flex gap-3 pt-1">
             <GlassButton onClick={() => setConfirmOpen(false)} className="flex-1">
-              Anuluj
+              {t.common.cancel}
             </GlassButton>
             <InkButton onClick={doSend} disabled={isPending} className="flex-1">
-              {isPending ? "Wysyłanie…" : `Wyślij do ${reach}`}
+              {isPending ? T.sending : interpolate(T.sendTo, { n: reach })}
             </InkButton>
           </div>
         </div>
