@@ -12,10 +12,10 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 const BG = [
-  "radial-gradient(ellipse 120% 80% at 85% -20%, rgba(203,213,225,0.70) 0%, transparent 50%)",
-  "radial-gradient(ellipse 80% 70% at -8% 90%, rgba(148,163,184,0.28) 0%, transparent 55%)",
-  "radial-gradient(ellipse 60% 50% at 50% 55%, rgba(226,232,240,0.65) 0%, transparent 65%)",
-  "linear-gradient(168deg, #E8EFF8 0%, #F1F6FB 40%, #E5EEF9 100%)",
+  "radial-gradient(ellipse 70% 55% at 8% 0%, rgba(255,255,255,0.92) 0%, transparent 60%)",
+  "radial-gradient(ellipse 90% 70% at 92% 8%, rgba(186,203,224,0.42) 0%, transparent 58%)",
+  "radial-gradient(ellipse 60% 50% at 40% 100%, rgba(203,213,225,0.30) 0%, transparent 62%)",
+  "linear-gradient(172deg, #EDF2F9 0%, #F5F8FC 46%, #E7EEF7 100%)",
 ].join(", ");
 
 export default async function ContactPage() {
@@ -38,53 +38,40 @@ export default async function ContactPage() {
 
             {/* Left */}
             <div>
-              <div
-                className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full mb-6 text-xs font-semibold uppercase tracking-widest"
-                style={{
-                  background: "var(--selected)",
-                  border: "1px solid var(--hairline)",
-                  color: "#64748B",
-                }}
-              >
-                {T.eyebrow}
+              <div className="rail mb-7">
+                <span className="text-[11px] font-semibold uppercase track-overline text-slate-500 flex-shrink-0">
+                  {T.eyebrow}
+                </span>
               </div>
-              <h1
-                className="text-4xl font-bold mb-5"
-                style={{ letterSpacing: "var(--track-display)", color: "#0F172A" }}
-              >
+              <h1 className="type-display mb-6" style={{ color: "#0F172A" }}>
                 {T.title}
               </h1>
-              <p className="leading-relaxed mb-10 text-sm" style={{ color: "#64748B" }}>
+              <p className="type-lede mb-12 max-w-[44ch]" style={{ color: "#55637A" }}>
                 {T.lede}
               </p>
 
-              <div className="space-y-4">
+              {/* Three rows on one rule, not three separate boxes holding
+                  the same address three times. */}
+              <div>
                 {CONTACTS.map((c) => (
                   <div
                     key={c.label}
-                    className="px-5 py-4"
-                    style={{
-                      background: "var(--surface)",
-                      border: "1px solid var(--hairline)",
-                      borderRadius: "0.875rem",
-                      boxShadow: "var(--e1)",
-                    }}
+                    className="flex flex-wrap items-baseline justify-between gap-x-6 gap-y-1 py-4"
+                    style={{ borderTop: "1px solid var(--hairline-soft)" }}
                   >
-                    <p
-                      className="text-[10px] font-semibold uppercase tracking-wider mb-1"
-                      style={{ color: "#94A3B8" }}
-                    >
+                    <p className="text-[11px] font-semibold uppercase track-overline" style={{ color: "#8593A8" }}>
                       {c.label}
                     </p>
                     <a
                       href={c.href}
-                      className="text-sm font-semibold transition-colors hover:opacity-70"
+                      className="text-[14px] font-semibold underline underline-offset-[3px] decoration-slate-300 hover:decoration-slate-900 transition-colors"
                       style={{ color: "#0F172A" }}
                     >
                       {c.value}
                     </a>
                   </div>
                 ))}
+                <div className="rule" />
               </div>
             </div>
 

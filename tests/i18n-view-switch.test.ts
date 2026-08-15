@@ -154,8 +154,12 @@ describe("16+17. the landing page has no early-access badge and no leftover slot
     assert.ok(!/\{\/\* Badge \*\/\}/.test(src), "the hero still has the Badge block");
     // The pulsing dot that lived only inside the badge must be gone too.
     assert.ok(!src.includes("dot-pulse"), "the early-access pulsing dot is still in the hero");
-    // No spacer left where the badge used to be: the headline follows the wrapper directly.
-    assert.ok(/<div>\s*\{\/\*[^}]*\*\/\}\s*<motion\.h1/.test(src), "the headline should follow the column wrapper directly");
+    // No spacer left where the badge used to be. Asserted as the invariant
+    // ("nothing empty is reserving hero space") rather than as one exact markup
+    // shape, so recomposing the hero cannot silently re-introduce a placeholder.
+    const emptyBlock = /<(div|span|p)\b[^>]*className="[^"]*\bmb-\d[^"]*"[^>]*>\s*<\/\1>/;
+    assert.ok(!emptyBlock.test(src), "the hero still has an empty spacing element where the badge used to be");
+    assert.ok(src.includes("<motion.h1"), "the hero headline is missing");
   });
 });
 

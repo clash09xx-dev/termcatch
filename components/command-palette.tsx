@@ -292,7 +292,7 @@ export function CommandPalette({ businessSlug }: { businessSlug?: string }) {
                   </div>
 
                   {/* Results */}
-                  <div id="palette-list" role="listbox" aria-label={a.results} className="max-h-[46dvh] overflow-y-auto p-2">
+                  <div id="palette-list" role="listbox" aria-label={a.results} className="max-h-[52dvh] overflow-y-auto p-2">
                     {flatItems.length === 0 && (
                       <p className="px-3 py-6 text-center text-sm text-slate-500">
                         {interpolate(P.noResults, { q: query })}

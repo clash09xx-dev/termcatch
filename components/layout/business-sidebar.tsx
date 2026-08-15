@@ -51,11 +51,11 @@ export function BusinessSidebar({
       className="hidden lg:flex flex-col h-[100dvh] shrink-0 overflow-hidden relative z-20"
       style={{
         width: collapsed ? 66 : 244,
-        background: "var(--chrome)",
+        // A structural region: heavier than the content it frames.
+        background: "var(--chrome-deep)",
         backdropFilter: "var(--chrome-blur)",
         WebkitBackdropFilter: "var(--chrome-blur)",
-        borderRight: "1px solid var(--hairline-soft)",
-        boxShadow: "var(--e1)",
+        borderRight: "1px solid var(--hairline)",
       }}
     >
       {/* Brand + collapse */}
@@ -91,9 +91,11 @@ export function BusinessSidebar({
             {collapsed ? (
               <div className="mx-2 mb-2 h-px" style={{ background: "linear-gradient(90deg,transparent,rgba(148,163,184,0.28),transparent)" }} />
             ) : (
-              <p className="px-2.5 mb-1.5 text-[10px] font-semibold uppercase tracking-[0.13em] select-none" style={{ color: "#B4C0D0" }}>
-                {t.businessNav[group.groupKey]}
-              </p>
+              <div className="rail px-2.5 mb-2 select-none">
+                <span className="text-[10px] font-semibold uppercase track-overline flex-shrink-0" style={{ color: "#93A3B8" }}>
+                  {t.businessNav[group.groupKey]}
+                </span>
+              </div>
             )}
             <ul className="space-y-0.5">
               {group.items.map((item) => {
@@ -114,7 +116,7 @@ export function BusinessSidebar({
                       )}
                       style={active ? {
                         background: INK_GRADIENT,
-                        boxShadow: "0 1px 2px rgba(15,23,42,0.24), 0 6px 16px rgba(15,23,42,0.20), inset 0 1px 0 rgba(255,255,255,0.14)",
+                        boxShadow: "0 1px 2px rgba(15,23,42,0.22), inset 0 1px 0 rgba(255,255,255,0.13)",
                       } : undefined}
                     >
                       <Icon className="flex-shrink-0" style={{ color: active ? "#F8FAFC" : undefined }} />

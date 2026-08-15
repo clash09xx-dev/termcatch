@@ -131,7 +131,7 @@ export function GlassModal({
 
                   <div className="p-6 pb-[max(1.5rem,env(safe-area-inset-bottom))] overflow-y-auto">
                     <div className="flex items-start justify-between gap-3 mb-1">
-                      <Dialog.Title className="text-[17px] leading-[1.25] font-semibold text-slate-900 track-title">
+                      <Dialog.Title className="text-[19px] leading-[1.2] font-semibold text-slate-900 track-title">
                         {title}
                       </Dialog.Title>
                       <Dialog.Close asChild>
@@ -148,13 +148,15 @@ export function GlassModal({
                       </Dialog.Close>
                     </div>
                     {description ? (
-                      <Dialog.Description className="text-[13.5px] leading-[1.5] text-secondary mb-5">
+                      <Dialog.Description className="text-[13.5px] leading-[1.5] text-secondary mt-1.5">
                         {description}
                       </Dialog.Description>
                     ) : (
                       <Dialog.Description className="sr-only">{title}</Dialog.Description>
                     )}
-                    {children}
+                    <div className="mt-5 pt-5" style={{ borderTop: "1px solid var(--hairline-soft)" }}>
+                      {children}
+                    </div>
                   </div>
                 </motion.div>
               </Dialog.Content>

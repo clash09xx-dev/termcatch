@@ -69,11 +69,10 @@ export function CustomerSidebar() {
     <aside
       className="hidden md:flex flex-col w-56 h-[100dvh] shrink-0"
       style={{
-        background: "var(--chrome)",
+        background: "var(--chrome-deep)",
         backdropFilter: "var(--chrome-blur)",
         WebkitBackdropFilter: "var(--chrome-blur)",
         borderRight: "1px solid var(--hairline)",
-        boxShadow: "var(--e1)",
       }}
     >
       {/* Logo */}

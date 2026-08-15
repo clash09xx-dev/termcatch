@@ -34,9 +34,9 @@ export function BusinessTopbar({ initials }: { initials?: string } = {}) {
         transition: "background var(--dur-fast) var(--ease-hover), border-color var(--dur-fast) var(--ease-hover), box-shadow var(--dur-fast) var(--ease-hover)",
       }}
     >
-      <h1 className="text-[17px] font-semibold tracking-[-0.02em] text-slate-900 flex-shrink-0">
+      <p className="text-[11px] font-semibold uppercase track-overline text-slate-400 flex-shrink-0 select-none">
         {t.businessNav[meta.titleKey]}
-      </h1>
+      </p>
 
       <div className="flex items-center gap-1.5 ml-auto">
         {/* Command palette hint */}

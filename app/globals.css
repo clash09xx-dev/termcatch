@@ -35,6 +35,10 @@
 
     /* ── Chrome — the only place translucency lives ────────── */
     --chrome:         rgba(249, 251, 253, 0.72);
+    /* Structural regions (sidebars) sit a half-step deeper than the content
+       they frame, so the shell reads as layered rather than as three panes of
+       identical glass meeting at hairlines. */
+    --chrome-deep:    rgba(238, 243, 249, 0.82);
     --chrome-strong:  rgba(252, 253, 254, 0.88);
     --chrome-blur:    saturate(180%) blur(20px);
     --chrome-blur-lg: saturate(180%) blur(28px);
@@ -82,7 +86,6 @@
     /* ── Motion — mirrored from lib/motion.ts ──────────────── */
     --dur-press: 120ms;
     --dur-fast:  160ms;
-    --dur-base:  220ms;
     --dur-slow:  300ms;
 
     --ease-out:    cubic-bezier(0.23, 1, 0.32, 1);
@@ -105,7 +108,6 @@
     --track-display:  -0.035em;
     --track-title:    -0.022em;
     --track-heading:  -0.014em;
-    --track-caption:   0.005em;
     --track-overline:  0.075em;
   }
 
@@ -220,14 +222,6 @@
 
   /* Scroll edge, not a hard rule. Where floating chrome meets moving
      content, fade the boundary instead of drawing a 1px line. */
-  /* ═══ Separator ═══════════════════════════════════════════ */
-
-  .grad-sep {
-    height: 1px;
-    background: linear-gradient(90deg, transparent 0%, var(--hairline) 20%, var(--hairline) 80%, transparent 100%);
-    border: none;
-  }
-
   /* ═══ Skeleton — one implementation ═══════════════════════ */
 
   .tc-skeleton {
@@ -352,18 +346,6 @@
     }
   }
 
-  /* Marketing surfaces may lift, because there the card is the subject. */
-  .card-hover-raise {
-    transition: transform var(--dur-base) var(--ease-out),
-                box-shadow var(--dur-base) var(--ease-hover);
-  }
-  @media (hover: hover) and (pointer: fine) {
-    .card-hover-raise:hover {
-      transform: translateY(-2px);
-      box-shadow: var(--e3);
-    }
-  }
-
   /* ═══ Entrance ════════════════════════════════════════════
      One CSS entrance for server-rendered sections, so a page does
      not need a client component just to fade in. */
@@ -390,7 +372,6 @@
   .track-display  { letter-spacing: var(--track-display); }
   .track-title    { letter-spacing: var(--track-title); }
   .track-heading  { letter-spacing: var(--track-heading); }
-  .track-caption  { letter-spacing: var(--track-caption); }
   .track-overline { letter-spacing: var(--track-overline); }
 }
 
@@ -433,13 +414,6 @@
 .band-ink .on-ink-secondary { color: #9FB0C6; }
 .band-ink .on-ink-muted     { color: #74869E; }
 .band-ink .hairline-ink     { background: rgba(226, 232, 240, 0.14); }
-
-/* A quiet surface *inside* the ink band — never white, never glass.
-   Just a half-step lift so grouped content reads as grouped. */
-.on-ink-surface {
-  background: rgba(226, 232, 240, 0.055);
-  border: 1px solid rgba(226, 232, 240, 0.12);
-}
 
 /* ── 2. The editorial rail ────────────────────────────────────
    Replaces the "eyebrow pill in a rounded chip" that opened every
@@ -573,25 +547,11 @@
   .fade-rise { animation: none !important; opacity: 1; transform: none; }
   .btn-spring,
   .card-hover-lift,
-  .card-hover-raise {
-    transition: background 150ms ease, color 150ms ease, box-shadow 150ms ease !important;
-    transform: none !important;
-  }
   .btn-spring:active { transform: none !important; }
-  .card-hover-raise:hover { transform: none !important; }
-  .marquee-track { animation: none !important; }
-
-  /* A spinner is a status indicator, not decoration: stopping it removes the
-     only signal that anything is happening. It rotates in place, so it is not
-     the kind of travel reduced motion is protecting against. */
-  .animate-spin { animation: spin 0.7s linear infinite !important; }
-}
-
-/* Frosted surfaces become solid rather than merely less blurred — a
-   half-transparent panel is the worst of both for legibility. */
-@media (prefers-reduced-transparency: reduce) {
-  .chrome, .chrome-strong {
-    background: var(--surface) !important;
+  :root { --chrome-deep: #EEF3F9; }
+  /* The sidebars carry their material inline (they interpolate collapse width),
+     so the class rule above cannot reach them. Both are <aside>. */
+  aside {
     backdrop-filter: none !important;
     -webkit-backdrop-filter: none !important;
   }
@@ -620,10 +580,6 @@
   }
   .band-ink .on-ink-secondary { color: #C7D3E2; }
   .band-ink .on-ink-muted     { color: #AEBCCE; }
-  .on-ink-surface {
-    background: rgba(255, 255, 255, 0.10);
-    border-color: rgba(255, 255, 255, 0.34);
-  }
 }
 
 /* Everything inside the ink band focuses against the dark ground, so

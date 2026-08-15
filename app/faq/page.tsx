@@ -18,13 +18,6 @@ const BG = [
   "linear-gradient(168deg, #EEF3F9 0%, #F4F8FC 40%, #ECF3F9 100%)",
 ].join(", ");
 
-const card: React.CSSProperties = {
-  background: "var(--surface)",
-  border: "1px solid var(--hairline)",
-  boxShadow: "var(--e2)",
-  borderRadius: "1.25rem",
-};
-
 // Answers live in the dictionary (publicPages.faq.items) and describe ONLY
 // functionality that is implemented today, or explicitly label a capability as
 // "being prepared" (multi-location, online payments).
@@ -52,37 +45,43 @@ export default async function FaqPage() {
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
 
       <div className="pt-28 pb-20 px-6">
-        <div className="max-w-2xl mx-auto">
-          <div className="text-center mb-10">
-            <div
-              className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full mb-6 text-xs font-semibold uppercase tracking-widest"
-              style={{ background: "var(--selected)", border: "1px solid var(--hairline)", color: "#64748B" }}
-            >
-              {T.eyebrow}
+        <div className="max-w-4xl mx-auto">
+          <div className="mb-14">
+            <div className="rail mb-7">
+              <span className="text-[11px] font-semibold uppercase track-overline text-slate-500 flex-shrink-0">
+                {T.eyebrow}
+              </span>
             </div>
-            <h1 className="text-4xl font-bold mb-3" style={{ letterSpacing: "var(--track-display)", color: "#0F172A" }}>
+            <h1 className="type-display mb-5" style={{ color: "#0F172A" }}>
               {T.title}
             </h1>
-            <p className="text-lg" style={{ color: "#64748B" }}>
+            <p className="type-lede max-w-[48ch]" style={{ color: "#55637A" }}>
               {T.lede}
             </p>
           </div>
 
-          <div className="space-y-3">
+          {/* A reading column, not ten boxes. Question and answer sit in two
+              columns on desktop so the eye can scan the questions alone. */}
+          <div>
             {FAQ.map((item) => (
-              <div key={item.q} className="p-6" style={card}>
-                <h2 className="font-semibold mb-2 text-sm" style={{ color: "#0F172A", letterSpacing: "var(--track-heading)" }}>
+              <div
+                key={item.q}
+                className="grid md:grid-cols-[minmax(0,20rem)_minmax(0,1fr)] gap-x-10 gap-y-2 py-7"
+                style={{ borderTop: "1px solid var(--hairline-soft)" }}
+              >
+                <h2 className="text-[15px] font-semibold track-heading" style={{ color: "#0F172A" }}>
                   {item.q}
                 </h2>
-                <p className="text-sm leading-relaxed" style={{ color: "#64748B" }}>
+                <p className="text-[14.5px] leading-[1.65]" style={{ color: "#55637A" }}>
                   {item.a}
                 </p>
               </div>
             ))}
+            <div className="rule" />
           </div>
 
-          <div className="mt-12 text-center">
-            <p className="text-sm mb-4" style={{ color: "#94A3B8" }}>
+          <div className="mt-16 text-center">
+            <p className="text-sm mb-4" style={{ color: "#8593A8" }}>
               {T.notFound}
             </p>
             <Link href="/contact" className="text-sm font-semibold btn-spring" style={{ color: "#475569" }}>

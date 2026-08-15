@@ -2,7 +2,7 @@ import Link from "next/link";
 import type { Metadata } from "next";
 import { LandingNav } from "@/components/layout/landing-nav";
 import { LandingFooter } from "@/components/layout/landing-footer";
-import { INK_BTN } from "@/components/ui/glass/tokens";
+import { INK_BTN, ON_INK_BTN } from "@/components/ui/glass/tokens";
 import { getServerI18n } from "@/lib/i18n/server";
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -12,10 +12,10 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 const BG = [
-  "radial-gradient(ellipse 120% 80% at 85% -20%, rgba(203,213,225,0.70) 0%, transparent 50%)",
-  "radial-gradient(ellipse 80% 70% at -8% 90%, rgba(148,163,184,0.28) 0%, transparent 55%)",
-  "radial-gradient(ellipse 60% 50% at 50% 55%, rgba(226,232,240,0.65) 0%, transparent 65%)",
-  "linear-gradient(168deg, #E8EFF8 0%, #F1F6FB 40%, #E5EEF9 100%)",
+  "radial-gradient(ellipse 70% 55% at 8% 0%, rgba(255,255,255,0.92) 0%, transparent 60%)",
+  "radial-gradient(ellipse 90% 70% at 92% 8%, rgba(186,203,224,0.42) 0%, transparent 58%)",
+  "radial-gradient(ellipse 60% 50% at 40% 100%, rgba(203,213,225,0.30) 0%, transparent 62%)",
+  "linear-gradient(172deg, #EDF2F9 0%, #F5F8FC 46%, #E7EEF7 100%)",
 ].join(", ");
 
 export default async function CareersPage() {
@@ -27,33 +27,20 @@ export default async function CareersPage() {
       <LandingNav />
       <div className="pt-32 pb-24 px-6 text-center">
         <div className="max-w-md mx-auto">
-          <div
-            className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full mb-8 text-xs font-semibold uppercase tracking-widest"
-            style={{
-              background: "var(--selected)",
-              border: "1px solid var(--hairline)",
-              color: "#64748B",
-            }}
-          >
-            {T.eyebrow}
+          <div className="rail mb-7 justify-center">
+            <span className="text-[11px] font-semibold uppercase track-overline text-slate-500 flex-shrink-0">
+              {T.eyebrow}
+            </span>
           </div>
-          <h1
-            className="text-4xl font-bold mb-4"
-            style={{ letterSpacing: "var(--track-display)", color: "#0F172A" }}
-          >
+          <h1 className="type-display mb-6" style={{ color: "#0F172A" }}>
             {T.title}
           </h1>
-          <p className="mb-10 leading-relaxed text-sm" style={{ color: "#64748B" }}>
+          <p className="type-lede mb-12 max-w-[46ch] mx-auto" style={{ color: "#55637A" }}>
             {T.lede}
           </p>
           <div
-            className="inline-flex items-center gap-2 px-5 py-3 rounded-xl mb-10 text-sm"
-            style={{
-              background: "var(--surface)",
-              border: "1px solid var(--hairline)",
-              boxShadow: "var(--e2)",
-              color: "#475569",
-            }}
+            className="inline-flex items-center gap-2.5 px-5 py-3 mb-12 text-[13px] font-medium"
+            style={{ borderTop: "1px solid var(--hairline)", borderBottom: "1px solid var(--hairline)", color: "#475569" }}
           >
             <span
               className="w-2 h-2 rounded-full"
@@ -81,35 +68,23 @@ export default async function CareersPage() {
       </div>
 
       {/* Affiliate / referral — target of the "Zaproś i zarób" nav CTA */}
-      <section id="zaros-i-zarob" className="px-6 pb-24 scroll-mt-28">
-        <div
-          className="max-w-2xl mx-auto rounded-3xl p-8 sm:p-10 text-center"
-          style={{
-            background: "var(--surface)",
-            border: "1px solid var(--hairline)",
-            boxShadow: "var(--e2)",
-          }}
-        >
-          <div
-            className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full mb-5 text-xs font-semibold uppercase tracking-widest"
-            style={{ background: "var(--selected)", border: "1px solid var(--hairline)", color: "#64748B" }}
-          >
-            {T.referralEyebrow}
+      <section id="zaros-i-zarob" className="band-ink px-6 py-24 md:py-32 scroll-mt-28">
+        <div className="max-w-2xl mx-auto text-center">
+          <div className="rail mb-6 justify-center">
+            <span className="text-[11px] font-semibold uppercase track-overline on-ink-muted flex-shrink-0">
+              {T.referralEyebrow}
+            </span>
           </div>
-          <h2 className="text-3xl font-bold mb-3" style={{ letterSpacing: "var(--track-display)", color: "#0F172A" }}>
+          <h2 className="type-section mb-4 on-ink-primary">
             {T.referralTitle}
           </h2>
-          <p className="mb-7 leading-relaxed text-sm max-w-lg mx-auto" style={{ color: "#64748B" }}>
+          <p className="type-lede mb-10 max-w-[52ch] mx-auto on-ink-secondary">
             {T.referralBody}
           </p>
           <Link
             href="/contact"
-            className="btn-spring inline-flex items-center px-6 py-2.5 text-sm font-semibold rounded-xl text-white"
-            style={{
-              background: "var(--ink-raised)",
-              border: "1px solid #0F172A",
-              boxShadow: "0 1px 2px rgba(0,0,0,0.20), inset 0 1px 0 rgba(255,255,255,0.15)",
-            }}
+            className="btn-spring inline-flex items-center px-6 py-3 min-h-[44px] text-sm font-semibold rounded-[11px]"
+            style={ON_INK_BTN}
           >
             {T.referralCta}
           </Link>

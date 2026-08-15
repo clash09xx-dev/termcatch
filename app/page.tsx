@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useCallback } from "react";
+import { useState, useCallback } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
@@ -11,42 +11,17 @@ import { CustomerAssistant } from "@/components/assistant/customer-assistant";
 import { useT, useLocale } from "@/components/i18n/i18n-provider";
 import { interpolate } from "@/lib/i18n/dictionaries";
 import { visibleCategoriesFor } from "@/lib/categories";
-import { ELEV_RAISED, INK_BTN } from "@/components/ui/glass/tokens";
+import { INK_BTN, ON_INK_BTN, ON_INK_GHOST_BTN } from "@/components/ui/glass/tokens";
 
 // ── Landing surfaces ─────────────────────────────────────────────────────────
 //
-// These used to be six stacked backdrop-filters. Nothing moves behind them —
-// the section ground is a static mesh gradient — so the blur bought nothing and
-// cost a composited layer each, while milky 65%-white washed the type out.
-//
-// Marketing is allowed more presence than the dashboard, so the elevation runs
-// one step warmer here (a hero at --e3 where an app card sits at --e2), but the
-// material is the same one the product uses: opaque silver, hairline, ink.
+// Almost nothing is left here, and that is the point: the page used to be built
+// from card / panel / chip / pill styles applied to every slot, so every section
+// looked like every other section. Composition now does that work — rails,
+// rules, numerals and one ink band — and only the two genuinely interactive
+// surfaces still need a style object.
 
 const G = {
-  /** Hero card — the booking widget and the closing CTA. */
-  card: {
-    ...ELEV_RAISED,
-    boxShadow: "var(--e3)",
-  } as React.CSSProperties,
-
-  /** Secondary panel — steps, feature cards, stat cards. */
-  panel: ELEV_RAISED as React.CSSProperties,
-
-  /** Small chip — floating label, number badge. */
-  chip: {
-    background: "var(--surface)",
-    border: "1px solid var(--hairline-soft)",
-    boxShadow: "var(--e2)",
-  } as React.CSSProperties,
-
-  /** Pill — category, badge, subtle tag. */
-  pill: {
-    background: "var(--surface)",
-    border: "1px solid var(--hairline-soft)",
-    boxShadow: "var(--e1)",
-  } as React.CSSProperties,
-
   /** Search input. */
   input: {
     background: "var(--surface)",
@@ -63,8 +38,6 @@ const G = {
 
   /** Primary CTA — machined graphite ink, the one primary-action colour. */
   inkBtn: INK_BTN as React.CSSProperties,
-
-  divider: { borderBottom: "1px solid var(--hairline-soft)" } as React.CSSProperties,
 };
 
 // ── Section grounds ───────────────────────────────────────────────────────────
@@ -298,118 +271,119 @@ export default function HomePage() {
       <LandingNav variant="marketing" />
 
       {/* ── HERO ─────────────────────────────────────────────────── */}
-      <section className="relative min-h-screen flex items-start overflow-hidden px-6 pt-28 md:pt-32 pb-16">
-        {/* Dot grid — chrome refined */}
+      <section className="relative overflow-hidden pt-24 md:pt-32 pb-16 md:pb-24">
+        {/* One hairline grid, low and wide, gathered under the headline rather
+            than a full-bleed dot field with a vignette over it. */}
         <div
           className="absolute inset-0 pointer-events-none"
           style={{
-            backgroundImage: "radial-gradient(circle, rgba(203,213,225,0.35) 1px, transparent 1px)",
-            backgroundSize: "38px 38px",
-            maskImage: "radial-gradient(ellipse 85% 75% at 50% 50%, black 30%, transparent 100%)",
-            WebkitMaskImage: "radial-gradient(ellipse 85% 75% at 50% 50%, black 30%, transparent 100%)",
+            backgroundImage:
+              "linear-gradient(to right, rgba(148,163,184,0.13) 1px, transparent 1px)",
+            backgroundSize: "112px 100%",
+            maskImage: "linear-gradient(180deg, transparent 0%, black 22%, black 72%, transparent 100%)",
+            WebkitMaskImage: "linear-gradient(180deg, transparent 0%, black 22%, black 72%, transparent 100%)",
           }}
         />
 
-        <div className="relative z-10 max-w-7xl mx-auto w-full grid lg:grid-cols-[1fr_480px] gap-14 xl:gap-20 items-center pb-20">
-          {/* Left */}
-          <div>
-            {/* The hero opens straight on the headline — no early-access badge. */}
+        {/* Left-anchored editorial grid. The text column keeps the page's 7xl
+            rhythm; the stage column deliberately does not, and runs out of the
+            frame. */}
+        <div
+          className="relative z-10 grid lg:grid-cols-[minmax(0,52ch)_minmax(0,1fr)] gap-y-12 lg:gap-x-16 xl:gap-x-24 items-center"
+          style={{ paddingLeft: "max(1.5rem, calc((100vw - 80rem) / 2))" }}
+        >
+          {/* ── Editorial column ── */}
+          <div className="pr-6 lg:pr-0">
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ duration: 0.4 }}
+              className="rail mb-7"
+            >
+              <span className="text-[11px] font-semibold uppercase track-overline text-slate-500 flex-shrink-0">
+                {h.heroEyebrow}
+              </span>
+            </motion.div>
+
             <motion.h1
-              initial={{ opacity: 0, y: 30 }}
+              initial={{ opacity: 0, y: 18 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.45, delay: 0.05, ease: [0.22, 1, 0.36, 1] }}
-              className="text-6xl sm:text-7xl xl:text-8xl font-bold leading-[0.95] text-slate-900"
-              style={{ letterSpacing: "var(--track-display)" }}
+              transition={{ duration: 0.5, delay: 0.05, ease: [0.22, 1, 0.36, 1] }}
+              className="type-display text-slate-900"
             >
               {h.heroLine1}<br />
               {h.heroLine2}<br />
-              <span
-                className="italic font-bold"
-                style={{
-                  background: "linear-gradient(135deg, #1E293B 0%, #334155 50%, #1E293B 100%)",
-                  WebkitBackgroundClip: "text",
-                  WebkitTextFillColor: "transparent",
-                  backgroundClip: "text",
-                }}
-              >
+              {/* The third line is the one that carries the promise, so it gets
+                  a different voice: lighter weight, optical outdent, ink rule. */}
+              <span className="relative inline-block font-normal text-slate-500">
                 {h.heroLine3}
               </span>
             </motion.h1>
 
             <motion.p
-              initial={{ opacity: 0, y: 20 }}
+              initial={{ opacity: 0, y: 14 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.42, delay: 0.2 }}
-              className="mt-7 text-lg max-w-md leading-relaxed text-slate-500"
+              transition={{ duration: 0.42, delay: 0.16 }}
+              className="type-lede mt-8 max-w-[46ch] text-secondary"
             >
               {h.heroSubtitle}
             </motion.p>
 
-            {/* Search */}
+            {/* The search is the hero's one instrument, so it sits on its own
+                line with room around it instead of being another stacked block. */}
             <motion.div
-              initial={{ opacity: 0, y: 16 }}
+              initial={{ opacity: 0, y: 12 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.42, delay: 0.3 }}
-              className="mt-9"
+              transition={{ duration: 0.42, delay: 0.26 }}
+              className="mt-10"
             >
               <HeroSearch />
               <div className="mt-3">
                 <CustomerAssistant />
               </div>
-              <p className="mt-3 text-xs text-slate-500">
+            </motion.div>
+
+            {/* Secondary route + trust, grouped as one quiet block under a rule
+                rather than two loose paragraphs. */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.5 }}
+              className="mt-10 pt-6"
+              style={{ borderTop: "1px solid var(--hairline-soft)" }}
+            >
+              <p className="text-[13px] text-secondary">
                 {h.orPrefix}{" "}
-                <Link href="/register?role=business" className="underline underline-offset-2 hover:text-slate-700 transition-colors">
+                <Link href="/register?role=business" className="font-semibold text-slate-900 underline underline-offset-[3px] decoration-slate-300 hover:decoration-slate-900 transition-colors">
                   {h.addSalonFree}
                 </Link>
               </p>
+              <p className="mt-2 text-[12px] text-muted-glass">{h.heroTrust}</p>
             </motion.div>
-
-            <motion.p
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ delay: 0.7 }}
-              className="mt-6 text-xs text-slate-500"
-            >
-              {h.heroTrust}
-            </motion.p>
           </div>
 
-          {/* Right — booking widget */}
-          <div className="lg:pt-0 pt-8">
+          {/* ── Stage column — runs off the right edge ── */}
+          <div className="lg:pl-0 pr-6 lg:pr-0">
             <BookingWidget />
           </div>
         </div>
-
-        {/* Scroll indicator */}
-        <motion.div
-          initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 1.5 }}
-          className="absolute bottom-8 left-1/2 -translate-x-1/2"
-        >
-          <div>
-            <svg className="w-5 h-5 text-slate-300" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-              <path strokeLinecap="round" strokeLinejoin="round" d="m19 9-7 7-7-7" />
-            </svg>
-          </div>
-        </motion.div>
       </section>
 
       {/* ── "Prowadzisz salon?" — business CTA above the category ticker ── */}
-      <section className="px-4 sm:px-6 pt-10 pb-3">
-        <div
-          className="max-w-4xl mx-auto rounded-2xl px-6 py-6 sm:px-8 sm:py-7 flex flex-col sm:flex-row items-center gap-4 sm:gap-6"
-          style={G.panel}
-        >
-          <div className="flex-1 text-center sm:text-left">
-            <p className="text-lg font-bold text-slate-900" style={{ letterSpacing: "var(--track-title)" }}>
+      <section className="px-6" style={{ borderTop: "1px solid var(--hairline-soft)" }}>
+        <div className="max-w-7xl mx-auto py-7 flex flex-col sm:flex-row sm:items-center gap-4 sm:gap-8">
+          <div className="flex-1 min-w-0">
+            <p className="text-[15px] font-semibold text-slate-900 track-heading">
               {h.runSalon}
             </p>
-            <p className="text-sm text-slate-500 mt-1 leading-relaxed">
+            <p className="text-[13px] text-secondary mt-1 leading-relaxed max-w-[62ch]">
               {h.runSalonDesc}
             </p>
           </div>
           <Link
             href="/register?role=business&promo=WELCOME"
-            className="btn-spring whitespace-nowrap inline-flex items-center justify-center px-6 py-3 text-sm font-semibold rounded-xl"
+            data-on-ink
+            className="btn-spring whitespace-nowrap inline-flex items-center justify-center px-5 py-2.5 min-h-[40px] text-[13px] font-semibold rounded-[10px] flex-shrink-0 self-start sm:self-auto"
             style={G.inkBtn}
           >
             {t.nav.registerSalon}
@@ -419,19 +393,14 @@ export default function HomePage() {
 
       {/* ── MARQUEE TICKER ───────────────────────────────────────── */}
       <div
-        className="py-4 marquee-wrap"
-        style={{ background: "var(--selected)", borderTop: "1px solid var(--hairline-soft)", borderBottom: "1px solid var(--hairline-soft)" }}
+        className="py-3.5 marquee-wrap"
+        style={{ background: "var(--surface)", borderTop: "1px solid var(--hairline-soft)", borderBottom: "1px solid var(--hairline-soft)" }}
       >
-        <div className="marquee-track gap-3 px-3">
+        <div className="marquee-track gap-8 px-8 items-center">
           {[...marquee, ...marquee].map((label, i) => (
             <span
               key={i}
-              className="flex-shrink-0 px-3.5 py-1.5 rounded-full text-xs font-medium text-slate-500"
-              style={{
-                background: "var(--surface)",
-                border: "1px solid var(--hairline)",
-                boxShadow: "var(--e1)",
-              }}
+              className="flex-shrink-0 text-[12px] font-medium uppercase track-overline text-slate-400"
             >
               {label}
             </span>
@@ -439,19 +408,20 @@ export default function HomePage() {
         </div>
       </div>
 
-      <div className="grad-sep" />
-
-      {/* ── HOW IT WORKS ─────────────────────────────────────────── */}
-      <section className="py-28 px-6" style={{ background: BG.steps }}>
-        <div className="max-w-5xl mx-auto">
-          <motion.div initial="hidden" whileInView="show" viewport={REVEAL_VIEWPORT} variants={fade} className="mb-16">
-            <span className="inline-block text-xs font-semibold uppercase tracking-widest mb-4 px-3 py-1 rounded-full text-slate-500" style={G.pill}>
-              {h.howBadge}
-            </span>
-            <h2 className="text-4xl font-bold text-slate-900" style={{ letterSpacing: "var(--track-display)" }}>{h.howTitle}</h2>
+      {/* ── HOW IT WORKS — an editorial list, not three cards ────── */}
+      <section className="py-24 md:py-36 px-6" style={{ background: BG.steps }}>
+        <div className="max-w-6xl mx-auto">
+          <motion.div initial="hidden" whileInView="show" viewport={REVEAL_VIEWPORT} variants={fade} className="mb-14 md:mb-20 max-w-2xl">
+            <div className="rail mb-6">
+              <span className="text-[11px] font-semibold uppercase track-overline text-slate-500 flex-shrink-0">
+                {h.howBadge}
+              </span>
+            </div>
+            <h2 className="type-section text-slate-900">{h.howTitle}</h2>
           </motion.div>
 
-          <div className="grid md:grid-cols-3 gap-5">
+          {/* Numbers do the structuring; hairlines do the separating. No boxes. */}
+          <div>
             {[
               { n: "01", title: h.step1Title, desc: h.step1Desc },
               { n: "02", title: h.step2Title, desc: h.step2Desc },
@@ -460,76 +430,80 @@ export default function HomePage() {
               <motion.div
                 key={step.n}
                 initial="hidden" whileInView="show" viewport={REVEAL_VIEWPORT} custom={i} variants={fade}
-                transition={SPRING}
-                className="card-hover-raise relative p-7 rounded-3xl overflow-hidden"
-                style={G.panel}
+                className="grid grid-cols-[auto_minmax(0,1fr)] md:grid-cols-[7rem_minmax(0,26rem)_minmax(0,1fr)] gap-x-6 md:gap-x-10 gap-y-2 py-8 md:py-11"
+                style={{ borderTop: "1px solid var(--hairline-soft)" }}
               >
-                <div className="absolute inset-0 bg-gradient-to-br from-white/60 via-transparent to-transparent pointer-events-none" />
-                <div className="relative">
-                  <div className="w-11 h-11 rounded-2xl flex items-center justify-center text-xs font-bold mb-5" style={G.chip}>
-                    <span className="text-slate-500">{step.n}</span>
-                  </div>
-                  <h3 className="text-lg font-bold mb-2 text-slate-800">{step.title}</h3>
-                  <p className="text-sm leading-relaxed text-slate-500">{step.desc}</p>
-                </div>
+                <span className="type-numeral text-muted-glass select-none row-span-2 md:row-span-1">{step.n}</span>
+                <h3 className="text-[19px] md:text-[22px] font-semibold text-slate-900 track-title self-center">{step.title}</h3>
+                <p className="text-[14.5px] leading-[1.65] text-secondary max-w-[52ch] self-center col-start-2 md:col-start-3">{step.desc}</p>
               </motion.div>
             ))}
+            <div className="rule" />
           </div>
         </div>
       </section>
 
-      <div className="grad-sep" />
+      {/* ── FOR BUSINESS — the ink band, the page's one dark anchor ── */}
+      <section className="band-ink px-6 py-24 md:py-36">
+        <div className="max-w-6xl mx-auto">
+          <div className="grid lg:grid-cols-[minmax(0,1fr)_minmax(0,28rem)] gap-12 lg:gap-20 items-start">
 
-      {/* ── FOR BUSINESS ─────────────────────────────────────────── */}
-      <section className="py-28 px-6" style={{ background: BG.business }}>
-        <div className="max-w-5xl mx-auto">
-          <div className="grid lg:grid-cols-2 gap-8 items-start">
-            {/* Main feature card */}
-            <motion.div
-              variants={fade} initial="hidden" whileInView="show" viewport={REVEAL_VIEWPORT}
-              className="relative rounded-3xl p-10 overflow-hidden"
-              style={G.card}
-            >
-              <div className="absolute inset-0 bg-gradient-to-br from-white/60 via-transparent to-transparent pointer-events-none" />
-              {/* Chrome top specular edge */}
-              <div className="absolute top-0 left-0 right-0 h-px" style={{ background: "linear-gradient(90deg, transparent, rgba(255,255,255,0.95) 30%, rgba(255,255,255,0.95) 70%, transparent)" }} />
+            {/* Left — the pitch, set as type on the band itself. No card. */}
+            <motion.div variants={fade} initial="hidden" whileInView="show" viewport={REVEAL_VIEWPORT}>
+              <div className="rail mb-7">
+                <span className="text-[11px] font-semibold uppercase track-overline on-ink-muted flex-shrink-0">
+                  {h.bizBadge}
+                </span>
+              </div>
 
-              <div className="relative">
-                <span className="text-xs font-semibold uppercase tracking-widest block mb-6 text-slate-400">{h.bizBadge}</span>
-                <h2 className="text-3xl font-bold leading-snug mb-5 text-slate-900" style={{ letterSpacing: "var(--track-display)" }}>
-                  {h.bizTitle1}<br />{h.bizTitle2}
-                </h2>
-                <p className="text-sm leading-relaxed mb-9 text-slate-500">
-                  {h.bizSubtitle}
-                </p>
-                <div className="space-y-3 mb-10">
-                  {[h.feat1, h.feat2, h.feat3, h.feat4, h.feat5, h.feat6].map((f) => (
-                    <div key={f} className="flex items-center gap-3 text-sm text-slate-600">
-                      <svg className="w-4 h-4 flex-shrink-0 text-slate-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                        <path strokeLinecap="round" strokeLinejoin="round" d="m5 13 4 4L19 7" />
-                      </svg>
-                      {f}
-                    </div>
-                  ))}
-                </div>
-                <div 
-                  className="btn-spring inline-flex"
-                >
-                  <Link
-                    href="/register?role=business"
-                    className="inline-flex items-center gap-2 px-6 py-3 text-sm font-semibold rounded-xl"
-                    style={G.inkBtn}
+              <h2 className="type-section on-ink-primary">
+                {h.bizTitle1}<br />
+                <span className="font-normal on-ink-secondary">{h.bizTitle2}</span>
+              </h2>
+
+              <p className="type-lede mt-7 max-w-[46ch] on-ink-secondary">
+                {h.bizSubtitle}
+              </p>
+
+              {/* Capabilities as a two-column hairline list — dense enough to
+                  read as a real feature set, quiet enough not to shout. */}
+              <div className="mt-11 grid sm:grid-cols-2 gap-x-10">
+                {[h.feat1, h.feat2, h.feat3, h.feat4, h.feat5, h.feat6].map((f) => (
+                  <div
+                    key={f}
+                    className="flex items-start gap-3 py-3.5 text-[14px] on-ink-secondary"
+                    style={{ borderTop: "1px solid rgba(226,232,240,0.14)" }}
                   >
-                    {h.registerFree}
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="m9 18 6-6-6-6" /></svg>
-                  </Link>
-                </div>
+                    <svg className="w-4 h-4 flex-shrink-0 mt-0.5" style={{ color: "#94A3B8" }} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" aria-hidden="true">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="m5 13 4 4L19 7" />
+                    </svg>
+                    {f}
+                  </div>
+                ))}
+              </div>
+
+              <div className="mt-11 flex flex-wrap items-center gap-3">
+                <Link
+                  href="/register?role=business"
+                  className="btn-spring inline-flex items-center gap-2 px-6 py-3 min-h-[44px] text-sm font-semibold rounded-[11px]"
+                  style={ON_INK_BTN}
+                >
+                  {h.registerFree}
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" aria-hidden="true"><path d="m9 18 6-6-6-6" /></svg>
+                </Link>
+                <Link
+                  href="/for-business"
+                  className="btn-spring inline-flex items-center gap-1.5 px-5 py-3 min-h-[44px] text-sm font-semibold rounded-[11px]"
+                  style={ON_INK_GHOST_BTN}
+                >
+                  {h.allFeatures}
+                </Link>
               </div>
             </motion.div>
 
-            {/* Feature cards */}
-            <motion.div initial="hidden" whileInView="show" viewport={REVEAL_VIEWPORT} variants={fade} className="space-y-4 lg:pt-2">
-              <h3 className="text-2xl font-bold mb-6 text-slate-900">{h.whyTitle}</h3>
+            {/* Right — the three reasons, as a numbered rail on the band. */}
+            <motion.div initial="hidden" whileInView="show" viewport={REVEAL_VIEWPORT} variants={fade} className="lg:pt-2">
+              <h3 className="text-[13px] font-semibold uppercase track-overline on-ink-muted mb-2">{h.whyTitle}</h3>
               {[
                 { n: "01", title: h.why1Title, desc: h.why1Desc },
                 { n: "02", title: h.why2Title, desc: h.why2Desc },
@@ -538,105 +512,70 @@ export default function HomePage() {
                 <motion.div
                   key={f.title}
                   initial="hidden" whileInView="show" viewport={REVEAL_VIEWPORT} custom={i} variants={fade}
-                  transition={SPRING}
-                  className="card-hover-raise relative flex gap-4 p-5 rounded-2xl overflow-hidden"
-                  style={G.panel}
+                  className="flex gap-5 py-6"
+                  style={{ borderTop: "1px solid rgba(226,232,240,0.14)" }}
                 >
-                  <div className="absolute inset-0 bg-gradient-to-br from-white/50 via-transparent to-transparent pointer-events-none" />
-                  <div className="relative w-9 h-9 rounded-xl flex items-center justify-center text-[11px] font-bold flex-shrink-0 mt-0.5 text-slate-500" style={G.chip}>
-                    {f.n}
-                  </div>
-                  <div className="relative">
-                    <p className="text-sm font-bold mb-1 text-slate-800">{f.title}</p>
-                    <p className="text-sm leading-relaxed text-slate-500">{f.desc}</p>
+                  <span className="text-[12px] font-semibold tabular-nums on-ink-muted pt-0.5 flex-shrink-0">{f.n}</span>
+                  <div className="min-w-0">
+                    <p className="text-[15px] font-semibold on-ink-primary track-heading">{f.title}</p>
+                    <p className="text-[13.5px] leading-[1.6] on-ink-secondary mt-1.5">{f.desc}</p>
                   </div>
                 </motion.div>
               ))}
-              <Link href="/for-business" className="inline-flex items-center gap-1.5 text-sm font-semibold hover:opacity-70 transition-opacity mt-2 text-slate-500">
-                {h.allFeatures}
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="m9 18 6-6-6-6" /></svg>
-              </Link>
             </motion.div>
           </div>
         </div>
       </section>
 
-      <div className="grad-sep" />
-
-      {/* ── TRUST BAR ────────────────────────────────────────────── */}
-      <section className="py-16 px-6" style={{ background: BG.numbers }}>
+      {/* ── TRUST — a hairline row, not a card ───────────────────── */}
+      <section className="px-6" style={{ background: BG.numbers }}>
         <motion.div
           initial="hidden" whileInView="show" viewport={REVEAL_VIEWPORT} variants={fade}
-          className="max-w-3xl mx-auto relative rounded-2xl overflow-hidden px-6 py-6 sm:px-10"
-          style={G.panel}
+          className="max-w-6xl mx-auto grid sm:grid-cols-3"
         >
-          <div className="absolute inset-0 bg-gradient-to-b from-white/60 to-transparent pointer-events-none" />
-          <div className="relative flex flex-col sm:flex-row items-center justify-center gap-6 sm:gap-10 text-center">
-            {[h.trust1, h.trust2, h.trust3].map((claim) => (
-              <div key={claim} className="flex items-center gap-2 text-sm font-semibold text-slate-700">
-                <svg className="w-4 h-4 flex-shrink-0 text-slate-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="m5 13 4 4L19 7" />
-                </svg>
-                {claim}
-              </div>
-            ))}
-          </div>
+          {[h.trust1, h.trust2, h.trust3].map((claim) => (
+            <div
+              key={claim}
+              className="flex items-center gap-2.5 py-6 sm:py-8 text-[13.5px] font-medium text-slate-700 sm:justify-center"
+              style={{ borderTop: "1px solid var(--hairline-soft)" }}
+            >
+              <svg className="w-4 h-4 flex-shrink-0 text-slate-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" aria-hidden="true">
+                <path strokeLinecap="round" strokeLinejoin="round" d="m5 13 4 4L19 7" />
+              </svg>
+              {claim}
+            </div>
+          ))}
         </motion.div>
       </section>
 
-      <div className="grad-sep" />
-
-      {/* ── CTA ──────────────────────────────────────────────────── */}
-      <section className="py-28 px-6" style={{ background: BG.cta }}>
-        <div className="max-w-4xl mx-auto">
-          <motion.div
-            variants={fade} initial="hidden" whileInView="show" viewport={REVEAL_VIEWPORT}
-            className="relative rounded-3xl p-14 text-center overflow-hidden"
-            style={G.card}
-          >
-            {/* Chrome dot grid */}
-            <div className="absolute inset-0 pointer-events-none"
-              style={{ backgroundImage: "radial-gradient(circle, rgba(203,213,225,0.28) 1px, transparent 1px)", backgroundSize: "24px 24px" }} />
-            {/* Chrome top specular */}
-            <div className="absolute top-0 left-0 right-0 h-px"
-              style={{ background: "linear-gradient(90deg, transparent, rgba(255,255,255,0.98) 30%, rgba(255,255,255,0.98) 70%, transparent)" }} />
-            <div className="absolute inset-0 bg-gradient-to-br from-white/60 via-transparent to-transparent pointer-events-none" />
-
-            <div className="relative z-10">
-              <div className="flex items-center justify-center gap-3 mb-6">
-                <span className="h-px w-12" style={{ background: "linear-gradient(90deg, transparent, rgba(203,213,225,0.70))" }} />
-                <span className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ background: "#CBD5E1", boxShadow: "var(--e1)" }} />
-                <span className="h-px w-12" style={{ background: "linear-gradient(90deg, rgba(203,213,225,0.70), transparent)" }} />
-              </div>
-              <h2 className="text-4xl font-bold mb-4 text-slate-900" style={{ letterSpacing: "var(--track-display)" }}>{h.ctaTitle}</h2>
-              <p className="mb-10 max-w-sm mx-auto text-base text-slate-500">
-                {h.ctaSubtitle}
-              </p>
-              <div className="flex flex-col sm:flex-row gap-3 justify-center">
-                <div 
-                >
-                  <Link
-                    href="/search"
-                    className="inline-flex items-center justify-center px-7 py-3.5 font-semibold text-sm rounded-xl text-slate-700"
-                    style={G.innerBtn}
-                  >
-                    {t.customer.findSpecialist}
-                  </Link>
-                </div>
-                <div 
-                >
-                  <Link
-                    href="/register?role=business"
-                    className="inline-flex items-center justify-center px-7 py-3.5 font-semibold text-sm rounded-xl"
-                    style={G.inkBtn}
-                  >
-                    {h.registerSalonArrow}
-                  </Link>
-                </div>
-              </div>
-            </div>
-          </motion.div>
-        </div>
+      {/* ── CTA — open, not boxed. The page settles instead of stopping. ── */}
+      <section className="px-6 py-28 md:py-44" style={{ background: BG.cta }}>
+        <motion.div
+          variants={fade} initial="hidden" whileInView="show" viewport={REVEAL_VIEWPORT}
+          className="max-w-3xl mx-auto text-center"
+        >
+          <h2 className="type-section text-slate-900">{h.ctaTitle}</h2>
+          <p className="type-lede mt-6 max-w-[42ch] mx-auto text-secondary">
+            {h.ctaSubtitle}
+          </p>
+          <div className="mt-12 flex flex-col sm:flex-row gap-3 justify-center">
+            <Link
+              href="/register?role=business"
+              data-on-ink
+              className="btn-spring inline-flex items-center justify-center px-7 py-3.5 min-h-[48px] font-semibold text-sm rounded-[12px]"
+              style={G.inkBtn}
+            >
+              {h.registerSalonArrow}
+            </Link>
+            <Link
+              href="/search"
+              className="btn-spring inline-flex items-center justify-center px-7 py-3.5 min-h-[48px] font-semibold text-sm rounded-[12px] text-slate-700"
+              style={{ background: "var(--surface)", border: "1px solid var(--hairline)", boxShadow: "var(--e1)" }}
+            >
+              {t.customer.findSpecialist}
+            </Link>
+          </div>
+        </motion.div>
       </section>
 
       <LandingFooter />

@@ -108,14 +108,6 @@ export const ON_INK_GHOST_BTN: CSSProperties = {
   color: "#E2E8F0",
 };
 
-/** A grouped region inside the band. A half-step lift, never white. */
-export const ON_INK_SURFACE: CSSProperties = {
-  background: "rgba(226,232,240,0.055)",
-  border: "1px solid rgba(226,232,240,0.12)",
-};
-
-export const ON_INK_HAIRLINE = "1px solid rgba(226,232,240,0.14)";
-
 // ── Ink — the one primary colour ──────────────────────────────
 
 export const INK_GRADIENT = "var(--ink-raised)";

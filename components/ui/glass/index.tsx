@@ -20,7 +20,6 @@ import {
   STATUS_TINT,
   OVERLINE_CLS,
   TITLE_CLS,
-  HEADING_CLS,
   type StatusKey,
 } from "./tokens";
 
@@ -32,20 +31,28 @@ export function PageHeader({
   title,
   subtitle,
   actions,
+  eyebrow,
   className,
 }: {
   title: string;
   subtitle?: React.ReactNode;
   actions?: React.ReactNode;
+  /** Optional section label above the title — the dashboard's editorial rail. */
+  eyebrow?: string;
   className?: string;
 }) {
   return (
-    <div className={cn("fade-rise flex flex-wrap items-end justify-between gap-3", className)}>
-      <div className="min-w-0">
-        <h1 className={TITLE_CLS}>{title}</h1>
-        {subtitle && <p className="mt-1 text-[13.5px] leading-[1.45] text-secondary track-caption">{subtitle}</p>}
+    <div className={cn("fade-rise pb-5 mb-1", className)} style={{ borderBottom: "1px solid var(--hairline-soft)" }}>
+      <div className="flex flex-wrap items-end justify-between gap-3">
+        <div className="min-w-0">
+          {eyebrow && (
+            <p className="text-[10.5px] font-semibold uppercase track-overline text-slate-400 mb-2">{eyebrow}</p>
+          )}
+          <h1 className="text-[26px] leading-[1.1] font-semibold text-slate-900 track-title">{title}</h1>
+          {subtitle && <p className="mt-1.5 text-[13.5px] leading-[1.45] text-secondary">{subtitle}</p>}
+        </div>
+        {actions && <div className="flex items-center gap-2 flex-shrink-0">{actions}</div>}
       </div>
-      {actions && <div className="flex items-center gap-2 flex-shrink-0">{actions}</div>}
     </div>
   );
 }
@@ -63,7 +70,7 @@ export function GlassCard({
   row?: boolean;
 }) {
   return (
-    <div className={cn("rounded-[20px]", className)} style={row ? ROW : ELEV_RAISED}>
+    <div className={cn("rounded-[18px]", className)} style={row ? ROW : ELEV_RAISED}>
       {children}
     </div>
   );
@@ -80,10 +87,10 @@ export function CardHeader({
 }) {
   return (
     <div
-      className={cn("flex items-center justify-between gap-3 px-5 py-3.5", className)}
+      className={cn("flex items-center justify-between gap-3 px-5 py-3", className)}
       style={{ borderBottom: HAIRLINE }}
     >
-      <h3 className={HEADING_CLS}>{title}</h3>
+      <h3 className="text-[10.5px] font-semibold uppercase track-overline text-slate-400">{title}</h3>
       {action}
     </div>
   );
@@ -107,22 +114,15 @@ export function StatCard({
   icon?: React.ReactNode;
 }) {
   return (
-    <div className="rounded-[20px] p-4 sm:p-5" style={ELEV_RAISED}>
+    <div className="rounded-[18px] p-4 sm:p-5" style={ELEV_RAISED}>
       <div className="flex items-start justify-between gap-2">
-        <p className="text-xs font-medium text-secondary">{label}</p>
-        {icon && (
-          <span
-            className="w-7 h-7 rounded-lg flex items-center justify-center text-slate-500 flex-shrink-0"
-            style={CHIP}
-          >
-            {icon}
-          </span>
-        )}
+        <p className="text-[10.5px] font-semibold uppercase track-overline text-slate-400">{label}</p>
+        {icon && <span className="text-slate-300 flex-shrink-0 -mt-0.5">{icon}</span>}
       </div>
-      <p className="mt-2 text-[26px] leading-[1.1] font-semibold text-slate-900 tabular-nums track-title">
+      <p className="mt-3 text-[32px] leading-[1] font-semibold text-slate-900 tabular-nums track-display">
         {value}
       </p>
-      {sub && <p className="mt-1 text-xs text-muted-glass tabular-nums track-caption">{sub}</p>}
+      {sub && <p className="mt-2 text-[12px] text-muted-glass tabular-nums">{sub}</p>}
     </div>
   );
 }
@@ -143,16 +143,11 @@ export function EmptyState({
   className?: string;
 }) {
   return (
-    <div className={cn("flex flex-col items-center justify-center text-center px-6 py-14", className)}>
-      <div
-        className="w-11 h-11 rounded-2xl flex items-center justify-center mb-4 text-slate-400"
-        style={{ background: "var(--surface)", border: "1px solid var(--hairline-soft)", boxShadow: "var(--e1)" }}
-      >
-        {icon}
-      </div>
-      <p className="text-[15px] font-semibold text-slate-900 track-heading">{title}</p>
-      {body && <p className="text-[13px] text-secondary mt-1.5 max-w-[34ch] leading-[1.5]">{body}</p>}
-      {action && <div className="mt-6">{action}</div>}
+    <div className={cn("flex flex-col items-center justify-center text-center px-6 py-20", className)}>
+      <div className="mb-5 text-slate-300">{icon}</div>
+      <p className="text-[17px] font-semibold text-slate-900 track-title">{title}</p>
+      {body && <p className="text-[13.5px] text-secondary mt-2 max-w-[36ch] leading-[1.55]">{body}</p>}
+      {action && <div className="mt-7">{action}</div>}
     </div>
   );
 }

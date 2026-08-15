@@ -12,10 +12,10 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 const BG = [
-  "radial-gradient(ellipse 120% 80% at 85% -20%, rgba(203,213,225,0.70) 0%, transparent 50%)",
-  "radial-gradient(ellipse 80% 70% at -8% 90%, rgba(148,163,184,0.28) 0%, transparent 55%)",
-  "radial-gradient(ellipse 60% 50% at 50% 55%, rgba(226,232,240,0.65) 0%, transparent 65%)",
-  "linear-gradient(168deg, #E8EFF8 0%, #F1F6FB 40%, #E5EEF9 100%)",
+  "radial-gradient(ellipse 70% 55% at 8% 0%, rgba(255,255,255,0.92) 0%, transparent 60%)",
+  "radial-gradient(ellipse 90% 70% at 92% 8%, rgba(186,203,224,0.42) 0%, transparent 58%)",
+  "radial-gradient(ellipse 60% 50% at 40% 100%, rgba(203,213,225,0.30) 0%, transparent 62%)",
+  "linear-gradient(172deg, #EDF2F9 0%, #F5F8FC 46%, #E7EEF7 100%)",
 ].join(", ");
 
 const card: React.CSSProperties = {
@@ -25,20 +25,21 @@ const card: React.CSSProperties = {
   borderRadius: "1.25rem",
 };
 
+/** The recommended plan is the page's ink anchor, not a 2.5% bigger box. */
 const cardHighlight: React.CSSProperties = {
-  background: "var(--surface-2)",
-  border: "1.5px solid var(--hairline-firm)",
-  boxShadow: "var(--e3)",
-  borderRadius: "1.5rem",
-  transform: "scale(1.025)",
+  background: "linear-gradient(168deg, #16202F 0%, #0F172A 55%, #131C2B 100%)",
+  border: "1px solid #0F172A",
+  boxShadow: "0 2px 8px rgba(15,23,42,0.16), 0 32px 64px -24px rgba(15,23,42,0.42)",
+  borderRadius: "1.25rem",
+  color: "#E8EEF6",
 };
 
-const inkBtn: React.CSSProperties = {
-  background: "var(--ink-raised)",
-  color: "#F8FAFC",
-  boxShadow:
-    "0 1px 2px rgba(0,0,0,0.20), 0 10px 24px rgba(15,23,42,0.28), inset 0 1px 0 rgba(255,255,255,0.15)",
-  border: "1px solid #0F172A",
+/** The recommended plan's CTA: silver on ink, so it still reads as primary. */
+const onInkBtn: React.CSSProperties = {
+  background: "#F1F5F9",
+  color: "#0F172A",
+  border: "1px solid #F1F5F9",
+  boxShadow: "0 1px 2px rgba(0,0,0,0.28), 0 8px 20px -8px rgba(0,0,0,0.45)",
   borderRadius: "0.75rem",
   padding: "0.75rem 0",
   width: "100%",
@@ -46,7 +47,6 @@ const inkBtn: React.CSSProperties = {
   fontSize: "0.875rem",
   fontWeight: 600,
   display: "block",
-  transition: "transform 300ms cubic-bezier(0.34,1.56,0.64,1), box-shadow 200ms ease",
 };
 
 const ghostBtn: React.CSSProperties = {
@@ -61,8 +61,7 @@ const ghostBtn: React.CSSProperties = {
   fontWeight: 600,
   display: "block",
   boxShadow: "0 1px 2px rgba(0,0,0,0.04), inset 0 1px 0 rgba(255,255,255,0.90)",
-  transition: "transform 300ms cubic-bezier(0.34,1.56,0.64,1), box-shadow 200ms ease",
-};
+  };
 
 const divider: React.CSSProperties = {
   height: "1px",
@@ -86,7 +85,7 @@ function CheckIcon({ highlight }: { highlight: boolean }) {
       className="w-4 h-4 flex-shrink-0"
       viewBox="0 0 24 24"
       fill="none"
-      stroke={highlight ? "#64748B" : "#94A3B8"}
+      stroke={highlight ? "#8FA3BC" : "#94A3B8"}
       strokeWidth="2.5"
     >
       <path strokeLinecap="round" strokeLinejoin="round" d="m5 13 4 4L19 7" />
@@ -123,20 +122,12 @@ export default async function PricingPage() {
 
           {/* Header */}
           <div className="text-center max-w-xl mx-auto mb-10">
-            <div
-              className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full mb-6 text-xs font-semibold uppercase tracking-widest"
-              style={{
-                background: "var(--selected)",
-                border: "1px solid var(--hairline)",
-                color: "#64748B",
-              }}
-            >
-              {T.eyebrow}
+            <div className="rail mb-7 justify-center">
+              <span className="text-[11px] font-semibold uppercase track-overline text-slate-500 flex-shrink-0">
+                {T.eyebrow}
+              </span>
             </div>
-            <h1
-              className="text-5xl font-bold mb-4"
-              style={{ letterSpacing: "var(--track-display)", color: "#0F172A" }}
-            >
+            <h1 className="type-display mb-6" style={{ color: "#0F172A" }}>
               {T.headlineLead}{" "}
               <span
                 style={{
@@ -149,7 +140,7 @@ export default async function PricingPage() {
                 {T.headlineAccent}
               </span>
             </h1>
-            <p className="text-lg" style={{ color: "#64748B" }}>
+            <p className="type-lede max-w-[48ch] mx-auto" style={{ color: "#55637A" }}>
               {T.lede}
             </p>
           </div>
@@ -157,13 +148,8 @@ export default async function PricingPage() {
           {/* Launch offer banner */}
           <div className="max-w-3xl mx-auto mb-16">
             <div
-              className="px-6 py-5 sm:px-8 flex flex-col sm:flex-row items-center gap-4 text-center sm:text-left"
-              style={{
-                background: "var(--surface-2)",
-                border: "1px solid var(--hairline-firm)",
-                borderRadius: "1.25rem",
-                boxShadow: "var(--e2)",
-              }}
+              className="py-6 flex flex-col sm:flex-row items-center gap-5 text-center sm:text-left"
+              style={{ borderTop: "1px solid var(--hairline)", borderBottom: "1px solid var(--hairline)" }}
             >
               <div
                 className="w-9 h-9 rounded-xl flex-shrink-0 flex items-center justify-center"
@@ -210,9 +196,9 @@ export default async function PricingPage() {
                   <div
                     className="inline-flex items-center self-start px-2.5 py-1 rounded-lg text-xs font-semibold mb-5"
                     style={{
-                      background: "rgba(148,163,184,0.20)",
-                      border: "1px solid rgba(148,163,184,0.35)",
-                      color: "#475569",
+                      background: "rgba(226,232,240,0.12)",
+                      border: "1px solid rgba(226,232,240,0.22)",
+                      color: "#CBD5E1",
                     }}
                   >
                     {T.mostPopular}
@@ -221,14 +207,14 @@ export default async function PricingPage() {
 
                 <div className="mb-6">
                   <h2
-                    className="text-lg font-bold mb-2"
-                    style={{ letterSpacing: "var(--track-title)", color: "#0F172A" }}
+                    className="text-lg font-bold mb-2 track-title"
+                    style={{ color: plan.highlight ? "#F1F5F9" : "#0F172A" }}
                   >
                     {plan.name}
                   </h2>
                   <p
                     className="text-sm font-medium tabular-nums"
-                    style={{ color: "#94A3B8", textDecoration: "line-through", textDecorationColor: "rgba(148,163,184,0.7)" }}
+                    style={{ color: plan.highlight ? "#7C8CA3" : "#8593A8", textDecoration: "line-through", textDecorationColor: "rgba(148,163,184,0.7)" }}
                     aria-label={interpolate(T.regularPrice, { price: plan.oldPrice })}
                   >
                     {plan.oldPrice}
@@ -238,33 +224,30 @@ export default async function PricingPage() {
                       className="text-4xl font-bold"
                       style={{
                         letterSpacing: "var(--track-display)",
-                        background: plan.highlight
-                          ? "linear-gradient(135deg, #475569 0%, #94A3B8 100%)"
-                          : "none",
-                        WebkitBackgroundClip: plan.highlight ? "text" : "unset",
-                        WebkitTextFillColor: plan.highlight ? "transparent" : "#0F172A",
-                        backgroundClip: plan.highlight ? "text" : "unset",
-                        color: plan.highlight ? "transparent" : "#0F172A",
+                        color: plan.highlight ? "#FFFFFF" : "#0F172A",
                       }}
                     >
                       {plan.price}
                     </span>
-                    <span className="text-sm" style={{ color: "#94A3B8" }}>
+                    <span className="text-sm" style={{ color: plan.highlight ? "#93A3B8" : "#8593A8" }}>
                       / {plan.period}
                     </span>
                   </div>
-                  <p className="text-sm leading-relaxed" style={{ color: "#64748B" }}>
+                  <p className="text-sm leading-relaxed" style={{ color: plan.highlight ? "#9FB0C6" : "#55637A" }}>
                     {plan.desc}
                   </p>
                 </div>
 
-                <div className="divider mb-6" style={divider} />
+                <div
+                  className="divider mb-6"
+                  style={plan.highlight ? { height: "1px", background: "rgba(226,232,240,0.16)" } : divider}
+                />
 
                 <div className="space-y-2.5 mb-8 flex-1">
                   {plan.features.map((f) => (
                     <div key={f} className="flex items-start gap-2.5 text-sm">
                       <span className="mt-0.5"><CheckIcon highlight={plan.highlight} /></span>
-                      <span style={{ color: plan.highlight ? "#0F172A" : "#475569" }}>{f}</span>
+                      <span style={{ color: plan.highlight ? "#D5DFEC" : "#475569" }}>{f}</span>
                     </div>
                   ))}
                 </div>
@@ -272,11 +255,11 @@ export default async function PricingPage() {
                 <Link
                   href={plan.href}
                   className="btn-spring"
-                  style={plan.highlight ? inkBtn : ghostBtn}
+                  style={plan.highlight ? onInkBtn : ghostBtn}
                 >
                   {plan.cta}
                 </Link>
-                <p className="text-[11px] text-center mt-2.5" style={{ color: "#94A3B8" }}>
+                <p className="text-[11px] text-center mt-2.5" style={{ color: plan.highlight ? "#7C8CA3" : "#8593A8" }}>
                   {interpolate(T.trialThen, { price: plan.price, period: plan.period })}
                 </p>
               </div>
@@ -292,30 +275,25 @@ export default async function PricingPage() {
 
           {/* FAQ */}
           <div className="max-w-2xl mx-auto">
-            <h2
-              className="text-2xl font-bold mb-8 text-center"
-              style={{ letterSpacing: "var(--track-display)", color: "#0F172A" }}
-            >
+            <h2 className="type-section mb-10 text-center" style={{ color: "#0F172A" }}>
               {T.faqTitle}
             </h2>
-            <div className="space-y-3">
+            <div>
               {FAQ.map((item) => (
                 <div
                   key={item.q}
-                  className="p-6"
-                  style={card}
+                  className="py-7"
+                  style={{ borderTop: "1px solid var(--hairline-soft)" }}
                 >
-                  <p
-                    className="font-semibold mb-2 text-sm"
-                    style={{ color: "#0F172A", letterSpacing: "var(--track-heading)" }}
-                  >
+                  <p className="font-semibold mb-2 text-[15px] track-heading" style={{ color: "#0F172A" }}>
                     {item.q}
                   </p>
-                  <p className="text-sm leading-relaxed" style={{ color: "#64748B" }}>
+                  <p className="text-[14.5px] leading-[1.65]" style={{ color: "#55637A" }}>
                     {item.a}
                   </p>
                 </div>
               ))}
+              <div className="rule" />
             </div>
 
             <div className="mt-12 text-center">

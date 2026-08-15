@@ -10,26 +10,6 @@ import { LandingFooter } from "@/components/layout/landing-footer";
 // ── Glass style constants ─────────────────────────────────────────────────────
 
 const G = {
-  card: {
-    background: "var(--surface)",
-    border: "1px solid var(--hairline)",
-    boxShadow: "var(--e3)",
-  } as React.CSSProperties,
-  panel: {
-    background: "var(--surface)",
-    border: "1px solid var(--hairline-soft)",
-    boxShadow: "var(--e2)",
-  } as React.CSSProperties,
-  chip: {
-    background: "var(--surface)",
-    border: "1px solid var(--hairline)",
-    boxShadow: "var(--e2)",
-  } as React.CSSProperties,
-  pill: {
-    background: "var(--surface)",
-    border: "1px solid var(--hairline-soft)",
-    boxShadow: "var(--e1)",
-  } as React.CSSProperties,
   inkBtn: {
     background: "var(--ink-raised)",
     border: "1px solid #0F172A",
@@ -58,9 +38,8 @@ const BG = {
     "#EEF3FA",
   ].join(", "),
   cta: [
-    "radial-gradient(ellipse 90% 70% at 50% 85%, rgba(203,213,225,0.24) 0%, transparent 60%)",
-    "radial-gradient(ellipse 65% 55% at 15% 15%, rgba(148,163,184,0.18) 0%, transparent 55%)",
-    "#EBF1F9",
+    "radial-gradient(ellipse 100% 60% at 50% 108%, rgba(148,163,184,0.22) 0%, transparent 62%)",
+    "linear-gradient(180deg, #F7FAFD 0%, #EDF2F8 100%)",
   ].join(", "),
 };
 
@@ -82,20 +61,18 @@ function DashboardPreview() {
 
   return (
     <motion.div
-      initial={{ opacity: 0, x: 40, y: 10 }}
-      animate={{ opacity: 1, x: 0, y: 0 }}
-      transition={{ duration: 0.55, delay: 0.2, ease: [0.22, 1, 0.36, 1] }}
-      className="relative"
+      initial={{ opacity: 0, y: 18 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ ...SPRING, delay: 0.22 }}
+      className="stage"
     >
-      {/* Main glass card */}
-      <div className="relative rounded-3xl overflow-hidden" style={G.card}>
-        {/* Specular top edge */}
-        <div className="absolute top-0 left-8 right-8 h-px pointer-events-none"
-          style={{ background: "linear-gradient(90deg, transparent, rgba(255,255,255,0.95), transparent)" }} />
-        <div className="absolute inset-0 bg-gradient-to-br from-white/60 via-transparent to-transparent pointer-events-none" />
+      <div className="relative">
 
         {/* Header */}
-        <div className="relative flex items-center justify-between px-5 py-3.5" style={G.divider}>
+        <div
+          className="relative flex items-center justify-between px-6 sm:px-7 py-4"
+          style={{ borderBottom: "1px solid var(--hairline-soft)", background: "var(--surface-2)" }}
+        >
           <div className="flex items-center gap-2.5">
             <div className="w-7 h-7 rounded-lg flex items-center justify-center text-[10px] font-bold"
               style={{ background: "rgba(148,163,184,0.22)", border: "1px solid rgba(148,163,184,0.32)", color: "#475569" }}>
@@ -106,7 +83,7 @@ function DashboardPreview() {
               <p className="text-[10px] text-slate-400 mt-0.5">{T.previewPanel}</p>
             </div>
           </div>
-          <span className="text-[10px] font-medium px-2.5 py-1 rounded-full text-slate-500" style={G.pill}>{T.previewBadge}</span>
+          <span className="text-[10.5px] font-semibold uppercase track-overline text-slate-500">{T.previewBadge}</span>
         </div>
 
         {/* Bookings */}
@@ -144,7 +121,7 @@ function DashboardPreview() {
             { num: "280 zł", label: T.previewRevenue },
             { num: "97%", label: T.previewOccupancy },
           ].map((s) => (
-            <div key={s.label} className="p-2.5 rounded-xl text-center" style={G.panel}>
+            <div key={s.label} className="p-3 rounded-[10px] text-center" style={{ background: "var(--surface-inset)", border: "1px solid var(--hairline-soft)" }}>
               <p className="text-sm font-bold text-slate-800">{s.num}</p>
               <p className="text-[9px] text-slate-400 mt-0.5 leading-tight">{s.label}</p>
             </div>
@@ -153,28 +130,6 @@ function DashboardPreview() {
       </div>
 
       {/* Floating chip — new booking notification */}
-      <motion.div
-        initial={{ opacity: 0, y: 8 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ ...SPRING, delay: 0.55 }}
-        className="absolute -top-6 -right-5 rounded-2xl px-4 py-3"
-        style={G.chip}
-      >
-        <p className="text-[10px] font-medium tracking-wide text-slate-400 uppercase">{T.previewChipBooking}</p>
-        <p className="text-sm font-semibold text-slate-700 mt-0.5">{T.previewChipBookingWhen}</p>
-      </motion.div>
-
-      {/* Floating SMS chip */}
-      <motion.div
-        initial={{ opacity: 0, y: 8 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ ...SPRING, delay: 0.7 }}
-        className="absolute -bottom-5 -left-5 rounded-2xl px-4 py-3"
-        style={G.chip}
-      >
-        <p className="text-[10px] font-medium tracking-wide text-slate-400 uppercase">{T.previewChipSms}</p>
-        <p className="text-sm font-semibold text-slate-700 mt-0.5">{T.previewChipSmsBody}</p>
-      </motion.div>
     </motion.div>
   );
 }
@@ -269,42 +224,40 @@ export function ForBusinessClient() {
       <LandingNav />
 
       {/* ── HERO ─────────────────────────────────────────────────── */}
-      <section className="relative min-h-screen flex items-start overflow-hidden px-6 pt-28 md:pt-32 pb-16">
+      <section className="relative overflow-hidden pt-24 md:pt-32 pb-16 md:pb-24">
         {/* Dot grid */}
         <div
           className="absolute inset-0 pointer-events-none"
           style={{
-            backgroundImage: "radial-gradient(circle, rgba(203,213,225,0.35) 1px, transparent 1px)",
-            backgroundSize: "38px 38px",
-            maskImage: "radial-gradient(ellipse 85% 75% at 50% 50%, black 30%, transparent 100%)",
-            WebkitMaskImage: "radial-gradient(ellipse 85% 75% at 50% 50%, black 30%, transparent 100%)",
+            backgroundImage: "linear-gradient(to right, rgba(148,163,184,0.13) 1px, transparent 1px)",
+            backgroundSize: "112px 100%",
+            maskImage: "linear-gradient(180deg, transparent 0%, black 22%, black 72%, transparent 100%)",
+            WebkitMaskImage: "linear-gradient(180deg, transparent 0%, black 22%, black 72%, transparent 100%)",
           }}
         />
 
-        <div className="relative z-10 max-w-7xl mx-auto w-full grid lg:grid-cols-[1fr_440px] gap-14 xl:gap-20 items-center pb-20">
-          {/* Left */}
-          <div>
+        <div
+          className="relative z-10 grid lg:grid-cols-[minmax(0,52ch)_minmax(0,1fr)] gap-y-12 lg:gap-x-16 xl:gap-x-24 items-center"
+          style={{ paddingLeft: "max(1.5rem, calc((100vw - 80rem) / 2))" }}
+        >
+          {/* Editorial column */}
+          <div className="pr-6 lg:pr-0">
             <motion.div
-              initial={{ opacity: 0, y: -10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
-              className="inline-flex items-center gap-2.5 px-3.5 py-1.5 rounded-full text-xs font-medium mb-9"
-              style={{ ...G.pill, color: "#64748B" }}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ duration: 0.4 }}
+              className="rail mb-7"
             >
-              <span className="relative flex h-2 w-2 flex-shrink-0">
-                <span className="absolute inline-flex h-full w-full rounded-full opacity-75"
-                  style={{ background: "#94A3B8", animation: "dot-pulse 2s cubic-bezier(0.4,0,0.6,1) infinite" }} />
-                <span className="relative inline-flex rounded-full h-2 w-2" style={{ background: "#CBD5E1" }} />
+              <span className="text-[11px] font-semibold uppercase track-overline text-slate-500 flex-shrink-0">
+                {T.eyebrow}
               </span>
-              {T.eyebrow}
             </motion.div>
 
             <motion.h1
               initial={{ opacity: 0, y: 30 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.45, delay: 0.05, ease: [0.22, 1, 0.36, 1] }}
-              className="text-6xl sm:text-7xl xl:text-8xl font-bold leading-[0.95] text-slate-900"
-              style={{ letterSpacing: "var(--track-display)" }}
+              className="type-display text-slate-900"
             >
               {T.headlineTop}<br />
               <span className="italic font-bold" style={{
@@ -321,7 +274,7 @@ export function ForBusinessClient() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.42, delay: 0.2 }}
-              className="mt-7 text-lg max-w-md leading-relaxed text-slate-500"
+              className="type-lede mt-8 max-w-[46ch] text-secondary"
             >
               {T.lede}
             </motion.p>
@@ -351,31 +304,23 @@ export function ForBusinessClient() {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ delay: 0.6 }}
-              className="mt-5 text-xs text-slate-500"
+              className="mt-8 pt-6 text-[12px] text-muted-glass"
+              style={{ borderTop: "1px solid var(--hairline-soft)" }}
             >
               {T.trust}
             </motion.p>
           </div>
 
-          {/* Right — dashboard preview */}
-          <div className="lg:pt-0 pt-8">
+          {/* Stage column — runs off the right edge */}
+          <div className="pr-6 lg:pr-0">
             <DashboardPreview />
           </div>
         </div>
       </section>
 
-      {/* ── STATS ────────────────────────────────────────────────── */}
-      <div className="grad-sep" />
-      <section
-        className="py-16 px-6"
-        style={{
-          background: [
-            "radial-gradient(ellipse 80% 65% at 50% 50%, rgba(203,213,225,0.22) 0%, transparent 65%)",
-            "#EEF3FA",
-          ].join(", ")
-        }}
-      >
-        <div className="max-w-4xl mx-auto grid grid-cols-2 md:grid-cols-4 gap-4">
+      {/* ── STATS — the page's ink band ──────────────────────────── */}
+      <section className="band-ink py-16 md:py-20 px-6">
+        <div className="max-w-5xl mx-auto grid grid-cols-2 md:grid-cols-4 gap-y-10">
           {[
             { num: T.statLessLabel, label: T.statLessValue },
             { num: "24/7", label: T.statAvailability },
@@ -385,163 +330,113 @@ export function ForBusinessClient() {
             <motion.div
               key={s.label}
               initial="hidden" whileInView="show" viewport={REVEAL_VIEWPORT} custom={i} variants={fade}
-              transition={SPRING}
-              className="card-hover-raise relative text-center p-6 rounded-2xl overflow-hidden"
-              style={G.panel}
+              className="text-center px-4"
             >
-              <div className="absolute inset-0 bg-gradient-to-b from-white/60 to-transparent pointer-events-none" />
-              <p className="relative text-3xl font-bold text-slate-800 tabular-nums" style={{ letterSpacing: "var(--track-display)" }}>{s.num}</p>
-              <p className="relative mt-1.5 text-xs text-slate-400 leading-tight">{s.label}</p>
+              <p className="type-numeral on-ink-primary">{s.num}</p>
+              <p className="text-[12px] font-medium uppercase track-overline on-ink-muted mt-3 leading-snug">{s.label}</p>
             </motion.div>
           ))}
         </div>
       </section>
 
       {/* ── STEPS ────────────────────────────────────────────────── */}
-      <div className="grad-sep" />
       <section
         className="py-28 px-6"
         style={{
-          background: [
-            "radial-gradient(ellipse 90% 70% at 50% 60%, rgba(203,213,225,0.24) 0%, transparent 65%)",
-            "#EEF3FA",
-          ].join(", ")
+          background: "#FAFCFE"
         }}
       >
         <div className="max-w-5xl mx-auto">
           <motion.div initial="hidden" whileInView="show" viewport={REVEAL_VIEWPORT} variants={fade} className="mb-16">
-            <span className="inline-block text-xs font-semibold uppercase tracking-widest mb-4 px-3 py-1 rounded-full text-slate-500" style={G.pill}>
-              {T.stepsEyebrow}
-            </span>
-            <h2 className="text-4xl font-bold text-slate-900" style={{ letterSpacing: "var(--track-display)" }}>
+            <div className="rail mb-6">
+              <span className="text-[11px] font-semibold uppercase track-overline text-slate-500 flex-shrink-0">
+                {T.stepsEyebrow}
+              </span>
+            </div>
+            <h2 className="type-section text-slate-900">
               {T.stepsTitle}
             </h2>
           </motion.div>
 
-          <div className="grid md:grid-cols-3 gap-5">
+          <div>
             {STEPS.map((step, i) => (
               <motion.div
                 key={step.n}
                 initial="hidden" whileInView="show" viewport={REVEAL_VIEWPORT} custom={i} variants={fade}
-                transition={SPRING}
-                className="card-hover-raise relative p-7 rounded-3xl overflow-hidden"
-                style={G.panel}
+                className="grid grid-cols-[auto_minmax(0,1fr)] md:grid-cols-[7rem_minmax(0,26rem)_minmax(0,1fr)] gap-x-6 md:gap-x-10 gap-y-2 py-8 md:py-11"
+                style={{ borderTop: "1px solid var(--hairline-soft)" }}
               >
-                <div className="absolute inset-0 bg-gradient-to-br from-white/60 via-transparent to-transparent pointer-events-none" />
-                <div className="relative">
-                  <div className="w-11 h-11 rounded-2xl flex items-center justify-center text-xs font-bold mb-5" style={G.chip}>
-                    <span className="text-slate-500">{step.n}</span>
-                  </div>
-                  <h3 className="text-lg font-bold mb-2 text-slate-800">{step.title}</h3>
-                  <p className="text-sm leading-relaxed text-slate-500">{step.desc}</p>
-                </div>
+                <span className="type-numeral text-muted-glass select-none row-span-2 md:row-span-1">{step.n}</span>
+                <h3 className="text-[19px] md:text-[22px] font-semibold text-slate-900 track-title self-center">{step.title}</h3>
+                <p className="text-[14.5px] leading-[1.65] text-secondary max-w-[52ch] self-center col-start-2 md:col-start-3">{step.desc}</p>
               </motion.div>
             ))}
+            <div className="rule" />
           </div>
         </div>
       </section>
 
       {/* ── FEATURES ─────────────────────────────────────────────── */}
-      <div className="grad-sep" />
       <section className="py-28 px-6" style={{ background: BG.features }}>
         <div className="max-w-5xl mx-auto">
           <motion.div initial="hidden" whileInView="show" viewport={REVEAL_VIEWPORT} variants={fade} className="mb-16">
-            <span className="inline-block text-xs font-semibold uppercase tracking-widest mb-4 px-3 py-1 rounded-full text-slate-500" style={G.pill}>
-              {T.featuresEyebrow}
-            </span>
-            <h2 className="text-4xl font-bold text-slate-900" style={{ letterSpacing: "var(--track-display)" }}>
+            <div className="rail mb-6">
+              <span className="text-[11px] font-semibold uppercase track-overline text-slate-500 flex-shrink-0">
+                {T.featuresEyebrow}
+              </span>
+            </div>
+            <h2 className="type-section text-slate-900">
               {T.featuresTitle}
             </h2>
-            <p className="mt-3 max-w-sm text-sm text-slate-500">
+            <p className="type-lede mt-5 max-w-[46ch] text-secondary">
               {T.featuresLede}
             </p>
           </motion.div>
 
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-5">
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-x-12 gap-y-2">
             {FEATURES.map((f, i) => (
               <motion.div
                 key={f.n}
                 initial="hidden" whileInView="show" viewport={REVEAL_VIEWPORT} custom={i} variants={fade}
-                transition={SPRING}
-                className="card-hover-raise relative p-6 rounded-3xl overflow-hidden"
-                style={G.panel}
+                className="py-7"
+                style={{ borderTop: "1px solid var(--hairline-soft)" }}
               >
-                <div className="absolute inset-0 bg-gradient-to-br from-white/50 via-transparent to-transparent pointer-events-none" />
-                <div className="relative">
-                  <div
-                    className="w-10 h-10 rounded-xl flex items-center justify-center mb-5 text-slate-500"
-                    style={G.chip}
-                  >
-                    {f.icon}
-                  </div>
-                  <h3 className="text-sm font-bold mb-2 text-slate-800">{f.title}</h3>
-                  <p className="text-sm leading-relaxed text-slate-500">{f.desc}</p>
-                </div>
+                <div className="text-slate-400 mb-4">{f.icon}</div>
+                <h3 className="text-[15px] font-semibold mb-2 text-slate-900 track-heading">{f.title}</h3>
+                <p className="text-[14px] leading-[1.65] text-secondary max-w-[38ch]">{f.desc}</p>
               </motion.div>
             ))}
           </div>
         </div>
       </section>
 
-      {/* ── CTA ──────────────────────────────────────────────────── */}
-      <div className="grad-sep" />
-      <section className="py-28 px-6" style={{ background: BG.cta }}>
-        <div className="max-w-4xl mx-auto">
-          <motion.div
-            initial={{ opacity: 0, y: 24 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={REVEAL_VIEWPORT}
-            transition={{ duration: 0.42 }}
-            className="relative rounded-3xl p-14 text-center overflow-hidden"
-            style={G.card}
-          >
-            {/* Chrome dot grid */}
-            <div className="absolute inset-0 pointer-events-none"
-              style={{ backgroundImage: "radial-gradient(circle, rgba(203,213,225,0.28) 1px, transparent 1px)", backgroundSize: "24px 24px" }} />
-            {/* Specular top */}
-            <div className="absolute top-0 left-0 right-0 h-px"
-              style={{ background: "linear-gradient(90deg, transparent, rgba(255,255,255,0.98) 30%, rgba(255,255,255,0.98) 70%, transparent)" }} />
-            <div className="absolute inset-0 bg-gradient-to-br from-white/60 via-transparent to-transparent pointer-events-none" />
+      {/* ── CTA — open. The page ends on room, not on more chrome. ── */}
+      <section className="px-6 py-28 md:py-44" style={{ background: BG.cta }}>
+        <motion.div
+          initial="hidden" whileInView="show" viewport={REVEAL_VIEWPORT} variants={fade}
+          className="max-w-3xl mx-auto text-center"
+        >
+          <h2 className="type-section text-slate-900">{T.ctaTitle}</h2>
+          <p className="type-lede mt-6 max-w-[42ch] mx-auto text-secondary">{T.ctaLede}</p>
 
-            <div className="relative z-10">
-              <div className="flex items-center justify-center gap-3 mb-6">
-                <span className="h-px w-12" style={{ background: "linear-gradient(90deg, transparent, rgba(203,213,225,0.70))" }} />
-                <span className="w-1.5 h-1.5 rounded-full" style={{ background: "#CBD5E1", boxShadow: "var(--e1)" }} />
-                <span className="h-px w-12" style={{ background: "linear-gradient(90deg, rgba(203,213,225,0.70), transparent)" }} />
-              </div>
-
-              <h2 className="text-4xl font-bold mb-4 text-slate-900" style={{ letterSpacing: "var(--track-display)" }}>
-                {T.ctaTitle}
-              </h2>
-              <p className="mb-10 max-w-sm mx-auto text-base text-slate-500">
-                {T.ctaLede}
-              </p>
-
-              <div className="flex flex-col sm:flex-row gap-3 justify-center">
-                <div 
-                >
-                  <Link
-                    href="/register?role=business"
-                    className="inline-flex items-center justify-center px-7 py-3.5 font-semibold text-sm rounded-xl"
-                    style={G.inkBtn}
-                  >
-                    {T.ctaPrimary}
-                  </Link>
-                </div>
-                <div 
-                >
-                  <Link
-                    href="/search"
-                    className="inline-flex items-center justify-center px-7 py-3.5 font-semibold text-sm rounded-xl text-slate-600"
-                    style={G.innerBtn}
-                  >
-                    {T.browseSalons}
-                  </Link>
-                </div>
-              </div>
-            </div>
-          </motion.div>
-        </div>
+          <div className="mt-12 flex flex-col sm:flex-row gap-3 justify-center">
+            <Link
+              href="/register?role=business"
+              data-on-ink
+              className="btn-spring inline-flex items-center justify-center px-7 py-3.5 min-h-[48px] font-semibold text-sm rounded-[12px]"
+              style={G.inkBtn}
+            >
+              {T.ctaPrimary}
+            </Link>
+            <Link
+              href="/search"
+              className="btn-spring inline-flex items-center justify-center px-7 py-3.5 min-h-[48px] font-semibold text-sm rounded-[12px] text-slate-700"
+              style={{ background: "var(--surface)", border: "1px solid var(--hairline)", boxShadow: "var(--e1)" }}
+            >
+              {T.browseSalons}
+            </Link>
+          </div>
+        </motion.div>
       </section>
 
       <LandingFooter />
