@@ -8,6 +8,7 @@
     "start": "next start",
     "lint": "next lint",
     "db:generate": "prisma generate",
+    "db:check": "tsx scripts/check-schema-drift.ts",
     "db:push": "prisma db push",
     "db:migrate": "prisma migrate dev",
     "db:migrate:deploy": "prisma migrate deploy",

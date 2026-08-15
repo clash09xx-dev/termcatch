@@ -15,7 +15,7 @@
 // (status + isActive) — never name-based ("contains 'test'").
 
 import { BusinessStatus } from "@prisma/client";
-import { hiddenCategoryValues } from "@/lib/categories";
+import { hiddenCategoryValues, isMedicalCategory } from "@/lib/categories";
 
 /** The authoritative "is this business publicly visible" filter. */
 export const PUBLIC_BUSINESS_WHERE = {
@@ -98,6 +98,103 @@ export function validateForPublication(input: PublicationCheckInput): {
   const requirements = publicationRequirements(input);
   const missing = requirements.filter((r) => !r.ok);
   return { ok: missing.length === 0, requirements, missing };
+}
+
+// ─── The one publication truth ───────────────────────────────────────────────
+// Three different questions were previously answered by three different rules,
+// which is how the dashboard came to claim "Opublikowany — widoczny w
+// wyszukiwarce" for a salon that no search would ever return:
+//
+//   profile route (/b/[slug], /b/[slug]/book, booking write)
+//        → isPubliclyVisible  = ACTIVE && isActive
+//   discovery (search, categories, sitemap, recommendations, assistant)
+//        → publicDiscoveryWhere = ACTIVE && isActive && category not hidden
+//   owner dashboard card
+//        → status === ACTIVE          ← ignored BOTH extra conditions
+//
+// resolvePublication answers all three from one input so a surface can no
+// longer drift. It derives its booleans from the very same predicates the
+// public surfaces use (isPubliclyVisible / isMedicalCategory), rather than
+// restating them — a restatement is exactly what went stale before.
+
+export type PublicationState =
+  /** Not public: still missing something required to publish. */
+  | "DRAFT"
+  /** Not public yet, but complete — autoPublishIfComplete flips it on the next write. */
+  | "READY"
+  /** Public, in search, bookable. The only fully-live state. */
+  | "PUBLISHED"
+  /** Public + bookable via its link, but permanently excluded from search
+   *  because its category is not offered in this product (medical). */
+  | "NOT_LISTED"
+  /** The owner switched the public profile off (isActive = false). */
+  | "HIDDEN"
+  /** An admin suspended the salon. */
+  | "SUSPENDED"
+  /** BANNED / CLOSED — terminal, not public. */
+  | "CLOSED";
+
+export type PublicationFacts = {
+  state: PublicationState;
+  /** The public profile route resolves — i.e. /b/[slug] does NOT return notFound(). */
+  publiclyVisible: boolean;
+  /** Appears in search, category pages, recommendations and the sitemap. */
+  discoverable: boolean;
+  /** A customer can complete an online booking. */
+  bookable: boolean;
+  /** A real, reachable public path — null when there is nothing safe to link to. */
+  profilePath: string | null;
+  requirements: PublicationRequirement[];
+  missing: PublicationRequirement[];
+};
+
+export type PublicationInput = PublicationCheckInput & {
+  status: BusinessStatus;
+  isActive: boolean;
+  slug: string;
+};
+
+/**
+ * The single server-side answer to "is this salon published, findable and
+ * bookable — and what may the UI truthfully say about it?".
+ *
+ * Every consumer (dashboard card, "View profile" action, booking link) must go
+ * through this rather than testing `status === ACTIVE` on its own.
+ */
+export function resolvePublication(input: PublicationInput): PublicationFacts {
+  const { requirements, missing } = validateForPublication(input);
+
+  const publiclyVisible = isPubliclyVisible({ status: input.status, isActive: input.isActive });
+  const categoryHidden =
+    typeof input.category === "string" && isMedicalCategory(input.category);
+  const discoverable = publiclyVisible && !categoryHidden;
+  // Booking gates on exactly what lib/actions/appointments.ts gates on.
+  const bookable = publiclyVisible;
+
+  const state: PublicationState = publiclyVisible
+    ? discoverable
+      ? "PUBLISHED"
+      : "NOT_LISTED"
+    : input.status === BusinessStatus.ACTIVE
+      ? "HIDDEN" // ACTIVE but the owner turned the public profile off
+      : input.status === BusinessStatus.SUSPENDED
+        ? "SUSPENDED"
+        : input.status === BusinessStatus.PENDING_VERIFICATION
+          ? missing.length === 0
+            ? "READY"
+            : "DRAFT"
+          : "CLOSED";
+
+  return {
+    state,
+    publiclyVisible,
+    discoverable,
+    bookable,
+    // Never hand the UI a link to a route that would 404.
+    profilePath: publiclyVisible ? `/b/${input.slug}` : null,
+    requirements,
+    missing,
+  };
 }
 
 /** Polish label for a status, for owner/admin UI. */

@@ -196,6 +196,7 @@ export async function setPublicProfileActive(active: boolean): Promise<{ ok: tru
   revalidatePath("/business/settings");
   revalidatePath("/business/dashboard");
   revalidatePath("/search");
+  revalidatePath("/categories");
   revalidatePath(`/b/${business.slug}`);
   return { ok: true, active };
 }

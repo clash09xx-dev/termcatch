@@ -18,9 +18,13 @@ export type ChecklistLabels = {
   title: string; body: string; hide: string; collapsed: string; copyLink: string; copyLinkHint: string;
 };
 
-export function OnboardingChecklist({ steps, bookingUrl, labels }: {
+export function OnboardingChecklist({ steps, bookingUrl, linkReady, labels }: {
   steps: ChecklistStep[];
   bookingUrl: string;
+  /** The public profile actually resolves. While false the "share your link"
+   *  step is omitted — telling an owner to send clients a link that returns
+   *  not-found is worse than one fewer checklist row. */
+  linkReady: boolean;
   labels: ChecklistLabels;
 }) {
   const [mounted, setMounted] = useState(false);
@@ -52,10 +56,9 @@ export function OnboardingChecklist({ steps, bookingUrl, labels }: {
     setDismissed(false);
   }
 
-  const allSteps = [
-    ...steps,
-    { key: "copyLink", label: labels.copyLink, hint: labels.copyLinkHint, done: copied, href: "" },
-  ];
+  const allSteps = linkReady
+    ? [...steps, { key: "copyLink", label: labels.copyLink, hint: labels.copyLinkHint, done: copied, href: "" }]
+    : steps;
   const doneCount = allSteps.filter((s) => s.done).length;
   const total = allSteps.length;
 

@@ -8,7 +8,7 @@ import { InsightCards } from "@/components/business/ai/insight-cards";
 import { getBusinessNotificationSettings } from "@/lib/notification-settings";
 import { NotificationsPrompt } from "@/components/business/notifications-prompt";
 import { PublicationStatus } from "@/components/business/publication-status";
-import { validateForPublication } from "@/lib/publication";
+import { resolvePublication } from "@/lib/publication";
 import { bookingUrl } from "@/lib/app-url";
 import { CopyLink } from "@/components/business/copy-link";
 import { OnboardingChecklist, type ChecklistStep } from "@/components/business/onboarding-checklist";
@@ -82,12 +82,17 @@ export default async function BusinessDashboardPage() {
     prisma.employee.count({ where: { businessId: business.id, isActive: true } }),
   ]);
 
-  // Publication readiness (owner-facing) — authoritative, presence-based.
+  // Publication truth (owner-facing) — the SAME resolver the public surfaces
+  // gate on, so the card can never claim "visible in search / bookable" for a
+  // salon that search excludes or whose /b/[slug] returns not-found.
   const activeServices = await prisma.service.findMany({
     where: { businessId: business.id, isActive: true },
     select: { price: true, duration: true },
   });
-  const publication = validateForPublication({
+  const publication = resolvePublication({
+    status: business.status,
+    isActive: business.isActive,
+    slug: business.slug,
     name: business.name,
     category: business.category,
     city: business.city,
@@ -169,16 +174,12 @@ export default async function BusinessDashboardPage() {
         }}
       />
 
-      <PublicationStatus
-        status={business.status}
-        slug={business.slug}
-        requirements={publication.requirements}
-        t={dict.publication}
-      />
+      <PublicationStatus facts={publication} t={dict.publication} />
 
       <OnboardingChecklist
         steps={checklistSteps}
         bookingUrl={bookingUrl(business.slug)}
+        linkReady={publication.publiclyVisible}
         labels={{
           title: T.checklistTitle, body: T.checklistBody, hide: T.checklistHide,
           collapsed: T.checklistSteps, copyLink: T.stepCopyLink, copyLinkHint: T.stepCopyLinkHint,
@@ -351,16 +352,23 @@ export default async function BusinessDashboardPage() {
             </GlassCard>
           )}
 
-          {/* Booking link */}
+          {/* Booking link — only offered once the public profile actually
+              resolves. Handing an owner a link that returns not-found (and
+              inviting them to send it to clients) is the same lie the status
+              card used to tell, one card lower. */}
           <GlassCard className="p-4">
             <Overline className="mb-2">{T.bookingLink}</Overline>
             <div className="px-3 py-2 rounded-xl text-xs text-slate-600 truncate mb-2.5" style={CHIP}>
               {bookingUrl(business.slug)}
             </div>
-            <div className="space-y-1.5">
-              <CopyLink url={bookingUrl(business.slug)} labels={{ copy: dict.common.copyLink, copied: dict.common.copied, aria: T.bookingLink }} />
-              <GlassLink href={`/b/${business.slug}`} size="sm" className="w-full">{T.previewProfile}</GlassLink>
-            </div>
+            {publication.publiclyVisible ? (
+              <div className="space-y-1.5">
+                <CopyLink url={bookingUrl(business.slug)} labels={{ copy: dict.common.copyLink, copied: dict.common.copied, aria: T.bookingLink }} />
+                <GlassLink href={publication.profilePath ?? `/b/${business.slug}`} size="sm" className="w-full">{T.previewProfile}</GlassLink>
+              </div>
+            ) : (
+              <p className="text-[11px] text-slate-500 leading-relaxed">{dict.publication.linkAfterPublish}</p>
+            )}
           </GlassCard>
         </div>
       </div>

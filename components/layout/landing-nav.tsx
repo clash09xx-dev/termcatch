@@ -10,35 +10,13 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useT } from "@/components/i18n/i18n-provider";
 import { LanguageSelector } from "@/components/i18n/language-selector";
 import { SPRING } from "@/lib/motion";
-
-type AuthState = "loading" | "guest" | "authed";
-
-/**
- * Routes that get the full marketing nav. Everything public that is NOT in this
- * list is a task context (search, a salon profile, the booking flow) where the
- * marketing links are noise, so it gets the minimal nav instead.
- *
- * Adding a marketing page means adding it here — one list, not one prop per
- * page — and the legal pages are included because they are reached from the
- * footer of the marketing site and should not dead-end the visitor.
- */
-const MARKETING_ROUTES = [
-  "/",
-  "/about",
-  "/pricing",
-  "/careers",
-  "/for-business",
-  "/faq",
-  "/contact",
-  "/terms",
-  "/privacy",
-  "/gdpr",
-  "/cookies",
-];
-
-function isMarketingRoute(pathname: string): boolean {
-  return MARKETING_ROUTES.includes(pathname);
-}
+import {
+  buildLandingNav,
+  navHref,
+  AFFILIATE_HREF,
+  type NavAccount,
+  type NavLinkKey,
+} from "@/lib/nav/landing-nav";
 
 // ── Chrome glass pill styles ──────────────────────────────────────────────────
 
@@ -65,7 +43,7 @@ export function LandingNav() {
   const pathname = usePathname() ?? "/";
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileOpen, setIsMobileOpen] = useState(false);
-  const [auth, setAuth] = useState<AuthState>("loading");
+  const [auth, setAuth] = useState<NavAccount>("loading");
 
   useEffect(() => {
     const onScroll = () => setIsScrolled(window.scrollY > 24);
@@ -90,29 +68,23 @@ export function LandingNav() {
     return () => { cancelled = true; sub.subscription.unsubscribe(); };
   }, []);
 
-  // A signed-in visitor is not being marketed to: "Register your salon",
-  // "Pricing" and "Careers" are acquisition links and they disappear once the
-  // person already has an account. Guests on a marketing route get everything.
-  const isAuthed = auth === "authed";
-  const isMarketing = !isAuthed && isMarketingRoute(pathname);
+  // Which links to show is a question about the ROUTE; which account controls to
+  // show is a question about the SESSION. Signing in must never remove the
+  // marketing navigation — see lib/nav/landing-nav for the full rule.
+  const model = useMemo(() => buildLandingNav({ pathname, account: auth }), [pathname, auth]);
+  const isMarketing = model.marketing;
 
-  const links = useMemo(() => {
-    const all = isMarketing
-      ? [
-          { href: "/search", label: t.nav.search },
-          { href: "/register?role=business", label: t.nav.registerSalon },
-          { href: "/pricing", label: t.nav.pricing },
-          { href: "/careers", label: t.nav.careers },
-          { href: "/about", label: t.nav.about },
-        ]
-      : [{ href: "/search", label: t.nav.search }];
-    // Never link to the page you are already on — that is what made the nav on
-    // /search show a redundant "Search" to someone already searching.
-    return all.filter((l) => l.href.split("?")[0] !== pathname);
-  }, [isMarketing, pathname, t]);
+  const labelFor: Record<NavLinkKey, string> = {
+    search: t.nav.search,
+    registerSalon: t.nav.registerSalon,
+    pricing: t.nav.pricing,
+    careers: t.nav.careers,
+    about: t.nav.about,
+  };
+  const links = model.linkKeys.map((key) => ({ href: navHref(key), label: labelFor[key] }));
 
   // "Zaproś i zarób" — the stronger CTA → affiliate section under Careers.
-  const affiliateHref = "/careers#zaros-i-zarob";
+  const affiliateHref = AFFILIATE_HREF;
   // The fuller marketing nav needs a later breakpoint so it never overflows the
   // pill; once the links collapse to one, md is enough.
   const wide = links.length > 2;

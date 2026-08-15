@@ -5,6 +5,7 @@
 // kept out of lib/publication.ts so that module stays pure/unit-testable.
 
 import { prisma } from "@/lib/prisma";
+import { revalidatePath } from "next/cache";
 import { BusinessStatus } from "@prisma/client";
 import { validateForPublication } from "@/lib/publication";
 
@@ -23,6 +24,7 @@ export async function autoPublishIfComplete(businessId: string): Promise<boolean
       where: { id: businessId },
       select: {
         status: true,
+        slug: true,
         name: true,
         category: true,
         city: true,
@@ -53,7 +55,21 @@ export async function autoPublishIfComplete(businessId: string): Promise<boolean
       where: { id: businessId, status: BusinessStatus.PENDING_VERIFICATION },
       data: { status: BusinessStatus.ACTIVE, isActive: true, verifiedAt: new Date() },
     });
-    return res.count > 0;
+    if (res.count === 0) return false;
+
+    // Going public changes what EVERY public surface should render, so the
+    // refresh belongs here — at the single place the flip happens — rather than
+    // being re-listed by each of the six callers (which is how /b/[slug] came
+    // to be missed while /search was revalidated).
+    for (const path of ["/business/dashboard", "/search", "/categories", `/b/${b.slug}`]) {
+      try {
+        revalidatePath(path);
+      } catch {
+        // Outside a request scope (a script, a background job) there is nothing
+        // to revalidate — publishing must still succeed.
+      }
+    }
+    return true;
   } catch {
     return false;
   }

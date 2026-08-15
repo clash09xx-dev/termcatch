@@ -291,6 +291,11 @@ async function SearchResults({ searchParams }: { searchParams: SearchParams }) {
 
   let businesses: BusinessWithServices[] = [];
   let totalCount = 0;
+  // A failed query and a genuine "nothing matched" look identical to a visitor
+  // unless they are told apart. They were not, which is how a hard database
+  // error (a column the deployed schema expected but the database did not have)
+  // read for days as "my salon is not in search".
+  let queryFailed = false;
 
   try {
     if (availability) {
@@ -349,8 +354,9 @@ async function SearchResults({ searchParams }: { searchParams: SearchParams }) {
       totalCount = await prisma.business.count({ where });
     }
   } catch (err) {
-    // DB not available — show the empty state instead of crashing, but log it so
-    // an outage is distinguishable from a genuine "no results" in ops.
+    // Keep the page alive (a marketplace that 500s is worse than one that says
+    // "try again"), but never dress a failure up as an empty result set.
+    queryFailed = true;
     console.error("[search] query failed:", err instanceof Error ? err.message : "unknown");
   }
 
@@ -375,12 +381,16 @@ async function SearchResults({ searchParams }: { searchParams: SearchParams }) {
           </svg>
         </div>
         <p className="text-slate-900 font-semibold">
-          {availability ? interpolate(sr.emptyTitleAvail, { when: availability.label }) : sr.emptyTitle}
+          {queryFailed
+            ? sr.unavailableTitle
+            : availability
+            ? interpolate(sr.emptyTitleAvail, { when: availability.label })
+            : sr.emptyTitle}
         </p>
         <p className="text-slate-500 text-sm mt-1 mb-5">
-          {availability ? sr.emptyBodyAvail : sr.emptyBody}
+          {queryFailed ? sr.unavailableBody : availability ? sr.emptyBodyAvail : sr.emptyBody}
         </p>
-        {hasFilters && (
+        {hasFilters && !queryFailed && (
           <Link
             href="/search"
             className="btn-spring px-5 py-2.5 rounded-xl text-sm font-semibold"

@@ -47,6 +47,13 @@ export function fold(s: string): string {
 }
 
 // Stems that clearly indicate a TermCatch / salon / business-ops request.
+//
+// PRICING AND STRATEGY BELONG HERE. Advising an owner on what to charge, which
+// service is underpriced, or what to bundle is core business help — the assistant
+// exists to answer exactly that. The stems below are deliberately broad because
+// an in-domain hit always wins (see classifyDomain): the cost of a false "in" is
+// one model call that the system prompt handles, while the cost of a false "out"
+// is refusing a legitimate business question, which is the bug this guards against.
 const IN_DOMAIN = [
   "salon", "rezerw", "wizyt", "termin", "kalendarz", "grafik", "klient", "crm", "kampan",
   "marketing", "promocj", "kupon", "sms", "mail", "przychod", "utarg", "oblozen", "no-show",
@@ -55,15 +62,26 @@ const IN_DOMAIN = [
   "revenue", "staff", "service", "review", "invoice", "schedule", "availab", "fryzjer", "barber",
   "masaz", "manicure", "pedicure", "paznokc", "kosmetyk", "strzyzen", "spa", "biznes", "firm",
   "obrot", "utrzyman", "retencj", "lojaln", "segment", "raport", "dochod",
+  // Pricing / packaging / margin — the category that was being refused.
+  "cen", "wycen", "stawk", "pakiet", "zestaw", "rabat", "znizk", "marz", "podwyzk", "oplac",
+  "price", "pricing", "charge", "package", "bundle", "discount", "margin", "upsell",
+  "strateg", "growth", "retention", "loyalty",
   // German
   "friseur", "termine", "kunden", "umsatz", "mitarbeiter", "dienstleist", "buchung", "geschaft", "gutschein", "bewertung",
+  "preis", "paket", "rabatt", "marge",
   // Turkish
   "kuafor", "randevu", "musteri", "hizmet", "isletme", "gelir", "personel", "salonu", "berber", "kampanya",
+  "fiyat", "indirim", "paketi",
 ];
 
 // Strong markers of OBVIOUSLY unrelated requests. Only used when NO in-domain
 // marker is present (so "historia wizyt" is never mistaken for a history essay).
 const OUT_DOMAIN = [
+  // "domow" rather than each inflection of "zadanie domowe" / "pracę domową":
+  // Polish case endings meant the literal phrases missed the most natural way
+  // of asking. Safe to keep broad — a salon phrase like "wizyty domowe" carries
+  // an in-domain stem ("wizyt"), and an in-domain hit always wins.
+  "domow", "odrobic", "ile wazy", "ile waza",
   "zadanie domowe", "prace domowe", "praca domowa", "homework", "wypracowanie", "esej", "essay",
   "2+2", "ile to jest", "oblicz", "rownanie", "calk", "pochodn", "silni", "pierwiast", "matematyk",
   "fizyk", "physics", "chemi", "chemistry", "biolog",

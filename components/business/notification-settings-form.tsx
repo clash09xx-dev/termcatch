@@ -5,7 +5,7 @@ import {
   updateNotificationSettingsAction,
   type NotificationSettingsState,
 } from "@/lib/actions/notification-settings";
-import { SALON_EVENTS, type BusinessNotificationSettings } from "@/lib/notification-settings";
+import { SALON_EVENTS, NOTIF_CHANNELS, type BusinessNotificationSettings } from "@/lib/notification-settings";
 import { ELEV_RAISED, CHIP, INK_BTN } from "@/components/ui/glass/tokens";
 import { useT } from "@/components/i18n/i18n-provider";
 
@@ -124,6 +124,12 @@ export function NotificationSettingsForm({
       <div className="p-4 rounded-xl" style={CHIP}>
         <p className="text-sm font-medium text-slate-800 mb-1">{T.notifEventsTitle}</p>
         <p className="text-xs text-slate-500 mb-3">{T.notifEventsBody}</p>
+        {/* Layout note: the three columns are only self-explanatory next to a
+            header row, and that row does not survive a narrow screen. So on
+            mobile each control carries its own channel label, and on sm+ the
+            wrapper collapses (`sm:contents`) back into the header-aligned grid.
+            Either way no checkbox has to be understood from its position, and
+            the accessible name always spells out event AND channel. */}
         <div className="space-y-2">
           <div className="hidden sm:grid grid-cols-[1fr_3rem_3rem_3rem] gap-2 text-[11px] font-semibold text-slate-400 px-1">
             <span />
@@ -133,20 +139,37 @@ export function NotificationSettingsForm({
           </div>
           {SALON_EVENTS.map((ev) => {
             const e = initial.events?.[ev.key] ?? { inApp: true, email: true, sms: false };
+            const eventLabel = t.notifEvents[ev.key];
             return (
-              <div key={ev.key} className="grid grid-cols-[1fr_3rem_3rem_3rem] items-center gap-2">
-                <span className="text-sm text-slate-700">{t.notifEvents[ev.key]}</span>
-                {(["inApp", "email", "sms"] as const).map((ch) => (
-                  <label key={ch} className="flex justify-center">
-                    <input
-                      type="checkbox"
-                      name={`ev_${ev.key}_${ch}`}
-                      defaultChecked={e[ch]}
-                      aria-label={`${t.notifEvents[ev.key]} · ${ch}`}
-                      className="h-4 w-4 rounded accent-slate-900 cursor-pointer"
-                    />
-                  </label>
-                ))}
+              <div
+                key={ev.key}
+                className="py-1.5 sm:py-0 sm:grid sm:grid-cols-[1fr_3rem_3rem_3rem] sm:items-center sm:gap-2"
+              >
+                <span className="block text-sm text-slate-700 mb-1.5 sm:mb-0">{eventLabel}</span>
+                <div className="flex gap-2 sm:contents">
+                  {NOTIF_CHANNELS.map(({ key: ch, labelKey }) => {
+                    const channelLabel = T[labelKey];
+                    return (
+                      <label
+                        key={ch}
+                        // Tailwind (not inline styles) so the sm: variants can
+                        // actually strip the mobile chip back to a bare cell.
+                        className="flex-1 sm:flex-none flex items-center justify-center gap-1.5 sm:gap-0 min-h-[38px] sm:min-h-0 px-2 sm:px-0 rounded-lg cursor-pointer bg-white/60 border border-slate-200/70 sm:bg-transparent sm:border-transparent"
+                      >
+                        <input
+                          type="checkbox"
+                          name={`ev_${ev.key}_${ch}`}
+                          defaultChecked={e[ch]}
+                          aria-label={`${eventLabel} — ${channelLabel}`}
+                          className="h-4 w-4 rounded accent-slate-900 cursor-pointer flex-shrink-0"
+                        />
+                        <span className="text-[11px] font-medium text-slate-600 sm:hidden">
+                          {channelLabel}
+                        </span>
+                      </label>
+                    );
+                  })}
+                </div>
               </div>
             );
           })}

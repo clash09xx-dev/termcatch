@@ -23,6 +23,28 @@ export type SalonEventKey = (typeof SALON_EVENTS)[number]["key"];
 export type NotifChannel = "inApp" | "email" | "sms";
 export type EventChannels = { inApp: boolean; email: boolean; sms: boolean };
 
+/**
+ * The three delivery channels, in the order the settings matrix renders them.
+ *
+ * Exported as data rather than re-typed inside the form because the column
+ * headers, the per-checkbox labels and the accessible names all have to name
+ * the SAME channel in the SAME order. When those were three separate literals,
+ * the mobile layout could — and did — drop the labels while the header row kept
+ * them, leaving three unexplained checkboxes.
+ *
+ * `labelKey` points at `dict.pages.settings`, so a channel cannot be rendered
+ * with a label that is missing from one of the four locales: the key has to
+ * type-check against the Dictionary.
+ */
+export const NOTIF_CHANNELS: readonly {
+  key: NotifChannel;
+  labelKey: "colApp" | "colEmail" | "colSms";
+}[] = [
+  { key: "inApp", labelKey: "colApp" },
+  { key: "email", labelKey: "colEmail" },
+  { key: "sms", labelKey: "colSms" },
+];
+
 export type BusinessNotificationSettings = {
   emailEnabled: boolean;
   smsEnabled: boolean;
