@@ -274,9 +274,14 @@ describe("copy: dictionaries carry no dash-heavy prose", () => {
   });
   test("en dashes survive only in genuine ranges", () => {
     const all = JSON.stringify(DICTS);
+    // A genuine range is letter–letter, placeholder–placeholder, or
+    // number–number (including clock times like 10:00–11:00, which is the
+    // textbook use of an en dash). Anything else is prose and must use a
+    // comma or a full stop instead.
+    const GENUINE_RANGE = /A–Z|\{min\}–\{max\}|[\d:]–[\d]/;
     for (const m of all.matchAll(/.{6}–.{6}/g)) {
       const around = m[0];
-      assert.ok(/A–Z|\{min\}–\{max\}/.test(around), `unexpected en dash in prose: ${around}`);
+      assert.ok(GENUINE_RANGE.test(around), `unexpected en dash in prose: ${around}`);
     }
   });
 });

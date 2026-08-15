@@ -21,6 +21,7 @@ import { prisma } from "@/lib/prisma";
 import { timeToMinutes, minutesToTime } from "@/lib/utils";
 import { warsawDateTimeToUtc, warsawDayStartUtc, warsawDayEndUtc } from "@/lib/timezone";
 import { AppointmentStatus, DayOfWeek } from "@prisma/client";
+import { getExternalBusy } from "@/lib/calendar/external-busy";
 
 export const DOW_BY_INDEX: DayOfWeek[] = [
   "SUNDAY", "MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY", "SATURDAY",
@@ -253,13 +254,31 @@ export async function getBusinessDaySlots(input: {
     select: { startTime: true, endTime: true },
   });
 
+  // Google Calendar busy periods count exactly like TermCatch appointments:
+  // one occupied unit of capacity for the window they cover. That is what makes
+  // an external booking block a chosen specialist outright, and remove one
+  // chair from an "any specialist" search, with no change to the slot maths.
+  //
+  // Never allowed to break the page: getExternalBusy resolves to an empty list
+  // when the integration is off, unconfigured or unreachable.
+  const external = await getExternalBusy({
+    businessId,
+    dateYmd,
+    fromMs: dayStart.getTime(),
+    toMs: dayEnd.getTime(),
+    employeeId: input.employeeId,
+  }).catch(() => ({ busy: [], degraded: true }));
+
   const slots = computeDaySlots({
     dateYmd,
     openMin: hours.openMin,
     closeMin: hours.closeMin,
     durationMin: serviceDurationMin,
     breaks: hours.breaks,
-    busy: appts.map((a) => ({ startMs: a.startTime.getTime(), endMs: a.endTime.getTime() })),
+    busy: [
+      ...appts.map((a) => ({ startMs: a.startTime.getTime(), endMs: a.endTime.getTime() })),
+      ...external.busy,
+    ],
     nowMs,
     bufferBeforeMin: business?.bufferTimeBefore ?? 0,
     bufferAfterMin: business?.bufferTimeAfter ?? 0,

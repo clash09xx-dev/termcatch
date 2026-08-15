@@ -500,7 +500,22 @@ export function SettingsClient({ settings: initialSettings, notificationSettings
 
           {/* Integracje / Integrations */}
           {activeSection === "integracje" && (
-            <FakturowniaIntegrationCard initial={fakturownia} />
+            <div className="space-y-5">
+              <FakturowniaIntegrationCard initial={fakturownia} />
+              {/* Calendar sync lives on its own page: it holds per-employee
+                  connections and an OAuth round trip, neither of which belongs
+                  inside a tab that the user may navigate away from mid-flow. */}
+              <GlassCard className="p-5 sm:p-6">
+                <Overline className="mb-3">{t.pages.calendarSync.title}</Overline>
+                <p className="text-sm text-slate-500 leading-relaxed">{t.pages.calendarSync.subtitle}</p>
+                <a
+                  href="/business/settings/calendar"
+                  className="btn-spring inline-flex items-center mt-4 px-4 py-2.5 min-h-[42px] text-sm font-semibold rounded-[10px] text-slate-800 bg-white/70 border border-slate-200 hover:bg-white transition-colors"
+                >
+                  {t.pages.calendarSync.openSettings}
+                </a>
+              </GlassCard>
+            </div>
           )}
 
           {/* Język / Language */}

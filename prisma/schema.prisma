@@ -429,6 +429,7 @@ model Business {
   promoRedemptions    PromoRedemption[]    // WELCOME etc.
   fakturowniaConnection FakturowniaConnection? // per-business Fakturownia credentials (own account)
   blockedBy           BlockedBusiness[]    @relation("BusinessBlockedBy")
+  calendarConnections CalendarConnection[]
 
   @@index([city, category])
   @@index([slug])
@@ -468,6 +469,7 @@ model Employee {
   workingHours   EmployeeWorkingHours[]
   appointments   Appointment[]
   locationLinks  EmployeeLocation[]  // multi-location (Wave 4, flag-gated)
+  calendarConnections CalendarConnection[]
 
   @@index([businessId])
   @@index([userId])
@@ -707,6 +709,7 @@ model Appointment {
   membership Membership? @relation(fields: [membershipId], references: [id])
   reminders AppointmentReminder[]
   addons    AppointmentAddon[]
+  calendarEvents AppointmentCalendarEvent[]
 
   @@index([businessId, startTime])
   @@index([customerId, startTime])
@@ -1655,4 +1658,104 @@ model Report {
   @@index([targetType, targetId])
   @@index([reporterId])
   @@map("reports")
+}
+
+// ============================================================
+// CALENDAR SYNCHRONIZATION
+// ============================================================
+// Google Calendar is the interoperability layer. TermCatch reads busy periods
+// from it (so external bookings block our slots) and optionally mirrors its own
+// appointments into it. Other tools — Booksy among them — can then be pointed
+// at the same calendar.
+//
+// Booksy itself has NO usable public API (its developer docs are not publicly
+// accessible and OAuth clients are issued only by arrangement), so there is no
+// direct Booksy connector here and the product never claims one.
+
+// One connected external calendar.
+//
+// Scope: exactly one of the two ownership shapes, enforced by the two partial
+// unique indexes in the SQL migration:
+//   employeeId set  -> a specialist's own calendar (the normal case)
+//   employeeId null -> the salon-wide calendar the owner connected
+// businessId is always set, so every row is tenant-scoped and a lookup can be
+// filtered by business without a join.
+model CalendarConnection {
+  id         String  @id @default(cuid())
+  businessId String  @map("business_id")
+  employeeId String? @map("employee_id")
+
+  provider String @default("google") // room for other providers later
+
+  // Whose Google account this is. Shown in the UI so an owner can tell two
+  // connections apart; never used for authorization.
+  accountEmail String? @map("account_email")
+
+  // Which calendar in that account. Null until the user picks one — an account
+  // can have many, and defaulting to "primary" silently would be a guess.
+  calendarId      String? @map("calendar_id")
+  calendarSummary String? @map("calendar_summary")
+
+  // AES-256-GCM ciphertext (lib/crypto/secret-box). NEVER plaintext, never
+  // sent to the browser, never logged.
+  encryptedAccessToken  String?   @map("encrypted_access_token")
+  encryptedRefreshToken String?   @map("encrypted_refresh_token")
+  accessTokenExpiresAt  DateTime? @map("access_token_expires_at")
+  scope                 String?   // granted scopes, for diagnosing a partial grant
+
+  // Direction switches. Reading busy is the safety-critical half and defaults
+  // on; writing our appointments out is opt-in because it touches the user's
+  // own calendar.
+  readBusy    Boolean @default(true)  @map("read_busy")
+  writeEvents Boolean @default(false) @map("write_events")
+
+  // Health, surfaced as "Synced / Action required / Disconnected".
+  status       String    @default("connected") // connected | needs_reauth | error | disconnected
+  lastSyncedAt DateTime? @map("last_synced_at")
+  lastError    String?   @map("last_error") // short code/message only, never event content
+  connectedAt  DateTime  @default(now()) @map("connected_at")
+  createdAt    DateTime  @default(now()) @map("created_at")
+  updatedAt    DateTime  @updatedAt @map("updated_at")
+
+  business Business  @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  employee Employee? @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+
+  mirroredEvents AppointmentCalendarEvent[]
+
+  @@index([businessId])
+  @@index([employeeId])
+  @@index([businessId, status])
+  @@map("calendar_connections")
+}
+
+// The link that makes mirroring idempotent.
+//
+// Without this, every retry of a slow Google write would create another copy of
+// the same appointment. With it, a write is an upsert keyed on
+// (appointmentId, connectionId): create once, patch thereafter.
+model AppointmentCalendarEvent {
+  id            String @id @default(cuid())
+  appointmentId String @map("appointment_id")
+  connectionId  String @map("connection_id")
+  provider      String @default("google")
+
+  // The id Google gave the event. Also written into the event's private
+  // extended properties so a busy read can recognise our own mirror.
+  externalEventId String  @map("external_event_id")
+  externalCalendarId String? @map("external_calendar_id")
+
+  syncState String    @default("synced") // synced | pending | failed | deleted
+  lastError String?   @map("last_error")
+  syncedAt  DateTime? @map("synced_at")
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+
+  appointment Appointment        @relation(fields: [appointmentId], references: [id], onDelete: Cascade)
+  connection  CalendarConnection @relation(fields: [connectionId], references: [id], onDelete: Cascade)
+
+  // One mirror per appointment per connection — the idempotency guarantee.
+  @@unique([appointmentId, connectionId])
+  @@index([connectionId])
+  @@index([syncState])
+  @@map("appointment_calendar_events")
 }

@@ -28,7 +28,12 @@ import { resolveBookingAddons, type AddonSelection } from "@/lib/booking-addons"
 import { computeBookingTotals, evaluateCoupon } from "@/lib/booking-pricing";
 import { isFutureStart, changeAllowedByPolicy } from "@/lib/appointment-rules";
 import { assertCustomerBookableSlot } from "@/lib/availability";
-import { lockBusinessForBooking, assertSlotAvailable, mapBookingWriteError } from "@/lib/booking-conflict";
+import { lockBusinessForBooking, assertSlotAvailable, mapBookingWriteError, SLOT_TAKEN } from "@/lib/booking-conflict";
+import { checkExternalConflict } from "@/lib/calendar/assert-free";
+import { syncAppointmentToCalendars, removeAppointmentFromCalendars } from "@/lib/calendar/mirror";
+
+/** Salon times are Europe/Warsaw everywhere in this product (lib/timezone). */
+const SALON_TIME_ZONE = "Europe/Warsaw";
 import { perf } from "@/lib/perf";
 
 /** SMS/WhatsApp to the salon per its per-event preferences — never throws. */
@@ -271,6 +276,20 @@ export async function createAppointment(data: CreateAppointmentInput) {
     timeHHMM: data.time,
     durationMin: base.totalDuration,
   });
+
+  // A connected external calendar is authoritative for the specialist being
+  // booked. Checked here as well as in the slot list because a list is only a
+  // snapshot — see lib/calendar/assert-free for the failure policy (a confirmed
+  // overlap rejects; an unreachable Google does not).
+  const externalCheck = await checkExternalConflict({
+    businessId: data.businessId,
+    dateYmd: data.date,
+    startMs: start.getTime(),
+    endMs: end.getTime(),
+    employeeId: data.employeeId ?? null,
+  });
+  if (externalCheck.conflict) throw new Error(SLOT_TAKEN);
+
   t.mark("validate");
 
   const couponCode = data.couponCode?.trim();
@@ -374,6 +393,18 @@ export async function createAppointment(data: CreateAppointmentInput) {
   // Each side effect is independently idempotent/deduped, so running post-response
   // is safe. This is the main booking latency fix.
   after(() => Promise.allSettled([
+    // Mirror into the specialist's Google Calendar, when that is switched on.
+    // Idempotent on (appointment, connection), so a retry patches rather than
+    // duplicates. A failure here is recorded, never thrown.
+    syncAppointmentToCalendars({
+      appointmentId: appointment.id,
+      businessId: business.id,
+      employeeId: appointment.employeeId ?? null,
+      startIso: start.toISOString(),
+      endIso: end.toISOString(),
+      timeZone: SALON_TIME_ZONE,
+      summary: `${service.name} — TermCatch`,
+    }),
     notify({
       userId: customer.id,
       businessId: business.id,
@@ -531,6 +562,17 @@ export async function rescheduleAppointment(input: {
   const newSlotLabel = describeSlot(newStart);
 
   after(() => Promise.allSettled([
+    // A reschedule PATCHES the existing Google event — the appointment id is
+    // unchanged, so the unique link row resolves to the same event.
+    syncAppointmentToCalendars({
+      appointmentId: appointment.id,
+      businessId: appointment.business.id,
+      employeeId: appointment.employeeId ?? null,
+      startIso: newStart.toISOString(),
+      endIso: newEnd.toISOString(),
+      timeZone: SALON_TIME_ZONE,
+      summary: `${appointment.service.name} — TermCatch`,
+    }),
     notifySalonInApp(appointment.business.id, "reschedule", {
       userId: appointment.business.ownerId,
       type: "APPOINTMENT_BOOKED",
@@ -637,6 +679,10 @@ export async function cancelAppointment(appointmentId: string) {
   t.mark("update");
 
   after(() => Promise.allSettled([
+    // Remove the mirror: a cancelled appointment must stop occupying the
+    // specialist's calendar, or it would keep blocking that slot on the next
+    // busy read.
+    removeAppointmentFromCalendars(appointment.id),
     notifySalonInApp(appointment.business.id, "cancellation", {
       userId: appointment.business.ownerId,
       type: "APPOINTMENT_CANCELLED",
