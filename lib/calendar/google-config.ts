@@ -1,5 +1,7 @@
 import "server-only";
 
+import { getAppUrl } from "@/lib/app-url";
+
 /**
  * Google Calendar OAuth configuration.
  *
@@ -32,8 +34,18 @@ export const GOOGLE_CALENDAR_API = "https://www.googleapis.com/calendar/v3";
 /** Path Google redirects back to. Must match the Cloud Console entry exactly. */
 export const GOOGLE_CALENDAR_CALLBACK_PATH = "/api/integrations/google-calendar/callback";
 
+/**
+ * The public origin, from the ONE canonical helper.
+ *
+ * This used to read NEXT_PUBLIC_APP_URL itself and fall back to
+ * "http://localhost:3000" — a second, weaker copy of lib/app-url. Two helpers
+ * meant two different answers for "where does this app live", and the weaker
+ * one defaulted to a developer's machine, so an unset variable in production
+ * produced a redirect_uri pointing at localhost instead of failing loudly.
+ * getAppUrl() validates the value and falls back to the real production origin.
+ */
 export function appUrl(): string {
-  return (process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000").trim().replace(/\/+$/, "");
+  return getAppUrl();
 }
 
 export function googleCalendarRedirectUri(): string {

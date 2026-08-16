@@ -203,6 +203,33 @@ export function onboardingCategoriesFor(locale: Locale): CategoryDef[] {
   ];
 }
 
+/**
+ * The categories a business may ASSIGN ITSELF — the same set the picker offers.
+ *
+ * The server validates against this rather than the raw `ServiceCategory` enum,
+ * so the guarantee is symmetric with the UI: an owner can always move to a
+ * category the product actually offers, and can never assign a withdrawn
+ * (medical) one by posting a crafted value. Medical categories require
+ * professional verification that does not exist yet, so self-assignment must
+ * stay impossible even though the enum values remain valid in the schema for
+ * existing records.
+ */
+// Built on first use, not at module load: visibleCategories() reads MEDICAL_SET,
+// which is declared further down this file, so evaluating it eagerly here would
+// hit the temporal dead zone the moment anything imported this module.
+let selectableCategorySet: Set<string> | null = null;
+
+export function isSelectableCategory(value: unknown): boolean {
+  if (typeof value !== "string") return false;
+  if (!selectableCategorySet) {
+    selectableCategorySet = new Set<string>([
+      ...visibleCategories().map((c) => c.value),
+      OTHER_CATEGORY.value,
+    ]);
+  }
+  return selectableCategorySet.has(value);
+}
+
 // ─── Medical categories — hidden from public discovery until launch-ready ─────
 // These require professional verification and are not part of the initial public
 // launch. The enum values stay in the schema (existing records are untouched);

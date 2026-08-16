@@ -6,6 +6,7 @@ import { getServerUser } from "@/lib/supabase/server";
 import { ServiceCategory, DayOfWeek } from "@prisma/client";
 import { redirect } from "next/navigation";
 import { SPECIALTY_TAGS } from "@/lib/discovery";
+import { isSelectableCategory } from "@/lib/categories";
 import { autoPublishIfComplete } from "@/lib/publish";
 import { isValidPolishPostalCode, normalizePolishPostalCode } from "@/lib/postal-code";
 
@@ -206,6 +207,17 @@ export type BusinessProfileData = {
   name?: string;
   description?: string;
   shortDescription?: string;
+  /**
+   * Main category. Editable, and restricted server-side to the SELECTABLE set.
+   *
+   * It used to be write-once at onboarding, shown as a disabled input reading
+   * "cannot be changed, contact support". Category decides search eligibility,
+   * so a salon that mis-picked one during registration — or picked one that has
+   * since been withdrawn from discovery — was permanently unfindable with no
+   * self-service way out. Letting the owner correct it is the fix; the
+   * allow-list is what keeps it safe (see below).
+   */
+  category?: string;
   subcategory?: string;
   phone?: string;
   email?: string;
@@ -242,6 +254,18 @@ export async function updateBusinessProfile(data: BusinessProfileData) {
   if (data.email && data.email.trim() && !EMAIL_RE.test(data.email.trim())) {
     throw new Error("Nieprawidłowy adres e-mail.");
   }
+  // Category: undefined → skip; otherwise it must be one the picker actually
+  // offers. Validating against SELECTABLE_CATEGORY_VALUES (visible + "Other")
+  // rather than the raw enum means an owner can move OUT of a withdrawn
+  // category but never INTO one by posting a crafted value — medical categories
+  // require verification the product does not yet do.
+  const category = ((): ServiceCategory | undefined => {
+    if (data.category === undefined) return undefined;
+    const v = String(data.category).trim();
+    if (!isSelectableCategory(v)) throw new Error("Nieprawidłowa kategoria.");
+    return v as ServiceCategory;
+  })();
+
   // postal field: undefined → skip; else normalize + validate NN-NNN
   const postal = (v: string | undefined): string | undefined => {
     if (v === undefined) return undefined;
@@ -258,6 +282,7 @@ export async function updateBusinessProfile(data: BusinessProfileData) {
       name: s(data.name, 120),
       description: s(data.description, 2000),
       shortDescription: s(data.shortDescription, 300),
+      category,
       subcategory: s(data.subcategory, 80),
       phone: s(data.phone, 32),
       email: data.email === undefined ? undefined : data.email.trim().slice(0, 200) || null,
@@ -279,6 +304,11 @@ export async function updateBusinessProfile(data: BusinessProfileData) {
   await autoPublishIfComplete(business.id);
   revalidatePath("/business/profile");
   revalidatePath("/search");
+  // A category change moves the salon in and out of discovery, so the surfaces
+  // that list by category have to be refreshed too, not just search.
+  revalidatePath("/categories");
+  revalidatePath("/business/dashboard");
+  revalidatePath(`/b/${business.slug}`);
 }
 
 // ─── Working Hours ─────────────────────────────────────────────

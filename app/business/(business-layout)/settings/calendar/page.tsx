@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { getServerUser } from "@/lib/supabase/server";
 import { prisma } from "@/lib/prisma";
 import { googleCalendarConfigured } from "@/lib/calendar/google-config";
+import { isPlatformAdmin } from "@/lib/is-admin";
 import { CalendarSyncClient } from "./calendar-sync-client";
 
 /**
@@ -99,6 +100,10 @@ export default async function CalendarSyncPage() {
   return (
     <CalendarSyncClient
       configured={googleCalendarConfigured()}
+      // Which env vars are missing is useful to whoever can fix it and noise to
+      // a salon owner, so the technical line is admin-only. Names of variables,
+      // never values: the page must stay safe to screenshot.
+      showSetupDetail={await isPlatformAdmin()}
       salonWide={salonWide ? toView(salonWide, null) : null}
       employees={employees}
     />

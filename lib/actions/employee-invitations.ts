@@ -23,7 +23,21 @@ async function ownerCtx(): Promise<{ userId: string; businessId: string; busines
   return { userId: dbUser.id, businessId: business.id, businessName: business.name };
 }
 
-export type InviteResult = { ok: boolean; error?: string };
+export type InviteResult = {
+  ok: boolean;
+  error?: string;
+  /**
+   * Whether the invitation e-mail actually left the building.
+   *
+   * `sendEmail` degrades gracefully to `{ sent: false }` when RESEND_API_KEY is
+   * absent, and this action used to discard that and report success anyway. The
+   * owner pressed "Invite to <salon>", got a green toast, and nothing ever
+   * reached the specialist: the one visible symptom of the button "not doing
+   * anything". The caller now knows, and points the owner at the join code,
+   * which needs no mail server.
+   */
+  delivered?: boolean;
+};
 
 /** Owner invites (or re-invites) an existing Employee record by email. Owner-only. */
 export async function inviteEmployee(employeeId: string): Promise<InviteResult> {
@@ -51,12 +65,14 @@ export async function inviteEmployee(employeeId: string): Promise<InviteResult> 
       tokenHash: hashInviteToken(token), expiresAt: inviteExpiry(), invitedBy: ctx.userId,
     },
   });
-  await sendEmployeeInvitationEmail({
+  // The invitation row is real either way — the link works the moment someone
+  // holds it — so a failed send is reported, not treated as a failed invite.
+  const { sent } = await sendEmployeeInvitationEmail({
     to: emp.email, employeeName: `${emp.firstName} ${emp.lastName}`.trim(),
     businessName: ctx.businessName, url: `${APP_URL}/invite/${token}`,
   });
   revalidatePath("/business/staff");
-  return { ok: true };
+  return { ok: true, delivered: sent };
 }
 
 /** Resend = supersede the old pending invite and send a fresh one. Owner-only. */

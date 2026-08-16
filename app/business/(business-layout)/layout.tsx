@@ -6,8 +6,9 @@ import { BusinessSidebar } from "@/components/layout/business-sidebar";
 import { BusinessTopbar } from "@/components/layout/business-topbar";
 import { BusinessMobileNav } from "@/components/layout/business-mobile-nav";
 import { AdminViewSwitcher } from "@/components/admin-view-switcher";
-import { OwnerViewSwitcher } from "@/components/owner-view-switcher";
+import { ProductViewSwitcher } from "@/components/product-view-switcher";
 import { resolveViewSwitch } from "@/lib/view-switch";
+import { OWNER_SALON_HREF } from "@/lib/ownership";
 import { CommandPalette } from "@/components/command-palette";
 import { isPlatformAdmin } from "@/lib/is-admin";
 import { multiLocationEnabled } from "@/lib/multi-location";
@@ -98,12 +99,17 @@ export default async function BusinessDashboardLayout({
 
       <BusinessMobileNav multiLocation={multiLocation} />
       <CommandPalette businessSlug={business?.slug} />
-      {/* Admins keep the internal 3-way switcher; a normal salon owner (who, by
-          this point in the layout, always owns `business`) gets the safe
-          Client/Salon product switch. Employees never reach here with a business. */}
+      {/* Admins keep the internal 3-way switcher; a salon owner (who, by this
+          point in the layout, always owns `business`) gets the product
+          Client/Salon switch. An employee is redirected to /employee above and
+          never reaches here, so "salon" always means the owner dashboard. */}
       {(() => {
         const kind = resolveViewSwitch({ isAdmin, ownsBusiness: !!business });
-        return kind === "admin" ? <AdminViewSwitcher /> : kind === "owner" ? <OwnerViewSwitcher current="salon" /> : null;
+        return kind === "admin" ? (
+          <AdminViewSwitcher />
+        ) : kind === "owner" ? (
+          <ProductViewSwitcher current="salon" salonHref={OWNER_SALON_HREF} />
+        ) : null;
       })()}
     </div>
   );

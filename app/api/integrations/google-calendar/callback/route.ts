@@ -3,8 +3,14 @@ import { prisma } from "@/lib/prisma";
 import { decodeState } from "@/lib/calendar/oauth-state";
 import { exchangeCodeForTokens, storeTokens } from "@/lib/calendar/google-client";
 import { getServerUser } from "@/lib/supabase/server";
+import { appUrl } from "@/lib/calendar/google-config";
 
 export const dynamic = "force-dynamic";
+
+/** See the note in ../start/route.ts: `req.url` is Railway's internal address. */
+function appRedirect(path: string): NextResponse {
+  return NextResponse.redirect(new URL(path, appUrl()));
+}
 
 /**
  * Google redirects back here after consent.
@@ -26,15 +32,15 @@ export async function GET(req: NextRequest) {
 
   // Without valid state we do not even know where to return to safely.
   const fallback = "/business/settings/calendar";
-  if (!state) return NextResponse.redirect(new URL(`${fallback}?calendar=invalid_state`, req.url));
+  if (!state) return appRedirect(`${fallback}?calendar=invalid_state`);
 
-  const back = (code: string) => NextResponse.redirect(new URL(`${state.returnTo}?calendar=${code}`, req.url));
+  const back = (code: string) => appRedirect(`${state.returnTo}?calendar=${code}`);
 
   // The user declined, or Google refused.
   if (params.get("error")) return back("denied");
 
   const authUser = await getServerUser();
-  if (!authUser) return NextResponse.redirect(new URL("/login", req.url));
+  if (!authUser) return appRedirect("/login");
   if (authUser.id !== state.userId) return back("state_mismatch");
 
   const code = params.get("code");

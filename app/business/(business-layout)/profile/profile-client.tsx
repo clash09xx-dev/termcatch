@@ -1,11 +1,11 @@
 "use client";
 
-import { useState, useTransition, useRef, useCallback } from "react";
+import { useState, useTransition, useRef, useCallback, useMemo } from "react";
 import { updateBusinessProfile } from "@/lib/actions/business";
 import { uploadBusinessImage } from "@/lib/actions/upload";
 import { LocationPicker } from "@/components/business/location-picker";
 import { SPECIALTY_TAGS } from "@/lib/discovery";
-import { categoryLabelFor } from "@/lib/categories";
+import { categoryLabelFor, onboardingCategoriesFor, isSelectableCategory } from "@/lib/categories";
 import { useT, useLocale } from "@/components/i18n/i18n-provider";
 import type { Dictionary } from "@/lib/i18n/dictionaries";
 import { cn } from "@/lib/utils";
@@ -40,6 +40,13 @@ export function ProfileClient({ business, embedded = false }: Props) {
   const [name, setName] = useState(business.name);
   const [description, setDescription] = useState(business.description ?? "");
   const [shortDescription, setShortDescription] = useState(business.shortDescription ?? "");
+  const [category, setCategory] = useState<string>(business.category);
+  // The offered set, localized. Rebuilt only when the locale changes.
+  const CATEGORY_OPTIONS = useMemo(() => onboardingCategoriesFor(locale), [locale]);
+  // The salon currently sits in a category the product does not list. This is
+  // the state that kept a mis-categorized salon invisible with no explanation,
+  // so the field says it outright.
+  const categoryHidden = !isSelectableCategory(category);
   const [subcategory, setSubcategory] = useState(business.subcategory ?? "");
   const [specialties, setSpecialties] = useState<string[]>(business.specialties ?? []);
 
@@ -61,7 +68,7 @@ export function ProfileClient({ business, embedded = false }: Props) {
 
   function handleSave() {
     const dataMap: Record<Tab, Parameters<typeof updateBusinessProfile>[0]> = {
-      podstawowe: { name, description, shortDescription, subcategory, specialties },
+      podstawowe: { name, description, shortDescription, category, subcategory, specialties },
       kontakt: { phone, email, website, address, city, postalCode },
       media: { logoUrl, coverImageUrl },
       social: { instagramUrl, facebookUrl },
@@ -178,15 +185,32 @@ export function ProfileClient({ business, embedded = false }: Props) {
                 <label className={LABEL_CLS}>
                   {T.fieldCategory}
                 </label>
-                <input
-                  type="text"
-                  value={categoryLabelFor(business.category, locale)}
-                  disabled
-                  className={cn(INPUT_CLS, "opacity-60 cursor-not-allowed")}
-                />
+                <select
+                  value={category}
+                  onChange={(e) => setCategory(e.target.value)}
+                  className={cn(INPUT_CLS, "cursor-pointer")}
+                >
+                  {/* A category that is no longer offered (a legacy medical
+                      pick) is still listed as the CURRENT value, so the field
+                      shows the truth rather than silently reading as something
+                      the salon is not. It cannot be re-selected once changed:
+                      the option is absent from the offered set, and the server
+                      validates against that same set. */}
+                  {!CATEGORY_OPTIONS.some((c) => c.value === category) && (
+                    <option value={category}>{categoryLabelFor(category, locale)}</option>
+                  )}
+                  {CATEGORY_OPTIONS.map((c) => (
+                    <option key={c.value} value={c.value}>{c.label}</option>
+                  ))}
+                </select>
                 <p className="text-xs text-slate-500 mt-1">
                   {T.categoryNote}
                 </p>
+                {categoryHidden && (
+                  <p className="text-xs mt-1 leading-relaxed" style={{ color: "#B45309" }}>
+                    {T.categoryHiddenNote}
+                  </p>
+                )}
               </div>
               <div>
                 <label className={LABEL_CLS}>

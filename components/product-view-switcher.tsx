@@ -8,25 +8,38 @@ import { useReducedMotion } from "@/lib/motion";
 import { INK_GRADIENT } from "@/components/ui/glass/tokens";
 
 /**
- * Client ⇄ Salon view switch for salon OWNERS.
+ * Client ⇄ Salon view switch, for anyone with a real salon context.
  *
- * Rendered ONLY after the server has confirmed business ownership
- * (currentOwnedBusinessId → resolveViewSwitch === "owner") — never gated by the
- * frontend alone. It deliberately does NOT include the internal "Owner/Admin"
- * mode; that stays in AdminViewSwitcher, separately permission-gated.
+ * Rendered ONLY after the server has resolved that context from the session
+ * (lib/ownership resolveBusinessAccess → resolveViewSwitch === "owner" |
+ * "employee") — never gated by the frontend alone. It deliberately does NOT
+ * include the internal "Owner/Admin" mode; that stays in AdminViewSwitcher,
+ * separately permission-gated.
  *
- * `current` is fixed by the layout that mounts this (business layout → "salon",
- * customer layout → "client"). The links point only at the user's OWN dashboards
- * — no business identifier is ever passed, so another business can't be selected.
- * Clicking records a presentation-only `ownerView` cookie; server authorization
- * never trusts it (business routes re-check real ownership).
+ * `salonHref` is where THIS session's salon lives, decided by the server:
+ * /business/dashboard for an owner, /employee/dashboard for a specialist who
+ * joined with a code. The component never derives it and never receives a
+ * business identifier, so no amount of client tampering can point it at another
+ * salon — the worst a forged value could do is navigate to a route that then
+ * re-checks membership server-side and redirects.
+ *
+ * `current` is fixed by the layout that mounts this (business/employee layout →
+ * "salon", customer layout → "client"). Clicking records a presentation-only
+ * `ownerView` cookie; server authorization never trusts it.
  *
  * Shape: a small neutral dot at rest. It expands into a capsule on hover
  * (desktop), on keyboard focus, or on tap (mobile). Both states are absolutely
  * positioned inside a fixed wrapper, so expanding animates opacity/transform
  * only and never shifts the page.
  */
-export function OwnerViewSwitcher({ current }: { current: "client" | "salon" }) {
+export function ProductViewSwitcher({
+  current,
+  salonHref,
+}: {
+  current: "client" | "salon";
+  /** Server-resolved destination for the Salon side. */
+  salonHref: string;
+}) {
   const t = useT();
   const reduce = useReducedMotion();
   const [open, setOpen] = useState(false);
@@ -83,7 +96,7 @@ export function OwnerViewSwitcher({ current }: { current: "client" | "salon" }) 
 
   const items: { key: "client" | "salon"; href: string; label: string; aria: string }[] = [
     { key: "client", href: "/customer/dashboard", label: t.viewSwitch.client, aria: t.viewSwitch.ariaClient },
-    { key: "salon", href: "/business/dashboard", label: t.viewSwitch.salon, aria: t.viewSwitch.ariaSalon },
+    { key: "salon", href: salonHref, label: t.viewSwitch.salon, aria: t.viewSwitch.ariaSalon },
   ];
 
   const ease = reduce ? "none" : "opacity 160ms ease, transform 180ms cubic-bezier(0.23, 1, 0.32, 1)";

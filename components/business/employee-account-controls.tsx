@@ -23,14 +23,29 @@ export function EmployeeAccountControls({
   };
   const router = useRouter();
   const [pending, start] = useTransition();
-  const [msg, setMsg] = useState<string | null>(null);
+  // A failed send is a warning, not an error: the invitation is real and the
+  // join code still works, so it must not be painted the same red as "forbidden".
+  const [msg, setMsg] = useState<{ text: string; tone: "error" | "warn" } | null>(null);
 
   function act(fn: () => Promise<InviteResult>, success: string) {
     setMsg(null);
     start(async () => {
       const r = await fn();
-      if (!r.ok) { setMsg(r.error ?? T.genericError); notify.error(r.error ?? T.genericError); }
-      else { notify.saved(success); router.refresh(); }
+      if (!r.ok) {
+        setMsg({ text: r.error ?? T.genericError, tone: "error" });
+        notify.error(r.error ?? T.genericError);
+        return;
+      }
+      // `delivered === false` means the invitation exists but no mail server was
+      // there to carry it. Claiming "sent" would repeat the exact bug this
+      // replaces, so the owner is told and pointed at the join code instead.
+      if (r.delivered === false) {
+        setMsg({ text: T.inviteNotDelivered, tone: "warn" });
+        notify.info(T.inviteNotDelivered);
+      } else {
+        notify.saved(success);
+      }
+      router.refresh();
     });
   }
 
@@ -66,7 +81,15 @@ export function EmployeeAccountControls({
           </button>
         </>
       )}
-      {msg && <span className="w-full text-xs" style={{ color: "#BE123C" }}>{msg}</span>}
+      {msg && (
+        <span
+          className="w-full text-xs leading-relaxed"
+          role={msg.tone === "error" ? "alert" : "status"}
+          style={{ color: msg.tone === "error" ? "#BE123C" : "#B45309" }}
+        >
+          {msg.text}
+        </span>
+      )}
     </div>
   );
 }

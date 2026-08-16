@@ -13,7 +13,7 @@ const BIZ = "app/business/(business-layout)";
 const HOURS_CLIENT = `${BIZ}/hours/hours-client.tsx`;
 const INVOICES_PAGE = `${BIZ}/invoices/page.tsx`;
 const INVOICES_CLIENT = `${BIZ}/invoices/invoices-client.tsx`;
-const OWNER_SWITCH = "components/owner-view-switcher.tsx";
+const OWNER_SWITCH = "components/product-view-switcher.tsx";
 const ADMIN_SWITCH = "components/admin-view-switcher.tsx";
 const OWNERSHIP = "lib/ownership.ts";
 const LANDING = "app/page.tsx";
@@ -212,16 +212,27 @@ describe("view-switch security by construction", () => {
     assert.ok(!src.includes("ownerView"), "ownership must NOT read the presentation cookie");
     assert.ok(!/cookies\(\)/.test(src), "ownership must not consult cookies for permissions");
   });
-  test("7. the owner switch only links to the user's OWN dashboards", () => {
+  test("7. the product switch only links to the user's OWN dashboards", () => {
     const src = read(OWNER_SWITCH);
     assert.ok(src.includes("/customer/dashboard"), "must offer the customer experience");
-    assert.ok(src.includes("/business/dashboard"), "must return to the salon dashboard");
+    // The salon destination is now SERVER-resolved (owner → /business/dashboard,
+    // employee → /employee/dashboard) and handed in as a prop, so the component
+    // itself must not hardcode one.
+    assert.ok(src.includes("salonHref"), "the salon destination must come from the server");
+    assert.ok(!src.includes('"/business/dashboard"'), "must not hardcode a salon destination");
     // No business id/slug is ever passed → another business can never be selected.
     assert.ok(!src.includes("businessId"), "switch must not target a specific business id");
     assert.ok(!src.includes("/business/${"), "switch must not build a dynamic business path");
     // The internal Owner/Admin mode is NOT exposed here.
-    assert.ok(!src.includes("/admin"), "owner switch must not expose the admin/Owner mode");
+    assert.ok(!src.includes("/admin"), "product switch must not expose the admin/Owner mode");
     assert.ok(src.includes("ownerView") && src.includes("presentation"), "cookie is documented presentation-only");
+  });
+  test("7c. the two salon destinations are fixed server-side constants", () => {
+    // A caller cannot invent a destination: both live in lib/ownership and are
+    // chosen by the server from the session's resolved relationship.
+    const own = read(OWNERSHIP);
+    assert.ok(own.includes('OWNER_SALON_HREF = "/business/dashboard"'));
+    assert.ok(own.includes('EMPLOYEE_SALON_HREF = "/employee/dashboard"'));
   });
   test("7b. no Owner/Właściciel option leaks into the normal salon-owner switch", () => {
     const src = read(OWNER_SWITCH);

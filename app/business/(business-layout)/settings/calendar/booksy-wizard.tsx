@@ -35,11 +35,21 @@ export function BooksyWizard({
   onOpenChange,
   connected,
   connectHref,
+  configured,
 }: {
   open: boolean;
   onOpenChange: (v: boolean) => void;
   connected: boolean;
   connectHref: string;
+  /**
+   * Google Calendar credentials exist on this server.
+   *
+   * The wizard's whole first step is "connect Google Calendar", so without this
+   * it happily handed the user a live link into the not_configured bounce. The
+   * guide itself stays available — the steps are still worth reading — only the
+   * action that cannot succeed is withheld.
+   */
+  configured: boolean;
 }) {
   const t = useT();
   const T = t.pages.calendarSync;
@@ -85,6 +95,12 @@ export function BooksyWizard({
               <span className="inline-flex items-center px-2.5 py-1 rounded-full text-[11px] font-semibold" style={SUCCESS_TINT}>
                 {T.statusConnected}
               </span>
+            ) : !configured ? (
+              // Nothing to click: say why, in the user's language, instead of
+              // sending them to a redirect that cannot work.
+              <p className="text-[13px] leading-[1.55]" style={{ color: "#B45309" }}>
+                {T.setupUnavailable}
+              </p>
             ) : (
               <a
                 href={connectHref}

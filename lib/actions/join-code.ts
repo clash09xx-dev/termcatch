@@ -245,7 +245,14 @@ export async function joinBusinessByCode(rawCode: string): Promise<JoinResult> {
   });
 
   clearAttempts(dbUser.id);
+  // Joining changes what the SHELL may show, not just what a page renders: the
+  // Client/Salon switch lives in the customer and employee LAYOUTS, and the
+  // employee routes only became reachable a moment ago. Revalidating the pages
+  // alone left the cached layouts in place, which is why the account looked
+  // untouched after a successful join — the membership row existed and nothing
+  // on screen knew about it.
   revalidatePath("/business/staff");
-  revalidatePath("/customer/profile");
+  revalidatePath("/customer", "layout");
+  revalidatePath("/employee", "layout");
   return { ok: true, businessName: business.name };
 }

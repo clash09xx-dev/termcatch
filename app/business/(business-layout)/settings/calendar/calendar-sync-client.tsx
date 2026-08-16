@@ -52,10 +52,13 @@ function StatusPill({ health, T }: { health: Health; T: Record<string, string> }
 
 export function CalendarSyncClient({
   configured,
+  showSetupDetail,
   salonWide,
   employees,
 }: {
   configured: boolean;
+  /** Viewer is a platform admin, so the missing-variable detail is useful. */
+  showSetupDetail: boolean;
   salonWide: ConnectionView | null;
   employees: EmployeeView[];
 }) {
@@ -90,6 +93,13 @@ export function CalendarSyncClient({
       {!configured && (
         <GlassCard className="p-5">
           <p className="text-[13.5px] leading-[1.55]" style={{ color: "#B45309" }}>{T.notConfigured}</p>
+          {/* Admin-only: names the variables to set, so the person who can fix
+              it does not have to read the source to find out. Never values. */}
+          {showSetupDetail && (
+            <p className="mt-2 text-[12.5px] leading-[1.55] font-mono text-secondary break-words">
+              {T.notConfiguredAdmin}
+            </p>
+          )}
         </GlassCard>
       )}
 
@@ -140,12 +150,21 @@ export function CalendarSyncClient({
                     </p>
                   </div>
                   <StatusPill health={health} T={T as unknown as Record<string, string>} />
-                  <a
-                    href={connectHref(e.id)}
-                    className="btn-spring text-[13px] font-semibold text-slate-700 underline underline-offset-[3px] decoration-slate-300 hover:decoration-slate-900 transition-colors"
-                  >
-                    {e.connection && health !== "disconnected" ? T.reconnect : T.connect}
-                  </a>
+                  {/* Same rule as the salon-wide card: with no server config the
+                      link only leads to a ?calendar=not_configured bounce, so it
+                      is not offered as a link at all. */}
+                  {configured ? (
+                    <a
+                      href={connectHref(e.id)}
+                      className="btn-spring text-[13px] font-semibold text-slate-700 underline underline-offset-[3px] decoration-slate-300 hover:decoration-slate-900 transition-colors"
+                    >
+                      {e.connection && health !== "disconnected" ? T.reconnect : T.connect}
+                    </a>
+                  ) : (
+                    <span className="text-[13px] font-semibold text-slate-400 cursor-not-allowed" title={T.notConfigured}>
+                      {e.connection && health !== "disconnected" ? T.reconnect : T.connect}
+                    </span>
+                  )}
                 </div>
               );
             })}
@@ -161,6 +180,7 @@ export function CalendarSyncClient({
         onOpenChange={setWizardOpen}
         connected={healthOf(salonWide) === "connected"}
         connectHref={connectHref()}
+        configured={configured}
       />
     </div>
   );

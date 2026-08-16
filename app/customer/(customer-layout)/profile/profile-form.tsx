@@ -22,6 +22,8 @@ interface ProfileFormProps {
   lastName: string;
   phone: string;
   email: string;
+  /** Server-resolved salon membership, or null for a plain customer. */
+  membership: { businessName: string; salonHref: string } | null;
 }
 
 const initialState: ProfileState = {};
@@ -30,7 +32,7 @@ const INPUT_CLS =
   "input-glass w-full px-3.5 py-2.5 rounded-xl text-sm outline-none text-slate-800 placeholder:text-slate-400";
 const LABEL_CLS = "block text-sm font-medium text-slate-700 mb-1.5";
 
-export default function ProfileForm({ firstName, lastName, phone, email, smsNotifications }: ProfileFormProps) {
+export default function ProfileForm({ firstName, lastName, phone, email, smsNotifications, membership }: ProfileFormProps) {
   const t = useT();
   const [state, formAction, isPending] = useActionState(updateProfileAction, initialState);
 
@@ -148,8 +150,9 @@ export default function ProfileForm({ firstName, lastName, phone, email, smsNoti
         <LanguageSelector className="w-full max-w-xs cursor-pointer rounded-xl border border-slate-200 bg-white/70 px-3.5 py-2.5 text-sm text-slate-800 outline-none" />
       </GlassCard>
 
-      {/* Join a salon — how a specialist attaches to a business they work at. */}
-      <JoinSalonCard />
+      {/* Join a salon — how a specialist attaches to a business they work at.
+          Once they have, the same card states the membership instead. */}
+      <JoinSalonCard membership={membership} />
 
       {/* Account */}
       <GlassCard className="fade-rise fade-rise-d3 p-6">

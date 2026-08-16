@@ -4,12 +4,28 @@ import {
   GOOGLE_CALENDAR_SCOPES,
   googleCalendarCreds,
   googleCalendarRedirectUri,
+  appUrl,
 } from "@/lib/calendar/google-config";
 import { encodeState, safeReturnTo } from "@/lib/calendar/oauth-state";
 import { canConnectFor, resolveCalendarActor } from "@/lib/calendar/access";
 import { prisma } from "@/lib/prisma";
 
 export const dynamic = "force-dynamic";
+
+/**
+ * Absolute redirect back into the app.
+ *
+ * NEVER `new URL(path, req.url)`. Behind Railway's proxy the Node server is
+ * addressed on its internal port, so `req.url` is "http://localhost:8080/..."
+ * and resolving a relative path against it produced
+ * "localhost:8080/business/settings/calendar?calendar=not_configured" — a dead
+ * link for every production user. The canonical origin comes from configuration
+ * (lib/app-url), never from the request, which is also what keeps a spoofed
+ * Host header out of an OAuth flow.
+ */
+function appRedirect(path: string): NextResponse {
+  return NextResponse.redirect(new URL(path, appUrl()));
+}
 
 /**
  * Begin "Connect Google Calendar".
@@ -29,16 +45,16 @@ export async function GET(req: NextRequest) {
   if (!creds) {
     // Not configured in this environment. Say so rather than bouncing the user
     // to a Google error page.
-    return NextResponse.redirect(new URL(`${returnTo}?calendar=not_configured`, req.url));
+    return appRedirect(`${returnTo}?calendar=not_configured`);
   }
 
   const employeeIdRaw = req.nextUrl.searchParams.get("employeeId");
   const employeeId = employeeIdRaw && employeeIdRaw.trim() ? employeeIdRaw.trim() : null;
 
   const actor = await resolveCalendarActor();
-  if (!actor) return NextResponse.redirect(new URL("/login", req.url));
+  if (!actor) return appRedirect("/login");
   if (!canConnectFor(actor, employeeId)) {
-    return NextResponse.redirect(new URL(`${returnTo}?calendar=forbidden`, req.url));
+    return appRedirect(`${returnTo}?calendar=forbidden`);
   }
 
   // The employee must belong to this salon. Without this a valid owner could
@@ -48,7 +64,7 @@ export async function GET(req: NextRequest) {
       where: { id: employeeId, businessId: actor.businessId },
       select: { id: true },
     });
-    if (!emp) return NextResponse.redirect(new URL(`${returnTo}?calendar=forbidden`, req.url));
+    if (!emp) return appRedirect(`${returnTo}?calendar=forbidden`);
   }
 
   const state = encodeState({
