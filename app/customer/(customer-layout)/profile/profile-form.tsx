@@ -13,7 +13,7 @@ import {
 } from "@/components/ui/glass";
 import { useT } from "@/components/i18n/i18n-provider";
 import { LanguageSelector } from "@/components/i18n/language-selector";
-import { JoinSalonCard } from "@/components/customer/join-salon-card";
+import { JoinSalonCard, type JoinRequestView } from "@/components/customer/join-salon-card";
 import { DeleteAccountCard } from "@/components/customer/delete-account-card";
 
 interface ProfileFormProps {
@@ -24,6 +24,8 @@ interface ProfileFormProps {
   email: string;
   /** Server-resolved salon membership, or null for a plain customer. */
   membership: { businessName: string; salonHref: string } | null;
+  /** Server-resolved application that has not become a membership. */
+  request: JoinRequestView | null;
 }
 
 const initialState: ProfileState = {};
@@ -32,7 +34,7 @@ const INPUT_CLS =
   "input-glass w-full px-3.5 py-2.5 rounded-xl text-sm outline-none text-slate-800 placeholder:text-slate-400";
 const LABEL_CLS = "block text-sm font-medium text-slate-700 mb-1.5";
 
-export default function ProfileForm({ firstName, lastName, phone, email, smsNotifications, membership }: ProfileFormProps) {
+export default function ProfileForm({ firstName, lastName, phone, email, smsNotifications, membership, request }: ProfileFormProps) {
   const t = useT();
   const [state, formAction, isPending] = useActionState(updateProfileAction, initialState);
 
@@ -150,9 +152,10 @@ export default function ProfileForm({ firstName, lastName, phone, email, smsNoti
         <LanguageSelector className="w-full max-w-xs cursor-pointer rounded-xl border border-slate-200 bg-white/70 px-3.5 py-2.5 text-sm text-slate-800 outline-none" />
       </GlassCard>
 
-      {/* Join a salon — how a specialist attaches to a business they work at.
-          Once they have, the same card states the membership instead. */}
-      <JoinSalonCard membership={membership} />
+      {/* Join a salon — how a specialist asks to attach to a business they work
+          at. The same card carries the durable status of that request, and
+          states the membership once the owner has approved it. */}
+      <JoinSalonCard membership={membership} request={request} />
 
       {/* Account */}
       <GlassCard className="fade-rise fade-rise-d3 p-6">

@@ -9,17 +9,48 @@ const DISMISS_KEY = "tc_onboarding_dismissed";
 const COPIED_KEY = "tc_booking_link_copied";
 
 /**
- * Guided onboarding checklist (Wave 7). The first four steps are DB-derived
- * (passed as `steps`); the fifth — copying the booking link — is a client
- * action tracked in localStorage. The whole card is dismissible and reopenable
- * (preference stored in localStorage), and hides itself once everything is done.
+ * Guided onboarding checklist.
+ *
+ * REQUIRED vs OPTIONAL, and the bug that made the split necessary
+ * The card used to count every row into one progress ring, so a salon that was
+ * complete, published, in search and bookable sat at "4/5" forever with "Copy
+ * your booking link" outstanding. Copying a link to your clipboard is not a
+ * property of a salon; it cannot be verified, it can be done a hundred times or
+ * never, and it has nothing to do with whether the profile is valid. Yet the
+ * ring, the counter and the card's own persistence all treated it as the last
+ * thing standing between the owner and a finished setup.
+ *
+ * So the two kinds of task are now separated:
+ *
+ *   REQUIRED  — DB-derived, mirrors the real publication requirements
+ *               (lib/publication). These drive the ring, the counter, and
+ *               whether the card still has anything to say.
+ *   OPTIONAL  — worth doing, never blocking: inviting a specialist (a solo
+ *               salon publishes and books perfectly well without one) and
+ *               sharing the booking link.
+ *
+ * The card disappears when the REQUIRED steps are done, whatever the optional
+ * ones say. Nothing here has ever decided publication — PublicationStatus reads
+ * lib/publication for that — but a counter that says "4/5" reads as "you are
+ * not finished", and that was wrong on its face.
  */
 export type ChecklistLabels = {
-  title: string; body: string; hide: string; collapsed: string; copyLink: string; copyLinkHint: string;
+  title: string;
+  body: string;
+  hide: string;
+  collapsed: string;
+  copyLink: string;
+  copyLinkHint: string;
+  /** Heading for the never-blocking group. */
+  optional: string;
+  optionalHint: string;
 };
 
-export function OnboardingChecklist({ steps, bookingUrl, linkReady, labels }: {
+export function OnboardingChecklist({ steps, optionalSteps = [], bookingUrl, linkReady, labels }: {
+  /** REQUIRED steps — DB-derived, and the only input to the progress ring. */
   steps: ChecklistStep[];
+  /** Nice-to-haves. Listed, never counted, never blocking. */
+  optionalSteps?: ChecklistStep[];
   bookingUrl: string;
   /** The public profile actually resolves. While false the "share your link"
    *  step is omitted — telling an owner to send clients a link that returns
@@ -56,15 +87,18 @@ export function OnboardingChecklist({ steps, bookingUrl, linkReady, labels }: {
     setDismissed(false);
   }
 
-  const allSteps = linkReady
-    ? [...steps, { key: "copyLink", label: labels.copyLink, hint: labels.copyLinkHint, done: copied, href: "" }]
-    : steps;
-  const doneCount = allSteps.filter((s) => s.done).length;
-  const total = allSteps.length;
+  const extras: ChecklistStep[] = linkReady
+    ? [...optionalSteps, { key: "copyLink", label: labels.copyLink, hint: labels.copyLinkHint, done: copied, href: "" }]
+    : optionalSteps;
+
+  // The ring counts REQUIRED work only.
+  const doneCount = steps.filter((s) => s.done).length;
+  const total = steps.length;
 
   // Avoid an SSR/CSR flash: render nothing until we've read localStorage.
   if (!mounted) return null;
-  // Nothing left to guide.
+  // Everything the salon actually needs is done. Whatever is left is optional,
+  // and optional work does not get to keep a setup card on screen.
   if (doneCount === total) return null;
 
   if (dismissed) {
@@ -80,6 +114,27 @@ export function OnboardingChecklist({ steps, bookingUrl, linkReady, labels }: {
       </button>
     );
   }
+
+  const row = (s: ChecklistStep) => {
+    const inner = (
+      <>
+        <span className="w-5 h-5 rounded-md flex items-center justify-center flex-shrink-0" style={s.done ? { background: "rgba(16,185,129,0.12)", border: "1px solid rgba(16,185,129,0.3)" } : { background: "var(--surface)", border: "1px solid rgba(148,163,184,0.5)" }}>
+          {s.done && <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="#047857" strokeWidth={3}><path strokeLinecap="round" strokeLinejoin="round" d="m5 13 4 4L19 7" /></svg>}
+        </span>
+        <span className="min-w-0">
+          <span className={s.done ? "block text-sm text-slate-400 line-through" : "block text-sm font-medium text-slate-800"}>{s.label}</span>
+          {!s.done && <span className="block text-[11px] text-slate-400 truncate">{s.hint}</span>}
+        </span>
+        {!s.done && <svg className="w-3.5 h-3.5 text-slate-300 ml-auto flex-shrink-0 self-center" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}><path d="m9 18 6-6-6-6" /></svg>}
+      </>
+    );
+    const cls = "row-hover flex items-center gap-3 px-3 py-2.5 rounded-xl text-left w-full";
+    return s.key === "copyLink" ? (
+      <button key={s.key} type="button" onClick={copyLink} className={cls}>{inner}</button>
+    ) : (
+      <Link key={s.key} href={s.href} className={cls}>{inner}</Link>
+    );
+  };
 
   return (
     <div
@@ -101,28 +156,17 @@ export function OnboardingChecklist({ steps, bookingUrl, linkReady, labels }: {
         <button type="button" onClick={dismiss} className="text-xs font-medium text-slate-400 hover:text-slate-700 flex-shrink-0">{labels.hide}</button>
       </div>
 
-      <div className="p-2.5 sm:p-3 grid sm:grid-cols-2 gap-1.5">
-        {allSteps.map((s) => {
-          const inner = (
-            <>
-              <span className="w-5 h-5 rounded-md flex items-center justify-center flex-shrink-0" style={s.done ? { background: "rgba(16,185,129,0.12)", border: "1px solid rgba(16,185,129,0.3)" } : { background: "var(--surface)", border: "1px solid rgba(148,163,184,0.5)" }}>
-                {s.done && <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="#047857" strokeWidth={3}><path strokeLinecap="round" strokeLinejoin="round" d="m5 13 4 4L19 7" /></svg>}
-              </span>
-              <span className="min-w-0">
-                <span className={s.done ? "block text-sm text-slate-400 line-through" : "block text-sm font-medium text-slate-800"}>{s.label}</span>
-                {!s.done && <span className="block text-[11px] text-slate-400 truncate">{s.hint}</span>}
-              </span>
-              {!s.done && <svg className="w-3.5 h-3.5 text-slate-300 ml-auto flex-shrink-0 self-center" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}><path d="m9 18 6-6-6-6" /></svg>}
-            </>
-          );
-          const cls = "row-hover flex items-center gap-3 px-3 py-2.5 rounded-xl text-left w-full";
-          return s.key === "copyLink" ? (
-            <button key={s.key} type="button" onClick={copyLink} className={cls}>{inner}</button>
-          ) : (
-            <Link key={s.key} href={s.href} className={cls}>{inner}</Link>
-          );
-        })}
-      </div>
+      <div className="p-2.5 sm:p-3 grid sm:grid-cols-2 gap-1.5">{steps.map(row)}</div>
+
+      {extras.length > 0 && (
+        <div className="px-2.5 sm:px-3 pb-2.5 sm:pb-3">
+          <div className="px-3 pt-2.5 pb-1.5" style={{ borderTop: "1px solid var(--hairline-soft)" }}>
+            <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-400">{labels.optional}</p>
+            <p className="text-[11px] text-slate-400 mt-0.5">{labels.optionalHint}</p>
+          </div>
+          <div className="grid sm:grid-cols-2 gap-1.5">{extras.map(row)}</div>
+        </div>
+      )}
     </div>
   );
 }

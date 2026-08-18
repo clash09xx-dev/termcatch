@@ -1,11 +1,11 @@
 "use client";
 
-import { useState, useEffect, useTransition } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
 import { getInitials, cn } from "@/lib/utils";
-import { createEmployee, updateEmployee, deleteEmployee } from "@/lib/actions/staff";
+import { updateEmployee, deleteEmployee, updateEmployeeWorkingHours, type EmployeeDayInput } from "@/lib/actions/staff";
 import { uploadBusinessImage } from "@/lib/actions/upload";
-import type { Employee, EmployeeService, Service } from "@prisma/client";
+import type { DayOfWeek, Employee, EmployeeService, Service } from "@prisma/client";
 import { PageHeader, GlassCard, EmptyState, InkButton, GlassButton, FormField, HAIRLINE, CHIP } from "@/components/ui/glass";
 import { GlassModal } from "@/components/ui/glass-modal";
 import { PlanLimitDialog } from "@/components/business/plan-limit-dialog";
@@ -15,8 +15,13 @@ import { useT } from "@/components/i18n/i18n-provider";
 import { notify, errorText } from "@/lib/notify";
 import { ConfirmDialog } from "@/components/ui/glass-modal";
 import { JoinCodeCard } from "@/components/business/join-code-card";
+import { JoinRequestsCard, type PendingJoinRequest } from "@/components/business/join-requests-card";
 
-type EmpWithServices = Employee & { services: (EmployeeService & { service: Service })[] };
+type EmpHours = { dayOfWeek: DayOfWeek; isWorking: boolean; startTime: string; endTime: string };
+type EmpWithServices = Employee & {
+  services: (EmployeeService & { service: Service })[];
+  workingHours: EmpHours[];
+};
 type Props = {
   employees: EmpWithServices[];
   availableServices: Service[];
@@ -25,6 +30,8 @@ type Props = {
   /** Used for the salon-specific invite wording and the join-code panel. */
   salonName: string;
   joinCode: string | null;
+  /** People who typed the code and are waiting on this owner's decision. */
+  pendingRequests: PendingJoinRequest[];
 };
 type Form = { firstName: string; lastName: string; email: string; phone: string; title: string; bio: string; avatarUrl: string; color: string; isActive: boolean; isAccepting: boolean; serviceIds: string[] };
 
@@ -33,14 +40,53 @@ const EMPTY: Form = { firstName: "", lastName: "", email: "", phone: "", title: 
 const toForm = (e: EmpWithServices): Form => ({ firstName: e.firstName, lastName: e.lastName, email: e.email ?? "", phone: e.phone ?? "", title: e.title ?? "", bio: e.bio ?? "", avatarUrl: e.avatarUrl ?? "", color: e.color, isActive: e.isActive, isAccepting: e.isAccepting, serviceIds: e.services.map((s) => s.serviceId) });
 const INPUT = "input-glass w-full px-3.5 py-2.5 text-sm rounded-xl outline-none text-slate-800 placeholder:text-slate-400";
 
-export function StaffClient({ employees, availableServices, weekLoad, inviteStatus = {}, salonName, joinCode }: Props) {
+const DAY_ORDER: DayOfWeek[] = ["MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY", "SATURDAY", "SUNDAY"];
+// Same fixed "HH:MM" half-hour grid the salon hours page uses, so both screens
+// read identically regardless of the browser's 12/24-hour preference.
+const TIMES: string[] = [];
+for (let h = 0; h < 24; h++) for (let m = 0; m < 60; m += 30) TIMES.push(`${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`);
+const toMin = (t: string): number => { const [h, m] = t.split(":").map(Number); return h * 60 + (m || 0); };
+
+/**
+ * The specialist's own schedule, as the owner edits it.
+ *
+ * "Custom hours" off means NO rows are written, which the availability engine
+ * reads as "follow the salon's opening hours" — the opposite of writing seven
+ * closed days. The toggle exists so that difference is expressible at all.
+ */
+type ScheduleState = { custom: boolean; days: EmpHours[] };
+const defaultDays = (): EmpHours[] =>
+  DAY_ORDER.map((d) => ({
+    dayOfWeek: d,
+    isWorking: d !== "SUNDAY",
+    startTime: "09:00",
+    endTime: "17:00",
+  }));
+const toSchedule = (e: EmpWithServices): ScheduleState =>
+  e.workingHours.length > 0
+    ? {
+        custom: true,
+        days: DAY_ORDER.map(
+          (d) =>
+            e.workingHours.find((h) => h.dayOfWeek === d) ?? {
+              dayOfWeek: d,
+              isWorking: false,
+              startTime: "09:00",
+              endTime: "17:00",
+            }
+        ),
+      }
+    : { custom: false, days: defaultDays() };
+
+export function StaffClient({ employees, availableServices, weekLoad, inviteStatus = {}, salonName, joinCode, pendingRequests }: Props) {
   const t = useT();
   const T = t.pages.staff;
   const router = useRouter();
-  const searchParams = useSearchParams();
   const [open, setOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [editingLinked, setEditingLinked] = useState(false);
   const [form, setForm] = useState<Form>(EMPTY);
+  const [schedule, setSchedule] = useState<ScheduleState>({ custom: false, days: defaultDays() });
   const [isPending, start] = useTransition();
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [limitInfo, setLimitInfo] = useState<PlanLimitInfo | null>(null);
@@ -65,23 +111,37 @@ export function StaffClient({ employees, availableServices, weekLoad, inviteStat
     }
   }
 
-  useEffect(() => { if (searchParams.get("action") === "new") openAdd(); /* eslint-disable-next-line */ }, [searchParams]);
-
-  function openAdd() { setEditingId(null); setForm(EMPTY); setOpen(true); }
-  function openEdit(e: EmpWithServices) { setEditingId(e.id); setForm(toForm(e)); setOpen(true); }
+  function openEdit(e: EmpWithServices) {
+    setEditingId(e.id);
+    setEditingLinked(e.userId !== null);
+    setForm(toForm(e));
+    setSchedule(toSchedule(e));
+    setOpen(true);
+  }
   const set = (k: keyof Form, v: Form[keyof Form]) => setForm((p) => ({ ...p, [k]: v }));
   const toggleSvc = (id: string) => setForm((p) => ({ ...p, serviceIds: p.serviceIds.includes(id) ? p.serviceIds.filter((x) => x !== id) : [...p.serviceIds, id] }));
+  const setDay = (d: DayOfWeek, patch: Partial<EmpHours>) =>
+    setSchedule((p) => ({ ...p, days: p.days.map((h) => (h.dayOfWeek === d ? { ...h, ...patch } : h)) }));
+
+  const scheduleInvalid =
+    schedule.custom && schedule.days.some((h) => h.isWorking && toMin(h.endTime) <= toMin(h.startTime));
 
   function save(e: React.FormEvent) {
     e.preventDefault();
+    if (!editingId || scheduleInvalid) return;
     const data = { firstName: form.firstName, lastName: form.lastName, email: form.email || undefined, phone: form.phone || undefined, title: form.title || undefined, bio: form.bio || undefined, avatarUrl: form.avatarUrl || "", color: form.color, isActive: form.isActive, isAccepting: form.isAccepting, serviceIds: form.serviceIds };
+    // "No custom hours" is expressed as an EMPTY schedule, not as seven closed
+    // days — the availability engine reads the two as opposites.
+    const days: EmployeeDayInput[] = schedule.custom ? schedule.days : [];
     start(async () => {
-      const res = editingId ? await updateEmployee(editingId, data) : await createEmployee(data);
+      const res = await updateEmployee(editingId, data);
       // Close the form modal first — otherwise its Radix overlay keeps
       // pointer-events:none on the body and the upgrade dialog is unclickable.
       if (!res.ok) { setOpen(false); setLimitInfo(res.limit); return; }
+      const hoursRes = await updateEmployeeWorkingHours(editingId, days);
       setOpen(false);
-      notify.saved(editingId ? t.feedback.saved : t.feedback.created);
+      if (!hoursRes.ok) { notify.error(hoursRes.error); router.refresh(); return; }
+      notify.saved(t.feedback.saved);
       router.refresh();
     });
   }
@@ -111,15 +171,18 @@ export function StaffClient({ employees, availableServices, weekLoad, inviteStat
 
   return (
     <div className="max-w-5xl mx-auto space-y-5">
+      {/* No "Add person" action: a specialist is a real account now, and the
+          only way onto the team is the join code below plus this owner's
+          approval. See lib/actions/staff.ts for why the create path is gone. */}
       <PageHeader
         title={T.title}
         subtitle={<span className="tabular-nums">{employees.length} {employees.length === 1 ? T.one : T.many}</span>}
-        actions={<InkButton onClick={openAdd}><svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5}><path d="M12 5v14M5 12h14" /></svg>{T.add}</InkButton>}
       />
 
-      {/* How a specialist who already has an account joins this salon. Sits
-          above the team so it is where the owner looks when adding people. */}
+      {/* The two halves of one mechanism, read top to bottom: the code goes
+          out, the requests come back, the team is what came through. */}
       <JoinCodeCard code={joinCode} salonName={salonName} />
+      <JoinRequestsCard requests={pendingRequests} />
 
       {employees.length === 0 ? (
         <GlassCard className="fade-rise fade-rise-d1">
@@ -127,7 +190,6 @@ export function StaffClient({ employees, availableServices, weekLoad, inviteStat
             icon={<svg className="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5}><circle cx="9" cy="8" r="3.2" /><path d="M3.5 20a5.5 5.5 0 0 1 11 0" /></svg>}
             title={T.emptyTitle}
             body={T.emptyBody}
-            action={<InkButton size="sm" onClick={openAdd}>{T.addFirst}</InkButton>}
           />
         </GlassCard>
       ) : (
@@ -174,17 +236,11 @@ export function StaffClient({ employees, availableServices, weekLoad, inviteStat
               </div>
             );
           })}
-
-          {/* add-person ghost card */}
-          <button onClick={openAdd} className="row-hover rounded-[20px] p-5 flex flex-col items-center justify-center gap-2 min-h-[180px]" style={{ border: "1.5px dashed rgba(148,163,184,0.5)", color: "#64748B" }}>
-            <span className="w-11 h-11 rounded-2xl flex items-center justify-center" style={CHIP}><svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}><path d="M12 5v14M5 12h14" /></svg></span>
-            <span className="text-sm font-medium">{T.add}</span>
-          </button>
         </div>
       )}
 
       {/* Editor modal */}
-      <GlassModal open={open} onOpenChange={setOpen} title={editingId ? T.editTitle : T.newTitle} className="max-w-lg">
+      <GlassModal open={open} onOpenChange={setOpen} title={T.editTitle} className="max-w-lg">
         <form onSubmit={save} className="space-y-4 mt-2 max-h-[64vh] overflow-y-auto pr-1 -mr-1">
           {/* Avatar — reuses the secured business-media upload flow */}
           <div className="flex items-center gap-3">
@@ -213,10 +269,15 @@ export function StaffClient({ employees, availableServices, weekLoad, inviteStat
           </div>
           <FormField label={T.role} htmlFor="e-title"><input id="e-title" value={form.title} onChange={(ev) => set("title", ev.target.value)} placeholder={T.rolePh} className={INPUT} /></FormField>
           <FormField label={T.bio} htmlFor="e-bio"><textarea id="e-bio" rows={3} value={form.bio} onChange={(ev) => set("bio", ev.target.value)} placeholder={T.bioPh} className={cn(INPUT, "resize-none")} /></FormField>
+          {/* Contact details belong to whoever owns the account. On a linked
+              specialist they are shown, not edited — the server ignores changes
+              to them too, so this is a visible statement of a real rule rather
+              than a disabled input that hides one. */}
           <div className="grid grid-cols-2 gap-3">
-            <FormField label={t.auth.email} htmlFor="e-email"><input id="e-email" type="email" value={form.email} onChange={(ev) => set("email", ev.target.value)} className={INPUT} /></FormField>
-            <FormField label={t.auth.phone} htmlFor="e-phone"><input id="e-phone" type="tel" value={form.phone} onChange={(ev) => set("phone", ev.target.value)} className={cn(INPUT, "tabular-nums")} /></FormField>
+            <FormField label={t.auth.email} htmlFor="e-email"><input id="e-email" type="email" value={form.email} onChange={(ev) => set("email", ev.target.value)} readOnly={editingLinked} aria-readonly={editingLinked} className={cn(INPUT, editingLinked && "opacity-70")} /></FormField>
+            <FormField label={t.auth.phone} htmlFor="e-phone"><input id="e-phone" type="tel" value={form.phone} onChange={(ev) => set("phone", ev.target.value)} readOnly={editingLinked} aria-readonly={editingLinked} className={cn(INPUT, "tabular-nums", editingLinked && "opacity-70")} /></FormField>
           </div>
+          {editingLinked && <p className="text-[11.5px] text-muted-glass -mt-2">{T.contactOwned}</p>}
           <div>
             <span className="block text-sm font-medium text-slate-700 mb-2">{T.colorLabel}</span>
             <div className="flex flex-wrap gap-2" role="group" aria-label={T.colorAria}>
@@ -239,6 +300,83 @@ export function StaffClient({ employees, availableServices, weekLoad, inviteStat
               </div>
             </div>
           )}
+          {/* Per-specialist schedule. The availability engine has always read
+              EmployeeWorkingHours to narrow this person's bookable window
+              inside salon hours — nothing ever wrote them until now. */}
+          <div className="p-3.5 rounded-xl" style={CHIP}>
+            <div className="flex items-center justify-between gap-3">
+              <span>
+                <span className="text-sm font-medium text-slate-800">{T.scheduleTitle}</span>
+                <span className="block text-xs text-slate-500 mt-0.5">{T.scheduleHint}</span>
+              </span>
+              <button
+                type="button"
+                role="switch"
+                aria-checked={schedule.custom}
+                aria-label={T.scheduleUse}
+                onClick={() => setSchedule((p) => ({ ...p, custom: !p.custom }))}
+                className="relative inline-flex h-6 w-11 items-center rounded-full transition-colors flex-shrink-0"
+                style={{ background: schedule.custom ? "#0F172A" : "rgba(148,163,184,0.45)" }}
+              >
+                <span className={cn("inline-block h-4 w-4 rounded-full bg-white shadow transition-transform", schedule.custom ? "translate-x-6" : "translate-x-1")} />
+              </button>
+            </div>
+
+            {schedule.custom && (
+              <div className="mt-3 space-y-1.5">
+                {schedule.days.map((h) => {
+                  const invalid = h.isWorking && toMin(h.endTime) <= toMin(h.startTime);
+                  return (
+                    <div key={h.dayOfWeek} className="flex items-center gap-2 py-1">
+                      <button
+                        type="button"
+                        role="switch"
+                        aria-checked={h.isWorking}
+                        aria-label={`${t.weekdays.full[h.dayOfWeek]} — ${h.isWorking ? T.scheduleTitle : T.scheduleDayOff}`}
+                        onClick={() => setDay(h.dayOfWeek, { isWorking: !h.isWorking })}
+                        className="relative inline-flex h-4 w-8 items-center rounded-full transition-colors flex-shrink-0"
+                        style={{ background: h.isWorking ? "#0F172A" : "rgba(148,163,184,0.45)" }}
+                      >
+                        <span className={cn("inline-block h-3 w-3 rounded-full bg-white shadow transition-transform", h.isWorking ? "translate-x-4" : "translate-x-1")} />
+                      </button>
+                      <span className="text-[13px] text-slate-700 w-24 flex-shrink-0">{t.weekdays.full[h.dayOfWeek]}</span>
+                      {h.isWorking ? (
+                        <span className="flex items-center gap-1.5 ml-auto">
+                          <select
+                            value={h.startTime}
+                            onChange={(ev) => setDay(h.dayOfWeek, { startTime: ev.target.value })}
+                            aria-label={`${t.weekdays.full[h.dayOfWeek]} — ${T.scheduleFrom}`}
+                            className="input-glass rounded-lg px-2 py-1 text-[13px] outline-none text-slate-800 tabular-nums"
+                          >
+                            {TIMES.map((tm) => <option key={tm} value={tm}>{tm}</option>)}
+                          </select>
+                          <span className="text-slate-400 text-xs">–</span>
+                          <select
+                            value={h.endTime}
+                            onChange={(ev) => setDay(h.dayOfWeek, { endTime: ev.target.value })}
+                            aria-label={`${t.weekdays.full[h.dayOfWeek]} — ${T.scheduleTo}`}
+                            aria-invalid={invalid}
+                            className="input-glass rounded-lg px-2 py-1 text-[13px] outline-none text-slate-800 tabular-nums"
+                            style={invalid ? { border: "1px solid rgba(190,18,60,0.5)" } : undefined}
+                          >
+                            {TIMES.map((tm) => <option key={tm} value={tm}>{tm}</option>)}
+                          </select>
+                        </span>
+                      ) : (
+                        <span className="ml-auto text-[13px] text-slate-400">{T.scheduleDayOff}</span>
+                      )}
+                    </div>
+                  );
+                })}
+                {scheduleInvalid && (
+                  <p role="alert" className="text-[12px] font-medium pt-1" style={{ color: "#BE123C" }}>
+                    {T.scheduleInvalid}
+                  </p>
+                )}
+              </div>
+            )}
+          </div>
+
           <label className="flex items-center justify-between p-3.5 rounded-xl" style={CHIP}>
             <span className="text-sm font-medium text-slate-800">{T.activeLabel}</span>
             <button type="button" role="switch" aria-checked={form.isActive} onClick={() => set("isActive", !form.isActive)} className="relative inline-flex h-6 w-11 items-center rounded-full transition-colors flex-shrink-0" style={{ background: form.isActive ? "#0F172A" : "rgba(148,163,184,0.45)" }}>
@@ -256,7 +394,7 @@ export function StaffClient({ employees, availableServices, weekLoad, inviteStat
           </label>
           <div className="flex gap-3 pt-1">
             <GlassButton onClick={() => setOpen(false)} className="flex-1">{t.common.cancel}</GlassButton>
-            <InkButton type="submit" disabled={isPending} className="flex-1">{isPending ? t.pages.hours.saving : editingId ? t.common.save : T.add}</InkButton>
+            <InkButton type="submit" disabled={isPending || scheduleInvalid} className="flex-1">{isPending ? t.pages.hours.saving : t.common.save}</InkButton>
           </div>
         </form>
       </GlassModal>

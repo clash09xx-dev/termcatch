@@ -237,6 +237,20 @@ enum WaitlistStatus {
   CANCELLED
 }
 
+// A specialist's application to join a salon (see EmployeeJoinRequest).
+//
+// There is deliberately NO "blocked by plan limit" state. A limit hit is a fact
+// about the SALON's subscription, not about the request: the person applied
+// correctly and the owner wants them, so turning the request into a terminal
+// state would force a re-application after an upgrade that changed nothing
+// about the applicant. It stays PENDING (with `blockedAt` recording the last
+// attempt) and becomes approvable the moment capacity exists.
+enum JoinRequestStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
 // ============================================================
 // USER & AUTH
 // ============================================================
@@ -285,6 +299,7 @@ model User {
   aiConversations   AiConversation[]
   blockedBusinesses BlockedBusiness[]   @relation("UserBlocks")
   reportsFiled      Report[]            @relation("UserReports")
+  joinRequests      EmployeeJoinRequest[]
 
   @@index([email])
   @@index([supabaseId])
@@ -430,6 +445,7 @@ model Business {
   fakturowniaConnection FakturowniaConnection? // per-business Fakturownia credentials (own account)
   blockedBy           BlockedBusiness[]    @relation("BusinessBlockedBy")
   calendarConnections CalendarConnection[]
+  joinRequests        EmployeeJoinRequest[]
 
   @@index([city, category])
   @@index([slug])
@@ -1303,6 +1319,48 @@ model EmployeeInvitation {
   @@index([businessId])
   @@index([employeeId])
   @@map("employee_invitations")
+}
+
+// A specialist's request to join a salon, created by typing the salon's join
+// code.
+//
+// WHY THIS EXISTS
+// Typing a code used to create the Employee row outright: whoever held the
+// string was on the team, in the public profile and in the salon panel, with no
+// owner in the loop. A code that circulates in a group chat, gets photographed
+// on a printout or is forwarded by someone who left is a very ordinary thing;
+// "holds the code" is simply not the same claim as "works here".
+//
+// So the code now buys exactly one capability — the right to ASK. Membership is
+// created by the owner approving this row, and nothing before that grants a
+// salon context: no Employee row, no role change, no view switch.
+//
+// ONE ROW PER (SALON, PERSON)
+// The unique pair means re-applying after a rejection reuses the same row
+// rather than filling the owner's queue with duplicates, and it makes "has this
+// person already applied?" a single indexed read.
+model EmployeeJoinRequest {
+  id         String            @id @default(cuid())
+  businessId String            @map("business_id")
+  userId     String            @map("user_id")
+  status     JoinRequestStatus @default(PENDING)
+  // The Employee row this request created, set at approval.
+  employeeId String?           @map("employee_id")
+  decidedAt  DateTime?         @map("decided_at")
+  // The owner's User id — who approved or rejected.
+  decidedBy  String?           @map("decided_by")
+  // Last time approval was refused because the plan was full (stays PENDING).
+  blockedAt  DateTime?         @map("blocked_at")
+  createdAt  DateTime          @default(now()) @map("created_at")
+  updatedAt  DateTime          @updatedAt @map("updated_at")
+
+  business Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([businessId, userId])
+  @@index([businessId, status])
+  @@index([userId])
+  @@map("employee_join_requests")
 }
 
 // ============================================================

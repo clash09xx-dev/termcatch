@@ -24,7 +24,12 @@ import { buildSystemPrompt } from "../lib/ai/system-prompt";
  */
 
 const IN_SCOPE = [
+  // The four reported verbatim, in the exact wording they were asked in.
   "Zasugeruj cenę strzyżenia męskiego z brodą.",
+  "Która usługa jest za tania?",
+  "Jak zwiększyć obłożenie?",
+  "Jak poprawić retencję?",
+  // Nearby phrasings that must not fall off the edge of the same category.
   "Która z moich usług jest za tania?",
   "Czy powinienem podnieść cenę tej usługi?",
   "Jak zwiększyć liczbę rezerwacji?",

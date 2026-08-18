@@ -127,7 +127,10 @@ export const PAGE_META: Record<string, PageMeta> = {
   "/business/crm": { titleKey: "clients", action: NEW_APPT },
   "/business/history": { titleKey: "history" },
   "/business/services": { titleKey: "services", action: { labelKey: "addService", href: "/business/services?action=new", plus: true } },
-  "/business/staff": { titleKey: "team", action: { labelKey: "addPerson", href: "/business/staff?action=new", plus: true } },
+  // No "Add person" action: a specialist joins with the salon code and the
+  // owner approves them on the page itself. There is nothing for a topbar
+  // shortcut to open, and a "+" that opened a creator would be a lie.
+  "/business/staff": { titleKey: "team" },
   "/business/hours": { titleKey: "hours" },
   "/business/ai": { titleKey: "ai" },
   "/business/marketing": { titleKey: "marketing", action: { labelKey: "newCampaign", href: "/business/marketing?action=new", plus: true } },

@@ -17,6 +17,7 @@ import { resolveViewSwitch, usesProductSwitch } from "../lib/view-switch";
  */
 
 const JOIN = "lib/actions/join-code.ts";
+const APPROVE = "lib/actions/join-requests.ts";
 const OWNERSHIP = "lib/ownership.ts";
 const INVITES = "lib/actions/employee-invitations.ts";
 const SWITCH = "components/product-view-switcher.tsx";
@@ -127,35 +128,39 @@ describe("membership resolution is server-authoritative", () => {
 });
 
 describe("join code: what it grants, and what it must never grant", () => {
-  test("12. joining takes ONLY a code — no business id can be injected", () => {
+  test("12. applying takes ONLY a code — no business id can be injected", () => {
     const src = read(JOIN);
     assert.ok(
-      /export async function joinBusinessByCode\(rawCode: string\)/.test(src),
+      /export async function requestJoinByCode\(rawCode: string\)/.test(src),
       "the join action must accept nothing but a code"
     );
     // The business is looked up BY the code, so the caller never names it.
     assert.ok(src.includes("where: { joinCode: code }"), "the salon is resolved from the code alone");
   });
 
-  test("13. joining grants EMPLOYEE and can never grant ownership", () => {
-    const src = read(JOIN);
-    assert.ok(
-      src.includes('if (dbUser.role === "CUSTOMER")') && src.includes('data: { role: "EMPLOYEE" }'),
-      "the role change must be a customer→employee upgrade only"
-    );
-    assert.ok(!src.includes('"BUSINESS_OWNER"'), "joining must never assign the owner role");
+  test("13. a code creates a REQUEST, never a membership and never ownership", () => {
+    const src = code(JOIN);
+    // The one write is the request row. Nothing here makes anybody a member.
+    assert.ok(src.includes("employeeJoinRequest.upsert"), "the code must produce a pending request");
+    assert.ok(/status: "PENDING"/.test(src), "and it must start PENDING");
+    assert.ok(!/employee\.create/.test(src), "typing a code must not create an Employee row");
+    assert.ok(!/role: "EMPLOYEE"/.test(src), "typing a code must not change the account role");
+    assert.ok(!src.includes('"BUSINESS_OWNER"'), "applying must never assign the owner role");
     // ownerId appears only as a READ (selected, then compared) — never inside a
     // write payload, which is what would actually transfer a salon.
-    assert.ok(!/data:\s*\{[^}]*ownerId/.test(src), "joining must never write an ownerId");
-    assert.ok(!/\.update\([^)]*ownerId/.test(src), "joining must never reassign ownership");
+    assert.ok(!/data:\s*\{[^}]*ownerId/.test(src), "applying must never write an ownerId");
+    assert.ok(!/\.update\([^)]*ownerId/.test(src), "applying must never reassign ownership");
     // An owner cannot "join" their own salon into a second relationship.
     assert.ok(src.includes("business.ownerId === dbUser.id"), "the owner case is rejected explicitly");
   });
 
-  test("14. a successful join refreshes the shells that carry the salon context", () => {
-    const src = read(JOIN);
+  test("14. APPROVAL is what creates membership, and it refreshes the shells", () => {
+    const src = code(APPROVE);
+    assert.ok(src.includes("tx.employee.create"), "approval is the one place a membership row is created");
+    assert.ok(/data: \{ role: "EMPLOYEE" \}/.test(src), "and the only place the role is upgraded");
+    assert.ok(src.includes('if (applicant.role === "CUSTOMER")'), "the upgrade is customer→employee only");
     // Revalidating only the PAGES left the cached layouts — which is where the
-    // switch lives — showing the pre-join state.
+    // switch lives — showing the pre-approval state.
     assert.ok(src.includes('revalidatePath("/customer", "layout")'), "the customer shell must refresh");
     assert.ok(src.includes('revalidatePath("/employee", "layout")'), "the employee shell must refresh");
   });

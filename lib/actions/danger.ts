@@ -88,6 +88,10 @@ async function deleteBusinessData(businessId: string): Promise<void> {
     prisma.appointment.deleteMany({ where: { businessId } }),
     prisma.employeeService.deleteMany({ where: { employee: { businessId } } }),
     prisma.employeeWorkingHours.deleteMany({ where: { employee: { businessId } } }),
+    // Pending applications to a salon that is about to stop existing. The FK
+    // cascades anyway; listing it keeps this the readable inventory of what a
+    // deletion removes, rather than half explicit and half implicit.
+    prisma.employeeJoinRequest.deleteMany({ where: { businessId } }),
     prisma.employee.deleteMany({ where: { businessId } }),
     prisma.service.deleteMany({ where: { businessId } }),
     prisma.workingHoursBreak.deleteMany({ where: { workingHours: { businessId } } }),

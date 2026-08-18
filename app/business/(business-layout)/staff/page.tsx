@@ -22,6 +22,11 @@ async function getStaffData(supabaseId: string) {
               services: {
                 include: { service: true },
               },
+              // The owner edits these in the team modal; the availability engine
+              // reads them to narrow each specialist's bookable window.
+              workingHours: {
+                select: { dayOfWeek: true, isWorking: true, startTime: true, endTime: true },
+              },
             },
           },
           services: {
@@ -67,6 +72,30 @@ export default async function StaffPage() {
   const inviteStatus: Record<string, string> = {};
   for (const inv of invites) if (!(inv.employeeId in inviteStatus)) inviteStatus[inv.employeeId] = effectiveStatus(inv);
 
+  // People who typed the salon's join code and are waiting on this owner. They
+  // are NOT members yet — there is no Employee row until the owner approves —
+  // so they are a separate list, never mixed into the team grid.
+  const pendingRequests = (
+    await prisma.employeeJoinRequest.findMany({
+      where: { businessId: business.id, status: "PENDING" },
+      orderBy: { createdAt: "asc" },
+      select: {
+        id: true,
+        createdAt: true,
+        blockedAt: true,
+        user: { select: { firstName: true, lastName: true, email: true } },
+      },
+    })
+  ).map((r) => ({
+    id: r.id,
+    firstName: r.user.firstName,
+    lastName: r.user.lastName,
+    email: r.user.email,
+    // Serialized for the client boundary; the UI renders it relatively.
+    createdAt: r.createdAt.toISOString(),
+    blocked: r.blockedAt !== null,
+  }));
+
   return (
     <StaffClient
       employees={business.employees}
@@ -75,6 +104,7 @@ export default async function StaffPage() {
       inviteStatus={inviteStatus}
       salonName={business.name}
       joinCode={business.joinCode}
+      pendingRequests={pendingRequests}
     />
   );
 }

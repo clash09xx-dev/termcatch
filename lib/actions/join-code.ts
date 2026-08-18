@@ -9,21 +9,30 @@ import {
   isWellFormedJoinCode,
   normalizeJoinCode,
 } from "@/lib/employee/join-code";
+import { notifyOwnerNewRequest } from "@/lib/employee/join-notifications";
 
 /**
  * Salon join codes — the specialist-initiated half of team building.
  *
- * The e-mail invitation flow (lib/actions/employee-invitations.ts) is
- * owner-initiated: the owner already knows the person's address and creates the
- * Employee row for them. This flow is the other direction — the specialist
- * already has a TermCatch account and types the salon's code to attach
- * themselves. Both end in the same place: an Employee row linked to a User,
- * which is the only membership record the product has.
+ * WHAT A CODE IS WORTH
+ * A code buys exactly one capability: the right to ASK to join. It used to buy
+ * membership outright — type the string, get an Employee row, a role change, a
+ * seat in the salon panel and a place in the public team list, with no owner in
+ * the loop. Codes get forwarded, photographed off a printout and kept by people
+ * who left, so "holds the code" was standing in for a claim it cannot support.
+ *
+ *     join code  → a PENDING EmployeeJoinRequest
+ *     owner approval → the Employee row, and only then a salon context
+ *
+ * Nothing between those two steps grants anything: no Employee row exists, the
+ * account role is untouched, and lib/ownership resolveBusinessAccess (which
+ * requires an ACTIVE Employee row) keeps returning "none". The guarantee is
+ * structural rather than a check someone has to remember to write.
  *
  * Authorization rules that this file exists to enforce:
  *   - only a salon OWNER can read or regenerate their own code
- *   - joining grants the EMPLOYEE role and nothing more; it can never make
- *     someone an owner, and it never touches an existing owner/admin role
+ *   - applying can never make someone an owner, and never touches an existing
+ *     owner/admin role
  *   - nothing about the salon is revealed before the code validates
  */
 
@@ -152,24 +161,23 @@ function clearAttempts(userId: string): void {
 }
 
 export type JoinResult =
-  | { ok: true; businessName: string }
+  | { ok: true; businessName: string; status: "pending" | "already_member" }
   | { ok: false; error: string };
 
 /**
- * Join a salon with a code.
+ * Apply to a salon with a code. Creates a PENDING request — never a membership.
  *
  * Deliberate behaviours:
  *   - an unknown code and a malformed code return the SAME message, so the
  *     response cannot be used to tell "this code exists" from "it does not"
- *   - the salon's name is only returned once the join has actually happened
- *   - an existing Employee row for this user is reused (re-joining is a no-op,
- *     and a row the owner pre-created by e-mail gets linked rather than
- *     duplicated)
- *   - the role becomes EMPLOYEE only when the account is currently a plain
- *     CUSTOMER: an owner who also works at another salon keeps BUSINESS_OWNER,
- *     and an admin is never demoted
+ *   - the salon's name is only returned once the code has actually validated
+ *   - NO Employee row is created and the account role is NOT changed; both of
+ *     those are what approval does
+ *   - re-applying reuses the one request row per (salon, person), so a person
+ *     tapping twice does not fill the owner's queue with duplicates
+ *   - someone already on the team is told so instead of being queued again
  */
-export async function joinBusinessByCode(rawCode: string): Promise<JoinResult> {
+export async function requestJoinByCode(rawCode: string): Promise<JoinResult> {
   const { dict } = await getServerI18n();
   const T = dict.pages.joinSalon;
 
@@ -178,7 +186,7 @@ export async function joinBusinessByCode(rawCode: string): Promise<JoinResult> {
 
   const dbUser = await prisma.user.findUnique({
     where: { supabaseId: user.id },
-    select: { id: true, email: true, firstName: true, lastName: true, phone: true, role: true },
+    select: { id: true, firstName: true, lastName: true },
   });
   if (!dbUser) return { ok: false, error: dict.errors.forbidden };
 
@@ -197,62 +205,46 @@ export async function joinBusinessByCode(rawCode: string): Promise<JoinResult> {
   // The owner does not "join" their own salon; they already own it.
   if (business.ownerId === dbUser.id) return { ok: false, error: T.errOwnSalon };
 
+  // Already on the team (however they got there) — nothing to request.
   const existing = await prisma.employee.findFirst({
-    where: { businessId: business.id, userId: dbUser.id },
+    where: { businessId: business.id, userId: dbUser.id, isActive: true },
     select: { id: true },
   });
   if (existing) {
     clearAttempts(dbUser.id);
-    return { ok: true, businessName: business.name };
+    return { ok: true, businessName: business.name, status: "already_member" };
   }
 
-  // An owner may have already created the person by e-mail. Adopt that row
-  // instead of creating a second one for the same human.
-  const pending = dbUser.email
-    ? await prisma.employee.findFirst({
-        where: { businessId: business.id, userId: null, email: dbUser.email },
-        select: { id: true },
-      })
-    : null;
+  // One row per (salon, person). Re-applying after a rejection resets it to
+  // PENDING and clears the previous decision, so the owner sees a fresh
+  // request rather than a stale "rejected" they have to reason about.
+  const existingRequest = await prisma.employeeJoinRequest.findUnique({
+    where: { businessId_userId: { businessId: business.id, userId: dbUser.id } },
+    select: { status: true },
+  });
 
-  await prisma.$transaction(async (tx) => {
-    if (pending) {
-      await tx.employee.update({
-        where: { id: pending.id },
-        data: { userId: dbUser.id, isActive: true },
-      });
-    } else {
-      await tx.employee.create({
-        data: {
-          businessId: business.id,
-          userId: dbUser.id,
-          firstName: dbUser.firstName,
-          lastName: dbUser.lastName,
-          email: dbUser.email,
-          phone: dbUser.phone,
-          // A new joiner is visible in the team but not yet taking bookings —
-          // the owner decides that after assigning services and hours.
-          isActive: true,
-          isAccepting: false,
-        },
-      });
-    }
-
-    // Only ever an upgrade from plain customer. Never a demotion, never owner.
-    if (dbUser.role === "CUSTOMER") {
-      await tx.user.update({ where: { id: dbUser.id }, data: { role: "EMPLOYEE" } });
-    }
+  await prisma.employeeJoinRequest.upsert({
+    where: { businessId_userId: { businessId: business.id, userId: dbUser.id } },
+    create: { businessId: business.id, userId: dbUser.id, status: "PENDING" },
+    update: { status: "PENDING", decidedAt: null, decidedBy: null, blockedAt: null },
   });
 
   clearAttempts(dbUser.id);
-  // Joining changes what the SHELL may show, not just what a page renders: the
-  // Client/Salon switch lives in the customer and employee LAYOUTS, and the
-  // employee routes only became reachable a moment ago. Revalidating the pages
-  // alone left the cached layouts in place, which is why the account looked
-  // untouched after a successful join — the membership row existed and nothing
-  // on screen knew about it.
+
+  // Only ping the owner on a genuinely new application. Someone re-opening the
+  // settings page and re-submitting the same code should not re-notify.
+  if (existingRequest?.status !== "PENDING") {
+    await notifyOwnerNewRequest({
+      ownerUserId: business.ownerId,
+      businessId: business.id,
+      businessName: business.name,
+      applicantName: `${dbUser.firstName} ${dbUser.lastName}`.trim(),
+    });
+  }
+
+  // The owner's team page gains a pending row; the applicant's settings gain a
+  // status. Nothing about the SHELL changes yet — that happens at approval.
   revalidatePath("/business/staff");
-  revalidatePath("/customer", "layout");
-  revalidatePath("/employee", "layout");
-  return { ok: true, businessName: business.name };
+  revalidatePath("/customer/profile");
+  return { ok: true, businessName: business.name, status: "pending" };
 }

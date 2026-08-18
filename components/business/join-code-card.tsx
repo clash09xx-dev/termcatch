@@ -85,6 +85,12 @@ export function JoinCodeCard({ code: initialCode, salonName }: { code: string | 
         </button>
       </div>
 
+      {/* What to actually SAY when handing the code over. The owner is the one
+          explaining this to someone else, so the sentence they need is on
+          screen rather than left to be improvised — and it must not promise
+          instant joining, because the code no longer does that. */}
+      <p className="text-[12.5px] leading-[1.6] text-muted-glass mt-3 max-w-[68ch]">{T.codeShareHint}</p>
+
       {helpOpen && (
         <p className="text-[12.5px] leading-[1.6] text-secondary mt-3 p-3 rounded-xl" style={CHIP} role="note">
           {T.codeHelpBody}

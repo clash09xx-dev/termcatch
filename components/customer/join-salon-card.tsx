@@ -7,8 +7,16 @@ import { GlassCard, InkButton, HAIRLINE, CHIP } from "@/components/ui/glass";
 import { useT } from "@/components/i18n/i18n-provider";
 import { interpolate } from "@/lib/i18n/dictionaries";
 import { notify, errorText } from "@/lib/notify";
-import { joinBusinessByCode } from "@/lib/actions/join-code";
+import { requestJoinByCode } from "@/lib/actions/join-code";
 import { formatJoinCode, isWellFormedJoinCode } from "@/lib/employee/join-code";
+import type { MembershipDisplayState } from "@/lib/employee/membership";
+
+export type JoinRequestView = {
+  state: MembershipDisplayState;
+  businessName: string;
+  /** Only resolved for the "blocked" state, where the copy names the plan. */
+  planLabel: string | null;
+};
 
 /**
  * The specialist's half of the join-code flow.
@@ -18,12 +26,19 @@ import { formatJoinCode, isWellFormedJoinCode } from "@/lib/employee/join-code";
  * special invite link to get started, only an account and four words from their
  * salon.
  *
+ * WHAT SUBMITTING DOES
+ * It sends a REQUEST. The code no longer puts anyone on a team, so the copy
+ * here must not promise that it does: the button says "send request", the
+ * confirmation says the owner has to approve, and the result is a durable
+ * status on this page rather than a toast that is gone on the next render.
+ *
  * The four-step explanation is shown by default rather than behind a toggle:
  * this is the one screen where the person genuinely does not yet know what is
  * supposed to happen.
  */
 export function JoinSalonCard({
   membership,
+  request = null,
 }: {
   /**
    * The salon this account already belongs to, resolved server-side.
@@ -34,12 +49,17 @@ export function JoinSalonCard({
    * earlier. Stating it here is the durable confirmation.
    */
   membership: { businessName: string; salonHref: string } | null;
+  /** An application that has not (yet) become a membership. */
+  request?: JoinRequestView | null;
 }) {
   const t = useT();
   const T = t.pages.joinSalon;
   const router = useRouter();
   const [code, setCode] = useState("");
   const [error, setError] = useState("");
+  // Survives until the page re-renders from the server with the real status,
+  // so the person is never left wondering whether the submit landed.
+  const [sentTo, setSentTo] = useState<string | null>(null);
   const [isPending, start] = useTransition();
 
   const ready = isWellFormedJoinCode(code);
@@ -50,12 +70,17 @@ export function JoinSalonCard({
     setError("");
     start(async () => {
       try {
-        const res = await joinBusinessByCode(code);
+        const res = await requestJoinByCode(code);
         if (res.ok) {
-          notify.saved(interpolate(T.joined, { salon: res.businessName }));
+          if (res.status === "already_member") {
+            notify.info(interpolate(T.alreadyMember, { salon: res.businessName }));
+          } else {
+            notify.saved(interpolate(T.requestSent, { salon: res.businessName }));
+            setSentTo(res.businessName);
+          }
           setCode("");
-          // The role may have changed to EMPLOYEE, which changes which panel
-          // the shell offers — refresh so the server re-resolves it.
+          // Nothing about permissions changed — but the page now has a status
+          // to state, so re-resolve it from the server rather than guessing.
           router.refresh();
         } else {
           setError(res.error);
@@ -65,6 +90,31 @@ export function JoinSalonCard({
       }
     });
   }
+
+  // The durable status line, above the form, for an application in flight.
+  const pending = sentTo ? { state: "pending" as const, businessName: sentTo, planLabel: null } : request;
+  const statusBlock = pending && pending.state !== "none" && pending.state !== "approved" && (
+    <div
+      className="mt-4 p-4 rounded-xl"
+      style={{ background: "var(--surface-inset)", border: "1px solid var(--hairline)" }}
+      role="status"
+    >
+      <p className="text-[13px] font-semibold text-slate-900">
+        {pending.state === "blocked"
+          ? T.statusBlockedTitle
+          : pending.state === "rejected"
+            ? T.statusRejectedTitle
+            : T.statusPendingTitle}
+      </p>
+      <p className="text-[12.5px] leading-[1.55] text-secondary mt-1 max-w-[62ch]">
+        {pending.state === "blocked"
+          ? interpolate(T.statusBlockedBody, { salon: pending.businessName, plan: pending.planLabel ?? "" })
+          : pending.state === "rejected"
+            ? interpolate(T.statusRejectedBody, { salon: pending.businessName })
+            : interpolate(T.statusPendingBody, { salon: pending.businessName })}
+      </p>
+    </div>
+  );
 
   // Already a member: state the relationship and offer the way in. The join
   // form stays below for the (rare) case of joining a second salon, so nothing
@@ -133,6 +183,8 @@ export function JoinSalonCard({
     <GlassCard className="fade-rise p-6">
       <h3 className="text-[15px] font-semibold text-slate-900 track-heading">{T.title}</h3>
       <p className="text-[13px] leading-[1.55] text-secondary mt-1.5 max-w-[62ch]">{T.subtitle}</p>
+
+      {statusBlock}
 
       <ol className="mt-5 space-y-2" aria-label={T.howTitle}>
         {[T.how1, T.how2, T.how3, T.how4].map((step, i) => (

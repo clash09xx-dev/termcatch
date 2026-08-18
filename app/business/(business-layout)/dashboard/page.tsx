@@ -117,14 +117,22 @@ export default async function BusinessDashboardPage() {
   });
   const weekRevenue = dayRevenue.reduce((a, b) => a + b, 0);
 
-  // Guided onboarding checklist (Wave 7) — DB-derived step completion.
+  // Guided onboarding checklist — DB-derived step completion.
+  //
+  // REQUIRED mirrors what lib/publication actually demands to publish; OPTIONAL
+  // is everything a salon is fine without. A specialist is deliberately in the
+  // second group: bookings work with "dowolny specjalista", so a solo salon is
+  // complete without one — and since a specialist now joins by code and
+  // approval, there is no "add" for the owner to click anyway.
   const hasOpenHours = business.workingHours.some((w) => w.isOpen);
   const profileComplete = Boolean(business.description?.trim() && business.logoUrl && business.address?.trim());
   const checklistSteps: ChecklistStep[] = [
     { key: "service", label: T.stepService, hint: T.stepServiceHint, done: serviceCount > 0, href: "/business/services?action=new" },
-    { key: "employee", label: T.stepEmployee, hint: T.stepEmployeeHint, done: staffCount > 0, href: "/business/staff?action=new" },
     { key: "hours", label: T.stepHours, hint: T.stepHoursHint, done: hasOpenHours, href: "/business/hours" },
     { key: "profile", label: T.stepProfile, hint: T.stepProfileHint, done: profileComplete, href: "/business/profile" },
+  ];
+  const optionalChecklistSteps: ChecklistStep[] = [
+    { key: "employee", label: T.stepEmployee, hint: T.stepEmployeeHint, done: staffCount > 0, href: "/business/staff" },
   ];
 
   // Today's working window → gap-aware timeline (weekday in Warsaw)
@@ -178,11 +186,13 @@ export default async function BusinessDashboardPage() {
 
       <OnboardingChecklist
         steps={checklistSteps}
+        optionalSteps={optionalChecklistSteps}
         bookingUrl={bookingUrl(business.slug)}
         linkReady={publication.publiclyVisible}
         labels={{
           title: T.checklistTitle, body: T.checklistBody, hide: T.checklistHide,
           collapsed: T.checklistSteps, copyLink: T.stepCopyLink, copyLinkHint: T.stepCopyLinkHint,
+          optional: T.checklistOptional, optionalHint: T.checklistOptionalHint,
         }}
       />
 
