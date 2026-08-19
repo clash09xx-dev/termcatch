@@ -831,7 +831,14 @@ describe("OAuth state: CSRF and open-redirect", () => {
     const [body, sig] = [raw.slice(0, raw.lastIndexOf(".")), raw.slice(raw.lastIndexOf(".") + 1)];
     const forged = Buffer.from(JSON.stringify({ ...state, businessId: BIZ_B, n: "x", t: Date.now() })).toString("base64url");
     assert.equal(decodeState(`${forged}.${sig}`), null);
-    assert.equal(decodeState(`${body}.${sig.slice(0, -1)}A`), null);
+    // Flip the signature's last character to something it is NOT. Hardcoding
+    // "A" made this a no-op whenever the signature already ended in "A" — an
+    // HMAC-SHA256 base64url signature's final char carries 4 bits, so that is 1
+    // run in 16, and the test then asserted that an UNTAMPERED state is
+    // rejected and rightly failed.
+    const flipped = sig.slice(0, -1) + (sig.at(-1) === "A" ? "B" : "A");
+    assert.notEqual(flipped, sig, "the tamper must actually change the signature");
+    assert.equal(decodeState(`${body}.${flipped}`), null);
     assert.equal(decodeState("garbage"), null);
     assert.equal(decodeState(null), null);
   });

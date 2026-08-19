@@ -55,7 +55,10 @@ CREATE TABLE IF NOT EXISTS "employee_join_requests" (
   -- stays PENDING so it becomes approvable again after an upgrade.
   "blocked_at"  TIMESTAMP(3),
   "created_at"  TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  "updated_at"  TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  -- No DEFAULT: `updatedAt` is maintained by Prisma Client on every write,
+  -- and schema.prisma declares no database default. Adding one here made
+  -- `prisma migrate diff` report drift against our own schema forever.
+  "updated_at"  TIMESTAMP(3) NOT NULL,
   CONSTRAINT "employee_join_requests_pkey" PRIMARY KEY ("id")
 );
 
@@ -95,5 +98,10 @@ BEGIN
   END IF;
 END
 $$;
+
+-- ── 3. Converge an earlier run of this file ────────────────────
+-- Harmless no-op on a fresh table; removes the phantom default if an
+-- earlier version of this migration was already applied somewhere.
+ALTER TABLE "employee_join_requests" ALTER COLUMN "updated_at" DROP DEFAULT;
 
 COMMIT;

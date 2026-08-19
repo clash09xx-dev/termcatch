@@ -1802,7 +1802,12 @@ model AppointmentCalendarEvent {
   externalEventId String  @map("external_event_id")
   externalCalendarId String? @map("external_calendar_id")
 
-  syncState String    @default("synced") // synced | pending | failed | deleted
+  // @map is REQUIRED here: Prisma uses the field name verbatim as the column
+  // name unless told otherwise, so without it the client queried a column
+  // "syncState" that has never existed — the real column is "sync_state",
+  // like every other field in this model. Every write in lib/calendar/mirror.ts
+  // threw P2022, which silently broke the Google Calendar mirror.
+  syncState String    @default("synced") @map("sync_state") // synced | pending | failed | deleted
   lastError String?   @map("last_error")
   syncedAt  DateTime? @map("synced_at")
   createdAt DateTime  @default(now()) @map("created_at")
