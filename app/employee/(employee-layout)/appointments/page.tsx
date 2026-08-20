@@ -12,6 +12,7 @@ const CANCELLED: AppointmentStatus[] = ["CANCELLED_CUSTOMER", "CANCELLED_BUSINES
 
 export default async function EmployeeAppointments() {
   const { dict } = await getServerI18n();
+  const T = dict.employee;
   const ctx = await resolveEmployeeContext();
   if (!ctx) redirect("/");
 
@@ -24,12 +25,12 @@ export default async function EmployeeAppointments() {
 
   return (
     <div className="mx-auto max-w-2xl space-y-4">
-      <PageHeader title="Moje wizyty" subtitle="Wszystkie Twoje rezerwacje" />
+      <PageHeader title={T.myAppointments} subtitle={T.myAppointmentsSubtitle} />
 
       <GlassCard className="overflow-hidden">
-        <CardHeader title="Nadchodzące" action={<span className="text-xs text-slate-400 tabular-nums">{upcoming.length}</span>} />
+        <CardHeader title={T.upcoming} action={<span className="text-xs text-slate-400 tabular-nums">{upcoming.length}</span>} />
         {upcoming.length === 0 ? (
-          <div className="p-6"><EmptyState icon={<Ico />} title="Brak nadchodzących wizyt" body="Nowe rezerwacje pojawią się tutaj." /></div>
+          <div className="p-6"><EmptyState icon={<Ico />} title={T.noUpcoming} body={T.noUpcomingBody} /></div>
         ) : (
           <div>{upcoming.map((a, i) => <ApptRow statusLabel={dict.statuses[a.status]} key={a.id} a={a} first={i === 0} />)}</div>
         )}
@@ -37,7 +38,7 @@ export default async function EmployeeAppointments() {
 
       {past.length > 0 && (
         <GlassCard className="overflow-hidden">
-          <CardHeader title="Ostatnie" />
+          <CardHeader title={T.recent} />
           <div>{past.map((a, i) => <ApptRow statusLabel={dict.statuses[a.status]} key={a.id} a={a} first={i === 0} />)}</div>
         </GlassCard>
       )}

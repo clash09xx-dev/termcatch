@@ -10,12 +10,19 @@ import { PageHeader, GlassCard, CardHeader, EmptyState, Overline } from "@/compo
 import { CHIP, HAIRLINE, INK_GRADIENT } from "@/components/ui/glass/tokens";
 import { ApptRow, EMPLOYEE_APPT_SELECT } from "@/components/employee/appt-row";
 import { getServerI18n } from "@/lib/i18n/server";
+import { intlLocale } from "@/lib/i18n/format";
+import { interpolate } from "@/lib/i18n/dictionaries";
 
 const CANCELLED: AppointmentStatus[] = ["CANCELLED_CUSTOMER", "CANCELLED_BUSINESS"];
+// en-US is deliberate and must NOT be localized: this formatter produces the
+// KEY ("MONDAY") used to match the Prisma DayOfWeek enum, not text a user
+// reads. Swapping it for the viewer locale would return "Montag"/"Poniedzialek"
+// and silently break the working-hours lookup below.
 const WD_LONG = new Intl.DateTimeFormat("en-US", { timeZone: "Europe/Warsaw", weekday: "long" });
 
 export default async function EmployeeDashboard() {
-  const { dict } = await getServerI18n();
+  const { dict, locale } = await getServerI18n();
+  const T = dict.employee;
   const ctx = await resolveEmployeeContext();
   if (!ctx) redirect("/");
 
@@ -46,33 +53,33 @@ export default async function EmployeeDashboard() {
   return (
     <div className="mx-auto max-w-2xl space-y-4">
       <PageHeader
-        title={`Cześć, ${firstName}`}
-        subtitle={new Date().toLocaleDateString("pl-PL", { timeZone: "Europe/Warsaw", weekday: "long", day: "numeric", month: "long" })}
+        title={interpolate(T.greeting, { name: firstName })}
+        subtitle={new Date().toLocaleDateString(intlLocale(locale), { timeZone: "Europe/Warsaw", weekday: "long", day: "numeric", month: "long" })}
       />
 
       {/* Next appointment — the single most useful thing on a phone */}
       {nextAppt ? (
         <GlassCard className="overflow-hidden p-0">
           <div className="px-5 py-2.5" style={{ background: INK_GRADIENT }}>
-            <span className="text-[11px] font-semibold uppercase tracking-wider text-white/80">Następna wizyta · {warsawTimeString(nextAppt.startTime)}</span>
+            <span className="text-[11px] font-semibold uppercase tracking-wider text-white/80">{T.nextAppointment} · {warsawTimeString(nextAppt.startTime)}</span>
           </div>
           <ApptRow statusLabel={dict.statuses[nextAppt.status]} a={nextAppt} first />
         </GlassCard>
       ) : (
         <GlassCard className="p-5">
-          <p className="text-sm font-semibold text-slate-800">Brak kolejnych wizyt.</p>
-          <p className="text-xs text-slate-500">Ciesz się wolną chwilą. Nowe rezerwacje pojawią się tutaj.</p>
+          <p className="text-sm font-semibold text-slate-800">{T.noNextAppointment}</p>
+          <p className="text-xs text-slate-500">{T.noNextAppointmentBody}</p>
         </GlassCard>
       )}
 
       {/* Working hours + free slots today */}
       <div className="grid grid-cols-2 gap-3">
         <div className="rounded-2xl p-4" style={CHIP}>
-          <Overline>Twoje godziny dziś</Overline>
-          <p className="mt-1 text-sm font-semibold text-slate-900">{wh?.isWorking ? `${wh.startTime}–${wh.endTime}` : "Wolne"}</p>
+          <Overline>{T.workingHoursToday}</Overline>
+          <p className="mt-1 text-sm font-semibold text-slate-900">{wh?.isWorking ? `${wh.startTime}–${wh.endTime}` : T.free}</p>
         </div>
         <div className="rounded-2xl p-4" style={CHIP}>
-          <Overline>Wolne terminy dziś</Overline>
+          <Overline>{T.freeSlotsToday}</Overline>
           <p className="mt-1 text-sm font-semibold text-slate-900 tabular-nums">{open ? `${slots.length}` : "—"}</p>
         </div>
       </div>
@@ -87,9 +94,9 @@ export default async function EmployeeDashboard() {
 
       {/* Today */}
       <GlassCard className="overflow-hidden">
-        <CardHeader title="Dzisiejszy grafik" action={<span className="text-xs text-slate-400 tabular-nums">{todayAppts.length}</span>} />
+        <CardHeader title={T.todaySchedule} action={<span className="text-xs text-slate-400 tabular-nums">{todayAppts.length}</span>} />
         {todayAppts.length === 0 ? (
-          <div className="p-6"><EmptyState icon={<CalIcon />} title="Brak wizyt na dziś" body="Twój dzisiejszy grafik jest pusty." /></div>
+          <div className="p-6"><EmptyState icon={<CalIcon />} title={T.noToday} body={T.noTodayBody} /></div>
         ) : (
           <div>{todayAppts.map((a, i) => <ApptRow statusLabel={dict.statuses[a.status]} key={a.id} a={a} first={i === 0} />)}</div>
         )}
@@ -97,9 +104,9 @@ export default async function EmployeeDashboard() {
 
       {/* Tomorrow */}
       <GlassCard className="overflow-hidden">
-        <CardHeader title="Jutro" action={<span className="text-xs text-slate-400 tabular-nums">{tomorrowAppts.length}</span>} />
+        <CardHeader title={T.tomorrow} action={<span className="text-xs text-slate-400 tabular-nums">{tomorrowAppts.length}</span>} />
         {tomorrowAppts.length === 0 ? (
-          <div className="px-5 py-4"><p className="text-sm text-slate-500">Na jutro nie masz jeszcze wizyt.</p></div>
+          <div className="px-5 py-4"><p className="text-sm text-slate-500">{T.noTomorrow}</p></div>
         ) : (
           <div>{tomorrowAppts.map((a, i) => <ApptRow statusLabel={dict.statuses[a.status]} key={a.id} a={a} first={i === 0} />)}</div>
         )}

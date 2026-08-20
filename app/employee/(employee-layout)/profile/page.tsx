@@ -11,14 +11,13 @@ import { getServerI18n } from "@/lib/i18n/server";
 import { LanguageSelector } from "@/components/i18n/language-selector";
 
 const DAY_ORDER: DayOfWeek[] = ["MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY", "SATURDAY", "SUNDAY"];
-const DAY_PL: Record<DayOfWeek, string> = {
-  MONDAY: "Poniedziałek", TUESDAY: "Wtorek", WEDNESDAY: "Środa", THURSDAY: "Czwartek", FRIDAY: "Piątek", SATURDAY: "Sobota", SUNDAY: "Niedziela",
-};
 
 export default async function EmployeeProfile() {
   const ctx = await resolveEmployeeContext();
   if (!ctx) redirect("/");
   const { dict } = await getServerI18n();
+  const T = dict.employee;
+  const DAY = dict.weekdays.full;
 
   const [emp, hours] = await Promise.all([
     prisma.employee.findUnique({ where: { id: ctx.employeeId }, select: { firstName: true, lastName: true, email: true, phone: true, title: true } }),
@@ -37,18 +36,18 @@ export default async function EmployeeProfile() {
           {emp?.email && <p>{emp.email}</p>}
           {emp?.phone && <p>{emp.phone}</p>}
         </div>
-        <p className="mt-3 text-[11px] text-slate-400">Dane profilu zmienia właściciel salonu w panelu zespołu.</p>
+        <p className="mt-3 text-[11px] text-slate-400">{T.profileManagedByOwner}</p>
       </GlassCard>
 
       <GlassCard className="overflow-hidden">
-        <CardHeader title="Moje godziny pracy" />
+        <CardHeader title={T.myWorkingHours} />
         <div>
           {DAY_ORDER.map((d, i) => {
             const h = byDay.get(d);
             return (
               <div key={d} className="flex items-center justify-between px-5 py-2.5" style={i > 0 ? { borderTop: HAIRLINE } : undefined}>
-                <span className="text-sm text-slate-600">{DAY_PL[d]}</span>
-                <span className="text-sm font-medium text-slate-900 tabular-nums">{h?.isWorking ? `${h.startTime}–${h.endTime}` : "Wolne"}</span>
+                <span className="text-sm text-slate-600">{DAY[d]}</span>
+                <span className="text-sm font-medium text-slate-900 tabular-nums">{h?.isWorking ? `${h.startTime}–${h.endTime}` : T.free}</span>
               </div>
             );
           })}
