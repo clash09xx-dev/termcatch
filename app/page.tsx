@@ -13,6 +13,7 @@ import { interpolate } from "@/lib/i18n/dictionaries";
 import { visibleCategoriesFor } from "@/lib/categories";
 import { BRAND_TAGLINE_LINES } from "@/lib/brand";
 import { ELEV_RAISED, INK_BTN, ON_INK_BTN, ON_INK_GHOST_BTN } from "@/components/ui/glass/tokens";
+import { jsonLdScript } from "@/lib/json-ld";
 
 // ── Landing surfaces ─────────────────────────────────────────────────────────
 //
@@ -393,7 +394,7 @@ export default function HomePage() {
   const marquee = visibleCategoriesFor(locale).map((c) => c.label);
   return (
     <div className="min-h-screen overflow-x-hidden text-slate-900" style={{ background: BG.hero }}>
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(HOME_JSON_LD) }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: jsonLdScript(HOME_JSON_LD) }} />
       <LandingNav />
 
       {/* ── HERO ─────────────────────────────────────────────────── */}

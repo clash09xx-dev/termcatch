@@ -858,6 +858,7 @@ export const en: Dictionary = {
       errMessage: "Message must be at least 10 characters",
       errInvalid: "Invalid form data.",
       errSendFailed: "We couldn't send your message just now. Write directly to {email}. We'll reply as quickly as we can.",
+      errTooMany: "Several messages have already been sent from here. Wait a little and try again, or write directly to {email}.",
       successBody: "Thank you! We've received your message and will reply as quickly as we can.",
     },
   },

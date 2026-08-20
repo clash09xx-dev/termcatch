@@ -5,6 +5,7 @@ import { sendSupportAutoReply, sendSupportNotification } from "@/lib/email";
 import { getServerI18n } from "@/lib/i18n/server";
 import { interpolate } from "@/lib/i18n/dictionaries";
 import { LEGAL } from "@/lib/legal";
+import { clientIp, consume } from "@/lib/rate-limit";
 
 /** Stable topic keys — the form submits these, never a translated label. */
 const TOPIC_KEYS = ["general", "support", "enterprise", "partnership", "other"] as const;
@@ -52,6 +53,25 @@ export async function submitContactAction(
   // Honeypot triggered — pretend success, send nothing
   if (website && website.length > 0) {
     return { success: T.successBody };
+  }
+
+  // Rate limit AFTER validation and the honeypot, so garbage and bots do not
+  // consume a real visitor's budget, and BEFORE sending, which is the part that
+  // costs money and reaches an inbox.
+  //
+  // This endpoint sends TWO e-mails per call, and one of them goes to an address
+  // the caller supplies. Unlimited, that is a reflected e-mail amplifier: point
+  // `email` at a victim and loop, and TermCatch floods them on TermCatch's
+  // Resend quota. The honeypot alone does not stop that — a bot that simply
+  // omits the hidden field walks straight through.
+  //
+  // Two keys, first to trip wins: the IP bounds a single sender, the e-mail
+  // bounds a single victim even from a botnet.
+  const ip = await clientIp();
+  const perIp = consume(`contact:ip:${ip}`, 5, 60 * 60 * 1000);
+  const perEmail = consume(`contact:to:${email.toLowerCase()}`, 3, 60 * 60 * 1000);
+  if (!perIp.ok || !perEmail.ok) {
+    return { error: T.errTooMany };
   }
 
   // The inbox gets a readable topic, not the raw key.

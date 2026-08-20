@@ -870,6 +870,7 @@ export const pl = {
       errMessage: "Wiadomość musi mieć min. 10 znaków",
       errInvalid: "Nieprawidłowe dane formularza.",
       errSendFailed: "Nie udało się teraz wysłać wiadomości. Napisz bezpośrednio na {email}. Odpowiemy najszybciej jak to możliwe.",
+      errTooMany: "Wysłano już kilka wiadomości z tego miejsca. Odczekaj chwilę i spróbuj ponownie, albo napisz bezpośrednio na {email}.",
       successBody: "Dziękujemy! Otrzymaliśmy Twoją wiadomość i odpowiemy najszybciej jak to możliwe.",
     },
   },

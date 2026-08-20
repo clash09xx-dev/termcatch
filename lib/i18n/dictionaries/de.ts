@@ -858,6 +858,7 @@ export const de: Dictionary = {
       errMessage: "Die Nachricht muss mindestens 10 Zeichen haben",
       errInvalid: "Ungültige Formulardaten.",
       errSendFailed: "Die Nachricht konnte gerade nicht gesendet werden. Schreiben Sie direkt an {email}. Wir antworten so schnell wie möglich.",
+      errTooMany: "Von hier wurden bereits mehrere Nachrichten gesendet. Warten Sie einen Moment und versuchen Sie es erneut, oder schreiben Sie direkt an {email}.",
       successBody: "Vielen Dank! Wir haben Ihre Nachricht erhalten und antworten so schnell wie möglich.",
     },
   },

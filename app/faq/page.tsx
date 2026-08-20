@@ -5,6 +5,7 @@ import { LandingFooter } from "@/components/layout/landing-footer";
 import { getServerI18n } from "@/lib/i18n/server";
 import { interpolate } from "@/lib/i18n/dictionaries";
 import { LEGAL } from "@/lib/legal";
+import { jsonLdScript } from "@/lib/json-ld";
 
 export async function generateMetadata(): Promise<Metadata> {
   const { dict } = await getServerI18n();
@@ -42,7 +43,7 @@ export default async function FaqPage() {
   return (
     <div className="min-h-screen" style={{ background: BG }}>
       <LandingNav />
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: jsonLdScript(jsonLd) }} />
 
       <div className="pt-28 pb-20 px-6">
         <div className="max-w-4xl mx-auto">

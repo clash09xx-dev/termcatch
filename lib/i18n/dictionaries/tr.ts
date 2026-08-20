@@ -858,6 +858,7 @@ export const tr: Dictionary = {
       errMessage: "Mesaj en az 10 karakter olmalı",
       errInvalid: "Geçersiz form verisi.",
       errSendFailed: "Mesaj şu anda gönderilemedi. Doğrudan {email} adresine yazın. Elimizden geldiğince hızlı yanıtlayacağız.",
+      errTooMany: "Buradan zaten birkaç mesaj gönderildi. Biraz bekleyip tekrar deneyin veya doğrudan {email} adresine yazın.",
       successBody: "Teşekkürler! Mesajınızı aldık ve elimizden geldiğince hızlı yanıtlayacağız.",
     },
   },

@@ -21,6 +21,7 @@ import { interpolate } from "@/lib/i18n/dictionaries";
 import { categoryLabelFor } from "@/lib/categories";
 import type { Dictionary } from "@/lib/i18n/dictionaries";
 import type { Locale } from "@/lib/i18n/config";
+import { jsonLdScript } from "@/lib/json-ld";
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -342,7 +343,7 @@ export default async function BusinessProfilePage({
     >
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+        dangerouslySetInnerHTML={{ __html: jsonLdScript(jsonLd) }}
       />
       <LandingNav />
 
