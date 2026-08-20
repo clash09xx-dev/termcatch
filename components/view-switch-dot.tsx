@@ -134,7 +134,11 @@ export function ViewSwitchDot({
           style={{ opacity: open ? 0 : 1, transition: ease }}
         >
           <span
-            className="block h-2.5 w-2.5 rounded-full"
+            // 13px, not a Tailwind scale step: h-3 (12px) was too close to the
+            // old 10px to register and h-3.5 (14px) started reading as a button
+            // rather than a hint. The white ring below is unchanged, so the whole
+            // mark grows 18px → 21px while staying a dot.
+            className="block h-[13px] w-[13px] rounded-full"
             style={{
               background: "rgba(100,116,139,0.55)",
               boxShadow: "0 0 0 4px rgba(255,255,255,0.55), 0 1px 3px rgba(15,23,42,0.18)",

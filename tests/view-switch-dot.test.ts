@@ -211,7 +211,7 @@ describe("11-18. the dot interaction and accessibility", () => {
     assert.ok(src.includes("aria-controls"), "and point at the panel it controls");
     assert.ok(src.includes("aria-label={v.aria}"), "each option carries its own name");
     assert.ok(src.includes('aria-current={isActive ? "page" : undefined}'), "the active view is announced");
-    assert.ok(/h-11 w-11/.test(src), "the hit target stays 44x44 though the dot is 10px");
+    assert.ok(/h-11 w-11/.test(src), "the hit target stays 44x44 though the dot is only 13px");
 
     // Localized in all four launch languages, including the new platform label.
     for (const [loc, d] of Object.entries(DICTS)) {
@@ -235,7 +235,15 @@ describe("11-18. the dot interaction and accessibility", () => {
     // one, so only opacity/transform animate.
     assert.ok(src.includes("relative flex h-11 items-center justify-end"), "wrapper is pre-sized");
     assert.equal((src.match(/absolute right-0/g) ?? []).length, 2, "both layers are taken out of flow");
-    assert.ok(!/width:|w-\[/.test(src.split("items-center justify-end")[1] ?? ""), "no animated width");
+    // The invariant is that the TRANSITION animates only opacity/transform.
+    // A static size on the dot itself (w-[13px]) is not a layout risk, so the
+    // earlier "no w-[ anywhere below the wrapper" check was testing the wrong
+    // thing — it failed the moment the dot got an exact diameter.
+    const transition = src.match(/const ease = [^;]+;/)![0];
+    assert.ok(/opacity .*transform/.test(transition), "the transition animates opacity + transform");
+    for (const animatable of ["width", "height", "margin", "padding", "top", "left", "right", "bottom"]) {
+      assert.ok(!transition.includes(animatable), `the transition must not animate ${animatable}`);
+    }
   });
 
   test("the collapsed control stays out of the way of mobile navigation", () => {
