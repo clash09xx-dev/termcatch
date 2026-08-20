@@ -882,6 +882,8 @@ export const pl = {
     ariaSalon: "Wróć do panelu salonu",
     ariaOpen: "Zmień widok",
     ariaClose: "Zamknij przełącznik widoku",
+    owner: "Właściciel",
+    ariaOwner: "Przełącz na panel platformy",
   },
   moderation: {
     blockTitle: "Zablokuj",

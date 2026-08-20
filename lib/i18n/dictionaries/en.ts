@@ -870,6 +870,8 @@ export const en: Dictionary = {
     ariaSalon: "Back to salon dashboard",
     ariaOpen: "Change view",
     ariaClose: "Close the view switcher",
+    owner: "Owner",
+    ariaOwner: "Switch to the platform panel",
   },
   moderation: {
     blockTitle: "Block",

@@ -328,10 +328,22 @@ export function CalendarClient(props: Props) {
                           ))}
                         </div>
                       )}
-                      {/* Body — same template; vertical scroll only (no independent x-scroll).
-                          overscroll-contain keeps the wheel inside the timeline so the page
-                          never traps or steals the scroll. */}
-                      <div ref={dayScrollRef} className="grid overflow-y-auto" style={{ gridTemplateColumns: cols, maxHeight: "calc(100dvh - 240px)", overscrollBehavior: "contain" }}>
+                      {/* Body — same template; this element scrolls VERTICALLY, the
+                          parent scrolls HORIZONTALLY.
+                          `overscrollBehaviorY` (not the `overscrollBehavior`
+                          shorthand) is deliberate. The shorthand sets BOTH axes to
+                          `contain`, and `contain` means "do not chain this scroll to
+                          an ancestor". Vertically that is what we want: the wheel
+                          stays in the timeline instead of scrolling the page. But it
+                          applied to the horizontal axis too — and this element has no
+                          horizontal extent of its own (the wide `minWidth` lives on
+                          the parent), so a sideways trackpad gesture over the grid
+                          found nothing to scroll here and was then forbidden from
+                          reaching the parent. Horizontal movement therefore only
+                          worked over the lane headers, which sit OUTSIDE this element.
+                          Leaving `overscroll-behavior-x` at its `auto` default lets the
+                          gesture chain to the parent from anywhere over the grid. */}
+                      <div ref={dayScrollRef} className="grid overflow-y-auto" style={{ gridTemplateColumns: cols, maxHeight: "calc(100dvh - 240px)", overscrollBehaviorY: "contain" }}>
                         {/* time gutter */}
                         <div className="w-14">
                           {gridHours.map((m) => (

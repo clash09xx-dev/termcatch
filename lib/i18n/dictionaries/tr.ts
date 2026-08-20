@@ -870,6 +870,8 @@ export const tr: Dictionary = {
     ariaSalon: "Salon paneline dön",
     ariaOpen: "Görünümü değiştir",
     ariaClose: "Görünüm değiştiriciyi kapat",
+    owner: "Sahip",
+    ariaOwner: "Platform paneline geç",
   },
   moderation: {
     blockTitle: "Engelle",

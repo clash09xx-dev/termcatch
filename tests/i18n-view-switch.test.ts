@@ -15,6 +15,9 @@ const INVOICES_PAGE = `${BIZ}/invoices/page.tsx`;
 const INVOICES_CLIENT = `${BIZ}/invoices/invoices-client.tsx`;
 const OWNER_SWITCH = "components/product-view-switcher.tsx";
 const ADMIN_SWITCH = "components/admin-view-switcher.tsx";
+// The collapsed-dot shell both switchers now share. The interaction and a11y
+// contract lives here, so that is where it is pinned.
+const DOT_SHELL = "components/view-switch-dot.tsx";
 const OWNERSHIP = "lib/ownership.ts";
 const LANDING = "app/page.tsx";
 
@@ -186,10 +189,22 @@ describe("Client/Salon view-switch eligibility", () => {
     // The rule only takes server facts — there is no cookie/mode parameter to forge.
     assert.deepEqual(Object.keys({ isAdmin: false, ownsBusiness: false }).sort(), ["isAdmin", "ownsBusiness"]);
   });
-  test("5b. the admin switcher is untouched and still offers its three internal views", () => {
+  test("5b. the admin switcher still offers its three internal views", () => {
     const src = read(ADMIN_SWITCH);
     assert.ok(src.includes("/customer/dashboard") && src.includes("/business/dashboard") && src.includes("/admin/dashboard"),
       "the admin switcher must keep all three internal destinations");
+    assert.equal((src.match(/\{ key: "(client|salon|owner)",/g) ?? []).length, 3,
+      "exactly three internal contexts");
+  });
+  test("5c. the admin switcher is the collapsed dot too, and is localized", () => {
+    const src = read(ADMIN_SWITCH);
+    // It used to be a permanently expanded dark pill with hardcoded Polish.
+    assert.ok(src.includes("ViewSwitchDot"), "the internal switch must use the dot shell");
+    assert.ok(src.includes("useT("), "and read its labels from the dictionary");
+    for (const gone of ['"Widok"', '"Klient"', '"Salon"', '"Właściciel"']) {
+      assert.ok(!src.includes(gone), `admin switcher still hardcodes ${gone}`);
+    }
+    assert.ok(!src.includes("rounded-full p-1 shadow-xl"), "the permanent pill markup must be gone");
   });
   test("8-11. the switch labels are localized (Klient/Client/Kunde/Müşteri + Salon)", () => {
     assert.equal(pl.viewSwitch.client, "Klient");
@@ -246,7 +261,8 @@ describe("view-switch security by construction", () => {
 
 // ── 12-14: the collapsed dot is a real, expandable, accessible control ────────
 describe("12-14. the dot control expands and stays accessible", () => {
-  const src = read(OWNER_SWITCH);
+  // Shared by BOTH switchers, so pinning it once covers both.
+  const src = read(DOT_SHELL);
   test("12. desktop expansion is driven by hover AND keyboard focus", () => {
     assert.ok(src.includes("onPointerEnter"), "must expand on pointer enter (desktop hover)");
     assert.ok(src.includes("onFocus"), "keyboard users must be able to expand it without hover");

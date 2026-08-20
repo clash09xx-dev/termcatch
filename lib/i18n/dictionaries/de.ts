@@ -870,6 +870,8 @@ export const de: Dictionary = {
     ariaSalon: "Zurück zum Salon-Dashboard",
     ariaOpen: "Ansicht wechseln",
     ariaClose: "Ansichtswechsler schließen",
+    owner: "Inhaber",
+    ariaOwner: "Zum Plattform-Panel wechseln",
   },
   moderation: {
     blockTitle: "Blockieren",
