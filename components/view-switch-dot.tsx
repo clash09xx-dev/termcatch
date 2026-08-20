@@ -136,12 +136,20 @@ export function ViewSwitchDot({
           <span
             // 13px, not a Tailwind scale step: h-3 (12px) was too close to the
             // old 10px to register and h-3.5 (14px) started reading as a button
-            // rather than a hint. The white ring below is unchanged, so the whole
-            // mark grows 18px → 21px while staying a dot.
+            // rather than a hint.
             className="block h-[13px] w-[13px] rounded-full"
             style={{
-              background: "rgba(100,116,139,0.55)",
-              boxShadow: "0 0 0 4px rgba(255,255,255,0.55), 0 1px 3px rgba(15,23,42,0.18)",
+              // The SAME token the expanded capsule below is painted with, so the
+              // dot reads as that control collapsed rather than as a separate
+              // grey blob. It used to be translucent slate with a 4px white halo,
+              // which on a light page looked pale and washed out — and looked
+              // like nothing else in the product. Referencing INK_GRADIENT (not a
+              // copied hex) means a change to --ink-raised moves both together.
+              background: INK_GRADIENT,
+              // Same shadow LANGUAGE as the capsule, first layer only: the
+              // capsule's wide `0 8px 24px` lift is far too much for a 13px mark,
+              // and there is deliberately no white ring or inset highlight here.
+              boxShadow: "0 1px 2px rgba(15,23,42,0.22)",
             }}
           />
         </button>

@@ -246,6 +246,28 @@ describe("11-18. the dot interaction and accessibility", () => {
     }
   });
 
+  test("the collapsed dot is painted with the SAME token as the expanded capsule", () => {
+    // It shipped as translucent slate with a 4px white halo, which on a light
+    // page read as a pale grey blob belonging to nothing. The dot is the capsule
+    // collapsed, so it must share the capsule's background — by TOKEN, so a
+    // change to --ink-raised moves both and they cannot drift apart.
+    assert.equal((src.match(/background: INK_GRADIENT/g) ?? []).length, 2,
+      "both the dot and the capsule must use INK_GRADIENT");
+    assert.ok(!/background: "rgba\(/.test(src), "no hardcoded colour may be reintroduced");
+
+    // No white ring, halo, translucency or opacity reduction on the dot.
+    const dot = src.slice(src.indexOf('className="block h-'), src.indexOf("</button>"));
+    assert.ok(!/0 0 0 \d+px rgba\(255,255,255/.test(dot), "the white ring must stay gone");
+    assert.ok(!/inset .*255,255,255/.test(dot), "and no inset white highlight either");
+    assert.ok(!/opacity:/.test(dot), "the dot itself must not be faded");
+    // Only the fade that swaps dot for capsule may touch opacity, and it lives
+    // on the button, not on the dot.
+    assert.ok(src.includes("opacity: open ? 0 : 1"), "the swap fade is unchanged");
+
+    // The active Client/Salon pill stays white — untouched by this change.
+    assert.ok(src.includes('isActive ? "bg-white text-slate-900"'), "the active pill stays white");
+  });
+
   test("the collapsed control stays out of the way of mobile navigation", () => {
     assert.ok(src.includes("env(safe-area-inset-bottom)"), "must respect the iOS safe area");
     assert.ok(/bottom-\[calc\(5rem/.test(src), "and clear the mobile bottom nav");
