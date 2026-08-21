@@ -2,6 +2,8 @@
 
 import { prisma } from "@/lib/prisma";
 import {
+  cityMatches,
+  DAY_WORDS,
   LocalRecommendationProvider,
   MAJOR_CITIES,
   nextQuestion,
@@ -30,13 +32,19 @@ const DOW: DayOfWeek[] = ["SUNDAY", "MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY"
  * returned here; the chat UI, search and scoring pipeline stay unchanged.
  * No external AI service is called and no API key is required.
  */
-async function getProvider(): Promise<CustomerAssistantProvider> {
-  const cities = await prisma.business.findMany({
+/** Every distinct city spelling that actually exists on a public salon. */
+async function publicCitySpellings(): Promise<string[]> {
+  const rows = await prisma.business.findMany({
     where: publicDiscoveryWhere(),
     select: { city: true },
     distinct: ["city"],
     take: 200,
   });
+  return rows.map((r) => r.city);
+}
+
+async function getProvider(): Promise<CustomerAssistantProvider> {
+  const cities = (await publicCitySpellings()).map((city) => ({ city }));
   // DB cities first (they win stem matches), then the static majors so a city
   // without salons yet is still UNDERSTOOD (and answered honestly with the
   // no-results message rather than a redundant "which city?" question).
@@ -81,15 +89,36 @@ export async function discoverSalons(userMessages: string[]): Promise<AssistantR
   const question = nextQuestion(filters, s);
   if (question) return { kind: "question", text: question };
 
+  // CITY MATCHING — every DB spelling of the requested city, not one canonical
+  // string.
+  //
+  // This used to be `city: { equals: filters.cityQuery, mode: "insensitive" }`.
+  // `interpret` returns the canonical name ("Krakow" with the accent), and
+  // Postgres case-insensitive comparison does NOT fold diacritics -- so a salon
+  // stored as "Krakow" or "krakow" (both real rows) was invisible. In practice
+  // that hid two of the three Krakow salons, including the only NAIL_SALON, so
+  // "paznokcie w Krakowie" legitimately found nothing.
+  //
+  // `cityMatches` is the same diacritic-insensitive stem comparison used to
+  // recognise the city in the first place, so recognition and lookup can no
+  // longer disagree. The result is an `in` list of literal DB values, which
+  // stays fully parameterised.
+  const cityCandidates = filters.cityQuery
+    ? (await publicCitySpellings()).filter((c) => cityMatches(c, filters.cityQuery!))
+    : [];
+
   const businesses = await prisma.business.findMany({
-    where: publicDiscoveryWhere({
-      city: { equals: filters.cityQuery, mode: "insensitive" },
-    }),
+    where: publicDiscoveryWhere(
+      cityCandidates.length > 0
+        ? { city: { in: cityCandidates } }
+        : { city: { equals: filters.cityQuery, mode: "insensitive" } }
+    ),
     select: {
       id: true,
       slug: true,
       name: true,
       city: true,
+      category: true,
       logoUrl: true,
       description: true,
       averageRating: true,
@@ -154,6 +183,50 @@ export async function discoverSalons(userMessages: string[]): Promise<AssistantR
   const results = rankSalons(salons, filters, 5);
 
   if (results.length === 0) {
+    // WHICH constraint failed? One generic "nothing matched everything" for
+    // every miss told the customer nothing actionable and made a real bug
+    // (see the city/category notes above) look like an empty marketplace.
+    // Re-rank with constraints peeled back one at a time, cheapest first, and
+    // name the one that actually eliminated the results.
+    if (businesses.length === 0) {
+      // Nothing public in that city at all.
+      return { kind: "empty", text: interpolate(s.noneInCity, { city: filters.cityQuery ?? "" }) };
+    }
+
+    // Was it the requested DAY? Drop the slot requirement and see.
+    if (filters.dayOffset !== undefined) {
+      const withoutDay = rankSalons(salons, { ...filters, dayOffset: undefined, afterMinutes: undefined }, 5);
+      if (withoutDay.length > 0) {
+        const what = filters.specialty ? specialtyLabel(filters.specialty) : (filters.serviceQuery ?? "");
+        return {
+          kind: "results",
+          intro: interpolate(s.noSlotThatDay, {
+            city: filters.cityQuery ?? "",
+            what: what ? ` (${what})` : "",
+            day: DAY_WORDS[filters.dayOffset],
+          }),
+          results: withoutDay,
+        };
+      }
+    }
+
+    // Was it the SERVICE/CATEGORY? Offer what the city does have.
+    if (filters.specialty || filters.serviceQuery || filters.categories?.length) {
+      const anyService = rankSalons(
+        salons,
+        { cityQuery: filters.cityQuery, dayOffset: filters.dayOffset, afterMinutes: filters.afterMinutes },
+        5
+      );
+      if (anyService.length > 0) {
+        const what = filters.specialty ? specialtyLabel(filters.specialty) : (filters.serviceQuery ?? "");
+        return {
+          kind: "results",
+          intro: interpolate(s.noSuchService, { city: filters.cityQuery ?? "", what }),
+          results: anyService,
+        };
+      }
+    }
+
     return { kind: "empty", text: s.noResults };
   }
 

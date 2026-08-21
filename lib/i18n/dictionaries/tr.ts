@@ -24,6 +24,7 @@ export const tr: Dictionary = {
   lang: {
     label: "Dil",
     change: "Dili değiştir",
+    notPersisted: "Dil bu cihazda değişti ancak hesabınıza kaydedemedik. E-postalar bir süre eski dilde gelebilir.",
     description: "TermCatch arayüzünün dilini seçin. Seçiminizi hesabınızda ve sonraki oturum açmalarınızda hatırlarız.",
   },
   nav: {
@@ -126,6 +127,17 @@ export const tr: Dictionary = {
     newCodeSent: "Yeni bir kod gönderdik.",
     resendIn: "Kod yok mu? {n}sn içinde tekrar gönder",
     useAnotherEmail: "Farklı bir e-posta adresi kullan",
+  },
+  cancelAppt: {
+    trigger: "İptal et",
+    title: "Bu randevu iptal edilsin mi?",
+    body: "Bu işlem geri alınamaz.",
+    back: "Geri dön",
+    confirm: "Evet, iptal et",
+    cancelling: "İptal ediliyor…",
+    done: "Randevu iptal edildi",
+    failed: "Randevu iptal edilemedi.",
+    ariaTrigger: "Randevuyu iptal et: {what}",
   },
   feedback: {
     saved: "Kaydedildi",
@@ -269,6 +281,9 @@ export const tr: Dictionary = {
     askCity: "Hangi şehirde arayayım?",
     askService: "Hangi hizmeti veya uzmanlığı arıyorsunuz? Örn. boya, kıvırcık saç, manikür…",
     noResults: "Tüm koşulları karşılayan bir salon henüz bulamadım. Benzer hizmetleri veya başka bir saati arayabilirim.",
+    noneInCity: "{city} şehrinde henüz salonumuz yok. Başka bir şehir yazın, orada arayayım.",
+    noSlotThatDay: "{day} için {city}{what} boş saat göremiyorum. Bunu yapan salonlar ve en yakın uygunlukları:",
+    noSuchService: "{city} şehrinde \u201c{what}\u201d hizmeti veren salon bulamadım. Bu şehirde şunlar mevcut:",
     foundOne: "{city}{what}{time} içinde 1 uygun salon bulundu:",
     foundFew: "{city}{what}{time} içinde {n} uygun salon bulundu:",
     bestMatch: "{city}{what}{time} içinde en iyi eşleşmeler:",

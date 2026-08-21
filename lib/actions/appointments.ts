@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { after } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { recipientLocale, recipientLocaleByEmail } from "@/lib/recipient-locale";
 import { getServerUser } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import { AppointmentStatus, NotificationType } from "@prisma/client";
@@ -178,7 +179,13 @@ async function notifyAssignedEmployee(params: {
       ? notify({ userId: e.userId, businessId: params.businessId, type, title, body, data: { appointmentId: params.appointmentId, link: "/employee/dashboard" } })
       : Promise.resolve(),
     e.email
-      ? sendEmployeeAppointmentEmail({ to: e.email, businessName: params.businessName, serviceName: params.serviceName, slotLabel: params.slotLabel, clientName: params.clientName, kind: params.kind })
+      ? sendEmployeeAppointmentEmail({
+          to: e.email, businessName: params.businessName, serviceName: params.serviceName,
+          slotLabel: params.slotLabel, clientName: params.clientName, kind: params.kind,
+          // The SPECIALIST reads this. Prefer their linked account's locale;
+          // a legacy row with only an e-mail falls back to a lookup by address.
+          locale: e.userId ? await recipientLocale(e.userId) : await recipientLocaleByEmail(e.email),
+        })
       : Promise.resolve(),
   ]);
 }
@@ -427,7 +434,7 @@ export async function createAppointment(data: CreateAppointmentInput) {
       slotLabel,
       locale: customer.locale,
     }),
-    notifySalonEmail(business.id, "newBooking", () =>
+    notifySalonEmail(business.id, "newBooking", async () =>
       business.email
         ? sendNewBookingNotificationEmail({
             to: business.email,
@@ -435,6 +442,8 @@ export async function createAppointment(data: CreateAppointmentInput) {
             serviceName: service.name,
             slotLabel,
             customerName: `${customer.firstName} ${customer.lastName}`,
+            // The OWNER reads this one, not the customer who booked.
+            locale: await recipientLocale(business.ownerId),
           })
         : Promise.resolve()
     ),
@@ -588,7 +597,7 @@ export async function rescheduleAppointment(input: {
       body: `${appointment.service.name} w ${appointment.business.name} — nowy termin: ${newSlotLabel}. Salon potwierdzi zmianę.`,
       data: { appointmentId: appointment.id },
     }),
-    notifySalonEmail(appointment.business.id, "reschedule", () =>
+    notifySalonEmail(appointment.business.id, "reschedule", async () =>
       appointment.business.email
         ? sendBookingRescheduleEmail({
             to: appointment.business.email,
@@ -597,6 +606,8 @@ export async function rescheduleAppointment(input: {
             slotLabel: newSlotLabel,
             oldSlotLabel,
             customerName: `${customer.firstName} ${customer.lastName}`,
+            // The OWNER reads this one, not the customer who rescheduled.
+            locale: await recipientLocale(appointment.business.ownerId),
           })
         : Promise.resolve()
     ),

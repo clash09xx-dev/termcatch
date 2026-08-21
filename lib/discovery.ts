@@ -1,3 +1,6 @@
+import type { ServiceCategory } from "@prisma/client";
+import { categoryLabel, resolveQueryCategories } from "@/lib/categories";
+
 // ─── Discovery assistant — deterministic core (pure, testable) ───────────────
 // No LLM is connected yet, so this module converts a customer's natural
 // question into STRUCTURED filters via keyword matching against controlled
@@ -9,6 +12,19 @@ export type DiscoveryFilters = {
   cityQuery?: string; // normalized stem matched against real DB cities
   specialty?: string; // slug from SPECIALTY_TAGS
   serviceQuery?: string; // free text matched against real service names
+  /**
+   * ServiceCategory enums the query resolves to, via the SAME synonym table
+   * /search uses (lib/categories resolveQueryCategories).
+   *
+   * This exists because the assistant used to match only on specialty tags,
+   * service names and the salon description. Real salons leave `specialties`
+   * empty and name their services "Strzyzenie damskie" or "Hybryda", so a
+   * perfectly good HAIR_SALON matched nothing for "fryzjer" -- the assistant
+   * said "nothing found" while /search listed the very same salon underneath,
+   * because /search matches on `category` and the assistant ignored it.
+   * Category is the highest-signal field either side has; now both read it.
+   */
+  categories?: ServiceCategory[];
   maxPrice?: number;
   /** Requested day: 0 = dzisiaj, 1 = jutro, 2 = pojutrze (Warsaw calendar). */
   dayOffset?: 0 | 1 | 2;
@@ -157,9 +173,11 @@ export class DeterministicInterpreter implements DiscoveryInterpreter {
     if (budget) filters.maxPrice = parseInt(budget[1], 10);
 
     // Requested day — "pojutrze" first ("pojutrze" contains "jutro").
-    if (text.includes("pojutrze")) filters.dayOffset = 2;
-    else if (text.includes("jutro")) filters.dayOffset = 1;
-    else if (/\bdzis(iaj)?\b/.test(text) || text.includes("na dzis")) filters.dayOffset = 0;
+    // Typo-tolerant: a customer typing "juteo" or "jutru" means tomorrow, and
+    // losing the day silently changed which salons were considered.
+    if (text.includes("pojutrze") || hasFuzzyWord(words, "pojutrze")) filters.dayOffset = 2;
+    else if (text.includes("jutro") || hasFuzzyWord(words, "jutro")) filters.dayOffset = 1;
+    else if (/\bdzis(iaj)?\b/.test(text) || text.includes("na dzis") || hasFuzzyWord(words, "dzisiaj")) filters.dayOffset = 0;
 
     // Time bound — "po 17", "po 17:30", "od 18:00".
     const after = text.match(/\b(?:po|od)\s+(\d{1,2})(?::(\d{2}))?\b/);
@@ -182,8 +200,50 @@ export class DeterministicInterpreter implements DiscoveryInterpreter {
       }
     }
 
+    // Categories, from the same synonym table /search uses. Built from the
+    // whole text so "paznokcie w krakowie" resolves NAIL_SALON even when no
+    // service is literally named "paznokcie".
+    const cats = resolveQueryCategories(text);
+    if (cats.length > 0) filters.categories = cats;
+
     return filters;
   }
+}
+
+/**
+ * Is any word in the text a near-miss for `target`?
+ *
+ * One edit (insert/delete/substitute/transpose) on a word of similar length.
+ * Deliberately narrow: loose fuzzy matching on a controlled vocabulary turns
+ * "wtorek" into "jutro" and quietly changes what the customer asked for.
+ */
+export function hasFuzzyWord(words: string[], target: string): boolean {
+  return words.some((w) => Math.abs(w.length - target.length) <= 1 && editDistanceAtMostOne(w, target));
+}
+
+/** True when `a` and `b` differ by at most one edit. Cheap, no matrix. */
+function editDistanceAtMostOne(a: string, b: string): boolean {
+  if (a === b) return true;
+  if (Math.abs(a.length - b.length) > 1) return false;
+  // Same length: allow one substitution, or one transposition of neighbours.
+  if (a.length === b.length) {
+    const diff: number[] = [];
+    for (let i = 0; i < a.length; i++) if (a[i] !== b[i]) diff.push(i);
+    if (diff.length === 1) return true;
+    if (diff.length === 2 && diff[1] === diff[0] + 1) {
+      return a[diff[0]] === b[diff[1]] && a[diff[1]] === b[diff[0]];
+    }
+    return false;
+  }
+  // Different length: one insertion/deletion.
+  const [short, long] = a.length < b.length ? [a, b] : [b, a];
+  let i = 0, j = 0, skipped = false;
+  while (i < short.length && j < long.length) {
+    if (short[i] === long[j]) { i++; j++; continue; }
+    if (skipped) return false;
+    skipped = true; j++;
+  }
+  return true;
 }
 
 /**
@@ -208,6 +268,9 @@ export type RankableSalon = {
   averageRating: number;
   totalReviews: number;
   specialties: string[];
+  /** Owner-declared category — the highest-signal match field, and the one
+   *  /search filters on. Optional so existing callers/tests keep compiling. */
+  category?: ServiceCategory | null;
   /** Public salon description — scanned for keyword matches. */
   description?: string | null;
   services: {
@@ -223,7 +286,7 @@ export type RankableSalon = {
 };
 
 export function rankSalons(salons: RankableSalon[], f: DiscoveryFilters, limit = 5): DiscoveryResult[] {
-  const requiresMatch = Boolean(f.specialty || f.serviceQuery);
+  const requiresMatch = Boolean(f.specialty || f.serviceQuery || f.categories?.length);
   const requiresSlot = f.dayOffset !== undefined;
   const dayWord = f.dayOffset !== undefined ? DAY_WORDS[f.dayOffset] : null;
 
@@ -249,6 +312,15 @@ export function rankSalons(salons: RankableSalon[], f: DiscoveryFilters, limit =
       score += 100;
       matched = true;
       reasons.push(`Pasuje do zapytania: ${specialtyLabel(f.specialty)}`);
+    }
+
+    // 1b) The salon's CATEGORY. Structured, owner-declared and the field
+    //     /search matches on, so a HAIR_SALON answers "fryzjer" even when it
+    //     tagged no specialties and named its service "Strzyzenie damskie".
+    if (f.categories?.length && s.category && f.categories.includes(s.category)) {
+      score += 90;
+      matched = true;
+      reasons.push(categoryLabel(s.category));
     }
 
     let priceFrom: number | null = null;

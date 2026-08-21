@@ -3,13 +3,13 @@ export const dynamic = "force-dynamic";
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { getOrCreateDbUser } from "@/lib/auth-user";
-import { formatDate, formatTime, formatCurrency, cn } from "@/lib/utils";
+import { formatDate, formatTime, formatCurrency } from "@/lib/utils";
 import { AppointmentStatus } from "@prisma/client";
-import { cancelAppointment } from "@/lib/actions/appointments";
 import { isFavourite } from "@/lib/actions/favourites";
 import { navigationUrl, addressSearchUrl } from "@/lib/maps";
 import RescheduleButton from "./reschedule-button";
 import FavouriteButton from "@/components/booking/favourite-button";
+import { CancelAppointmentButton } from "@/components/customer/cancel-appointment-button";
 import {
   PageHeader,
   GlassCard,
@@ -23,30 +23,6 @@ import {
   HAIRLINE,
 } from "@/components/ui/glass";
 import { getServerI18n } from "@/lib/i18n/server";
-
-// ── Local cancel button — reuses cancelAppointment unchanged ──
-function CancelButton({ appointmentId, className }: { appointmentId: string; className?: string }) {
-  async function handleCancel() {
-    "use server";
-    await cancelAppointment(appointmentId);
-  }
-  return (
-    <form action={handleCancel}>
-      <button
-        type="submit"
-        className={cn("btn-spring text-xs font-semibold px-3 py-1.5 rounded-lg", className)}
-        style={{
-          background: "rgba(244,63,94,0.08)",
-          border: "1px solid rgba(244,63,94,0.28)",
-          color: "#BE123C",
-          boxShadow: "inset 0 1px 0 rgba(255,255,255,0.60)",
-        }}
-      >
-        Anuluj
-      </button>
-    </form>
-  );
-}
 
 // ── Warsaw calendar-day index, for precise dziś/jutro labels ──
 function warsawDayIndex(d: Date): number {
@@ -240,7 +216,7 @@ export default async function CustomerDashboardPage() {
                 serviceName={ticket.service.name}
                 businessName={ticket.business.name}
               />
-              <CancelButton appointmentId={ticket.id} />
+              <CancelAppointmentButton appointmentId={ticket.id} label={ticket.service.name} />
               <FavouriteButton
                 businessId={ticket.businessId}
                 initialIsFavourite={ticketFav}
@@ -306,7 +282,7 @@ export default async function CustomerDashboardPage() {
                   serviceName={apt.service.name}
                   businessName={apt.business.name}
                 />
-                <CancelButton appointmentId={apt.id} />
+                <CancelAppointmentButton appointmentId={apt.id} label={apt.service.name} />
               </div>
             </div>
           ))}

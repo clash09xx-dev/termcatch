@@ -474,18 +474,36 @@ export async function sendBookingTimeChangedEmail(
 export async function sendBookingRescheduleEmail(
   params: BookingEmailBase & { customerName: string; oldSlotLabel: string }
 ): Promise<{ sent: boolean }> {
+  // Same defect as the new-booking notification: `locale` was in the type and
+  // ignored in the body. Goes to the SALON, so the caller passes the owner's.
+  const loc = toLocale(params.locale);
   return sendEmail({
     to: params.to,
-    subject: `Wizyta przełożona — ${params.serviceName}`,
-    heading: "Klient przełożył wizytę",
+    subject: L(loc, {
+      pl: `Wizyta przełożona — ${params.serviceName}`,
+      en: `Appointment rescheduled — ${params.serviceName}`,
+      de: `Termin verschoben — ${params.serviceName}`,
+      tr: `Randevu ertelendi — ${params.serviceName}`,
+    }),
+    heading: L(loc, {
+      pl: "Klient przełożył wizytę",
+      en: "A client rescheduled their appointment",
+      de: "Ein Kunde hat den Termin verschoben",
+      tr: "Bir müşteri randevusunu erteledi",
+    }),
     lines: [
-      `Klient: <strong>${params.customerName}</strong>`,
-      `Usługa: <strong>${params.serviceName}</strong>`,
-      `Poprzedni termin: ${params.oldSlotLabel}`,
-      `Nowy termin: <strong>${params.slotLabel}</strong>`,
-      "Potwierdź nowy termin w kalendarzu.",
+      `${L(loc, { pl: "Klient", en: "Client", de: "Kunde", tr: "Müşteri" })}: <strong>${escapeHtml(params.customerName)}</strong>`,
+      `${L(loc, { pl: "Usługa", en: "Service", de: "Leistung", tr: "Hizmet" })}: <strong>${escapeHtml(params.serviceName)}</strong>`,
+      `${L(loc, { pl: "Poprzedni termin", en: "Previous time", de: "Bisheriger Termin", tr: "Önceki zaman" })}: ${escapeHtml(params.oldSlotLabel)}`,
+      `${L(loc, { pl: "Nowy termin", en: "New time", de: "Neuer Termin", tr: "Yeni zaman" })}: <strong>${escapeHtml(params.slotLabel)}</strong>`,
+      L(loc, {
+        pl: "Potwierdź nowy termin w kalendarzu.",
+        en: "Confirm the new time in your calendar.",
+        de: "Bestätigen Sie den neuen Termin im Kalender.",
+        tr: "Yeni zamanı takviminizde onaylayın.",
+      }),
     ],
-    ctaLabel: "Otwórz kalendarz",
+    ctaLabel: L(loc, { pl: "Otwórz kalendarz", en: "Open calendar", de: "Kalender öffnen", tr: "Takvimi aç" }),
     ctaUrl: `${APP_URL}/business/calendar`,
   });
 }
@@ -544,16 +562,32 @@ export async function sendBookingReminderEmail(
 export async function sendNewBookingNotificationEmail(
   params: BookingEmailBase & { customerName: string }
 ): Promise<{ sent: boolean }> {
+  // `locale` is the OWNER's persisted locale, resolved by the caller. This
+  // template used to be hardcoded Polish while its type already carried
+  // `locale`, so a German or Turkish salon owner always got Polish.
+  const loc = toLocale(params.locale);
+  const n = escapeHtml(params.customerName);
+  const sv = escapeHtml(params.serviceName);
   return sendEmail({
     to: params.to,
-    subject: `Nowa rezerwacja — ${params.serviceName}`,
-    heading: "Masz nową rezerwację",
+    subject: L(loc, {
+      pl: `Nowa rezerwacja — ${params.serviceName}`,
+      en: `New booking — ${params.serviceName}`,
+      de: `Neue Buchung — ${params.serviceName}`,
+      tr: `Yeni randevu — ${params.serviceName}`,
+    }),
+    heading: L(loc, {
+      pl: "Masz nową rezerwację",
+      en: "You have a new booking",
+      de: "Sie haben eine neue Buchung",
+      tr: "Yeni bir randevunuz var",
+    }),
     lines: [
-      `Klient: <strong>${params.customerName}</strong>`,
-      `Usługa: <strong>${params.serviceName}</strong>`,
-      `Termin: <strong>${params.slotLabel}</strong>`,
+      `${L(loc, { pl: "Klient", en: "Client", de: "Kunde", tr: "Müşteri" })}: <strong>${n}</strong>`,
+      `${L(loc, { pl: "Usługa", en: "Service", de: "Leistung", tr: "Hizmet" })}: <strong>${sv}</strong>`,
+      `${L(loc, { pl: "Termin", en: "Time", de: "Termin", tr: "Zaman" })}: <strong>${escapeHtml(params.slotLabel)}</strong>`,
     ],
-    ctaLabel: "Otwórz kalendarz",
+    ctaLabel: L(loc, { pl: "Otwórz kalendarz", en: "Open calendar", de: "Kalender öffnen", tr: "Takvimi aç" }),
     ctaUrl: `${APP_URL}/business/calendar`,
   });
 }
@@ -666,13 +700,28 @@ export async function sendNewReviewNotificationEmail(
 
 /** Notify an EMPLOYEE about one of THEIR appointments (new / changed / cancelled). */
 export async function sendEmployeeAppointmentEmail(
-  params: { to: string; businessName: string; serviceName: string; slotLabel: string; clientName: string; kind: "new" | "changed" | "cancelled" }
+  params: {
+    to: string; businessName: string; serviceName: string; slotLabel: string;
+    clientName: string; kind: "new" | "changed" | "cancelled";
+    /** The SPECIALIST's persisted locale, resolved by the caller. */
+    locale?: Locale | string | null;
+  }
 ): Promise<{ sent: boolean }> {
-  const heading =
-    params.kind === "new" ? "Masz nową wizytę w grafiku"
-    : params.kind === "changed" ? "Zmieniono termin Twojej wizyty"
-    : "Twoja wizyta została odwołana";
-  const subjectVerb = params.kind === "new" ? "Nowa wizyta" : params.kind === "changed" ? "Zmiana terminu" : "Odwołana wizyta";
+  // This one had no `locale` parameter at all, so a specialist whose account is
+  // in German or Turkish received Polish unconditionally.
+  const loc = toLocale(params.locale);
+  const heading = L(loc, {
+    pl: params.kind === "new" ? "Masz nową wizytę w grafiku" : params.kind === "changed" ? "Zmieniono termin Twojej wizyty" : "Twoja wizyta została odwołana",
+    en: params.kind === "new" ? "You have a new appointment" : params.kind === "changed" ? "Your appointment time changed" : "Your appointment was cancelled",
+    de: params.kind === "new" ? "Sie haben einen neuen Termin" : params.kind === "changed" ? "Ihr Termin wurde verschoben" : "Ihr Termin wurde abgesagt",
+    tr: params.kind === "new" ? "Yeni bir randevunuz var" : params.kind === "changed" ? "Randevu saatiniz değişti" : "Randevunuz iptal edildi",
+  });
+  const subjectVerb = L(loc, {
+    pl: params.kind === "new" ? "Nowa wizyta" : params.kind === "changed" ? "Zmiana terminu" : "Odwołana wizyta",
+    en: params.kind === "new" ? "New appointment" : params.kind === "changed" ? "Time changed" : "Appointment cancelled",
+    de: params.kind === "new" ? "Neuer Termin" : params.kind === "changed" ? "Termin geändert" : "Termin abgesagt",
+    tr: params.kind === "new" ? "Yeni randevu" : params.kind === "changed" ? "Saat değişti" : "Randevu iptal edildi",
+  });
   return sendEmail({
     to: params.to,
     subject: `${subjectVerb} — ${escapeHtml(params.serviceName)}`,
@@ -680,9 +729,9 @@ export async function sendEmployeeAppointmentEmail(
     lines: [
       `<strong>${escapeHtml(params.serviceName)}</strong> — ${escapeHtml(params.clientName)}`,
       escapeHtml(params.slotLabel),
-      `Salon: ${escapeHtml(params.businessName)}`,
+      `${L(loc, { pl: "Salon", en: "Salon", de: "Salon", tr: "Salon" })}: ${escapeHtml(params.businessName)}`,
     ],
-    ctaLabel: "Zobacz swój grafik",
+    ctaLabel: L(loc, { pl: "Zobacz swój grafik", en: "View your schedule", de: "Zeitplan ansehen", tr: "Programınızı görün" }),
     ctaUrl: `${APP_URL}/employee/dashboard`,
   });
 }

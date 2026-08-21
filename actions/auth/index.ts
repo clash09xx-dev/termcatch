@@ -8,17 +8,15 @@ import { perf } from "@/lib/perf";
 import { cookies } from "next/headers";
 import { createClient } from "@/lib/supabase/server";
 import { prisma } from "@/lib/prisma";
-import { LOCALE_COOKIE, isLocale } from "@/lib/i18n/config";
+import { reconcileLocaleOnLogin } from "@/lib/i18n/locale-sync";
 import { z } from "zod";
 
 /** Adopt the account's saved language on a device that hasn't chosen one yet —
  *  never overrides an explicit local selection already in the cookie. */
-async function syncLocaleCookie(accountLocale: string | null | undefined): Promise<void> {
-  if (!accountLocale || !isLocale(accountLocale)) return;
-  const jar = await cookies();
-  if (jar.get(LOCALE_COOKIE)) return; // respect an explicit on-device choice
-  jar.set(LOCALE_COOKIE, accountLocale, { path: "/", maxAge: 60 * 60 * 24 * 365, sameSite: "lax" });
-}
+// Locale reconciliation lives in lib/i18n/locale-sync so the password and OAuth
+// entry points cannot drift apart. The previous local helper only ever copied
+// account -> cookie, and only when no cookie existed, which is why a browser on
+// "pl" and an account on "tr" stayed split indefinitely.
 
 /** Server-built app origin (never trusts the client). */
 function appUrl(): string {
@@ -372,6 +370,7 @@ export async function loginAction(
       .findUnique({
         where: { supabaseId: user.id },
         select: {
+          id: true,
           role: true,
           locale: true,
           ownedBusinesses: { select: { id: true }, take: 1 },
@@ -388,9 +387,10 @@ export async function loginAction(
         .catch(() => {})
     );
 
-    // Follow the account's language on a fresh device (never overrides a choice
-    // already made in this browser) — cookie must be set before the redirect.
-    await syncLocaleCookie(dbUser?.locale);
+    // Make the cookie and User.locale agree, in whichever direction carries the
+    // newer intent. Must happen BEFORE the redirect so the cookie rides along
+    // on this response.
+    await reconcileLocaleOnLogin(dbUser?.id, dbUser?.locale);
 
     revalidatePath("/", "layout");
     t.end();

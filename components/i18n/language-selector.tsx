@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { setLocale } from "@/lib/actions/locale";
 import { LOCALES, LOCALE_LABEL, LOCALE_FLAG, LOCALE_CODE, type Locale } from "@/lib/i18n/config";
 import { useI18n } from "@/components/i18n/i18n-provider";
+import { notify } from "@/lib/notify";
 
 /**
  * Language switcher (native <select> — accessible, low-noise, one-tap).
@@ -28,7 +29,12 @@ export function LanguageSelector({
     const l = value as Locale;
     if (l === locale) return;
     start(async () => {
-      await setLocale(l);
+      const res = await setLocale(l);
+      // The language always applies to this device. But when the account write
+      // failed, saying nothing is what used to leave a user reading Polish while
+      // their e-mail arrived in another language, with no clue why. So the one
+      // case that is NOT fully saved is reported.
+      if (res.error === "not_persisted") notify.info(t.lang.notPersisted);
       router.refresh();
     });
   }

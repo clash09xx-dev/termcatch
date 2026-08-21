@@ -24,6 +24,7 @@ export const en: Dictionary = {
   lang: {
     label: "Language",
     change: "Change language",
+    notPersisted: "Language changed on this device, but we could not save it to your account. E-mail may still arrive in the previous language.",
     description: "Choose the language of the TermCatch interface. We remember your choice on your account and across future sign-ins.",
   },
   nav: {
@@ -126,6 +127,17 @@ export const en: Dictionary = {
     newCodeSent: "We've sent a new code.",
     resendIn: "No code? Resend in {n}s",
     useAnotherEmail: "Use a different email address",
+  },
+  cancelAppt: {
+    trigger: "Cancel",
+    title: "Cancel this appointment?",
+    body: "This cannot be undone.",
+    back: "Go back",
+    confirm: "Yes, cancel it",
+    cancelling: "Cancelling…",
+    done: "Appointment cancelled",
+    failed: "The appointment could not be cancelled.",
+    ariaTrigger: "Cancel appointment: {what}",
   },
   feedback: {
     saved: "Saved",
@@ -269,6 +281,9 @@ export const en: Dictionary = {
     askCity: "Which city should I search in?",
     askService: "What service or specialty are you after? E.g. colouring, curly hair, manicure…",
     noResults: "I haven't found a salon matching all your criteria yet. I can look for similar services or another time.",
+    noneInCity: "We do not have any salon in {city} yet. Name another city and I will look there.",
+    noSlotThatDay: "I see no free slot for {day} in {city}{what}. Here are the salons that do it, with their nearest availability:",
+    noSuchService: "I found no salon in {city} offering \u201c{what}\u201d. Here is what is available in that city:",
     foundOne: "Found 1 matching salon in {city}{what}{time}:",
     foundFew: "Found {n} matching salons in {city}{what}{time}:",
     bestMatch: "Best matches in {city}{what}{time}:",

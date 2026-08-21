@@ -1,7 +1,8 @@
 import { createClient } from "@/lib/supabase/server";
 import { prisma } from "@/lib/prisma";
 import { maybeSendWelcomeEmail } from "@/lib/welcome";
-import { LOCALE_COOKIE, isLocale } from "@/lib/i18n/config";
+import { LOCALE_COOKIE } from "@/lib/i18n/config";
+import { planLocaleReconciliation } from "@/lib/i18n/locale-sync";
 import { perf } from "@/lib/perf";
 import { NextResponse, after } from "next/server";
 
@@ -75,6 +76,7 @@ export async function GET(request: Request) {
     let role: string = chosenRole;
     let hasBusiness = false;
     let localePref: string | null = null;
+    let dbUserId: string | null = null;
 
     try {
       const dbUser = await prisma.user.upsert({
@@ -103,6 +105,7 @@ export async function GET(request: Request) {
           avatarUrl: metadata.avatar_url ?? metadata.picture,
         },
         select: {
+          id: true,
           role: true,
           locale: true,
           ownedBusinesses: { select: { id: true }, take: 1 },
@@ -111,6 +114,7 @@ export async function GET(request: Request) {
       role = dbUser.role;
       hasBusiness = (dbUser.ownedBusinesses?.length ?? 0) > 0;
       localePref = dbUser.locale ?? null;
+      dbUserId = dbUser.id;
     } catch (dbErr) {
       console.error("[auth/callback] DB sync error:", dbErr);
       // Kontynuujemy — użytkownik jest zalogowany, sync nadrobi się przy następnym żądaniu
@@ -135,11 +139,18 @@ export async function GET(request: Request) {
     t.mark("db");
     const res = NextResponse.redirect(`${base}${destination}`);
     t.end();
-    // Follow the account's saved language on a device that hasn't chosen one yet
-    // (so the selected language survives the Google sign-in) — never override an
-    // explicit choice already in this browser.
-    if (localePref && isLocale(localePref) && !request.headers.get("cookie")?.includes(`${LOCALE_COOKIE}=`)) {
-      res.cookies.set(LOCALE_COOKIE, localePref, { path: "/", maxAge: 60 * 60 * 24 * 365, sameSite: "lax" });
+    // Reconcile the cookie and User.locale so they cannot stay split after a
+    // Google sign-in. Bidirectional: a language chosen on this device before
+    // signing in is promoted into the account; otherwise the account's saved
+    // language is copied onto this device. Cookies go on THIS response, because
+    // a write through cookies() is not reliably carried on a redirect.
+    // This handler takes a plain Request, so the incoming cookie is read off the
+    // header rather than from NextRequest.cookies.
+    const incomingLocale = new RegExp(`(?:^|;\\s*)${LOCALE_COOKIE}=([^;]+)`)
+      .exec(request.headers.get("cookie") ?? "")?.[1];
+    const plan = await planLocaleReconciliation(incomingLocale, dbUserId, localePref);
+    if (plan.cookieNeedsWrite && plan.locale) {
+      res.cookies.set(LOCALE_COOKIE, plan.locale, { path: "/", maxAge: 60 * 60 * 24 * 365, sameSite: "lax" });
     }
     return res;
   } catch (err) {

@@ -27,6 +27,7 @@ export const pl = {
   lang: {
     label: "Język",
     change: "Zmień język",
+    notPersisted: "Język zmieniony na tym urządzeniu, ale nie udało się zapisać go na koncie. Powiadomienia e-mail mogą jeszcze przyjść w poprzednim języku.",
     description: "Wybierz język interfejsu TermCatch. Ustawienie zapamiętujemy na Twoim koncie i przy kolejnych logowaniach.",
   },
   nav: {
@@ -129,6 +130,17 @@ export const pl = {
     newCodeSent: "Wysłaliśmy nowy kod.",
     resendIn: "Nie masz kodu? Wyślij ponownie za {n}s",
     useAnotherEmail: "Użyj innego adresu e-mail",
+  },
+  cancelAppt: {
+    trigger: "Anuluj",
+    title: "Czy na pewno chcesz anulować wizytę?",
+    body: "Tej operacji nie można cofnąć.",
+    back: "Wróć",
+    confirm: "Tak, anuluj wizytę",
+    cancelling: "Anulowanie…",
+    done: "Wizyta anulowana",
+    failed: "Nie udało się anulować wizyty.",
+    ariaTrigger: "Anuluj wizytę: {what}",
   },
   feedback: {
     saved: "Zapisano",
@@ -272,6 +284,9 @@ export const pl = {
     askCity: "W jakim mieście mam szukać?",
     askService: "Jakiej usługi lub specjalizacji szukasz? Np. koloryzacja, kręcone włosy, manicure…",
     noResults: "Nie znalazłem jeszcze salonu spełniającego wszystkie warunki. Mogę poszukać podobnych usług albo innego terminu.",
+    noneInCity: "Nie mamy jeszcze żadnego salonu w {city}. Napisz inne miasto, a poszukam tam.",
+    noSlotThatDay: "Na {day} nie widzę wolnego terminu w {city}{what}. Oto salony, które to robią, z najbliższą dostępnością:",
+    noSuchService: "W {city} nie znalazłem salonu z usługą „{what}”. Oto co jest dostępne w tym mieście:",
     foundOne: "Znalazłem 1 pasujący salon w {city}{what}{time}:",
     foundFew: "Znalazłem {n} pasujące salony w {city}{what}{time}:",
     bestMatch: "Najlepiej dopasowane w {city}{what}{time}:",

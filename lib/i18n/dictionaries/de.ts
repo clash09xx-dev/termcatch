@@ -24,6 +24,7 @@ export const de: Dictionary = {
   lang: {
     label: "Sprache",
     change: "Sprache ändern",
+    notPersisted: "Sprache auf diesem Gerät geändert, aber wir konnten sie nicht in Ihrem Konto speichern. E-Mails können noch in der alten Sprache kommen.",
     description: "Wählen Sie die Sprache der TermCatch-Oberfläche. Wir merken uns Ihre Auswahl in Ihrem Konto und bei künftigen Anmeldungen.",
   },
   nav: {
@@ -126,6 +127,17 @@ export const de: Dictionary = {
     newCodeSent: "Wir haben einen neuen Code gesendet.",
     resendIn: "Kein Code? Erneut senden in {n}s",
     useAnotherEmail: "Andere E-Mail-Adresse verwenden",
+  },
+  cancelAppt: {
+    trigger: "Absagen",
+    title: "Diesen Termin wirklich absagen?",
+    body: "Das lässt sich nicht rückgängig machen.",
+    back: "Zurück",
+    confirm: "Ja, Termin absagen",
+    cancelling: "Wird abgesagt…",
+    done: "Termin abgesagt",
+    failed: "Der Termin konnte nicht abgesagt werden.",
+    ariaTrigger: "Termin absagen: {what}",
   },
   feedback: {
     saved: "Gespeichert",
@@ -269,6 +281,9 @@ export const de: Dictionary = {
     askCity: "In welcher Stadt soll ich suchen?",
     askService: "Welche Dienstleistung oder Spezialisierung suchen Sie? Z. B. Färben, lockiges Haar, Maniküre…",
     noResults: "Ich habe noch keinen Salon gefunden, der alle Kriterien erfüllt. Ich kann nach ähnlichen Dienstleistungen oder einem anderen Termin suchen.",
+    noneInCity: "In {city} haben wir noch keinen Salon. Nennen Sie eine andere Stadt, dann suche ich dort.",
+    noSlotThatDay: "Für {day} sehe ich in {city}{what} keinen freien Termin. Hier sind die Salons, die das anbieten, mit der nächsten Verfügbarkeit:",
+    noSuchService: "In {city} habe ich keinen Salon mit \u201e{what}\u201c gefunden. Das ist in dieser Stadt verfügbar:",
     foundOne: "1 passenden Salon in {city}{what}{time} gefunden:",
     foundFew: "{n} passende Salons in {city}{what}{time} gefunden:",
     bestMatch: "Beste Treffer in {city}{what}{time}:",
