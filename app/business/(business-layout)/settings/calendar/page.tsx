@@ -6,6 +6,7 @@ import { prisma } from "@/lib/prisma";
 import { googleCalendarConfigured } from "@/lib/calendar/google-config";
 import { isPlatformAdmin } from "@/lib/is-admin";
 import { CalendarSyncClient } from "./calendar-sync-client";
+import { logGoogleCalendarConfigOnce } from "@/lib/integration-diagnostics";
 
 /**
  * Calendar synchronization settings.
@@ -96,6 +97,11 @@ export default async function CalendarSyncPage() {
     const conn = byEmployee.get(e.id);
     return { id: e.id, name, connection: conn ? toView(conn, name) : null };
   });
+
+  // Opening this page on a misconfigured deployment records WHICH variables are
+  // missing in the server log, so the cause is recoverable without needing an
+  // admin session in the browser.
+  logGoogleCalendarConfigOnce();
 
   return (
     <CalendarSyncClient

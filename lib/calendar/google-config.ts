@@ -74,6 +74,33 @@ export function googleCalendarConfigured(): boolean {
 }
 
 /**
+ * WHICH pieces of configuration are missing. Names only, never values.
+ *
+ * Exists so the cause is knowable from the server log without needing an admin
+ * session in the browser: the settings page shows a plain "temporarily
+ * unavailable" to salon owners (correctly — internal variable names are not
+ * their problem), and the detailed list is admin-gated, so a misconfigured
+ * deployment could otherwise be invisible to whoever is debugging it.
+ */
+export function googleCalendarConfigDiagnosis(): {
+  ok: boolean;
+  missing: string[];
+  redirectUri: string;
+  originIsHttps: boolean;
+} {
+  const missing: string[] = [];
+  if (!process.env.GOOGLE_CALENDAR_CLIENT_ID?.trim()) missing.push("GOOGLE_CALENDAR_CLIENT_ID");
+  if (!process.env.GOOGLE_CALENDAR_CLIENT_SECRET?.trim()) missing.push("GOOGLE_CALENDAR_CLIENT_SECRET");
+  const redirectUri = googleCalendarRedirectUri();
+  return {
+    ok: missing.length === 0,
+    missing,
+    redirectUri,
+    originIsHttps: redirectUri.startsWith("https://"),
+  };
+}
+
+/**
  * Private extended properties stamped on every event we create.
  *
  * This is the loop breaker. Booksy (or anything else) may also write into the

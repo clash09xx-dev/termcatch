@@ -1080,7 +1080,7 @@ export const pl = {
     calendarSync: {
       title: "Synchronizacja kalendarza",
       subtitle: "Połącz Google Calendar, aby terminy z innych systemów blokowały wolne godziny w TermCatch.",
-      notConfigured: "Integracja kalendarza nie jest skonfigurowana na tym serwerze. Skontaktuj się z nami.",
+      notConfigured: "Integracja Google Calendar jest chwilowo niedostępna. Spróbuj ponownie później lub skontaktuj się z nami.",
       notConfiguredAdmin: "Konfiguracja serwera: brakuje GOOGLE_CALENDAR_CLIENT_ID lub GOOGLE_CALENDAR_CLIENT_SECRET oraz poprawnego NEXT_PUBLIC_APP_URL. Uzupełnij je w zmiennych środowiskowych i wdróż ponownie.",
       setupUnavailable: "Połączenie z Google Calendar nie jest jeszcze dostępne na tym serwerze, więc tego kroku nie da się teraz wykonać. Wróć tutaj, gdy integracja zostanie włączona.",
       openSettings: "Otwórz ustawienia kalendarza",

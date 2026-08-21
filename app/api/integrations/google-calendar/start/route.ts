@@ -9,6 +9,7 @@ import {
 import { encodeState, safeReturnTo } from "@/lib/calendar/oauth-state";
 import { canConnectFor, resolveCalendarActor } from "@/lib/calendar/access";
 import { prisma } from "@/lib/prisma";
+import { logGoogleCalendarConfigOnce } from "@/lib/integration-diagnostics";
 
 export const dynamic = "force-dynamic";
 
@@ -44,7 +45,10 @@ export async function GET(req: NextRequest) {
 
   if (!creds) {
     // Not configured in this environment. Say so rather than bouncing the user
-    // to a Google error page.
+    // to a Google error page — and record WHICH variables are missing in the
+    // server log, since the user-facing message deliberately does not name
+    // them and the admin-only detail needs an admin session to be seen.
+    logGoogleCalendarConfigOnce();
     return appRedirect(`${returnTo}?calendar=not_configured`);
   }
 

@@ -1064,7 +1064,7 @@ export const tr: Dictionary = {
     calendarSync: {
       title: "Takvim senkronizasyonu",
       subtitle: "Google Takvim'i bağlayın; başka yerde alınan randevular TermCatch'teki boş saatlerinizi kapatsın.",
-      notConfigured: "Takvim entegrasyonu bu sunucuda yapılandırılmamış. Lütfen bizimle iletişime geçin.",
+      notConfigured: "Google Calendar entegrasyonu geçici olarak kullanılamıyor. Daha sonra tekrar deneyin veya bizimle iletişime geçin.",
       notConfiguredAdmin: "Sunucu yapılandırması: GOOGLE_CALENDAR_CLIENT_ID veya GOOGLE_CALENDAR_CLIENT_SECRET eksik, ayrıca doğru bir NEXT_PUBLIC_APP_URL gerekiyor. Bunları ortam değişkenlerinde ayarlayıp yeniden dağıtın.",
       setupUnavailable: "Google Takvim bağlantısı bu sunucuda henüz kullanılamıyor, bu nedenle bu adım şu anda tamamlanamaz. Entegrasyon açıldığında geri dönün.",
       openSettings: "Takvim ayarlarını aç",

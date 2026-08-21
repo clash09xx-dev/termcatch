@@ -1064,7 +1064,7 @@ export const en: Dictionary = {
     calendarSync: {
       title: "Calendar synchronization",
       subtitle: "Connect Google Calendar so bookings made elsewhere block your free slots in TermCatch.",
-      notConfigured: "The calendar integration is not configured on this server. Get in touch with us.",
+      notConfigured: "The Google Calendar integration is temporarily unavailable. Try again later or get in touch with us.",
       notConfiguredAdmin: "Server configuration: GOOGLE_CALENDAR_CLIENT_ID or GOOGLE_CALENDAR_CLIENT_SECRET is missing, along with a correct NEXT_PUBLIC_APP_URL. Set them in the environment variables and redeploy.",
       setupUnavailable: "Connecting Google Calendar is not available on this server yet, so this step cannot be completed right now. Come back once the integration is switched on.",
       openSettings: "Open calendar settings",

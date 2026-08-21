@@ -59,9 +59,20 @@ describe("calendar OAuth redirects never point at the server's internal address"
 
   test("3. the origin is never taken from a browser-controlled header", () => {
     const appUrlSrc = code("lib/app-url.ts");
-    for (const header of ["x-forwarded-host", "x-forwarded-proto", "headers()", "host"]) {
+    // Real header-reading patterns. The bare token "host" was too blunt: it also
+    // matches `u.hostname` on a URL parsed from the CONFIGURED variable, and the
+    // literal "localhost" in the loopback allowlist -- both of which are the
+    // opposite of the risk. The risk is reading an inbound request header, so
+    // that is what is checked.
+    for (const header of [
+      "x-forwarded-host", "x-forwarded-proto", "headers()",
+      "req.headers", "request.headers", 'get("host")',
+    ]) {
       assert.ok(!appUrlSrc.includes(header), `the origin must not be derived from ${header}`);
     }
+    // Positively: the ONLY input is the configured public URL.
+    const envReads = [...appUrlSrc.matchAll(/process\.env\.(\w+)/g)].map((m) => m[1]);
+    assert.deepEqual([...new Set(envReads)], ["NEXT_PUBLIC_APP_URL"], "one env input only");
     // A configured value is validated as a real http(s) origin before use.
     assert.ok(appUrlSrc.includes("new URL(raw)"), "the configured value must be parsed");
     assert.ok(appUrlSrc.includes("u.origin"), "only the origin is used, not a path");
